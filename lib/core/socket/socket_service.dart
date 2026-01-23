@@ -180,6 +180,11 @@ class SocketService {
     return on(SocketEvents.draftCompleted, callback);
   }
 
+  /// Listen for pick undone events (commissioner undoing a pick)
+  VoidCallback onPickUndone(void Function(dynamic) callback) {
+    return on(SocketEvents.draftPickUndone, callback);
+  }
+
   VoidCallback onUserJoinedDraft(void Function(dynamic) callback) {
     return on(SocketEvents.draftUserJoined, callback);
   }

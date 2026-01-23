@@ -108,6 +108,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
   VoidCallback? _pickDisposer;
   VoidCallback? _nextPickDisposer;
   VoidCallback? _completedDisposer;
+  VoidCallback? _pickUndoneDisposer;
 
   DraftRoomNotifier(
     this._draftRepo,
@@ -154,6 +155,25 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
     _completedDisposer = _socketService.onDraftCompleted((data) {
       if (!mounted) return;
       state = state.copyWith(draft: Draft.fromJson(data));
+    });
+
+    _pickUndoneDisposer = _socketService.onPickUndone((data) {
+      if (!mounted) return;
+      final pickData = data['pick'] as Map<String, dynamic>?;
+      final draftData = data['draft'] as Map<String, dynamic>?;
+
+      if (pickData != null) {
+        final undonePickId = pickData['id'] as int?;
+        if (undonePickId != null) {
+          state = state.copyWith(
+            picks: state.picks.where((p) => p.id != undonePickId).toList(),
+          );
+        }
+      }
+
+      if (draftData != null) {
+        state = state.copyWith(draft: Draft.fromJson(draftData));
+      }
     });
   }
 
@@ -215,6 +235,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
     _pickDisposer?.call();
     _nextPickDisposer?.call();
     _completedDisposer?.call();
+    _pickUndoneDisposer?.call();
     super.dispose();
   }
 }

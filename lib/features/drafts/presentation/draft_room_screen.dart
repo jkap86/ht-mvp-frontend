@@ -11,6 +11,7 @@ import 'widgets/player_search_bar.dart';
 import 'widgets/available_players_list.dart';
 import 'widgets/recent_picks_widget.dart';
 import 'widgets/draft_queue_widget.dart';
+import 'widgets/draft_board_grid_view.dart';
 
 class DraftRoomScreen extends ConsumerStatefulWidget {
   final int leagueId;
@@ -28,6 +29,7 @@ class DraftRoomScreen extends ConsumerStatefulWidget {
 
 class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
   String _searchQuery = '';
+  bool _showGridView = false;
 
   DraftRoomKey get _providerKey => (leagueId: widget.leagueId, draftId: widget.draftId);
   DraftQueueKey get _queueKey => (leagueId: widget.leagueId, draftId: widget.draftId);
@@ -123,6 +125,15 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         ),
         title: Text('Draft - Round ${state.draft?.currentRound ?? 1}'),
         actions: [
+          IconButton(
+            icon: Icon(_showGridView ? Icons.list : Icons.grid_view),
+            tooltip: _showGridView ? 'List View' : 'Grid View',
+            onPressed: () {
+              setState(() {
+                _showGridView = !_showGridView;
+              });
+            },
+          ),
           if (state.draft?.status.isActive ?? false)
             Padding(
               padding: const EdgeInsets.all(8.0),
@@ -134,33 +145,38 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
             ),
         ],
       ),
-      body: Column(
-        children: [
-          DraftStatusBar(draft: state.draft),
-          PlayerSearchBar(
-            onSearchChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
-          ),
-          Expanded(
-            child: AvailablePlayersList(
-              players: _getAvailablePlayers(state),
-              isDraftInProgress: state.draft?.status.isActive ?? false,
-              onDraftPlayer: _makePick,
-              onAddToQueue: _addToQueue,
-              queuedPlayerIds: queueState.queuedPlayerIds,
+      body: _showGridView
+          ? DraftBoardGridView(
+              leagueId: widget.leagueId,
+              draftId: widget.draftId,
+            )
+          : Column(
+              children: [
+                DraftStatusBar(draft: state.draft),
+                PlayerSearchBar(
+                  onSearchChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: AvailablePlayersList(
+                    players: _getAvailablePlayers(state),
+                    isDraftInProgress: state.draft?.status.isActive ?? false,
+                    onDraftPlayer: _makePick,
+                    onAddToQueue: _addToQueue,
+                    queuedPlayerIds: queueState.queuedPlayerIds,
+                  ),
+                ),
+                DraftQueueWidget(
+                  leagueId: widget.leagueId,
+                  draftId: widget.draftId,
+                  draftedPlayerIds: state.draftedPlayerIds,
+                ),
+                RecentPicksWidget(picks: state.picks),
+              ],
             ),
-          ),
-          DraftQueueWidget(
-            leagueId: widget.leagueId,
-            draftId: widget.draftId,
-            draftedPlayerIds: state.draftedPlayerIds,
-          ),
-          RecentPicksWidget(picks: state.picks),
-        ],
-      ),
     );
   }
 }

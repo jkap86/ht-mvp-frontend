@@ -21,6 +21,7 @@ class SocketEvents {
   static const draftStarted = 'draft:started';
   static const draftCompleted = 'draft:completed';
   static const draftNextPick = 'draft:next_pick';
+  static const draftPickUndone = 'draft:pick_undone';
   static const draftQueueUpdated = 'draft:queue_updated';
 
   // Chat events
