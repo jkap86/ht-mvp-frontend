@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../drafts/domain/draft_status.dart';
 import '../../data/league_repository.dart';
 import '../../domain/league.dart';
 
@@ -26,7 +27,7 @@ class LeagueDetailState {
   Draft? get activeDraft {
     try {
       return drafts.firstWhere(
-        (d) => d.status == 'in_progress' || d.status == 'not_started',
+        (d) => d.status == DraftStatus.inProgress || d.status == DraftStatus.notStarted,
       );
     } catch (_) {
       return null;

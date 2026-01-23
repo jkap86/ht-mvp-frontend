@@ -7,12 +7,16 @@ class AvailablePlayersList extends StatelessWidget {
   final List<Player> players;
   final bool isDraftInProgress;
   final void Function(int playerId)? onDraftPlayer;
+  final void Function(int playerId)? onAddToQueue;
+  final Set<int> queuedPlayerIds;
 
   const AvailablePlayersList({
     super.key,
     required this.players,
     required this.isDraftInProgress,
     this.onDraftPlayer,
+    this.onAddToQueue,
+    this.queuedPlayerIds = const {},
   });
 
   @override
@@ -35,14 +39,47 @@ class AvailablePlayersList extends StatelessWidget {
           ),
           title: Text(player.fullName),
           subtitle: Text('${player.team ?? 'FA'} - ${player.primaryPosition}'),
-          trailing: isDraftInProgress && onDraftPlayer != null
-              ? ElevatedButton(
-                  onPressed: () => onDraftPlayer!(player.id),
-                  child: const Text('Draft'),
-                )
-              : null,
+          trailing: _buildTrailingButtons(player),
         );
       },
+    );
+  }
+
+  Widget? _buildTrailingButtons(Player player) {
+    final isInQueue = queuedPlayerIds.contains(player.id);
+
+    if (!isDraftInProgress) {
+      // Before draft starts - only show queue button
+      if (onAddToQueue == null) return null;
+      return IconButton(
+        icon: Icon(
+          isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
+          color: isInQueue ? Colors.green : null,
+        ),
+        onPressed: isInQueue ? null : () => onAddToQueue!(player.id),
+        tooltip: isInQueue ? 'In queue' : 'Add to queue',
+      );
+    }
+
+    // During draft - show both buttons
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (onAddToQueue != null)
+          IconButton(
+            icon: Icon(
+              isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
+              color: isInQueue ? Colors.green : null,
+            ),
+            onPressed: isInQueue ? null : () => onAddToQueue!(player.id),
+            tooltip: isInQueue ? 'In queue' : 'Add to queue',
+          ),
+        if (onDraftPlayer != null)
+          ElevatedButton(
+            onPressed: () => onDraftPlayer!(player.id),
+            child: const Text('Draft'),
+          ),
+      ],
     );
   }
 }

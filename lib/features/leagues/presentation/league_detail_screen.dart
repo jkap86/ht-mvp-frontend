@@ -65,14 +65,38 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
 
     if (state.isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Loading...')),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
+          ),
+          title: const Text('Loading...'),
+        ),
         body: const AppLoadingView(),
       );
     }
 
     if (state.error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Error')),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
+          ),
+          title: const Text('Error'),
+        ),
         body: AppErrorView(
           message: state.error!,
           onRetry: () => ref.read(leagueDetailProvider(widget.leagueId).notifier).loadData(),
@@ -82,6 +106,16 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
+        ),
         title: Text(state.league?.name ?? 'League'),
         bottom: TabBar(
           controller: _tabController,

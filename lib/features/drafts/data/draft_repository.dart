@@ -50,4 +50,33 @@ class DraftRepository {
   Future<void> randomizeDraftOrder(int leagueId, int draftId) async {
     await _apiClient.post('/leagues/$leagueId/drafts/$draftId/randomize-order');
   }
+
+  // Queue methods
+  Future<List<Map<String, dynamic>>> getQueue(int leagueId, int draftId) async {
+    final response =
+        await _apiClient.get('/leagues/$leagueId/drafts/$draftId/queue');
+    return (response as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> addToQueue(
+      int leagueId, int draftId, int playerId) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/drafts/$draftId/queue',
+      body: {'player_id': playerId},
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  Future<void> removeFromQueue(int leagueId, int draftId, int playerId) async {
+    await _apiClient.delete('/leagues/$leagueId/drafts/$draftId/queue/$playerId');
+  }
+
+  Future<List<Map<String, dynamic>>> reorderQueue(
+      int leagueId, int draftId, List<int> playerIds) async {
+    final response = await _apiClient.put(
+      '/leagues/$leagueId/drafts/$draftId/queue',
+      body: {'player_ids': playerIds},
+    );
+    return (response as List).cast<Map<String, dynamic>>();
+  }
 }

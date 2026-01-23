@@ -41,9 +41,9 @@ class DraftPick {
       playerId: json['player_id'] as int? ?? json['playerId'] as int,
       isAutoPick: json['is_auto_pick'] as bool? ?? json['isAutoPick'] as bool? ?? false,
       pickedAt: json['picked_at'] != null
-          ? DateTime.parse(json['picked_at'] as String)
+          ? DateTime.tryParse(json['picked_at'].toString())
           : json['pickedAt'] != null
-              ? DateTime.parse(json['pickedAt'] as String)
+              ? DateTime.tryParse(json['pickedAt'].toString())
               : null,
       playerName: json['player_name'] as String? ?? json['playerName'] as String?,
       playerPosition: json['player_position'] as String? ?? json['playerPosition'] as String?,

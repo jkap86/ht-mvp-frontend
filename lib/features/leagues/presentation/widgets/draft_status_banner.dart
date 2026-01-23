@@ -16,7 +16,7 @@ class DraftStatusBanner extends StatelessWidget {
     required this.onStartDraft,
   });
 
-  bool get _isLive => draft.status == 'in_progress';
+  bool get _isLive => draft.status.isActive;
 
   @override
   Widget build(BuildContext context) {

@@ -12,6 +12,9 @@ class ApiClient {
   final String baseUrl = AppConfig.apiBaseUrl;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
+  /// Request timeout duration
+  static const Duration requestTimeout = Duration(seconds: 30);
+
   /// Callback for token refresh. Set this after login to enable automatic
   /// token refresh on 401 responses. Returns true if refresh succeeded.
   Future<bool> Function()? onTokenRefresh;
@@ -64,7 +67,7 @@ class ApiClient {
       final response = await http.get(
         Uri.parse('$baseUrl$endpoint'),
         headers: await _getHeaders(auth: auth),
-      );
+      ).timeout(requestTimeout);
       return _handleResponse(response);
     } on UnauthorizedException {
       // Attempt token refresh and retry once
@@ -72,7 +75,7 @@ class ApiClient {
         final response = await http.get(
           Uri.parse('$baseUrl$endpoint'),
           headers: await _getHeaders(auth: auth),
-        );
+        ).timeout(requestTimeout);
         return _handleResponse(response);
       }
       rethrow;
@@ -88,7 +91,7 @@ class ApiClient {
         Uri.parse('$baseUrl$endpoint'),
         headers: await _getHeaders(auth: auth),
         body: body != null ? jsonEncode(body) : null,
-      );
+      ).timeout(requestTimeout);
       return _handleResponse(response);
     } on UnauthorizedException {
       if (auth && await _attemptTokenRefresh()) {
@@ -96,7 +99,7 @@ class ApiClient {
           Uri.parse('$baseUrl$endpoint'),
           headers: await _getHeaders(auth: auth),
           body: body != null ? jsonEncode(body) : null,
-        );
+        ).timeout(requestTimeout);
         return _handleResponse(response);
       }
       rethrow;
@@ -112,7 +115,7 @@ class ApiClient {
         Uri.parse('$baseUrl$endpoint'),
         headers: await _getHeaders(auth: auth),
         body: body != null ? jsonEncode(body) : null,
-      );
+      ).timeout(requestTimeout);
       return _handleResponse(response);
     } on UnauthorizedException {
       if (auth && await _attemptTokenRefresh()) {
@@ -120,7 +123,7 @@ class ApiClient {
           Uri.parse('$baseUrl$endpoint'),
           headers: await _getHeaders(auth: auth),
           body: body != null ? jsonEncode(body) : null,
-        );
+        ).timeout(requestTimeout);
         return _handleResponse(response);
       }
       rethrow;
@@ -135,14 +138,14 @@ class ApiClient {
       final response = await http.delete(
         Uri.parse('$baseUrl$endpoint'),
         headers: await _getHeaders(auth: auth),
-      );
+      ).timeout(requestTimeout);
       return _handleResponse(response);
     } on UnauthorizedException {
       if (auth && await _attemptTokenRefresh()) {
         final response = await http.delete(
           Uri.parse('$baseUrl$endpoint'),
           headers: await _getHeaders(auth: auth),
-        );
+        ).timeout(requestTimeout);
         return _handleResponse(response);
       }
       rethrow;

@@ -5,18 +5,41 @@ import 'package:mocktail/mocktail.dart';
 import 'package:hypetrain_mvp/features/drafts/presentation/providers/draft_room_provider.dart';
 import 'package:hypetrain_mvp/features/drafts/data/draft_repository.dart';
 import 'package:hypetrain_mvp/features/drafts/domain/draft_pick.dart';
+import 'package:hypetrain_mvp/features/drafts/domain/draft_status.dart';
 import 'package:hypetrain_mvp/features/players/data/player_repository.dart';
 import 'package:hypetrain_mvp/features/players/domain/player.dart';
 import 'package:hypetrain_mvp/features/leagues/domain/league.dart';
+import 'package:hypetrain_mvp/features/auth/presentation/auth_provider.dart';
+import 'package:hypetrain_mvp/features/auth/domain/user.dart';
 import 'package:hypetrain_mvp/core/socket/socket_service.dart';
 
 import '../../mocks/mock_repositories.dart';
 import '../../mocks/mock_socket_service.dart';
 
+/// Mock AuthNotifier for testing - provides stable state without async operations
+class MockAuthNotifier extends StateNotifier<AuthState> implements AuthNotifier {
+  MockAuthNotifier()
+      : super(AuthState(
+          user: User(id: '1', username: 'testuser', email: 'test@test.com'),
+        ));
+
+  @override
+  Future<bool> login(String username, String password) async => true;
+
+  @override
+  Future<void> logout() async {}
+
+  @override
+  Future<bool> register(String username, String email, String password) async => true;
+
+  @override
+  void clearError() {}
+}
+
 // Test data helpers
 Draft createMockDraft({
   int id = 1,
-  String status = 'in_progress',
+  DraftStatus status = DraftStatus.inProgress,
 }) {
   return Draft(
     id: id,
@@ -77,6 +100,8 @@ void main() {
         draftRepositoryProvider.overrideWithValue(mockDraftRepo),
         playerRepositoryProvider.overrideWithValue(mockPlayerRepo),
         socketServiceProvider.overrideWithValue(mockSocketService),
+        // Override authStateProvider with a stable state to prevent async updates
+        authStateProvider.overrideWith((ref) => MockAuthNotifier()),
       ],
     );
   }
@@ -131,6 +156,10 @@ void main() {
           .thenAnswer((_) async => mockDraft);
       when(() => mockPlayerRepo.getPlayers())
           .thenAnswer((_) async => mockPlayers);
+      when(() => mockDraftRepo.getDraftOrder(1, 1))
+          .thenAnswer((_) async => <Map<String, dynamic>>[]);
+      when(() => mockDraftRepo.getDraftPicks(1, 1))
+          .thenAnswer((_) async => <Map<String, dynamic>>[]);
 
       container = createContainer();
       final key = (leagueId: 1, draftId: 1);
@@ -156,6 +185,10 @@ void main() {
           .thenThrow(Exception('Failed to load'));
       when(() => mockPlayerRepo.getPlayers())
           .thenAnswer((_) async => []);
+      when(() => mockDraftRepo.getDraftOrder(1, 1))
+          .thenAnswer((_) async => <Map<String, dynamic>>[]);
+      when(() => mockDraftRepo.getDraftPicks(1, 1))
+          .thenAnswer((_) async => <Map<String, dynamic>>[]);
 
       container = createContainer();
       final key = (leagueId: 1, draftId: 1);
@@ -183,6 +216,10 @@ void main() {
           .thenAnswer((_) async => mockDraft);
       when(() => mockPlayerRepo.getPlayers())
           .thenAnswer((_) async => mockPlayers);
+      when(() => mockDraftRepo.getDraftOrder(1, 1))
+          .thenAnswer((_) async => <Map<String, dynamic>>[]);
+      when(() => mockDraftRepo.getDraftPicks(1, 1))
+          .thenAnswer((_) async => <Map<String, dynamic>>[]);
       when(() => mockDraftRepo.makePick(1, 1, 100))
           .thenAnswer((_) async => {'success': true});
 
@@ -207,6 +244,10 @@ void main() {
           .thenAnswer((_) async => mockDraft);
       when(() => mockPlayerRepo.getPlayers())
           .thenAnswer((_) async => []);
+      when(() => mockDraftRepo.getDraftOrder(1, 1))
+          .thenAnswer((_) async => <Map<String, dynamic>>[]);
+      when(() => mockDraftRepo.getDraftPicks(1, 1))
+          .thenAnswer((_) async => <Map<String, dynamic>>[]);
       when(() => mockDraftRepo.makePick(1, 1, 100))
           .thenThrow(Exception('Not your turn'));
 
@@ -232,6 +273,10 @@ void main() {
           .thenAnswer((_) async => mockDraft);
       when(() => mockPlayerRepo.getPlayers())
           .thenAnswer((_) async => []);
+      when(() => mockDraftRepo.getDraftOrder(1, 1))
+          .thenAnswer((_) async => <Map<String, dynamic>>[]);
+      when(() => mockDraftRepo.getDraftPicks(1, 1))
+          .thenAnswer((_) async => <Map<String, dynamic>>[]);
 
       container = createContainer();
       final key = (leagueId: 1, draftId: 1);

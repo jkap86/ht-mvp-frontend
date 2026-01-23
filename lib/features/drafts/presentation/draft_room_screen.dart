@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/states/states.dart';
 import '../../players/domain/player.dart';
 import 'providers/draft_room_provider.dart';
+import 'providers/draft_queue_provider.dart';
 import 'widgets/draft_status_bar.dart';
 import 'widgets/player_search_bar.dart';
 import 'widgets/available_players_list.dart';
 import 'widgets/recent_picks_widget.dart';
+import 'widgets/draft_queue_widget.dart';
 
 class DraftRoomScreen extends ConsumerStatefulWidget {
   final int leagueId;
@@ -27,6 +30,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
   String _searchQuery = '';
 
   DraftRoomKey get _providerKey => (leagueId: widget.leagueId, draftId: widget.draftId);
+  DraftQueueKey get _queueKey => (leagueId: widget.leagueId, draftId: widget.draftId);
 
   Future<void> _makePick(int playerId) async {
     final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
@@ -49,20 +53,55 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         .toList();
   }
 
+  Future<void> _addToQueue(int playerId) async {
+    final notifier = ref.read(draftQueueProvider(_queueKey).notifier);
+    final success = await notifier.addToQueue(playerId);
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error adding to queue')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(draftRoomProvider(_providerKey));
+    final queueState = ref.watch(draftQueueProvider(_queueKey));
 
     if (state.isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Draft Room')),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
+          ),
+          title: const Text('Draft Room'),
+        ),
         body: const AppLoadingView(),
       );
     }
 
     if (state.error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Draft Room')),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
+          ),
+          title: const Text('Draft Room'),
+        ),
         body: AppErrorView(
           message: state.error!,
           onRetry: () => ref.read(draftRoomProvider(_providerKey).notifier).loadData(),
@@ -72,9 +111,19 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
+        ),
         title: Text('Draft - Round ${state.draft?.currentRound ?? 1}'),
         actions: [
-          if (state.draft?.status == 'in_progress')
+          if (state.draft?.status.isActive ?? false)
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Chip(
@@ -98,9 +147,16 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
           Expanded(
             child: AvailablePlayersList(
               players: _getAvailablePlayers(state),
-              isDraftInProgress: state.draft?.status == 'in_progress',
+              isDraftInProgress: state.draft?.status.isActive ?? false,
               onDraftPlayer: _makePick,
+              onAddToQueue: _addToQueue,
+              queuedPlayerIds: queueState.queuedPlayerIds,
             ),
+          ),
+          DraftQueueWidget(
+            leagueId: widget.leagueId,
+            draftId: widget.draftId,
+            draftedPlayerIds: state.draftedPlayerIds,
           ),
           RecentPicksWidget(picks: state.picks),
         ],

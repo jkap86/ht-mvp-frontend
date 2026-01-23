@@ -9,8 +9,8 @@ class DraftStatusBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isInProgress = draft?.status == 'in_progress';
-    final isCompleted = draft?.status == 'completed';
+    final isInProgress = draft?.status.isActive ?? false;
+    final isCompleted = draft?.status.isFinished ?? false;
 
     return Container(
       padding: const EdgeInsets.all(12),

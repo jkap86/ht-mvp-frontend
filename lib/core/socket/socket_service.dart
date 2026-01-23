@@ -184,6 +184,11 @@ class SocketService {
     return on(SocketEvents.chatMessage, callback);
   }
 
+  /// Listen for queue updates (player removed from queue when drafted)
+  VoidCallback onQueueUpdated(void Function(dynamic) callback) {
+    return on(SocketEvents.draftQueueUpdated, callback);
+  }
+
   /// Listen for server-side errors (e.g., authorization failures)
   VoidCallback onAppError(void Function(dynamic) callback) {
     return on(SocketEvents.appError, callback);

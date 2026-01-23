@@ -63,8 +63,15 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     try {
       final messages = await _chatRepo.getMessages(leagueId);
+
+      // Check if disposed during async operations
+      if (!mounted) return;
+
       state = state.copyWith(messages: messages, isLoading: false);
     } catch (e) {
+      // Check if disposed during async operations
+      if (!mounted) return;
+
       state = state.copyWith(error: e.toString(), isLoading: false);
     }
   }
@@ -76,9 +83,16 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     try {
       await _chatRepo.sendMessage(leagueId, text.trim());
+
+      // Check if disposed during async operations
+      if (!mounted) return false;
+
       state = state.copyWith(isSending: false);
       return true;
     } catch (e) {
+      // Check if disposed during async operations
+      if (!mounted) return false;
+
       state = state.copyWith(isSending: false);
       return false;
     }

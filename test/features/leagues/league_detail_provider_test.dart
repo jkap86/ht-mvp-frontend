@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:hypetrain_mvp/features/leagues/presentation/providers/league_detail_provider.dart';
 import 'package:hypetrain_mvp/features/leagues/data/league_repository.dart';
 import 'package:hypetrain_mvp/features/leagues/domain/league.dart';
+import 'package:hypetrain_mvp/features/drafts/domain/draft_status.dart';
 
 import '../../mocks/mock_repositories.dart';
 
@@ -40,7 +41,7 @@ Roster createMockRoster({
 
 Draft createMockDraft({
   int id = 1,
-  String status = 'not_started',
+  DraftStatus status = DraftStatus.notStarted,
   String draftType = 'snake',
 }) {
   return Draft(
@@ -88,14 +89,14 @@ void main() {
     });
 
     test('activeDraft should return draft with in_progress or not_started status', () {
-      final draft1 = createMockDraft(id: 1, status: 'completed');
-      final draft2 = createMockDraft(id: 2, status: 'in_progress');
+      final draft1 = createMockDraft(id: 1, status: DraftStatus.completed);
+      final draft2 = createMockDraft(id: 2, status: DraftStatus.inProgress);
       final state = LeagueDetailState(drafts: [draft1, draft2]);
       expect(state.activeDraft?.id, 2);
     });
 
     test('activeDraft should return null when no active drafts', () {
-      final draft = createMockDraft(id: 1, status: 'completed');
+      final draft = createMockDraft(id: 1, status: DraftStatus.completed);
       final state = LeagueDetailState(drafts: [draft]);
       expect(state.activeDraft, isNull);
     });
@@ -201,8 +202,8 @@ void main() {
     test('startDraft success should update draft status', () async {
       // Arrange
       final mockLeague = createMockLeague();
-      final initialDraft = createMockDraft(id: 1, status: 'not_started');
-      final startedDraft = createMockDraft(id: 1, status: 'in_progress');
+      final initialDraft = createMockDraft(id: 1, status: DraftStatus.notStarted);
+      final startedDraft = createMockDraft(id: 1, status: DraftStatus.inProgress);
 
       when(() => mockLeagueRepo.getLeague(1))
           .thenAnswer((_) async => mockLeague);
@@ -223,7 +224,7 @@ void main() {
       // Assert
       expect(success, true);
       final state = container!.read(leagueDetailProvider(1));
-      expect(state.drafts.first.status, 'in_progress');
+      expect(state.drafts.first.status, DraftStatus.inProgress);
     });
   });
 }

@@ -1,3 +1,5 @@
+import '../../drafts/domain/draft_status.dart';
+
 class League {
   final int id;
   final String name;
@@ -76,7 +78,7 @@ class Draft {
   final int id;
   final int leagueId;
   final String draftType;
-  final String status;
+  final DraftStatus status;
   final int rounds;
   final int pickTimeSeconds;
   final int? currentPick;
@@ -106,7 +108,7 @@ class Draft {
       id: json['id'] as int? ?? 0,
       leagueId: json['league_id'] as int? ?? 0,
       draftType: json['draft_type'] as String? ?? 'snake',
-      status: json['status'] as String? ?? 'not_started',
+      status: DraftStatus.fromString(json['status'] as String?),
       rounds: json['rounds'] as int? ?? 15,
       pickTimeSeconds: json['pick_time_seconds'] as int? ?? 90,
       currentPick: json['current_pick'] as int?,
@@ -128,7 +130,7 @@ class Draft {
     int? id,
     int? leagueId,
     String? draftType,
-    String? status,
+    DraftStatus? status,
     int? rounds,
     int? pickTimeSeconds,
     int? currentPick,
