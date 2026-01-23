@@ -58,7 +58,7 @@ void main() {
     mockSocketService = MockSocketService();
 
     // Setup default socket service mocks
-    // The on* methods now return VoidCallback? disposers
+    // The on* methods return VoidCallback disposers (always non-null, queued if not connected)
     when(() => mockSocketService.joinDraft(any())).thenReturn(null);
     when(() => mockSocketService.leaveDraft(any())).thenReturn(null);
     when(() => mockSocketService.onDraftPick(any())).thenReturn(() {});

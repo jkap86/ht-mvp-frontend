@@ -8,9 +8,32 @@ import '../constants/socket_events.dart';
 
 final socketServiceProvider = Provider<SocketService>((ref) => SocketService());
 
+/// Represents a pending event subscription to be applied when socket connects.
+class _PendingSubscription {
+  final String event;
+  final void Function(dynamic) callback;
+  _PendingSubscription(this.event, this.callback);
+}
+
+/// Represents a pending emit to be sent when socket connects.
+class _PendingEmit {
+  final String event;
+  final dynamic data;
+  _PendingEmit(this.event, this.data);
+}
+
 class SocketService {
   io.Socket? _socket;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+
+  /// Queue of subscriptions waiting for socket to connect
+  final List<_PendingSubscription> _pendingSubscriptions = [];
+
+  /// Queue of emits waiting for socket to connect
+  final List<_PendingEmit> _pendingEmits = [];
+
+  /// Track active subscriptions for proper disposer handling
+  final Map<String, List<void Function(dynamic)>> _activeSubscriptions = {};
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -32,6 +55,8 @@ class SocketService {
 
     _socket!.onConnect((_) {
       debugPrint('Socket connected');
+      _applyPendingSubscriptions();
+      _applyPendingEmits();
     });
 
     _socket!.onDisconnect((_) {
@@ -45,67 +70,122 @@ class SocketService {
     _socket!.connect();
   }
 
+  /// Apply any subscriptions that were registered before socket connected
+  void _applyPendingSubscriptions() {
+    if (_socket == null) return;
+    for (final pending in _pendingSubscriptions) {
+      _socket!.on(pending.event, pending.callback);
+      _activeSubscriptions.putIfAbsent(pending.event, () => []).add(pending.callback);
+    }
+    _pendingSubscriptions.clear();
+  }
+
+  /// Apply any emits that were queued before socket connected
+  void _applyPendingEmits() {
+    if (_socket == null) return;
+    for (final pending in _pendingEmits) {
+      _socket!.emit(pending.event, pending.data);
+    }
+    _pendingEmits.clear();
+  }
+
   void disconnect() {
+    _pendingSubscriptions.clear();
+    _pendingEmits.clear();
+    _activeSubscriptions.clear();
     _socket?.disconnect();
     _socket = null;
   }
 
+  /// Queue-aware emit: sends immediately if connected, otherwise queues for later
+  void _emit(String event, dynamic data) {
+    if (_socket != null && _socket!.connected) {
+      _socket!.emit(event, data);
+    } else {
+      _pendingEmits.add(_PendingEmit(event, data));
+    }
+  }
+
   // League room management
   void joinLeague(int leagueId) {
-    _socket?.emit(SocketEvents.leagueJoin, leagueId);
+    _emit(SocketEvents.leagueJoin, leagueId);
   }
 
   void leaveLeague(int leagueId) {
+    // Leave events should only fire if connected (no point queueing leave)
     _socket?.emit(SocketEvents.leagueLeave, leagueId);
   }
 
   // Draft room management
   void joinDraft(int draftId) {
-    _socket?.emit(SocketEvents.draftJoin, draftId);
+    _emit(SocketEvents.draftJoin, draftId);
   }
 
   void leaveDraft(int draftId) {
+    // Leave events should only fire if connected (no point queueing leave)
     _socket?.emit(SocketEvents.draftLeave, draftId);
   }
 
   /// Generic event listener that returns a disposer function.
+  /// If socket is not connected, queues the subscription for when it connects.
   /// Call the returned function to remove only this specific listener.
-  /// This prevents the bug where one consumer's dispose removes another's listeners.
-  VoidCallback? on(String event, void Function(dynamic) callback) {
-    if (_socket == null) return null;
-    _socket!.on(event, callback);
+  VoidCallback on(String event, void Function(dynamic) callback) {
+    if (_socket != null && _socket!.connected) {
+      // Socket is connected, register immediately
+      _socket!.on(event, callback);
+      _activeSubscriptions.putIfAbsent(event, () => []).add(callback);
+    } else {
+      // Socket not connected, queue for later
+      _pendingSubscriptions.add(_PendingSubscription(event, callback));
+    }
+
     // Return a disposer that removes only this specific callback
-    return () => _socket?.off(event, callback);
+    return () {
+      // Remove from active subscriptions
+      _activeSubscriptions[event]?.remove(callback);
+      // Remove from socket if connected
+      _socket?.off(event, callback);
+      // Remove from pending queue if still there
+      _pendingSubscriptions.removeWhere(
+        (p) => p.event == event && p.callback == callback,
+      );
+    };
   }
 
   // Event listeners - all return disposers for proper cleanup
   // Call the returned function in dispose() to remove only your listener
+  // Now always returns a non-null VoidCallback (subscriptions are queued if not connected)
 
-  VoidCallback? onDraftStarted(void Function(dynamic) callback) {
+  VoidCallback onDraftStarted(void Function(dynamic) callback) {
     return on(SocketEvents.draftStarted, callback);
   }
 
-  VoidCallback? onDraftPick(void Function(dynamic) callback) {
+  VoidCallback onDraftPick(void Function(dynamic) callback) {
     return on(SocketEvents.draftPickMade, callback);
   }
 
-  VoidCallback? onNextPick(void Function(dynamic) callback) {
+  VoidCallback onNextPick(void Function(dynamic) callback) {
     return on(SocketEvents.draftNextPick, callback);
   }
 
-  VoidCallback? onDraftCompleted(void Function(dynamic) callback) {
+  VoidCallback onDraftCompleted(void Function(dynamic) callback) {
     return on(SocketEvents.draftCompleted, callback);
   }
 
-  VoidCallback? onUserJoinedDraft(void Function(dynamic) callback) {
+  VoidCallback onUserJoinedDraft(void Function(dynamic) callback) {
     return on(SocketEvents.draftUserJoined, callback);
   }
 
-  VoidCallback? onUserLeftDraft(void Function(dynamic) callback) {
+  VoidCallback onUserLeftDraft(void Function(dynamic) callback) {
     return on(SocketEvents.draftUserLeft, callback);
   }
 
-  VoidCallback? onChatMessage(void Function(dynamic) callback) {
+  VoidCallback onChatMessage(void Function(dynamic) callback) {
     return on(SocketEvents.chatMessage, callback);
+  }
+
+  /// Listen for server-side errors (e.g., authorization failures)
+  VoidCallback onAppError(void Function(dynamic) callback) {
+    return on(SocketEvents.appError, callback);
   }
 }

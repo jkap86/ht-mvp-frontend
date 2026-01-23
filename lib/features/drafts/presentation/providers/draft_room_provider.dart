@@ -87,13 +87,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
       final currentDraft = state.draft;
       if (currentDraft != null) {
         state = state.copyWith(
-          draft: Draft(
-            id: currentDraft.id,
-            leagueId: currentDraft.leagueId,
-            draftType: currentDraft.draftType,
-            status: 'in_progress',
-            rounds: currentDraft.rounds,
-            pickTimeSeconds: currentDraft.pickTimeSeconds,
+          draft: currentDraft.copyWith(
+            status: data['status'] as String? ?? currentDraft.status,
             currentPick: data['currentPick'] as int?,
             currentRound: data['currentRound'] as int?,
             currentRosterId: data['currentRosterId'] as int?,

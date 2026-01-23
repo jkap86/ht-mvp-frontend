@@ -123,4 +123,38 @@ class Draft {
           : null,
     );
   }
+
+  Draft copyWith({
+    int? id,
+    int? leagueId,
+    String? draftType,
+    String? status,
+    int? rounds,
+    int? pickTimeSeconds,
+    int? currentPick,
+    int? currentRound,
+    int? currentRosterId,
+    DateTime? pickDeadline,
+    DateTime? startedAt,
+    DateTime? completedAt,
+    bool clearCurrentPick = false,
+    bool clearCurrentRound = false,
+    bool clearCurrentRosterId = false,
+    bool clearPickDeadline = false,
+  }) {
+    return Draft(
+      id: id ?? this.id,
+      leagueId: leagueId ?? this.leagueId,
+      draftType: draftType ?? this.draftType,
+      status: status ?? this.status,
+      rounds: rounds ?? this.rounds,
+      pickTimeSeconds: pickTimeSeconds ?? this.pickTimeSeconds,
+      currentPick: clearCurrentPick ? null : (currentPick ?? this.currentPick),
+      currentRound: clearCurrentRound ? null : (currentRound ?? this.currentRound),
+      currentRosterId: clearCurrentRosterId ? null : (currentRosterId ?? this.currentRosterId),
+      pickDeadline: clearPickDeadline ? null : (pickDeadline ?? this.pickDeadline),
+      startedAt: startedAt ?? this.startedAt,
+      completedAt: completedAt ?? this.completedAt,
+    );
+  }
 }

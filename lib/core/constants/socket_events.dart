@@ -5,6 +5,9 @@ library;
 class SocketEvents {
   SocketEvents._();
 
+  // App-level events
+  static const appError = 'app:error';
+
   // League events
   static const leagueJoin = 'join:league';
   static const leagueLeave = 'leave:league';
