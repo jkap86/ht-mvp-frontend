@@ -19,6 +19,8 @@ class SocketEvents {
   static const draftUserLeft = 'draft:user_left';
   static const draftPickMade = 'draft:pick_made';
   static const draftStarted = 'draft:started';
+  static const draftPaused = 'draft:paused';
+  static const draftResumed = 'draft:resumed';
   static const draftCompleted = 'draft:completed';
   static const draftNextPick = 'draft:next_pick';
   static const draftPickUndone = 'draft:pick_undone';

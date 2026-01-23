@@ -2,6 +2,7 @@
 enum DraftStatus {
   notStarted('not_started'),
   inProgress('in_progress'),
+  paused('paused'),
   completed('completed');
 
   final String value;

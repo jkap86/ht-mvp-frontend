@@ -168,6 +168,14 @@ class SocketService {
     return on(SocketEvents.draftStarted, callback);
   }
 
+  VoidCallback onDraftPaused(void Function(dynamic) callback) {
+    return on(SocketEvents.draftPaused, callback);
+  }
+
+  VoidCallback onDraftResumed(void Function(dynamic) callback) {
+    return on(SocketEvents.draftResumed, callback);
+  }
+
   VoidCallback onDraftPick(void Function(dynamic) callback) {
     return on(SocketEvents.draftPickMade, callback);
   }

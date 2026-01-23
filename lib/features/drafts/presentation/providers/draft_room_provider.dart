@@ -129,6 +129,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
   VoidCallback? _nextPickDisposer;
   VoidCallback? _completedDisposer;
   VoidCallback? _pickUndoneDisposer;
+  VoidCallback? _pausedDisposer;
+  VoidCallback? _resumedDisposer;
   // Auction disposers
   VoidCallback? _lotCreatedDisposer;
   VoidCallback? _lotUpdatedDisposer;
@@ -199,6 +201,26 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
 
       if (draftData != null) {
         state = state.copyWith(draft: Draft.fromJson(draftData));
+      }
+    });
+
+    _pausedDisposer = _socketService.onDraftPaused((data) {
+      if (!mounted) return;
+      final currentDraft = state.draft;
+      if (currentDraft != null) {
+        state = state.copyWith(
+          draft: currentDraft.copyWith(status: DraftStatus.paused),
+        );
+      }
+    });
+
+    _resumedDisposer = _socketService.onDraftResumed((data) {
+      if (!mounted) return;
+      final currentDraft = state.draft;
+      if (currentDraft != null) {
+        state = state.copyWith(
+          draft: currentDraft.copyWith(status: DraftStatus.inProgress),
+        );
       }
     });
 
@@ -349,6 +371,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
     _nextPickDisposer?.call();
     _completedDisposer?.call();
     _pickUndoneDisposer?.call();
+    _pausedDisposer?.call();
+    _resumedDisposer?.call();
     // Auction disposers
     _lotCreatedDisposer?.call();
     _lotUpdatedDisposer?.call();

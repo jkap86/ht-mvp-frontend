@@ -50,7 +50,7 @@ class DraftRepository {
   }
 
   Future<void> randomizeDraftOrder(int leagueId, int draftId) async {
-    await _apiClient.post('/leagues/$leagueId/drafts/$draftId/randomize-order');
+    await _apiClient.post('/leagues/$leagueId/drafts/$draftId/randomize');
   }
 
   // Queue methods
