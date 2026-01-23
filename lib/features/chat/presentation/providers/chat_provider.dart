@@ -1,0 +1,96 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/socket/socket_service.dart';
+import '../../data/chat_repository.dart';
+import '../../domain/chat_message.dart';
+
+class ChatState {
+  final List<ChatMessage> messages;
+  final bool isLoading;
+  final bool isSending;
+  final String? error;
+
+  ChatState({
+    this.messages = const [],
+    this.isLoading = true,
+    this.isSending = false,
+    this.error,
+  });
+
+  ChatState copyWith({
+    List<ChatMessage>? messages,
+    bool? isLoading,
+    bool? isSending,
+    String? error,
+    bool clearError = false,
+  }) {
+    return ChatState(
+      messages: messages ?? this.messages,
+      isLoading: isLoading ?? this.isLoading,
+      isSending: isSending ?? this.isSending,
+      error: clearError ? null : (error ?? this.error),
+    );
+  }
+}
+
+class ChatNotifier extends StateNotifier<ChatState> {
+  final ChatRepository _chatRepo;
+  final SocketService _socketService;
+  final int leagueId;
+
+  ChatNotifier(this._chatRepo, this._socketService, this.leagueId) : super(ChatState()) {
+    _setupSocketListeners();
+    loadMessages();
+  }
+
+  void _setupSocketListeners() {
+    _socketService.joinLeague(leagueId);
+
+    _socketService.onChatMessage((data) {
+      if (!mounted) return;
+      final message = ChatMessage.fromJson(Map<String, dynamic>.from(data));
+      state = state.copyWith(messages: [message, ...state.messages]);
+    });
+  }
+
+  Future<void> loadMessages() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final messages = await _chatRepo.getMessages(leagueId);
+      state = state.copyWith(messages: messages, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(error: e.toString(), isLoading: false);
+    }
+  }
+
+  Future<bool> sendMessage(String text) async {
+    if (text.trim().isEmpty || state.isSending) return false;
+
+    state = state.copyWith(isSending: true);
+
+    try {
+      await _chatRepo.sendMessage(leagueId, text.trim());
+      state = state.copyWith(isSending: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isSending: false);
+      return false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _socketService.leaveLeague(leagueId);
+    _socketService.offChatMessage();
+    super.dispose();
+  }
+}
+
+final chatProvider = StateNotifierProvider.family<ChatNotifier, ChatState, int>(
+  (ref, leagueId) => ChatNotifier(
+    ref.watch(chatRepositoryProvider),
+    ref.watch(socketServiceProvider),
+    leagueId,
+  ),
+);

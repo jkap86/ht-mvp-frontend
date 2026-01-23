@@ -1,0 +1,126 @@
+class League {
+  final int id;
+  final String name;
+  final String status;
+  final int season;
+  final String? inviteCode;
+  final int? commissionerRosterId;
+  final int? userRosterId;
+  final Map<String, dynamic> settings;
+
+  League({
+    required this.id,
+    required this.name,
+    required this.status,
+    required this.season,
+    this.inviteCode,
+    this.commissionerRosterId,
+    this.userRosterId,
+    required this.settings,
+  });
+
+  String get scoringType {
+    final rec = settings['scoring_settings']?['rec'];
+    if (rec == null) return 'PPR';
+    if (rec == 0.0) return 'Standard';
+    if (rec == 0.5) return 'Half-PPR';
+    return 'PPR';
+  }
+
+  int get totalRosters => settings['total_rosters'] as int? ?? 12;
+
+  factory League.fromJson(Map<String, dynamic> json) {
+    return League(
+      id: json['id'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+      status: json['status'] as String? ?? 'draft',
+      season: int.tryParse(json['season']?.toString() ?? '') ?? DateTime.now().year,
+      inviteCode: json['invite_code'] as String?,
+      commissionerRosterId: json['commissioner_roster_id'] as int?,
+      userRosterId: json['user_roster_id'] as int?,
+      settings: (json['settings'] as Map<String, dynamic>?) ?? {},
+    );
+  }
+}
+
+class Roster {
+  final int id;
+  final int leagueId;
+  final String? userId;
+  final int? rosterId;
+  final String? teamName;
+  final String username;
+
+  Roster({
+    required this.id,
+    required this.leagueId,
+    this.userId,
+    this.rosterId,
+    this.teamName,
+    required this.username,
+  });
+
+  factory Roster.fromJson(Map<String, dynamic> json) {
+    return Roster(
+      id: json['id'] as int? ?? 0,
+      leagueId: json['league_id'] as int? ?? 0,
+      userId: json['user_id'] as String?,
+      rosterId: json['roster_id'] as int?,
+      teamName: json['team_name'] as String?,
+      username: json['username'] as String? ?? 'Unknown',
+    );
+  }
+}
+
+class Draft {
+  final int id;
+  final int leagueId;
+  final String draftType;
+  final String status;
+  final int rounds;
+  final int pickTimeSeconds;
+  final int? currentPick;
+  final int? currentRound;
+  final int? currentRosterId;
+  final DateTime? pickDeadline;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
+
+  Draft({
+    required this.id,
+    required this.leagueId,
+    required this.draftType,
+    required this.status,
+    required this.rounds,
+    required this.pickTimeSeconds,
+    this.currentPick,
+    this.currentRound,
+    this.currentRosterId,
+    this.pickDeadline,
+    this.startedAt,
+    this.completedAt,
+  });
+
+  factory Draft.fromJson(Map<String, dynamic> json) {
+    return Draft(
+      id: json['id'] as int? ?? 0,
+      leagueId: json['league_id'] as int? ?? 0,
+      draftType: json['draft_type'] as String? ?? 'snake',
+      status: json['status'] as String? ?? 'not_started',
+      rounds: json['rounds'] as int? ?? 15,
+      pickTimeSeconds: json['pick_time_seconds'] as int? ?? 90,
+      currentPick: json['current_pick'] as int?,
+      currentRound: json['current_round'] as int?,
+      currentRosterId: json['current_roster_id'] as int?,
+      pickDeadline: json['pick_deadline'] != null
+          ? DateTime.tryParse(json['pick_deadline'].toString())
+          : null,
+      startedAt: json['started_at'] != null
+          ? DateTime.tryParse(json['started_at'].toString())
+          : null,
+      completedAt: json['completed_at'] != null
+          ? DateTime.tryParse(json['completed_at'].toString())
+          : null,
+    );
+  }
+}
