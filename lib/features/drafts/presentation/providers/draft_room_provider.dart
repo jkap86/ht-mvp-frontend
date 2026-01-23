@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
@@ -5,11 +7,12 @@ import '../../../leagues/domain/league.dart';
 import '../../../players/data/player_repository.dart';
 import '../../../players/domain/player.dart';
 import '../../data/draft_repository.dart';
+import '../../domain/draft_pick.dart';
 
 class DraftRoomState {
   final Draft? draft;
   final List<Player> players;
-  final List<Map<String, dynamic>> picks;
+  final List<DraftPick> picks;
   final bool isLoading;
   final String? error;
 
@@ -22,13 +25,12 @@ class DraftRoomState {
   });
 
   /// Get drafted player IDs as a set for filtering
-  Set<int> get draftedPlayerIds =>
-      picks.map((p) => p['player_id'] as int).toSet();
+  Set<int> get draftedPlayerIds => picks.map((p) => p.playerId).toSet();
 
   DraftRoomState copyWith({
     Draft? draft,
     List<Player>? players,
-    List<Map<String, dynamic>>? picks,
+    List<DraftPick>? picks,
     bool? isLoading,
     String? error,
     bool clearError = false,
@@ -53,6 +55,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
   final int leagueId;
   final int draftId;
 
+  // Store disposers for proper cleanup - removes only these listeners, not all listeners
+  VoidCallback? _pickDisposer;
+  VoidCallback? _nextPickDisposer;
+  VoidCallback? _completedDisposer;
+
   DraftRoomNotifier(
     this._draftRepo,
     this._playerRepo,
@@ -67,14 +74,15 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
   void _setupSocketListeners() {
     _socketService.joinDraft(draftId);
 
-    _socketService.onDraftPick((data) {
+    _pickDisposer = _socketService.onDraftPick((data) {
       if (!mounted) return;
+      final pick = DraftPick.fromJson(Map<String, dynamic>.from(data));
       state = state.copyWith(
-        picks: [...state.picks, Map<String, dynamic>.from(data)],
+        picks: [...state.picks, pick],
       );
     });
 
-    _socketService.onNextPick((data) {
+    _nextPickDisposer = _socketService.onNextPick((data) {
       if (!mounted) return;
       final currentDraft = state.draft;
       if (currentDraft != null) {
@@ -97,7 +105,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
       }
     });
 
-    _socketService.onDraftCompleted((data) {
+    _completedDisposer = _socketService.onDraftCompleted((data) {
       if (!mounted) return;
       state = state.copyWith(draft: Draft.fromJson(data));
     });
@@ -135,7 +143,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
   @override
   void dispose() {
     _socketService.leaveDraft(draftId);
-    _socketService.offAll();
+    // Remove only this notifier's listeners, not all listeners globally
+    _pickDisposer?.call();
+    _nextPickDisposer?.call();
+    _completedDisposer?.call();
     super.dispose();
   }
 }

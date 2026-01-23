@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../config/app_config.dart';
+import '../constants/socket_events.dart';
 
 final socketServiceProvider = Provider<SocketService>((ref) => SocketService());
 
@@ -51,79 +52,60 @@ class SocketService {
 
   // League room management
   void joinLeague(int leagueId) {
-    _socket?.emit('join:league', leagueId);
+    _socket?.emit(SocketEvents.leagueJoin, leagueId);
   }
 
   void leaveLeague(int leagueId) {
-    _socket?.emit('leave:league', leagueId);
+    _socket?.emit(SocketEvents.leagueLeave, leagueId);
   }
 
   // Draft room management
   void joinDraft(int draftId) {
-    _socket?.emit('join:draft', draftId);
+    _socket?.emit(SocketEvents.draftJoin, draftId);
   }
 
   void leaveDraft(int draftId) {
-    _socket?.emit('leave:draft', draftId);
+    _socket?.emit(SocketEvents.draftLeave, draftId);
   }
 
-  // Event listeners
-  void onDraftStarted(void Function(dynamic) callback) {
-    _socket?.on('draft:started', callback);
+  /// Generic event listener that returns a disposer function.
+  /// Call the returned function to remove only this specific listener.
+  /// This prevents the bug where one consumer's dispose removes another's listeners.
+  VoidCallback? on(String event, void Function(dynamic) callback) {
+    if (_socket == null) return null;
+    _socket!.on(event, callback);
+    // Return a disposer that removes only this specific callback
+    return () => _socket?.off(event, callback);
   }
 
-  void onDraftPick(void Function(dynamic) callback) {
-    _socket?.on('draft:pick_made', callback);
+  // Event listeners - all return disposers for proper cleanup
+  // Call the returned function in dispose() to remove only your listener
+
+  VoidCallback? onDraftStarted(void Function(dynamic) callback) {
+    return on(SocketEvents.draftStarted, callback);
   }
 
-  void onNextPick(void Function(dynamic) callback) {
-    _socket?.on('draft:next_pick', callback);
+  VoidCallback? onDraftPick(void Function(dynamic) callback) {
+    return on(SocketEvents.draftPickMade, callback);
   }
 
-  void onDraftCompleted(void Function(dynamic) callback) {
-    _socket?.on('draft:completed', callback);
+  VoidCallback? onNextPick(void Function(dynamic) callback) {
+    return on(SocketEvents.draftNextPick, callback);
   }
 
-  void onUserJoinedDraft(void Function(dynamic) callback) {
-    _socket?.on('draft:user_joined', callback);
+  VoidCallback? onDraftCompleted(void Function(dynamic) callback) {
+    return on(SocketEvents.draftCompleted, callback);
   }
 
-  void onUserLeftDraft(void Function(dynamic) callback) {
-    _socket?.on('draft:user_left', callback);
+  VoidCallback? onUserJoinedDraft(void Function(dynamic) callback) {
+    return on(SocketEvents.draftUserJoined, callback);
   }
 
-  void onChatMessage(void Function(dynamic) callback) {
-    _socket?.on('chat:message', callback);
+  VoidCallback? onUserLeftDraft(void Function(dynamic) callback) {
+    return on(SocketEvents.draftUserLeft, callback);
   }
 
-  // Remove listeners
-  void offDraftStarted() {
-    _socket?.off('draft:started');
-  }
-
-  void offDraftPick() {
-    _socket?.off('draft:pick_made');
-  }
-
-  void offNextPick() {
-    _socket?.off('draft:next_pick');
-  }
-
-  void offDraftCompleted() {
-    _socket?.off('draft:completed');
-  }
-
-  void offChatMessage() {
-    _socket?.off('chat:message');
-  }
-
-  void offAll() {
-    offDraftStarted();
-    offDraftPick();
-    offNextPick();
-    offDraftCompleted();
-    offChatMessage();
-    _socket?.off('draft:user_joined');
-    _socket?.off('draft:user_left');
+  VoidCallback? onChatMessage(void Function(dynamic) callback) {
+    return on(SocketEvents.chatMessage, callback);
   }
 }

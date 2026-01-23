@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
@@ -38,6 +40,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
   final SocketService _socketService;
   final int leagueId;
 
+  // Store disposer for proper cleanup - removes only this listener, not all listeners
+  VoidCallback? _chatMessageDisposer;
+
   ChatNotifier(this._chatRepo, this._socketService, this.leagueId) : super(ChatState()) {
     _setupSocketListeners();
     loadMessages();
@@ -46,7 +51,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
   void _setupSocketListeners() {
     _socketService.joinLeague(leagueId);
 
-    _socketService.onChatMessage((data) {
+    _chatMessageDisposer = _socketService.onChatMessage((data) {
       if (!mounted) return;
       final message = ChatMessage.fromJson(Map<String, dynamic>.from(data));
       state = state.copyWith(messages: [message, ...state.messages]);
@@ -82,7 +87,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
   @override
   void dispose() {
     _socketService.leaveLeague(leagueId);
-    _socketService.offChatMessage();
+    _chatMessageDisposer?.call(); // Remove only this listener, not all chat listeners
     super.dispose();
   }
 }

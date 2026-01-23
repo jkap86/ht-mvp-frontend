@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/draft_pick.dart';
+
 class RecentPicksWidget extends StatelessWidget {
-  final List<Map<String, dynamic>> picks;
+  final List<DraftPick> picks;
 
   const RecentPicksWidget({super.key, required this.picks});
 
@@ -41,7 +43,7 @@ class RecentPicksWidget extends StatelessWidget {
 }
 
 class _PickCard extends StatelessWidget {
-  final Map<String, dynamic> pick;
+  final DraftPick pick;
 
   const _PickCard({required this.pick});
 
@@ -55,11 +57,11 @@ class _PickCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '#${pick['pick_number']}',
+              '#${pick.pickNumber}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             Text(
-              'R${pick['round']}P${pick['pick_in_round']}',
+              'R${pick.round}P${pick.pickInRound}',
               style: TextStyle(
                 fontSize: 10,
                 color: Colors.grey[600],
