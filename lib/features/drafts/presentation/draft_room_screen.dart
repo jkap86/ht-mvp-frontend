@@ -220,6 +220,33 @@ class _DraftAuctionBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Listen for outbid notifications and show toast
+    ref.listen<OutbidNotification?>(
+      draftRoomProvider(providerKey).select((s) => s.outbidNotification),
+      (previous, next) {
+        if (next != null) {
+          final players = ref.read(draftRoomProvider(providerKey)).players;
+          final player = players.where((p) => p.id == next.playerId).firstOrNull;
+          final playerName = player?.fullName ?? 'Player';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('You were outbid on $playerName! New bid: \$${next.newBid}'),
+              backgroundColor: Colors.orange,
+              action: SnackBarAction(
+                label: 'View',
+                textColor: Colors.white,
+                onPressed: () {
+                  // Could scroll to or highlight the lot
+                },
+              ),
+            ),
+          );
+          // Clear the notification so it doesn't show again
+          ref.read(draftRoomProvider(providerKey).notifier).clearOutbidNotification();
+        }
+      },
+    );
+
     // Select specific fields needed for auction view
     final draft = ref.watch(
       draftRoomProvider(providerKey).select((s) => s.draft),

@@ -14,6 +14,21 @@ import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_pick.dart';
 import '../../domain/draft_status.dart';
 
+/// Notification when user is outbid on a lot
+class OutbidNotification {
+  final int lotId;
+  final int playerId;
+  final int newBid;
+  final DateTime timestamp;
+
+  OutbidNotification({
+    required this.lotId,
+    required this.playerId,
+    required this.newBid,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+}
+
 class DraftRoomState {
   final Draft? draft;
   final List<Player> players;
@@ -25,6 +40,7 @@ class DraftRoomState {
   // Auction-specific fields
   final List<AuctionLot> activeLots;
   final List<AuctionBudget> budgets;
+  final OutbidNotification? outbidNotification;
 
   DraftRoomState({
     this.draft,
@@ -36,6 +52,7 @@ class DraftRoomState {
     this.error,
     this.activeLots = const [],
     this.budgets = const [],
+    this.outbidNotification,
   });
 
   /// Check if this is an auction draft
@@ -98,6 +115,8 @@ class DraftRoomState {
     bool clearError = false,
     List<AuctionLot>? activeLots,
     List<AuctionBudget>? budgets,
+    OutbidNotification? outbidNotification,
+    bool clearOutbidNotification = false,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -109,6 +128,7 @@ class DraftRoomState {
       error: clearError ? null : (error ?? this.error),
       activeLots: activeLots ?? this.activeLots,
       budgets: budgets ?? this.budgets,
+      outbidNotification: clearOutbidNotification ? null : (outbidNotification ?? this.outbidNotification),
     );
   }
 }
@@ -266,8 +286,13 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
 
     _outbidDisposer = _socketService.onAuctionOutbid((data) {
       if (!mounted) return;
-      // Could show a notification to the user that they were outbid
-      // For now, the lot update handles the state change
+      // Set outbid notification for UI to display toast
+      final notification = OutbidNotification(
+        lotId: data['lotId'] as int? ?? data['lot_id'] as int? ?? 0,
+        playerId: data['playerId'] as int? ?? data['player_id'] as int? ?? 0,
+        newBid: data['newBid'] as int? ?? data['new_bid'] as int? ?? 0,
+      );
+      state = state.copyWith(outbidNotification: notification);
     });
   }
 
@@ -361,6 +386,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
     } catch (e) {
       return false;
     }
+  }
+
+  /// Clear the outbid notification after UI has shown it
+  void clearOutbidNotification() {
+    state = state.copyWith(clearOutbidNotification: true);
   }
 
   @override
