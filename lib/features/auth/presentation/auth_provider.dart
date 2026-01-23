@@ -44,6 +44,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _checkAuthStatus();
   }
 
+  /// Sanitizes error messages to prevent leaking sensitive information.
+  /// Maps technical/internal errors to user-friendly messages.
+  String _sanitizeAuthError(Object error) {
+    final message = error.toString().toLowerCase();
+
+    // Registration errors
+    if (message.contains('already exists') || message.contains('already registered')) {
+      return 'An account with this email or username already exists';
+    }
+    if (message.contains('email') && message.contains('invalid')) {
+      return 'Please enter a valid email address';
+    }
+
+    // Login errors
+    if (message.contains('invalid credentials') ||
+        message.contains('incorrect password') ||
+        message.contains('user not found')) {
+      return 'Invalid username or password';
+    }
+
+    // Network errors
+    if (message.contains('network') ||
+        message.contains('connection') ||
+        message.contains('timeout')) {
+      return 'Unable to connect to server. Please check your connection.';
+    }
+
+    // Generic fallback - don't expose raw error details
+    return 'An error occurred. Please try again.';
+  }
+
   /// Sets up the token refresh callbacks on ApiClient
   void _setupTokenRefreshCallback() {
     _apiClient.onTokenRefresh = () => _authRepository.refreshTokens();
@@ -84,7 +115,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _socketService.connect();
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _sanitizeAuthError(e));
       return false;
     }
   }
@@ -98,7 +129,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _socketService.connect();
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _sanitizeAuthError(e));
       return false;
     }
   }

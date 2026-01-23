@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/states/states.dart';
 import '../../players/domain/player.dart';
-import '../domain/auction_lot.dart';
 import 'providers/draft_room_provider.dart';
 import 'providers/draft_queue_provider.dart';
 import 'widgets/draft_status_bar.dart';
@@ -47,17 +46,6 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     }
   }
 
-  List<Player> _getAvailablePlayers(DraftRoomState state) {
-    return state.players
-        .where((p) =>
-            !state.draftedPlayerIds.contains(p.id) &&
-            (p.fullName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                p.primaryPosition.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                (p.team?.toLowerCase().contains(_searchQuery.toLowerCase()) ??
-                    false)))
-        .toList();
-  }
-
   Future<void> _addToQueue(int playerId) async {
     final notifier = ref.read(draftQueueProvider(_queueKey).notifier);
     final success = await notifier.addToQueue(playerId);
@@ -88,19 +76,205 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     }
   }
 
-  void _showBidDialog(DraftRoomState state, AuctionLot lot) {
-    final player = state.players.where((p) => p.id == lot.playerId).firstOrNull;
-    if (player == null) return; // Cannot show dialog without player info
-    AuctionBidDialog.show(
-      context,
-      lot: lot,
-      player: player,
-      myBudget: state.myBudget,
-      onSubmit: (maxBid) => _handleSetMaxBid(lot.id, maxBid),
+  @override
+  Widget build(BuildContext context) {
+    // Use select() for loading state - only rebuilds when isLoading changes
+    final isLoading = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.isLoading),
+    );
+
+    if (isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
+          ),
+          title: const Text('Draft Room'),
+        ),
+        body: const AppLoadingView(),
+      );
+    }
+
+    // Use select() for error state - only rebuilds when error changes
+    final error = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.error),
+    );
+
+    if (error != null) {
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
+          ),
+          title: const Text('Draft Room'),
+        ),
+        body: AppErrorView(
+          message: error,
+          onRetry: () => ref.read(draftRoomProvider(_providerKey).notifier).loadData(),
+        ),
+      );
+    }
+
+    // Use select() for specific fields needed by the app bar
+    final currentRound = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.draft?.currentRound ?? 1),
+    );
+    final currentPick = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.draft?.currentPick ?? 1),
+    );
+    final isDraftActive = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.draft?.status.isActive ?? false),
+    );
+    final isAuction = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.isAuction),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
+        ),
+        title: Text('Draft - Round $currentRound'),
+        actions: [
+          IconButton(
+            icon: Icon(_showGridView ? Icons.list : Icons.grid_view),
+            tooltip: _showGridView ? 'List View' : 'Grid View',
+            onPressed: () {
+              setState(() {
+                _showGridView = !_showGridView;
+              });
+            },
+          ),
+          if (isDraftActive)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Chip(
+                label: Text('Pick $currentPick'),
+                backgroundColor: Colors.green,
+                labelStyle: const TextStyle(color: Colors.white),
+              ),
+            ),
+        ],
+      ),
+      body: isAuction
+          ? _DraftAuctionBody(
+              providerKey: _providerKey,
+              onNominate: _handleNominate,
+              onSetMaxBid: _handleSetMaxBid,
+            )
+          : _showGridView
+              ? DraftBoardGridView(
+                  leagueId: widget.leagueId,
+                  draftId: widget.draftId,
+                )
+              : _DraftLinearBody(
+                  providerKey: _providerKey,
+                  queueKey: _queueKey,
+                  leagueId: widget.leagueId,
+                  draftId: widget.draftId,
+                  searchQuery: _searchQuery,
+                  onSearchChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  onMakePick: _makePick,
+                  onAddToQueue: _addToQueue,
+                ),
+    );
+  }
+}
+
+/// Extracted widget for auction body with granular select()
+class _DraftAuctionBody extends ConsumerWidget {
+  final DraftRoomKey providerKey;
+  final Future<void> Function(int) onNominate;
+  final Future<void> Function(int, int) onSetMaxBid;
+
+  const _DraftAuctionBody({
+    required this.providerKey,
+    required this.onNominate,
+    required this.onSetMaxBid,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Select specific fields needed for auction view
+    final draft = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.draft),
+    );
+    final players = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.players),
+    );
+    final draftedPlayerIds = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.draftedPlayerIds),
+    );
+    final picks = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.picks),
+    );
+    final myBudget = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.myBudget),
+    );
+
+    final availablePlayers = players
+        .where((p) => !draftedPlayerIds.contains(p.id))
+        .toList();
+
+    // Build state object for AuctionLotsPanel (requires full state interface)
+    final state = ref.read(draftRoomProvider(providerKey));
+
+    return Column(
+      children: [
+        DraftStatusBar(draft: draft),
+        Expanded(
+          child: AuctionLotsPanel(
+            state: state,
+            onBidTap: (lot) {
+              final player = players.where((p) => p.id == lot.playerId).firstOrNull;
+              if (player == null) return;
+              AuctionBidDialog.show(
+                context,
+                lot: lot,
+                player: player,
+                myBudget: myBudget,
+                onSubmit: (maxBid) => onSetMaxBid(lot.id, maxBid),
+              );
+            },
+            onNominateTap: () {
+              _showPlayerPickerForNomination(context, availablePlayers);
+            },
+          ),
+        ),
+        RecentPicksWidget(picks: picks),
+      ],
     );
   }
 
-  void _showPlayerPickerForNomination(List<Player> availablePlayers) {
+  void _showPlayerPickerForNomination(
+    BuildContext context,
+    List<Player> availablePlayers,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -129,7 +303,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
                     subtitle: Text('${player.primaryPosition} - ${player.team ?? 'FA'}'),
                     onTap: () {
                       Navigator.pop(context);
-                      _handleNominate(player.id);
+                      onNominate(player.id);
                     },
                   );
                 },
@@ -140,142 +314,84 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       ),
     );
   }
+}
 
-  Widget _buildAuctionBody(DraftRoomState state) {
-    final availablePlayers = _getAvailablePlayers(state);
-    return Column(
-      children: [
-        DraftStatusBar(draft: state.draft),
-        Expanded(
-          child: AuctionLotsPanel(
-            state: state,
-            onBidTap: (lot) {
-              _showBidDialog(state, lot);
-            },
-            onNominateTap: () {
-              _showPlayerPickerForNomination(availablePlayers);
-            },
-          ),
-        ),
-        RecentPicksWidget(picks: state.picks),
-      ],
-    );
-  }
+/// Extracted widget for linear draft body with granular select()
+class _DraftLinearBody extends ConsumerWidget {
+  final DraftRoomKey providerKey;
+  final DraftQueueKey queueKey;
+  final int leagueId;
+  final int draftId;
+  final String searchQuery;
+  final ValueChanged<String> onSearchChanged;
+  final Future<void> Function(int) onMakePick;
+  final Future<void> Function(int) onAddToQueue;
+
+  const _DraftLinearBody({
+    required this.providerKey,
+    required this.queueKey,
+    required this.leagueId,
+    required this.draftId,
+    required this.searchQuery,
+    required this.onSearchChanged,
+    required this.onMakePick,
+    required this.onAddToQueue,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(draftRoomProvider(_providerKey));
-    final queueState = ref.watch(draftQueueProvider(_queueKey));
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Use select() for draft status bar - only needs draft object
+    final draft = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.draft),
+    );
 
-    if (state.isLoading) {
-      return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/');
-              }
-            },
-          ),
-          title: const Text('Draft Room'),
-        ),
-        body: const AppLoadingView(),
-      );
-    }
+    // Use select() for player list - only needs players and draftedPlayerIds
+    final players = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.players),
+    );
+    final draftedPlayerIds = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.draftedPlayerIds),
+    );
 
-    if (state.error != null) {
-      return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/');
-              }
-            },
-          ),
-          title: const Text('Draft Room'),
-        ),
-        body: AppErrorView(
-          message: state.error!,
-          onRetry: () => ref.read(draftRoomProvider(_providerKey).notifier).loadData(),
-        ),
-      );
-    }
+    // Use select() for recent picks
+    final picks = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.picks),
+    );
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/');
-              }
-            },
-        ),
-        title: Text('Draft - Round ${state.draft?.currentRound ?? 1}'),
-        actions: [
-          IconButton(
-            icon: Icon(_showGridView ? Icons.list : Icons.grid_view),
-            tooltip: _showGridView ? 'List View' : 'Grid View',
-            onPressed: () {
-              setState(() {
-                _showGridView = !_showGridView;
-              });
-            },
+    // Use select() for queue - only need queuedPlayerIds (not full queue state)
+    final queuedPlayerIds = ref.watch(
+      draftQueueProvider(queueKey).select((s) => s.queuedPlayerIds),
+    );
+
+    final query = searchQuery.toLowerCase();
+    final availablePlayers = players
+        .where((p) =>
+            !draftedPlayerIds.contains(p.id) &&
+            (p.fullName.toLowerCase().contains(query) ||
+                p.primaryPosition.toLowerCase().contains(query) ||
+                (p.team?.toLowerCase().contains(query) ?? false)))
+        .toList();
+
+    return Column(
+      children: [
+        DraftStatusBar(draft: draft),
+        PlayerSearchBar(onSearchChanged: onSearchChanged),
+        Expanded(
+          child: AvailablePlayersList(
+            players: availablePlayers,
+            isDraftInProgress: draft?.status.isActive ?? false,
+            onDraftPlayer: onMakePick,
+            onAddToQueue: onAddToQueue,
+            queuedPlayerIds: queuedPlayerIds,
           ),
-          if (state.draft?.status.isActive ?? false)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Chip(
-                label: Text('Pick ${state.draft?.currentPick ?? 1}'),
-                backgroundColor: Colors.green,
-                labelStyle: const TextStyle(color: Colors.white),
-              ),
-            ),
-        ],
-      ),
-      body: state.isAuction
-          ? _buildAuctionBody(state)
-          : _showGridView
-              ? DraftBoardGridView(
-                  leagueId: widget.leagueId,
-                  draftId: widget.draftId,
-                )
-              : Column(
-                  children: [
-                    DraftStatusBar(draft: state.draft),
-                    PlayerSearchBar(
-                      onSearchChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
-                      },
-                    ),
-                    Expanded(
-                      child: AvailablePlayersList(
-                        players: _getAvailablePlayers(state),
-                        isDraftInProgress: state.draft?.status.isActive ?? false,
-                        onDraftPlayer: _makePick,
-                        onAddToQueue: _addToQueue,
-                        queuedPlayerIds: queueState.queuedPlayerIds,
-                      ),
-                    ),
-                    DraftQueueWidget(
-                      leagueId: widget.leagueId,
-                      draftId: widget.draftId,
-                      draftedPlayerIds: state.draftedPlayerIds,
-                    ),
-                    RecentPicksWidget(picks: state.picks),
-                  ],
-                ),
+        ),
+        DraftQueueWidget(
+          leagueId: leagueId,
+          draftId: draftId,
+          draftedPlayerIds: draftedPlayerIds,
+        ),
+        RecentPicksWidget(picks: picks),
+      ],
     );
   }
 }

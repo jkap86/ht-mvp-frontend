@@ -2,18 +2,30 @@ class AppConfig {
   static const String appName = 'HypeTrain FF';
 
   // API Configuration
-  // Default matches backend PORT=5000 from .env.example
-  static const String apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:5000/api',
-  );
+  // REQUIRED: Set API_BASE_URL at compile time (e.g., --dart-define=API_BASE_URL=https://api.example.com)
+  static const String _apiBaseUrlEnv = String.fromEnvironment('API_BASE_URL');
+  static String get apiBaseUrl {
+    if (_apiBaseUrlEnv.isEmpty) {
+      throw StateError(
+        'API_BASE_URL environment variable is required. '
+        'Build with: --dart-define=API_BASE_URL=https://your-api-url.com/api',
+      );
+    }
+    return _apiBaseUrlEnv;
+  }
 
   // Socket.IO Configuration
-  // Same host/port as backend - Socket.IO runs on the same server
-  static const String socketUrl = String.fromEnvironment(
-    'SOCKET_URL',
-    defaultValue: 'http://localhost:5000',
-  );
+  // REQUIRED: Set SOCKET_URL at compile time (e.g., --dart-define=SOCKET_URL=https://api.example.com)
+  static const String _socketUrlEnv = String.fromEnvironment('SOCKET_URL');
+  static String get socketUrl {
+    if (_socketUrlEnv.isEmpty) {
+      throw StateError(
+        'SOCKET_URL environment variable is required. '
+        'Build with: --dart-define=SOCKET_URL=https://your-api-url.com',
+      );
+    }
+    return _socketUrlEnv;
+  }
 
   // Auth token keys for storage
   static const String accessTokenKey = 'access_token';

@@ -84,20 +84,22 @@ class ApiClient {
     return headers;
   }
 
-  Future<dynamic> get(String endpoint, {bool auth = true}) async {
+  /// Executes an HTTP request with automatic token refresh on 401.
+  /// [executeRequest] is a function that performs the actual HTTP call.
+  /// [auth] indicates whether to attempt token refresh on 401.
+  Future<dynamic> _executeWithRetry({
+    required Future<http.Response> Function(Map<String, String> headers) executeRequest,
+    required bool auth,
+  }) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl$endpoint'),
-        headers: await _getHeaders(auth: auth),
-      ).timeout(requestTimeout);
+      final headers = await _getHeaders(auth: auth);
+      final response = await executeRequest(headers).timeout(requestTimeout);
       return _handleResponse(response);
     } on UnauthorizedException {
       // Attempt token refresh and retry once
       if (auth && await _attemptTokenRefresh()) {
-        final response = await http.get(
-          Uri.parse('$baseUrl$endpoint'),
-          headers: await _getHeaders(auth: auth),
-        ).timeout(requestTimeout);
+        final headers = await _getHeaders(auth: auth);
+        final response = await executeRequest(headers).timeout(requestTimeout);
         return _handleResponse(response);
       }
       rethrow;
@@ -105,76 +107,48 @@ class ApiClient {
       if (e is ApiException) rethrow;
       throw NetworkException('Failed to connect to server');
     }
+  }
+
+  Future<dynamic> get(String endpoint, {bool auth = true}) async {
+    return _executeWithRetry(
+      auth: auth,
+      executeRequest: (headers) => http.get(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: headers,
+      ),
+    );
   }
 
   Future<dynamic> post(String endpoint, {dynamic body, bool auth = true}) async {
-    try {
-      final response = await http.post(
+    return _executeWithRetry(
+      auth: auth,
+      executeRequest: (headers) => http.post(
         Uri.parse('$baseUrl$endpoint'),
-        headers: await _getHeaders(auth: auth),
+        headers: headers,
         body: body != null ? jsonEncode(body) : null,
-      ).timeout(requestTimeout);
-      return _handleResponse(response);
-    } on UnauthorizedException {
-      if (auth && await _attemptTokenRefresh()) {
-        final response = await http.post(
-          Uri.parse('$baseUrl$endpoint'),
-          headers: await _getHeaders(auth: auth),
-          body: body != null ? jsonEncode(body) : null,
-        ).timeout(requestTimeout);
-        return _handleResponse(response);
-      }
-      rethrow;
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw NetworkException('Failed to connect to server');
-    }
+      ),
+    );
   }
 
   Future<dynamic> put(String endpoint, {dynamic body, bool auth = true}) async {
-    try {
-      final response = await http.put(
+    return _executeWithRetry(
+      auth: auth,
+      executeRequest: (headers) => http.put(
         Uri.parse('$baseUrl$endpoint'),
-        headers: await _getHeaders(auth: auth),
+        headers: headers,
         body: body != null ? jsonEncode(body) : null,
-      ).timeout(requestTimeout);
-      return _handleResponse(response);
-    } on UnauthorizedException {
-      if (auth && await _attemptTokenRefresh()) {
-        final response = await http.put(
-          Uri.parse('$baseUrl$endpoint'),
-          headers: await _getHeaders(auth: auth),
-          body: body != null ? jsonEncode(body) : null,
-        ).timeout(requestTimeout);
-        return _handleResponse(response);
-      }
-      rethrow;
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw NetworkException('Failed to connect to server');
-    }
+      ),
+    );
   }
 
   Future<dynamic> delete(String endpoint, {bool auth = true}) async {
-    try {
-      final response = await http.delete(
+    return _executeWithRetry(
+      auth: auth,
+      executeRequest: (headers) => http.delete(
         Uri.parse('$baseUrl$endpoint'),
-        headers: await _getHeaders(auth: auth),
-      ).timeout(requestTimeout);
-      return _handleResponse(response);
-    } on UnauthorizedException {
-      if (auth && await _attemptTokenRefresh()) {
-        final response = await http.delete(
-          Uri.parse('$baseUrl$endpoint'),
-          headers: await _getHeaders(auth: auth),
-        ).timeout(requestTimeout);
-        return _handleResponse(response);
-      }
-      rethrow;
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw NetworkException('Failed to connect to server');
-    }
+        headers: headers,
+      ),
+    );
   }
 
   dynamic _handleResponse(http.Response response) {
