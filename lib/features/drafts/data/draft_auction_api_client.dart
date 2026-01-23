@@ -12,10 +12,11 @@ class DraftAuctionApiClient {
   /// GET /api/leagues/:leagueId/drafts/:draftId/auction/lots
   Future<List<AuctionLot>> getActiveLots(int leagueId, int draftId) async {
     try {
-      final response = await _dio.get<List<dynamic>>(
+      final response = await _dio.get<Map<String, dynamic>>(
         '/api/leagues/$leagueId/drafts/$draftId/auction/lots',
       );
-      return (response.data ?? [])
+      final lots = response.data?['lots'] as List<dynamic>? ?? [];
+      return lots
           .map((json) => AuctionLot.fromJson(json as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
@@ -38,10 +39,11 @@ class DraftAuctionApiClient {
   /// GET /api/leagues/:leagueId/drafts/:draftId/auction/budgets
   Future<List<AuctionBudget>> getBudgets(int leagueId, int draftId) async {
     try {
-      final response = await _dio.get<List<dynamic>>(
+      final response = await _dio.get<Map<String, dynamic>>(
         '/api/leagues/$leagueId/drafts/$draftId/auction/budgets',
       );
-      return (response.data ?? [])
+      final budgets = response.data?['budgets'] as List<dynamic>? ?? [];
+      return budgets
           .map((json) => AuctionBudget.fromJson(json as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
@@ -60,7 +62,8 @@ class DraftAuctionApiClient {
           'player_id': playerId,
         },
       );
-      return AuctionLot.fromJson(response.data!);
+      final lot = response.data!['lot'] as Map<String, dynamic>;
+      return AuctionLot.fromJson(lot);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -83,7 +86,8 @@ class DraftAuctionApiClient {
           'max_bid': maxBid,
         },
       );
-      return AuctionLot.fromJson(response.data!);
+      final lot = response.data!['lot'] as Map<String, dynamic>;
+      return AuctionLot.fromJson(lot);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
