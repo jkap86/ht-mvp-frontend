@@ -44,14 +44,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _checkAuthStatus();
   }
 
-  /// Sets up the token refresh callback on ApiClient
+  /// Sets up the token refresh callbacks on ApiClient
   void _setupTokenRefreshCallback() {
     _apiClient.onTokenRefresh = () => _authRepository.refreshTokens();
+    // Reconnect socket with fresh token after refresh succeeds
+    _apiClient.onTokenRefreshed = () => _socketService.reconnect();
   }
 
-  /// Clears the token refresh callback
+  /// Clears the token refresh callbacks
   void _clearTokenRefreshCallback() {
     _apiClient.onTokenRefresh = null;
+    _apiClient.onTokenRefreshed = null;
   }
 
   Future<void> _checkAuthStatus() async {

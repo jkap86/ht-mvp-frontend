@@ -97,6 +97,14 @@ class SocketService {
     _socket = null;
   }
 
+  /// Reconnect with fresh token (used after token refresh).
+  /// Disconnects existing socket and creates new connection with updated auth.
+  Future<void> reconnect() async {
+    debugPrint('Socket reconnecting with fresh token...');
+    disconnect();
+    await connect();
+  }
+
   /// Queue-aware emit: sends immediately if connected, otherwise queues for later
   void _emit(String event, dynamic data) {
     if (_socket != null && _socket!.connected) {

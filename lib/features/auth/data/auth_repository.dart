@@ -78,12 +78,11 @@ class AuthRepository {
     return User.fromJson(userData);
   }
 
+  /// Logout by clearing tokens locally.
+  /// Note: Backend doesn't have a logout endpoint yet (stateless JWT).
+  /// Future: Add token revocation when needed.
   Future<void> logout() async {
-    try {
-      await _apiClient.post('/auth/logout');
-    } finally {
-      await _apiClient.clearTokens();
-    }
+    await _apiClient.clearTokens();
   }
 
   /// Attempts to refresh tokens using the stored refresh token.

@@ -19,18 +19,40 @@ class ApiClient {
   /// token refresh on 401 responses. Returns true if refresh succeeded.
   Future<bool> Function()? onTokenRefresh;
 
-  /// Prevents multiple simultaneous refresh attempts
-  bool _isRefreshing = false;
+  /// Callback for socket reconnection after token refresh.
+  /// Set this to ensure socket auth stays in sync with new tokens.
+  void Function()? onTokenRefreshed;
+
+  /// Shared future for token refresh - allows multiple concurrent requests
+  /// to await the same refresh attempt instead of triggering duplicates.
+  Future<bool>? _refreshFuture;
 
   /// Attempts to refresh the token. Returns true if successful.
+  /// Multiple concurrent callers will await the same refresh attempt.
   Future<bool> _attemptTokenRefresh() async {
-    if (_isRefreshing || onTokenRefresh == null) return false;
-    _isRefreshing = true;
-    try {
-      return await onTokenRefresh!();
-    } finally {
-      _isRefreshing = false;
+    if (onTokenRefresh == null) return false;
+
+    // If refresh is already in progress, await the existing future
+    if (_refreshFuture != null) {
+      return _refreshFuture!;
     }
+
+    // Start new refresh and store the future so others can await it
+    _refreshFuture = _doRefresh();
+    try {
+      return await _refreshFuture!;
+    } finally {
+      _refreshFuture = null;
+    }
+  }
+
+  Future<bool> _doRefresh() async {
+    final success = await onTokenRefresh!();
+    if (success && onTokenRefreshed != null) {
+      // Notify that tokens were refreshed (e.g., to reconnect socket)
+      onTokenRefreshed!();
+    }
+    return success;
   }
 
   Future<String?> _getAccessToken() async {
