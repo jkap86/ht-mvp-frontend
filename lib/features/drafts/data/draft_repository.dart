@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../leagues/domain/league.dart';
+import '../domain/auction_budget.dart';
+import '../domain/auction_lot.dart';
 
 final draftRepositoryProvider = Provider<DraftRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
@@ -78,5 +80,39 @@ class DraftRepository {
       body: {'player_ids': playerIds},
     );
     return (response as List).cast<Map<String, dynamic>>();
+  }
+
+  // Auction methods
+  Future<List<AuctionLot>> getAuctionLots(int leagueId, int draftId) async {
+    final response =
+        await _apiClient.get('/leagues/$leagueId/drafts/$draftId/auction/lots');
+    return (response as List)
+        .map((json) => AuctionLot.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<AuctionBudget>> getAuctionBudgets(int leagueId, int draftId) async {
+    final response =
+        await _apiClient.get('/leagues/$leagueId/drafts/$draftId/auction/budgets');
+    return (response as List)
+        .map((json) => AuctionBudget.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<AuctionLot> nominate(int leagueId, int draftId, int playerId) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/drafts/$draftId/actions',
+      body: {'action': 'nominate', 'player_id': playerId},
+    );
+    return AuctionLot.fromJson(response['lot'] as Map<String, dynamic>);
+  }
+
+  Future<AuctionLot> setMaxBid(
+      int leagueId, int draftId, int lotId, int maxBid) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/drafts/$draftId/actions',
+      body: {'action': 'set_max_bid', 'lot_id': lotId, 'max_bid': maxBid},
+    );
+    return AuctionLot.fromJson(response['lot'] as Map<String, dynamic>);
   }
 }

@@ -206,4 +206,25 @@ class SocketService {
   VoidCallback onAppError(void Function(dynamic) callback) {
     return on(SocketEvents.appError, callback);
   }
+
+  // Slow Auction event listeners
+  VoidCallback onAuctionLotCreated(void Function(dynamic) callback) {
+    return on(SocketEvents.auctionLotCreated, callback);
+  }
+
+  VoidCallback onAuctionLotUpdated(void Function(dynamic) callback) {
+    return on(SocketEvents.auctionLotUpdated, callback);
+  }
+
+  VoidCallback onAuctionLotWon(void Function(dynamic) callback) {
+    return on(SocketEvents.auctionLotWon, callback);
+  }
+
+  VoidCallback onAuctionLotPassed(void Function(dynamic) callback) {
+    return on(SocketEvents.auctionLotPassed, callback);
+  }
+
+  VoidCallback onAuctionOutbid(void Function(dynamic) callback) {
+    return on(SocketEvents.auctionOutbid, callback);
+  }
 }

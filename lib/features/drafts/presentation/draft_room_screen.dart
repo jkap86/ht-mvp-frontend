@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/states/states.dart';
 import '../../players/domain/player.dart';
+import '../domain/auction_lot.dart';
 import 'providers/draft_room_provider.dart';
 import 'providers/draft_queue_provider.dart';
 import 'widgets/draft_status_bar.dart';
@@ -12,6 +13,8 @@ import 'widgets/available_players_list.dart';
 import 'widgets/recent_picks_widget.dart';
 import 'widgets/draft_queue_widget.dart';
 import 'widgets/draft_board_grid_view.dart';
+import 'widgets/auction_lots_panel.dart';
+import 'widgets/auction_bid_dialog.dart';
 
 class DraftRoomScreen extends ConsumerStatefulWidget {
   final int leagueId;
@@ -63,6 +66,100 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         const SnackBar(content: Text('Error adding to queue')),
       );
     }
+  }
+
+  Future<void> _handleNominate(int playerId) async {
+    final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+    final success = await notifier.nominate(playerId);
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error nominating player')),
+      );
+    }
+  }
+
+  Future<void> _handleSetMaxBid(int lotId, int maxBid) async {
+    final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+    final success = await notifier.setMaxBid(lotId, maxBid);
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error setting bid')),
+      );
+    }
+  }
+
+  void _showBidDialog(DraftRoomState state, AuctionLot lot) {
+    final player = state.players.where((p) => p.id == lot.playerId).firstOrNull;
+    if (player == null) return; // Cannot show dialog without player info
+    AuctionBidDialog.show(
+      context,
+      lot: lot,
+      player: player,
+      myBudget: state.myBudget,
+      onSubmit: (maxBid) => _handleSetMaxBid(lot.id, maxBid),
+    );
+  }
+
+  void _showPlayerPickerForNomination(List<Player> availablePlayers) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Select Player to Nominate',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: availablePlayers.length,
+                itemBuilder: (context, index) {
+                  final player = availablePlayers[index];
+                  return ListTile(
+                    title: Text(player.fullName),
+                    subtitle: Text('${player.primaryPosition} - ${player.team ?? 'FA'}'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _handleNominate(player.id);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAuctionBody(DraftRoomState state) {
+    final availablePlayers = _getAvailablePlayers(state);
+    return Column(
+      children: [
+        DraftStatusBar(draft: state.draft),
+        Expanded(
+          child: AuctionLotsPanel(
+            state: state,
+            onBidTap: (lot) {
+              _showBidDialog(state, lot);
+            },
+            onNominateTap: () {
+              _showPlayerPickerForNomination(availablePlayers);
+            },
+          ),
+        ),
+        RecentPicksWidget(picks: state.picks),
+      ],
+    );
   }
 
   @override
@@ -145,38 +242,40 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
             ),
         ],
       ),
-      body: _showGridView
-          ? DraftBoardGridView(
-              leagueId: widget.leagueId,
-              draftId: widget.draftId,
-            )
-          : Column(
-              children: [
-                DraftStatusBar(draft: state.draft),
-                PlayerSearchBar(
-                  onSearchChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                ),
-                Expanded(
-                  child: AvailablePlayersList(
-                    players: _getAvailablePlayers(state),
-                    isDraftInProgress: state.draft?.status.isActive ?? false,
-                    onDraftPlayer: _makePick,
-                    onAddToQueue: _addToQueue,
-                    queuedPlayerIds: queueState.queuedPlayerIds,
-                  ),
-                ),
-                DraftQueueWidget(
+      body: state.isAuction
+          ? _buildAuctionBody(state)
+          : _showGridView
+              ? DraftBoardGridView(
                   leagueId: widget.leagueId,
                   draftId: widget.draftId,
-                  draftedPlayerIds: state.draftedPlayerIds,
+                )
+              : Column(
+                  children: [
+                    DraftStatusBar(draft: state.draft),
+                    PlayerSearchBar(
+                      onSearchChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
+                    ),
+                    Expanded(
+                      child: AvailablePlayersList(
+                        players: _getAvailablePlayers(state),
+                        isDraftInProgress: state.draft?.status.isActive ?? false,
+                        onDraftPlayer: _makePick,
+                        onAddToQueue: _addToQueue,
+                        queuedPlayerIds: queueState.queuedPlayerIds,
+                      ),
+                    ),
+                    DraftQueueWidget(
+                      leagueId: widget.leagueId,
+                      draftId: widget.draftId,
+                      draftedPlayerIds: state.draftedPlayerIds,
+                    ),
+                    RecentPicksWidget(picks: state.picks),
+                  ],
                 ),
-                RecentPicksWidget(picks: state.picks),
-              ],
-            ),
     );
   }
 }

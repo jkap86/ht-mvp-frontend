@@ -8,6 +8,8 @@ import '../../../leagues/domain/league.dart';
 import '../../../players/data/player_repository.dart';
 import '../../../players/domain/player.dart';
 import '../../data/draft_repository.dart';
+import '../../domain/auction_budget.dart';
+import '../../domain/auction_lot.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_pick.dart';
 import '../../domain/draft_status.dart';
@@ -20,6 +22,9 @@ class DraftRoomState {
   final int? currentUserId;
   final bool isLoading;
   final String? error;
+  // Auction-specific fields
+  final List<AuctionLot> activeLots;
+  final List<AuctionBudget> budgets;
 
   DraftRoomState({
     this.draft,
@@ -29,7 +34,18 @@ class DraftRoomState {
     this.currentUserId,
     this.isLoading = true,
     this.error,
+    this.activeLots = const [],
+    this.budgets = const [],
   });
+
+  /// Check if this is an auction draft
+  bool get isAuction => draft?.draftType == 'auction';
+
+  /// Get the current user's budget
+  AuctionBudget? get myBudget {
+    if (myRosterId == null) return null;
+    return budgets.where((b) => b.rosterId == myRosterId).firstOrNull;
+  }
 
   /// Get drafted player IDs as a set for filtering
   Set<int> get draftedPlayerIds => picks.map((p) => p.playerId).toSet();
@@ -80,6 +96,8 @@ class DraftRoomState {
     bool? isLoading,
     String? error,
     bool clearError = false,
+    List<AuctionLot>? activeLots,
+    List<AuctionBudget>? budgets,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -89,6 +107,8 @@ class DraftRoomState {
       currentUserId: currentUserId ?? this.currentUserId,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
+      activeLots: activeLots ?? this.activeLots,
+      budgets: budgets ?? this.budgets,
     );
   }
 }
@@ -109,6 +129,12 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
   VoidCallback? _nextPickDisposer;
   VoidCallback? _completedDisposer;
   VoidCallback? _pickUndoneDisposer;
+  // Auction disposers
+  VoidCallback? _lotCreatedDisposer;
+  VoidCallback? _lotUpdatedDisposer;
+  VoidCallback? _lotWonDisposer;
+  VoidCallback? _lotPassedDisposer;
+  VoidCallback? _outbidDisposer;
 
   DraftRoomNotifier(
     this._draftRepo,
@@ -175,6 +201,52 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
         state = state.copyWith(draft: Draft.fromJson(draftData));
       }
     });
+
+    // Auction socket listeners
+    _lotCreatedDisposer = _socketService.onAuctionLotCreated((data) {
+      if (!mounted) return;
+      final lot = AuctionLot.fromJson(Map<String, dynamic>.from(data['lot'] ?? data));
+      state = state.copyWith(
+        activeLots: [...state.activeLots, lot],
+      );
+    });
+
+    _lotUpdatedDisposer = _socketService.onAuctionLotUpdated((data) {
+      if (!mounted) return;
+      final lot = AuctionLot.fromJson(Map<String, dynamic>.from(data['lot'] ?? data));
+      state = state.copyWith(
+        activeLots: state.activeLots.map((l) => l.id == lot.id ? lot : l).toList(),
+      );
+    });
+
+    _lotWonDisposer = _socketService.onAuctionLotWon((data) {
+      if (!mounted) return;
+      final lotId = data['lot_id'] as int? ?? data['lotId'] as int?;
+      if (lotId != null) {
+        // Remove from active lots, add to picks will happen via pick_made event
+        state = state.copyWith(
+          activeLots: state.activeLots.where((l) => l.id != lotId).toList(),
+        );
+      }
+      // Refresh budgets
+      loadAuctionData();
+    });
+
+    _lotPassedDisposer = _socketService.onAuctionLotPassed((data) {
+      if (!mounted) return;
+      final lotId = data['lot_id'] as int? ?? data['lotId'] as int?;
+      if (lotId != null) {
+        state = state.copyWith(
+          activeLots: state.activeLots.where((l) => l.id != lotId).toList(),
+        );
+      }
+    });
+
+    _outbidDisposer = _socketService.onAuctionOutbid((data) {
+      if (!mounted) return;
+      // Could show a notification to the user that they were outbid
+      // For now, the lot update handles the state change
+    });
   }
 
   Future<void> loadData() async {
@@ -208,6 +280,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
         picks: picks,
         isLoading: false,
       );
+
+      // Load auction data if this is an auction draft
+      if (draft.draftType == 'auction') {
+        loadAuctionData();
+      }
     } catch (e) {
       // Check if disposed during async operations
       if (!mounted) return;
@@ -228,6 +305,42 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
     }
   }
 
+  // Auction methods
+  Future<void> loadAuctionData() async {
+    if (state.draft?.draftType != 'auction') return;
+    try {
+      final results = await Future.wait([
+        _draftRepo.getAuctionLots(leagueId, draftId),
+        _draftRepo.getAuctionBudgets(leagueId, draftId),
+      ]);
+      if (!mounted) return;
+      state = state.copyWith(
+        activeLots: results[0] as List<AuctionLot>,
+        budgets: results[1] as List<AuctionBudget>,
+      );
+    } catch (e) {
+      // Silently fail - auction data is supplemental
+    }
+  }
+
+  Future<bool> nominate(int playerId) async {
+    try {
+      await _draftRepo.nominate(leagueId, draftId, playerId);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> setMaxBid(int lotId, int maxBid) async {
+    try {
+      await _draftRepo.setMaxBid(leagueId, draftId, lotId, maxBid);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _socketService.leaveDraft(draftId);
@@ -236,6 +349,12 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
     _nextPickDisposer?.call();
     _completedDisposer?.call();
     _pickUndoneDisposer?.call();
+    // Auction disposers
+    _lotCreatedDisposer?.call();
+    _lotUpdatedDisposer?.call();
+    _lotWonDisposer?.call();
+    _lotPassedDisposer?.call();
+    _outbidDisposer?.call();
     super.dispose();
   }
 }
