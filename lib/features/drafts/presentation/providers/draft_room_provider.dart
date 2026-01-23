@@ -13,6 +13,7 @@ import '../../domain/auction_lot.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_pick.dart';
 import '../../domain/draft_status.dart';
+import '../../domain/draft_type.dart';
 
 /// Notification when user is outbid on a lot
 class OutbidNotification {
@@ -56,7 +57,7 @@ class DraftRoomState {
   });
 
   /// Check if this is an auction draft
-  bool get isAuction => draft?.draftType == 'auction';
+  bool get isAuction => draft?.draftType == DraftType.auction;
 
   /// Get the current user's budget
   AuctionBudget? get myBudget {
@@ -99,7 +100,7 @@ class DraftRoomState {
   /// Get the draft order for current round (respects snake order)
   List<DraftOrderEntry> get currentRoundOrder {
     if (draft == null || draftOrder.isEmpty) return draftOrder;
-    final isSnake = draft!.draftType == 'snake';
+    final isSnake = draft!.draftType == DraftType.snake;
     final isReversed = isSnake && (draft!.currentRound ?? 1) % 2 == 0;
     return isReversed ? draftOrder.reversed.toList() : draftOrder;
   }
@@ -329,7 +330,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
       );
 
       // Load auction data if this is an auction draft
-      if (draft.draftType == 'auction') {
+      if (draft.draftType == DraftType.auction) {
         loadAuctionData();
       }
     } catch (e) {
@@ -354,7 +355,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
 
   // Auction methods
   Future<void> loadAuctionData() async {
-    if (state.draft?.draftType != 'auction') return;
+    if (state.draft?.draftType != DraftType.auction) return;
     try {
       final results = await Future.wait([
         _draftRepo.getAuctionLots(leagueId, draftId),

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/draft_order_entry.dart';
+import '../../domain/draft_type.dart';
 
 class DraftOrderPanel extends StatelessWidget {
   final List<DraftOrderEntry> draftOrder;
   final int? currentRosterId;
   final int currentRound;
-  final String draftType;
+  final DraftType draftType;
   final int? myRosterId;
 
   const DraftOrderPanel({
@@ -20,7 +21,7 @@ class DraftOrderPanel extends StatelessWidget {
 
   List<DraftOrderEntry> get _orderedList {
     if (draftOrder.isEmpty) return [];
-    final isSnake = draftType == 'snake';
+    final isSnake = draftType == DraftType.snake;
     final isReversed = isSnake && currentRound % 2 == 0;
     return isReversed ? draftOrder.reversed.toList() : draftOrder;
   }
@@ -45,7 +46,7 @@ class DraftOrderPanel extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              if (draftType == 'snake')
+              if (draftType == DraftType.snake)
                 _buildSnakeIndicator(context),
             ],
           ),

@@ -1,6 +1,7 @@
 import '../../../leagues/domain/league.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_pick.dart';
+import '../../domain/draft_type.dart';
 
 /// Build a 2D grid mapping rosterId -> round -> pick
 /// This allows easy lookup for the grid view: grid[rosterId][round] = pick or null
@@ -49,11 +50,11 @@ int getPickNumberForGridPosition({
   required int round,
   required int positionInRound, // 1-indexed position within the round
   required int totalTeams,
-  required String draftType,
+  required DraftType draftType,
 }) {
   final picksBeforeRound = (round - 1) * totalTeams;
 
-  if (draftType == 'snake' && round % 2 == 0) {
+  if (draftType == DraftType.snake && round % 2 == 0) {
     // Even rounds are reversed in snake draft
     return picksBeforeRound + (totalTeams - positionInRound + 1);
   }
@@ -67,9 +68,9 @@ int getPositionInRound({
   required int draftPosition, // The roster's draft position (1-indexed)
   required int round,
   required int totalTeams,
-  required String draftType,
+  required DraftType draftType,
 }) {
-  if (draftType == 'snake' && round % 2 == 0) {
+  if (draftType == DraftType.snake && round % 2 == 0) {
     // Even rounds are reversed in snake draft
     return totalTeams - draftPosition + 1;
   }

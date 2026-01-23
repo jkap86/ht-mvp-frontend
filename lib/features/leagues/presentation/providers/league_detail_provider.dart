@@ -34,9 +34,9 @@ class LeagueDetailState {
     }
   }
 
-  String get draftType {
+  String get draftTypeLabel {
     if (drafts.isEmpty) return 'Snake';
-    return drafts.first.draftType == 'snake' ? 'Snake' : 'Linear';
+    return drafts.first.draftType.label;
   }
 
   LeagueDetailState copyWith({

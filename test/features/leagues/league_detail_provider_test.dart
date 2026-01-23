@@ -6,6 +6,7 @@ import 'package:hypetrain_mvp/features/leagues/presentation/providers/league_det
 import 'package:hypetrain_mvp/features/leagues/data/league_repository.dart';
 import 'package:hypetrain_mvp/features/leagues/domain/league.dart';
 import 'package:hypetrain_mvp/features/drafts/domain/draft_status.dart';
+import 'package:hypetrain_mvp/features/drafts/domain/draft_type.dart';
 
 import '../../mocks/mock_repositories.dart';
 
@@ -42,7 +43,7 @@ Roster createMockRoster({
 Draft createMockDraft({
   int id = 1,
   DraftStatus status = DraftStatus.notStarted,
-  String draftType = 'snake',
+  DraftType draftType = DraftType.snake,
 }) {
   return Draft(
     id: id,
@@ -101,16 +102,22 @@ void main() {
       expect(state.activeDraft, isNull);
     });
 
-    test('draftType should return Snake for snake drafts', () {
-      final draft = createMockDraft(draftType: 'snake');
+    test('draftTypeLabel should return Snake for snake drafts', () {
+      final draft = createMockDraft(draftType: DraftType.snake);
       final state = LeagueDetailState(drafts: [draft]);
-      expect(state.draftType, 'Snake');
+      expect(state.draftTypeLabel, 'Snake');
     });
 
-    test('draftType should return Linear for linear drafts', () {
-      final draft = createMockDraft(draftType: 'linear');
+    test('draftTypeLabel should return Linear for linear drafts', () {
+      final draft = createMockDraft(draftType: DraftType.linear);
       final state = LeagueDetailState(drafts: [draft]);
-      expect(state.draftType, 'Linear');
+      expect(state.draftTypeLabel, 'Linear');
+    });
+
+    test('draftTypeLabel should return Auction for auction drafts', () {
+      final draft = createMockDraft(draftType: DraftType.auction);
+      final state = LeagueDetailState(drafts: [draft]);
+      expect(state.draftTypeLabel, 'Auction');
     });
   });
 

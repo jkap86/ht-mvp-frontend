@@ -6,6 +6,7 @@ import 'package:hypetrain_mvp/features/drafts/presentation/providers/draft_room_
 import 'package:hypetrain_mvp/features/drafts/data/draft_repository.dart';
 import 'package:hypetrain_mvp/features/drafts/domain/draft_pick.dart';
 import 'package:hypetrain_mvp/features/drafts/domain/draft_status.dart';
+import 'package:hypetrain_mvp/features/drafts/domain/draft_type.dart';
 import 'package:hypetrain_mvp/features/players/data/player_repository.dart';
 import 'package:hypetrain_mvp/features/players/domain/player.dart';
 import 'package:hypetrain_mvp/features/leagues/domain/league.dart';
@@ -40,11 +41,12 @@ class MockAuthNotifier extends StateNotifier<AuthState> implements AuthNotifier 
 Draft createMockDraft({
   int id = 1,
   DraftStatus status = DraftStatus.inProgress,
+  DraftType draftType = DraftType.snake,
 }) {
   return Draft(
     id: id,
     leagueId: 1,
-    draftType: 'snake',
+    draftType: draftType,
     status: status,
     rounds: 15,
     pickTimeSeconds: 90,

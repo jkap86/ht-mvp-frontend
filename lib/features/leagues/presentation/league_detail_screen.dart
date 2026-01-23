@@ -176,7 +176,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           LeagueSettingsSummary(
             league: state.league!,
             memberCount: state.members.length,
-            draftType: state.draftType,
+            draftType: state.draftTypeLabel,
           ),
           const SizedBox(height: 16),
           LeagueMembersSection(

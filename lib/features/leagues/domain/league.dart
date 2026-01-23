@@ -1,4 +1,6 @@
+import '../../drafts/domain/auction_settings.dart';
 import '../../drafts/domain/draft_status.dart';
+import '../../drafts/domain/draft_type.dart';
 
 class League {
   final int id;
@@ -77,7 +79,7 @@ class Roster {
 class Draft {
   final int id;
   final int leagueId;
-  final String draftType;
+  final DraftType draftType;
   final DraftStatus status;
   final int rounds;
   final int pickTimeSeconds;
@@ -87,6 +89,7 @@ class Draft {
   final DateTime? pickDeadline;
   final DateTime? startedAt;
   final DateTime? completedAt;
+  final AuctionSettings? settings;
 
   Draft({
     required this.id,
@@ -101,13 +104,18 @@ class Draft {
     this.pickDeadline,
     this.startedAt,
     this.completedAt,
+    this.settings,
   });
 
+  /// Check if this is an auction draft
+  bool get isAuction => draftType.isAuction;
+
   factory Draft.fromJson(Map<String, dynamic> json) {
+    final settingsJson = json['settings'] as Map<String, dynamic>?;
     return Draft(
       id: json['id'] as int? ?? 0,
       leagueId: json['league_id'] as int? ?? 0,
-      draftType: json['draft_type'] as String? ?? 'snake',
+      draftType: DraftType.fromString(json['draft_type'] as String?),
       status: DraftStatus.fromString(json['status'] as String?),
       rounds: json['rounds'] as int? ?? 15,
       pickTimeSeconds: json['pick_time_seconds'] as int? ?? 90,
@@ -123,13 +131,16 @@ class Draft {
       completedAt: json['completed_at'] != null
           ? DateTime.tryParse(json['completed_at'].toString())
           : null,
+      settings: settingsJson != null && settingsJson.isNotEmpty
+          ? AuctionSettings.fromJson(settingsJson)
+          : null,
     );
   }
 
   Draft copyWith({
     int? id,
     int? leagueId,
-    String? draftType,
+    DraftType? draftType,
     DraftStatus? status,
     int? rounds,
     int? pickTimeSeconds,
@@ -139,10 +150,12 @@ class Draft {
     DateTime? pickDeadline,
     DateTime? startedAt,
     DateTime? completedAt,
+    AuctionSettings? settings,
     bool clearCurrentPick = false,
     bool clearCurrentRound = false,
     bool clearCurrentRosterId = false,
     bool clearPickDeadline = false,
+    bool clearSettings = false,
   }) {
     return Draft(
       id: id ?? this.id,
@@ -157,6 +170,7 @@ class Draft {
       pickDeadline: clearPickDeadline ? null : (pickDeadline ?? this.pickDeadline),
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
+      settings: clearSettings ? null : (settings ?? this.settings),
     );
   }
 }

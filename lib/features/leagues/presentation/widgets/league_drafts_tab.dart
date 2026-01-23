@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../drafts/domain/draft_status.dart';
 import '../../domain/league.dart';
 
 class LeagueDraftsTab extends StatelessWidget {
@@ -97,7 +98,7 @@ class _DraftCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            Text('Type: ${draft.draftType}'),
+            Text('Type: ${draft.draftType.label}'),
             Text('Status: ${draft.status}'),
             Text('Rounds: ${draft.rounds}'),
           ],
@@ -124,21 +125,25 @@ class _DraftActionWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     switch (draft.status) {
-      case 'not_started':
+      case DraftStatus.notStarted:
         return ElevatedButton(
           onPressed: onStartDraft != null ? () => onStartDraft!(draft) : null,
           child: const Text('Start'),
         );
-      case 'in_progress':
+      case DraftStatus.inProgress:
         return const Chip(
           label: Text('Live'),
           backgroundColor: Colors.green,
           labelStyle: TextStyle(color: Colors.white),
         );
-      case 'completed':
+      case DraftStatus.completed:
         return const Chip(label: Text('Completed'));
-      default:
-        return const SizedBox.shrink();
+      case DraftStatus.paused:
+        return const Chip(
+          label: Text('Paused'),
+          backgroundColor: Colors.orange,
+          labelStyle: TextStyle(color: Colors.white),
+        );
     }
   }
 }
