@@ -28,15 +28,15 @@ class AuctionLot {
 
   factory AuctionLot.fromJson(Map<String, dynamic> json) {
     return AuctionLot(
-      id: json['id'] as int,
-      draftId: json['draft_id'] as int? ?? json['draftId'] as int,
-      playerId: json['player_id'] as int? ?? json['playerId'] as int,
-      nominatorRosterId: json['nominator_roster_id'] as int? ?? json['nominatorRosterId'] as int,
-      currentBid: json['current_bid'] as int? ?? json['currentBid'] as int,
+      id: json['id'] as int? ?? 0,
+      draftId: json['draft_id'] as int? ?? json['draftId'] as int? ?? 0,
+      playerId: json['player_id'] as int? ?? json['playerId'] as int? ?? 0,
+      nominatorRosterId: json['nominator_roster_id'] as int? ?? json['nominatorRosterId'] as int? ?? 0,
+      currentBid: json['current_bid'] as int? ?? json['currentBid'] as int? ?? 1,
       currentBidderRosterId: json['current_bidder_roster_id'] as int? ?? json['currentBidderRosterId'] as int?,
       bidCount: json['bid_count'] as int? ?? json['bidCount'] as int? ?? 0,
-      bidDeadline: DateTime.parse(json['bid_deadline'] as String? ?? json['bidDeadline'] as String),
-      status: json['status'] as String,
+      bidDeadline: DateTime.tryParse(json['bid_deadline'] as String? ?? json['bidDeadline'] as String? ?? '') ?? DateTime.now(),
+      status: json['status'] as String? ?? 'active',
       winningRosterId: json['winning_roster_id'] as int? ?? json['winningRosterId'] as int?,
       winningBid: json['winning_bid'] as int? ?? json['winningBid'] as int?,
     );

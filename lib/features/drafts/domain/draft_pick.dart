@@ -32,13 +32,13 @@ class DraftPick {
 
   factory DraftPick.fromJson(Map<String, dynamic> json) {
     return DraftPick(
-      id: json['id'] as int,
-      draftId: json['draft_id'] as int? ?? json['draftId'] as int,
-      pickNumber: json['pick_number'] as int? ?? json['pickNumber'] as int,
-      round: json['round'] as int,
-      pickInRound: json['pick_in_round'] as int? ?? json['pickInRound'] as int,
-      rosterId: json['roster_id'] as int? ?? json['rosterId'] as int,
-      playerId: json['player_id'] as int? ?? json['playerId'] as int,
+      id: json['id'] as int? ?? 0,
+      draftId: json['draft_id'] as int? ?? json['draftId'] as int? ?? 0,
+      pickNumber: json['pick_number'] as int? ?? json['pickNumber'] as int? ?? 0,
+      round: json['round'] as int? ?? 1,
+      pickInRound: json['pick_in_round'] as int? ?? json['pickInRound'] as int? ?? 0,
+      rosterId: json['roster_id'] as int? ?? json['rosterId'] as int? ?? 0,
+      playerId: json['player_id'] as int? ?? json['playerId'] as int? ?? 0,
       isAutoPick: json['is_auto_pick'] as bool? ?? json['isAutoPick'] as bool? ?? false,
       pickedAt: json['picked_at'] != null
           ? DateTime.tryParse(json['picked_at'].toString())

@@ -29,14 +29,14 @@ class QueueEntry {
 
   factory QueueEntry.fromJson(Map<String, dynamic> json) {
     return QueueEntry(
-      id: json['id'] as int,
-      draftId: json['draftId'] as int,
-      rosterId: json['rosterId'] as int,
-      playerId: json['playerId'] as int,
-      queuePosition: json['queuePosition'] as int,
-      playerName: json['playerName'] as String?,
-      playerPosition: json['playerPosition'] as String?,
-      playerTeam: json['playerTeam'] as String?,
+      id: json['id'] as int? ?? 0,
+      draftId: json['draftId'] as int? ?? json['draft_id'] as int? ?? 0,
+      rosterId: json['rosterId'] as int? ?? json['roster_id'] as int? ?? 0,
+      playerId: json['playerId'] as int? ?? json['player_id'] as int? ?? 0,
+      queuePosition: json['queuePosition'] as int? ?? json['queue_position'] as int? ?? 0,
+      playerName: json['playerName'] as String? ?? json['player_name'] as String?,
+      playerPosition: json['playerPosition'] as String? ?? json['player_position'] as String?,
+      playerTeam: json['playerTeam'] as String? ?? json['player_team'] as String?,
     );
   }
 }

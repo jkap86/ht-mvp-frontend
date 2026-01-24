@@ -20,13 +20,13 @@ class AuctionBudget {
 
   factory AuctionBudget.fromJson(Map<String, dynamic> json) {
     return AuctionBudget(
-      rosterId: json['roster_id'] as int? ?? json['rosterId'] as int,
-      username: json['username'] as String,
-      totalBudget: json['total_budget'] as int? ?? json['totalBudget'] as int,
-      spent: json['spent'] as int,
-      leadingCommitment: json['leading_commitment'] as int? ?? json['leadingCommitment'] as int,
-      available: json['available'] as int,
-      wonCount: json['won_count'] as int? ?? json['wonCount'] as int,
+      rosterId: json['roster_id'] as int? ?? json['rosterId'] as int? ?? 0,
+      username: json['username'] as String? ?? 'Unknown',
+      totalBudget: json['total_budget'] as int? ?? json['totalBudget'] as int? ?? 200,
+      spent: json['spent'] as int? ?? 0,
+      leadingCommitment: json['leading_commitment'] as int? ?? json['leadingCommitment'] as int? ?? 0,
+      available: json['available'] as int? ?? 200,
+      wonCount: json['won_count'] as int? ?? json['wonCount'] as int? ?? 0,
     );
   }
 

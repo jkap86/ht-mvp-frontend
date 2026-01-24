@@ -4,7 +4,7 @@ class DraftOrderEntry {
   final int rosterId;
   final int draftPosition;
   final String username;
-  final int? userId;
+  final String? userId;  // UUID string from backend
 
   const DraftOrderEntry({
     required this.id,
@@ -17,12 +17,12 @@ class DraftOrderEntry {
 
   factory DraftOrderEntry.fromJson(Map<String, dynamic> json) {
     return DraftOrderEntry(
-      id: json['id'] as int,
-      draftId: json['draft_id'] as int,
-      rosterId: json['roster_id'] as int,
-      draftPosition: json['draft_position'] as int,
+      id: json['id'] as int? ?? 0,
+      draftId: json['draft_id'] as int? ?? json['draftId'] as int? ?? 0,
+      rosterId: json['roster_id'] as int? ?? json['rosterId'] as int? ?? 0,
+      draftPosition: json['draft_position'] as int? ?? json['draftPosition'] as int? ?? 0,
       username: json['username'] as String? ?? 'Unknown',
-      userId: json['user_id'] as int?,
+      userId: json['user_id'] as String? ?? json['userId'] as String?,
     );
   }
 

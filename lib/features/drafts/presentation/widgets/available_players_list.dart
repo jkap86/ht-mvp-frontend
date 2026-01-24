@@ -6,6 +6,7 @@ import 'package:hypetrain_mvp/features/drafts/presentation/utils/position_colors
 class AvailablePlayersList extends StatelessWidget {
   final List<Player> players;
   final bool isDraftInProgress;
+  final bool isMyTurn;
   final void Function(int playerId)? onDraftPlayer;
   final void Function(int playerId)? onAddToQueue;
   final Set<int> queuedPlayerIds;
@@ -14,6 +15,7 @@ class AvailablePlayersList extends StatelessWidget {
     super.key,
     required this.players,
     required this.isDraftInProgress,
+    this.isMyTurn = false,
     this.onDraftPlayer,
     this.onAddToQueue,
     this.queuedPlayerIds = const {},
@@ -76,7 +78,7 @@ class AvailablePlayersList extends StatelessWidget {
           ),
         if (onDraftPlayer != null)
           ElevatedButton(
-            onPressed: () => onDraftPlayer!(player.id),
+            onPressed: isMyTurn ? () => onDraftPlayer!(player.id) : null,
             child: const Text('Draft'),
           ),
       ],

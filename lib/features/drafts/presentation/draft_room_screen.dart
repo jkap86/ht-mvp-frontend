@@ -270,10 +270,16 @@ class _DraftAuctionBody extends ConsumerWidget {
 
     // Build state object for AuctionLotsPanel (requires full state interface)
     final state = ref.read(draftRoomProvider(providerKey));
+    final currentPickerName = state.currentPicker?.username;
+    final isMyTurn = state.isMyTurn;
 
     return Column(
       children: [
-        DraftStatusBar(draft: draft),
+        DraftStatusBar(
+          draft: draft,
+          currentPickerName: currentPickerName,
+          isMyTurn: isMyTurn,
+        ),
         Expanded(
           child: AuctionLotsPanel(
             state: state,
@@ -390,6 +396,14 @@ class _DraftLinearBody extends ConsumerWidget {
       draftQueueProvider(queueKey).select((s) => s.queuedPlayerIds),
     );
 
+    // Use select() for isMyTurn and currentPicker
+    final isMyTurn = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.isMyTurn),
+    );
+    final currentPickerName = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.currentPicker?.username),
+    );
+
     final query = searchQuery.toLowerCase();
     final availablePlayers = players
         .where((p) =>
@@ -401,12 +415,17 @@ class _DraftLinearBody extends ConsumerWidget {
 
     return Column(
       children: [
-        DraftStatusBar(draft: draft),
+        DraftStatusBar(
+          draft: draft,
+          currentPickerName: currentPickerName,
+          isMyTurn: isMyTurn,
+        ),
         PlayerSearchBar(onSearchChanged: onSearchChanged),
         Expanded(
           child: AvailablePlayersList(
             players: availablePlayers,
             isDraftInProgress: draft?.status.isActive ?? false,
+            isMyTurn: isMyTurn,
             onDraftPlayer: onMakePick,
             onAddToQueue: onAddToQueue,
             queuedPlayerIds: queuedPlayerIds,

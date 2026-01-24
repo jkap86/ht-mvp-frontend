@@ -35,7 +35,7 @@ class DraftRoomState {
   final List<Player> players;
   final List<DraftPick> picks;
   final List<DraftOrderEntry> draftOrder;
-  final int? currentUserId;
+  final String? currentUserId;  // UUID string from auth
   final bool isLoading;
   final String? error;
   // Auction-specific fields
@@ -134,7 +134,7 @@ class DraftRoomState {
     List<Player>? players,
     List<DraftPick>? picks,
     List<DraftOrderEntry>? draftOrder,
-    int? currentUserId,
+    String? currentUserId,
     bool? isLoading,
     String? error,
     bool clearError = false,
@@ -193,7 +193,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
     this._draftRepo,
     this._playerRepo,
     this._socketService,
-    int? currentUserId,
+    String? currentUserId,
     this.leagueId,
     this.draftId,
   ) : super(DraftRoomState(currentUserId: currentUserId)) {
@@ -460,7 +460,7 @@ final draftRoomProvider =
   (ref, key) {
     // Get current user ID from auth state
     final authState = ref.watch(authStateProvider);
-    final currentUserId = authState.user != null ? int.tryParse(authState.user!.id) : null;
+    final currentUserId = authState.user?.id;
 
     return DraftRoomNotifier(
       ref.watch(draftRepositoryProvider),
