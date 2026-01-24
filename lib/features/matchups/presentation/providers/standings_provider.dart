@@ -1,0 +1,100 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../leagues/data/league_repository.dart';
+import '../../../leagues/domain/league.dart';
+import '../../data/matchup_repository.dart';
+import '../../domain/matchup.dart';
+
+class StandingsState {
+  final League? league;
+  final List<Standing> standings;
+  final int? myRosterId;
+  final bool isLoading;
+  final String? error;
+
+  StandingsState({
+    this.league,
+    this.standings = const [],
+    this.myRosterId,
+    this.isLoading = true,
+    this.error,
+  });
+
+  /// Get the current user's standing
+  Standing? get myStanding {
+    if (myRosterId == null) return null;
+    return standings.where((s) => s.rosterId == myRosterId).firstOrNull;
+  }
+
+  /// Get my rank
+  int? get myRank => myStanding?.rank;
+
+  StandingsState copyWith({
+    League? league,
+    List<Standing>? standings,
+    int? myRosterId,
+    bool? isLoading,
+    String? error,
+    bool clearError = false,
+  }) {
+    return StandingsState(
+      league: league ?? this.league,
+      standings: standings ?? this.standings,
+      myRosterId: myRosterId ?? this.myRosterId,
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+    );
+  }
+}
+
+class StandingsNotifier extends StateNotifier<StandingsState> {
+  final MatchupRepository _matchupRepo;
+  final LeagueRepository _leagueRepo;
+  final int leagueId;
+
+  StandingsNotifier(
+    this._matchupRepo,
+    this._leagueRepo,
+    this.leagueId,
+  ) : super(StandingsState()) {
+    loadData();
+  }
+
+  Future<void> loadData() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final results = await Future.wait([
+        _leagueRepo.getLeague(leagueId),
+        _matchupRepo.getStandings(leagueId),
+      ]);
+
+      final league = results[0] as League;
+      final standings = results[1] as List<Standing>;
+
+      state = state.copyWith(
+        league: league,
+        standings: standings,
+        myRosterId: league.userRosterId,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+    }
+  }
+
+  void clearError() {
+    state = state.copyWith(clearError: true);
+  }
+}
+
+final standingsProvider = StateNotifierProvider.family<StandingsNotifier, StandingsState, int>(
+  (ref, leagueId) => StandingsNotifier(
+    ref.watch(matchupRepositoryProvider),
+    ref.watch(leagueRepositoryProvider),
+    leagueId,
+  ),
+);

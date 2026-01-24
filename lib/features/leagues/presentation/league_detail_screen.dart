@@ -30,7 +30,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -121,6 +121,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           controller: _tabController,
           tabs: const [
             Tab(text: 'Overview'),
+            Tab(text: 'Season'),
             Tab(text: 'Drafts'),
             Tab(text: 'Chat'),
           ],
@@ -132,6 +133,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             controller: _tabController,
             children: [
               _buildOverviewTab(state),
+              _buildSeasonTab(state),
               LeagueDraftsTab(
                 leagueId: widget.leagueId,
                 drafts: state.drafts,
@@ -186,6 +188,63 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSeasonTab(LeagueDetailState state) {
+    final rosterId = state.league?.userRosterId;
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // My Team card
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.groups),
+            title: const Text('My Team'),
+            subtitle: const Text('View roster and set lineup'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: rosterId != null
+                ? () => context.push('/leagues/${widget.leagueId}/team/$rosterId')
+                : null,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Matchups card
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.sports_football),
+            title: const Text('Matchups'),
+            subtitle: const Text('Weekly head-to-head'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/leagues/${widget.leagueId}/matchups'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Standings card
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.leaderboard),
+            title: const Text('Standings'),
+            subtitle: const Text('League rankings'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/leagues/${widget.leagueId}/standings'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Free Agents card
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.person_add),
+            title: const Text('Free Agents'),
+            subtitle: const Text('Add players to your team'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: rosterId != null
+                ? () => context.push('/leagues/${widget.leagueId}/free-agents', extra: rosterId)
+                : null,
+          ),
+        ),
+      ],
     );
   }
 }

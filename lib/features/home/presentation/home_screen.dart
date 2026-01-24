@@ -66,12 +66,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 required season,
                 required totalRosters,
                 required scoringSettings,
+                required mode,
+                required settings,
               }) =>
                   ref.read(myLeaguesProvider.notifier).createLeague(
                         name: name,
                         season: season,
                         totalRosters: totalRosters,
                         scoringSettings: scoringSettings,
+                        mode: mode,
+                        settings: settings,
                       ),
             ),
             icon: const Icon(Icons.add),

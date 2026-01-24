@@ -28,18 +28,22 @@ class LeagueRepository {
     required String season,
     int totalRosters = 12,
     Map<String, dynamic>? scoringSettings,
+    String? mode,
+    Map<String, dynamic>? settings,
   }) async {
     final response = await _apiClient.post('/leagues', body: {
       'name': name,
       'season': season,
       'total_rosters': totalRosters,
       if (scoringSettings != null) 'scoring_settings': scoringSettings,
+      if (mode != null) 'mode': mode,
+      if (settings != null) 'settings': settings,
     });
     return League.fromJson(response);
   }
 
   Future<League> joinLeague(String inviteCode) async {
-    final response = await _apiClient.post('/leagues/$inviteCode/join');
+    final response = await _apiClient.post('/leagues/join/$inviteCode');
     return League.fromJson(response);
   }
 
@@ -120,6 +124,8 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
     required String season,
     int totalRosters = 12,
     Map<String, dynamic>? scoringSettings,
+    String? mode,
+    Map<String, dynamic>? settings,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -128,6 +134,8 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
         season: season,
         totalRosters: totalRosters,
         scoringSettings: scoringSettings,
+        mode: mode,
+        settings: settings,
       );
       state = state.copyWith(
         leagues: [...state.leagues, league],

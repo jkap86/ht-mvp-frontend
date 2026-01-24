@@ -1,0 +1,258 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../leagues/data/league_repository.dart';
+import '../../../leagues/domain/league.dart';
+import '../../data/roster_repository.dart';
+import '../../domain/roster_player.dart';
+import '../../domain/roster_lineup.dart';
+
+/// Key for team provider - needs leagueId to identify the context
+typedef TeamKey = ({int leagueId, int rosterId});
+
+class TeamState {
+  final League? league;
+  final List<RosterPlayer> players;
+  final RosterLineup? lineup;
+  final int currentWeek;
+  final bool isLoading;
+  final String? error;
+  final bool isSaving;
+
+  TeamState({
+    this.league,
+    this.players = const [],
+    this.lineup,
+    this.currentWeek = 1,
+    this.isLoading = true,
+    this.error,
+    this.isSaving = false,
+  });
+
+  /// Group players by their lineup slot for display
+  Map<LineupSlot, List<RosterPlayer>> get playersBySlot {
+    if (lineup == null) return {};
+
+    final result = <LineupSlot, List<RosterPlayer>>{};
+    for (final slot in LineupSlot.values) {
+      result[slot] = [];
+    }
+
+    for (final player in players) {
+      final slot = lineup!.lineup.getPlayerSlot(player.playerId);
+      if (slot != null) {
+        result[slot]!.add(player);
+      } else {
+        // Player not in lineup yet - add to bench by default
+        result[LineupSlot.bn]!.add(player);
+      }
+    }
+
+    return result;
+  }
+
+  /// Get starters (non-bench players)
+  List<RosterPlayer> get starters {
+    if (lineup == null) return [];
+    return players.where((p) => lineup!.lineup.isStarter(p.playerId)).toList();
+  }
+
+  /// Get bench players
+  List<RosterPlayer> get bench {
+    if (lineup == null) return players;
+    return players.where((p) => !lineup!.lineup.isStarter(p.playerId)).toList();
+  }
+
+  /// Total projected/actual points for starters
+  double get totalPoints => lineup?.totalPoints ?? 0.0;
+
+  TeamState copyWith({
+    League? league,
+    List<RosterPlayer>? players,
+    RosterLineup? lineup,
+    int? currentWeek,
+    bool? isLoading,
+    String? error,
+    bool clearError = false,
+    bool? isSaving,
+  }) {
+    return TeamState(
+      league: league ?? this.league,
+      players: players ?? this.players,
+      lineup: lineup ?? this.lineup,
+      currentWeek: currentWeek ?? this.currentWeek,
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+      isSaving: isSaving ?? this.isSaving,
+    );
+  }
+}
+
+class TeamNotifier extends StateNotifier<TeamState> {
+  final RosterRepository _rosterRepo;
+  final LeagueRepository _leagueRepo;
+  final int leagueId;
+  final int rosterId;
+
+  TeamNotifier(
+    this._rosterRepo,
+    this._leagueRepo,
+    this.leagueId,
+    this.rosterId,
+  ) : super(TeamState()) {
+    loadData();
+  }
+
+  Future<void> loadData() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      // Load league info first to get current week
+      final league = await _leagueRepo.getLeague(leagueId);
+      final currentWeek = league.currentWeek;
+
+      // Load roster players
+      final players = await _rosterRepo.getRosterPlayers(leagueId, rosterId);
+
+      // Try to load lineup (may not exist yet)
+      RosterLineup? lineup;
+      try {
+        lineup = await _rosterRepo.getLineup(leagueId, rosterId, currentWeek);
+      } catch (_) {
+        // Lineup doesn't exist yet - that's OK
+      }
+
+      state = state.copyWith(
+        league: league,
+        players: players,
+        lineup: lineup,
+        currentWeek: currentWeek,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+    }
+  }
+
+  /// Change the week being viewed
+  Future<void> changeWeek(int week) async {
+    if (week == state.currentWeek) return;
+
+    state = state.copyWith(isLoading: true, currentWeek: week);
+
+    try {
+      final lineup = await _rosterRepo.getLineup(leagueId, rosterId, week);
+      state = state.copyWith(
+        lineup: lineup,
+        isLoading: false,
+      );
+    } catch (e) {
+      // Lineup may not exist yet for future weeks - that's OK
+      state = state.copyWith(
+        lineup: null,
+        isLoading: false,
+      );
+    }
+  }
+
+  /// Move a player to a different lineup slot
+  Future<bool> movePlayer(int playerId, String toSlot) async {
+    if (state.lineup?.isLocked == true) {
+      state = state.copyWith(error: 'Lineup is locked for this week');
+      return false;
+    }
+
+    state = state.copyWith(isSaving: true);
+
+    try {
+      final updatedLineup = await _rosterRepo.movePlayer(
+        leagueId,
+        rosterId,
+        state.currentWeek,
+        playerId,
+        toSlot,
+      );
+
+      state = state.copyWith(
+        lineup: updatedLineup,
+        isSaving: false,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isSaving: false,
+      );
+      return false;
+    }
+  }
+
+  /// Save the entire lineup
+  Future<bool> saveLineup(LineupSlots lineup) async {
+    if (state.lineup?.isLocked == true) {
+      state = state.copyWith(error: 'Lineup is locked for this week');
+      return false;
+    }
+
+    state = state.copyWith(isSaving: true);
+
+    try {
+      final updatedLineup = await _rosterRepo.setLineup(
+        leagueId,
+        rosterId,
+        state.currentWeek,
+        lineup,
+      );
+
+      state = state.copyWith(
+        lineup: updatedLineup,
+        isSaving: false,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isSaving: false,
+      );
+      return false;
+    }
+  }
+
+  /// Drop a player from the roster
+  Future<bool> dropPlayer(int playerId) async {
+    state = state.copyWith(isSaving: true);
+
+    try {
+      await _rosterRepo.dropPlayer(leagueId, rosterId, playerId);
+
+      // Remove from local state
+      state = state.copyWith(
+        players: state.players.where((p) => p.playerId != playerId).toList(),
+        isSaving: false,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isSaving: false,
+      );
+      return false;
+    }
+  }
+
+  /// Clear any error message
+  void clearError() {
+    state = state.copyWith(clearError: true);
+  }
+}
+
+final teamProvider = StateNotifierProvider.family<TeamNotifier, TeamState, TeamKey>(
+  (ref, key) => TeamNotifier(
+    ref.watch(rosterRepositoryProvider),
+    ref.watch(leagueRepositoryProvider),
+    key.leagueId,
+    key.rosterId,
+  ),
+);

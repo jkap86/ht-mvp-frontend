@@ -2,6 +2,39 @@ import '../../drafts/domain/auction_settings.dart';
 import '../../drafts/domain/draft_status.dart';
 import '../../drafts/domain/draft_type.dart';
 
+enum SeasonStatus {
+  preSeason,
+  regularSeason,
+  playoffs,
+  offseason;
+
+  static SeasonStatus fromString(String? value) {
+    switch (value) {
+      case 'regular_season':
+        return SeasonStatus.regularSeason;
+      case 'playoffs':
+        return SeasonStatus.playoffs;
+      case 'offseason':
+        return SeasonStatus.offseason;
+      default:
+        return SeasonStatus.preSeason;
+    }
+  }
+
+  String get displayName {
+    switch (this) {
+      case SeasonStatus.preSeason:
+        return 'Pre-Season';
+      case SeasonStatus.regularSeason:
+        return 'Regular Season';
+      case SeasonStatus.playoffs:
+        return 'Playoffs';
+      case SeasonStatus.offseason:
+        return 'Offseason';
+    }
+  }
+}
+
 class League {
   final int id;
   final String name;
@@ -12,6 +45,8 @@ class League {
   final int? commissionerRosterId;
   final int? userRosterId;
   final Map<String, dynamic> settings;
+  final int currentWeek;
+  final SeasonStatus seasonStatus;
 
   League({
     required this.id,
@@ -23,6 +58,8 @@ class League {
     this.commissionerRosterId,
     this.userRosterId,
     required this.settings,
+    this.currentWeek = 1,
+    this.seasonStatus = SeasonStatus.preSeason,
   });
 
   String get scoringType {
@@ -44,6 +81,8 @@ class League {
       commissionerRosterId: json['commissioner_roster_id'] as int?,
       userRosterId: json['user_roster_id'] as int?,
       settings: (json['settings'] as Map<String, dynamic>?) ?? {},
+      currentWeek: json['current_week'] as int? ?? 1,
+      seasonStatus: SeasonStatus.fromString(json['season_status'] as String?),
     );
   }
 }
