@@ -87,7 +87,7 @@ class DraftRepository {
   Future<List<AuctionLot>> getAuctionLots(int leagueId, int draftId) async {
     final response =
         await _apiClient.get('/leagues/$leagueId/drafts/$draftId/auction/lots');
-    final lots = response['lots'] as List;
+    final lots = (response['lots'] as List?) ?? [];
     return lots
         .map((json) => AuctionLot.fromJson(json as Map<String, dynamic>))
         .toList();
@@ -96,7 +96,7 @@ class DraftRepository {
   Future<List<AuctionBudget>> getAuctionBudgets(int leagueId, int draftId) async {
     final response =
         await _apiClient.get('/leagues/$leagueId/drafts/$draftId/auction/budgets');
-    final budgets = response['budgets'] as List;
+    final budgets = (response['budgets'] as List?) ?? [];
     return budgets
         .map((json) => AuctionBudget.fromJson(json as Map<String, dynamic>))
         .toList();
@@ -107,7 +107,11 @@ class DraftRepository {
       '/leagues/$leagueId/drafts/$draftId/actions',
       body: {'action': 'nominate', 'playerId': playerId},
     );
-    return AuctionLot.fromJson(response['lot'] as Map<String, dynamic>);
+    final lotData = response['data']?['lot'] ?? response['lot'];
+    if (lotData == null) {
+      throw Exception('Nominate response missing lot data');
+    }
+    return AuctionLot.fromJson(lotData as Map<String, dynamic>);
   }
 
   Future<AuctionLot> setMaxBid(
@@ -116,7 +120,11 @@ class DraftRepository {
       '/leagues/$leagueId/drafts/$draftId/actions',
       body: {'action': 'set_max_bid', 'lotId': lotId, 'maxBid': maxBid},
     );
-    return AuctionLot.fromJson(response['lot'] as Map<String, dynamic>);
+    final lotData = response['data']?['lot'] ?? response['lot'];
+    if (lotData == null) {
+      throw Exception('SetMaxBid response missing lot data');
+    }
+    return AuctionLot.fromJson(lotData as Map<String, dynamic>);
   }
 
   /// Get the current auction state (for both slow and fast auctions)

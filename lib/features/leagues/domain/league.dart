@@ -7,6 +7,7 @@ class League {
   final String name;
   final String status;
   final int season;
+  final int totalRosters;
   final String? inviteCode;
   final int? commissionerRosterId;
   final int? userRosterId;
@@ -17,6 +18,7 @@ class League {
     required this.name,
     required this.status,
     required this.season,
+    required this.totalRosters,
     this.inviteCode,
     this.commissionerRosterId,
     this.userRosterId,
@@ -31,14 +33,13 @@ class League {
     return 'PPR';
   }
 
-  int get totalRosters => settings['total_rosters'] as int? ?? 12;
-
   factory League.fromJson(Map<String, dynamic> json) {
     return League(
       id: json['id'] as int? ?? 0,
       name: json['name'] as String? ?? '',
       status: json['status'] as String? ?? 'draft',
       season: int.tryParse(json['season']?.toString() ?? '') ?? DateTime.now().year,
+      totalRosters: json['total_rosters'] as int? ?? 12,
       inviteCode: json['invite_code'] as String?,
       commissionerRosterId: json['commissioner_roster_id'] as int?,
       userRosterId: json['user_roster_id'] as int?,

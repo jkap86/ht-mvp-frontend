@@ -20,8 +20,9 @@ class LeagueDetailState {
   });
 
   bool get isCommissioner {
-    if (league == null) return false;
-    return league!.userRosterId == league!.commissionerRosterId;
+    final l = league;
+    if (l == null) return false;
+    return l.userRosterId == l.commissionerRosterId;
   }
 
   Draft? get activeDraft {

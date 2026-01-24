@@ -16,15 +16,17 @@ League createMockLeague({
   String name = 'Test League',
   int commissionerRosterId = 1,
   int userRosterId = 1,
+  int totalRosters = 10,
 }) {
   return League(
     id: id,
     name: name,
     status: 'active',
     season: 2024,
+    totalRosters: totalRosters,
     commissionerRosterId: commissionerRosterId,
     userRosterId: userRosterId,
-    settings: {'total_rosters': 10},
+    settings: {},
   );
 }
 
