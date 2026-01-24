@@ -24,7 +24,9 @@ class MatchupRepository {
         : '';
 
     final response = await _apiClient.get('/leagues/$leagueId/matchups$queryString');
-    return (response as List).map((json) => Matchup.fromJson(json)).toList();
+    return ((response['matchups'] as List?) ?? [])
+        .map((json) => Matchup.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   /// Get a specific matchup with details
@@ -36,7 +38,9 @@ class MatchupRepository {
   /// Get league standings
   Future<List<Standing>> getStandings(int leagueId) async {
     final response = await _apiClient.get('/leagues/$leagueId/standings');
-    return (response as List).map((json) => Standing.fromJson(json)).toList();
+    return ((response['standings'] as List?) ?? [])
+        .map((json) => Standing.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   /// Generate season schedule (commissioner only)

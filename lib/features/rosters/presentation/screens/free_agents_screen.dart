@@ -199,9 +199,13 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
   void _showAddPlayerDialog(Player player) {
     final teamState = ref.read(teamProvider(_teamKey));
     final rosterPlayers = teamState.players;
+    final league = teamState.league;
 
-    // Check if roster is full (assuming 15 max roster size)
-    const maxRosterSize = 15;
+    // Get max roster size from league settings, fallback to 15
+    final rosterConfig = league?.settings['roster_config'] as Map<String, dynamic>?;
+    final maxRosterSize = rosterConfig != null
+        ? rosterConfig.values.fold<int>(0, (sum, val) => sum + (val as int))
+        : 15;
     final isRosterFull = rosterPlayers.length >= maxRosterSize;
 
     if (!isRosterFull) {

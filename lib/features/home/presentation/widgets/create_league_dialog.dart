@@ -297,9 +297,9 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
                 scoringSettings: _getScoringSettings(_selectedScoringType),
                 mode: _selectedLeagueMode,
                 settings: {
-                  'draftType': _selectedDraftType,
+                  'draft_type': _selectedDraftType,
                   'roster_config': _getRosterConfig(),
-                  if (_selectedDraftType == 'auction') 'auctionBudget': _auctionBudget,
+                  if (_selectedDraftType == 'auction') 'auction_budget': _auctionBudget,
                 },
               );
             }

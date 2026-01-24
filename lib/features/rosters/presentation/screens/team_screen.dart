@@ -99,7 +99,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
         ),
         title: Text(state.league?.name ?? 'My Team'),
         actions: [
-          // Week selector
+          // Week selector - 18 weeks is standard for NFL regular season + playoffs
+          // TODO: Consider making this dynamic based on league settings if available
           PopupMenuButton<int>(
             initialValue: state.currentWeek,
             onSelected: (week) {
@@ -107,7 +108,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
             },
             itemBuilder: (context) {
               return List.generate(
-                18,
+                18, // NFL regular season weeks
                 (index) => PopupMenuItem(
                   value: index + 1,
                   child: Text('Week ${index + 1}'),
@@ -148,7 +149,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           ? null
           : FloatingActionButton.extended(
               onPressed: () {
-                context.push('/leagues/${widget.leagueId}/free-agents', extra: widget.rosterId);
+                context.push('/leagues/${widget.leagueId}/free-agents',
+                    extra: widget.rosterId);
               },
               icon: const Icon(Icons.add),
               label: const Text('Add Player'),
@@ -408,7 +410,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
     // Determine which slots this player can fill based on position
     final position = player.position;
-    final validSlots = LineupSlot.values.where((slot) => slot.canFill(position)).toList();
+    final validSlots =
+        LineupSlot.values.where((slot) => slot.canFill(position)).toList();
 
     showModalBottomSheet(
       context: context,
@@ -430,14 +433,18 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
               ),
               const Divider(height: 1),
               ...validSlots.map((slot) {
-                final isCurrentSlot = state.lineup?.lineup.getPlayerSlot(player.playerId) == slot;
+                final isCurrentSlot =
+                    state.lineup?.lineup.getPlayerSlot(player.playerId) == slot;
                 return ListTile(
                   leading: Icon(
                     _getSlotIcon(slot),
-                    color: isCurrentSlot ? Theme.of(context).primaryColor : null,
+                    color:
+                        isCurrentSlot ? Theme.of(context).primaryColor : null,
                   ),
                   title: Text(slot.displayName),
-                  trailing: isCurrentSlot ? const Icon(Icons.check, color: Colors.green) : null,
+                  trailing: isCurrentSlot
+                      ? const Icon(Icons.check, color: Colors.green)
+                      : null,
                   onTap: isCurrentSlot
                       ? null
                       : () {
@@ -497,7 +504,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               onPressed: () {
                 Navigator.of(context).pop();
-                ref.read(teamProvider(_key).notifier).dropPlayer(player.playerId);
+                ref
+                    .read(teamProvider(_key).notifier)
+                    .dropPlayer(player.playerId);
               },
               child: const Text('Drop'),
             ),

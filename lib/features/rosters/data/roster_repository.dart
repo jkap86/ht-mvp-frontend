@@ -18,14 +18,14 @@ class RosterRepository {
   /// Get all players on a roster with their details
   Future<List<RosterPlayer>> getRosterPlayers(int leagueId, int rosterId) async {
     final response = await _apiClient.get('/leagues/$leagueId/rosters/$rosterId/players');
-    return (response as List).map((json) => RosterPlayer.fromJson(json)).toList();
+    return ((response['players'] as List?) ?? []).map((json) => RosterPlayer.fromJson(json as Map<String, dynamic>)).toList();
   }
 
   /// Add a player to roster (free agency pickup)
   Future<RosterPlayer> addPlayer(int leagueId, int rosterId, int playerId) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/rosters/$rosterId/players',
-      body: {'player_id': playerId},
+      body: {'playerId': playerId},
     );
     return RosterPlayer.fromJson(response);
   }
@@ -45,8 +45,8 @@ class RosterRepository {
     final response = await _apiClient.post(
       '/leagues/$leagueId/rosters/$rosterId/players/add-drop',
       body: {
-        'add_player_id': addPlayerId,
-        'drop_player_id': dropPlayerId,
+        'addPlayerId': addPlayerId,
+        'dropPlayerId': dropPlayerId,
       },
     );
     return RosterPlayer.fromJson(response);
@@ -69,7 +69,7 @@ class RosterRepository {
 
     final queryString = queryParams.entries.map((e) => '${e.key}=${e.value}').join('&');
     final response = await _apiClient.get('/leagues/$leagueId/free-agents?$queryString');
-    return (response as List).map((json) => Player.fromJson(json)).toList();
+    return ((response['players'] as List?) ?? []).map((json) => Player.fromJson(json as Map<String, dynamic>)).toList();
   }
 
   /// Get roster transactions history
@@ -82,7 +82,7 @@ class RosterRepository {
     final response = await _apiClient.get(
       '/leagues/$leagueId/rosters/$rosterId/transactions?limit=$limit&offset=$offset',
     );
-    return (response as List).map((json) => RosterTransaction.fromJson(json)).toList();
+    return ((response['transactions'] as List?) ?? []).map((json) => RosterTransaction.fromJson(json as Map<String, dynamic>)).toList();
   }
 
   /// Get lineup for a specific week
@@ -122,8 +122,8 @@ class RosterRepository {
       '/leagues/$leagueId/rosters/$rosterId/lineup/move',
       body: {
         'week': week,
-        'player_id': playerId,
-        'to_slot': toSlot,
+        'playerId': playerId,
+        'toSlot': toSlot,
       },
     );
     return RosterLineup.fromJson(response);
