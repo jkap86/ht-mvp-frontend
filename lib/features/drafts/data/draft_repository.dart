@@ -31,14 +31,16 @@ class DraftRepository {
       int leagueId, int draftId) async {
     final response =
         await _apiClient.get('/leagues/$leagueId/drafts/$draftId/picks');
-    return (response as List).cast<Map<String, dynamic>>();
+    final picks = (response as List?) ?? [];
+    return picks.cast<Map<String, dynamic>>();
   }
 
   Future<List<Map<String, dynamic>>> getDraftOrder(
       int leagueId, int draftId) async {
     final response =
         await _apiClient.get('/leagues/$leagueId/drafts/$draftId/order');
-    return (response as List).cast<Map<String, dynamic>>();
+    final order = (response as List?) ?? [];
+    return order.cast<Map<String, dynamic>>();
   }
 
   Future<Map<String, dynamic>> makePick(
@@ -47,7 +49,9 @@ class DraftRepository {
       '/leagues/$leagueId/drafts/$draftId/pick',
       body: {'player_id': playerId},
     );
-    return response as Map<String, dynamic>;
+    final pickData = response as Map<String, dynamic>?;
+    if (pickData == null) throw Exception('Invalid response: missing pick data');
+    return pickData;
   }
 
   Future<void> randomizeDraftOrder(int leagueId, int draftId) async {
@@ -58,7 +62,8 @@ class DraftRepository {
   Future<List<Map<String, dynamic>>> getQueue(int leagueId, int draftId) async {
     final response =
         await _apiClient.get('/leagues/$leagueId/drafts/$draftId/queue');
-    return (response as List).cast<Map<String, dynamic>>();
+    final queue = (response as List?) ?? [];
+    return queue.cast<Map<String, dynamic>>();
   }
 
   Future<Map<String, dynamic>> addToQueue(
@@ -67,7 +72,9 @@ class DraftRepository {
       '/leagues/$leagueId/drafts/$draftId/queue',
       body: {'player_id': playerId},
     );
-    return response as Map<String, dynamic>;
+    final queueData = response as Map<String, dynamic>?;
+    if (queueData == null) throw Exception('Invalid response: missing queue data');
+    return queueData;
   }
 
   Future<void> removeFromQueue(int leagueId, int draftId, int playerId) async {
@@ -80,7 +87,8 @@ class DraftRepository {
       '/leagues/$leagueId/drafts/$draftId/queue',
       body: {'player_ids': playerIds},
     );
-    return (response as List).cast<Map<String, dynamic>>();
+    final reordered = (response as List?) ?? [];
+    return reordered.cast<Map<String, dynamic>>();
   }
 
   // Auction methods
@@ -131,6 +139,8 @@ class DraftRepository {
   Future<AuctionState> getAuctionState(int leagueId, int draftId) async {
     final response =
         await _apiClient.get('/leagues/$leagueId/drafts/$draftId/auction/state');
-    return AuctionState.fromJson(response as Map<String, dynamic>);
+    final stateData = response as Map<String, dynamic>?;
+    if (stateData == null) throw Exception('Invalid response: missing auction state');
+    return AuctionState.fromJson(stateData);
   }
 }
