@@ -102,7 +102,7 @@ class StandingsScreen extends ConsumerWidget {
             return DataRow(
               color: WidgetStateProperty.all(
                 isMyTeam
-                    ? Theme.of(context).primaryColor.withOpacity(0.1)
+                    ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
                     : null,
               ),
               cells: [
@@ -198,7 +198,7 @@ class StandingsScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
