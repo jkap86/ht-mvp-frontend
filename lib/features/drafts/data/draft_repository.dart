@@ -4,6 +4,7 @@ import '../../../core/api/api_client.dart';
 import '../../leagues/domain/league.dart';
 import '../domain/auction_budget.dart';
 import '../domain/auction_lot.dart';
+import '../domain/auction_state.dart';
 
 final draftRepositoryProvider = Provider<DraftRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
@@ -116,5 +117,12 @@ class DraftRepository {
       body: {'action': 'set_max_bid', 'lotId': lotId, 'maxBid': maxBid},
     );
     return AuctionLot.fromJson(response['lot'] as Map<String, dynamic>);
+  }
+
+  /// Get the current auction state (for both slow and fast auctions)
+  Future<AuctionState> getAuctionState(int leagueId, int draftId) async {
+    final response =
+        await _apiClient.get('/leagues/$leagueId/drafts/$draftId/auction/state');
+    return AuctionState.fromJson(response as Map<String, dynamic>);
   }
 }

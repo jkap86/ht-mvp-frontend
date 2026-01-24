@@ -89,6 +89,16 @@ void main() {
     when(() => mockSocketService.onDraftPick(any())).thenReturn(() {});
     when(() => mockSocketService.onNextPick(any())).thenReturn(() {});
     when(() => mockSocketService.onDraftCompleted(any())).thenReturn(() {});
+    when(() => mockSocketService.onPickUndone(any())).thenReturn(() {});
+    when(() => mockSocketService.onDraftPaused(any())).thenReturn(() {});
+    when(() => mockSocketService.onDraftResumed(any())).thenReturn(() {});
+    // Auction socket listeners
+    when(() => mockSocketService.onAuctionLotCreated(any())).thenReturn(() {});
+    when(() => mockSocketService.onAuctionLotUpdated(any())).thenReturn(() {});
+    when(() => mockSocketService.onAuctionLotWon(any())).thenReturn(() {});
+    when(() => mockSocketService.onAuctionLotPassed(any())).thenReturn(() {});
+    when(() => mockSocketService.onAuctionOutbid(any())).thenReturn(() {});
+    when(() => mockSocketService.onAuctionNominatorChanged(any())).thenReturn(() {});
   });
 
   tearDown(() {

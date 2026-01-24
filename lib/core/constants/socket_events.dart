@@ -26,12 +26,13 @@ class SocketEvents {
   static const draftPickUndone = 'draft:pick_undone';
   static const draftQueueUpdated = 'draft:queue_updated';
 
-  // Slow Auction events
+  // Auction events
   static const auctionLotCreated = 'draft:auction_lot_created';
   static const auctionLotUpdated = 'draft:auction_lot_updated';
   static const auctionLotWon = 'draft:auction_lot_won';
   static const auctionLotPassed = 'draft:auction_lot_passed';
   static const auctionOutbid = 'draft:auction_outbid';
+  static const auctionNominatorChanged = 'draft:auction_nominator_changed';
 
   // Chat events
   static const chatMessage = 'chat:message';

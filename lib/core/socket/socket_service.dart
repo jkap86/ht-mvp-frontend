@@ -268,4 +268,9 @@ class SocketService {
   VoidCallback onAuctionOutbid(void Function(dynamic) callback) {
     return on(SocketEvents.auctionOutbid, callback);
   }
+
+  /// Listen for nominator changes in fast auction mode
+  VoidCallback onAuctionNominatorChanged(void Function(dynamic) callback) {
+    return on(SocketEvents.auctionNominatorChanged, callback);
+  }
 }

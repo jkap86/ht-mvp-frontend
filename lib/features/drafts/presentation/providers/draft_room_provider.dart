@@ -42,6 +42,10 @@ class DraftRoomState {
   final List<AuctionLot> activeLots;
   final List<AuctionBudget> budgets;
   final OutbidNotification? outbidNotification;
+  // Fast auction-specific fields
+  final String auctionMode;
+  final int? currentNominatorRosterId;
+  final int? nominationNumber;
 
   DraftRoomState({
     this.draft,
@@ -54,10 +58,30 @@ class DraftRoomState {
     this.activeLots = const [],
     this.budgets = const [],
     this.outbidNotification,
+    this.auctionMode = 'slow',
+    this.currentNominatorRosterId,
+    this.nominationNumber,
   });
 
   /// Check if this is an auction draft
   bool get isAuction => draft?.draftType == DraftType.auction;
+
+  /// Check if this is a fast auction
+  bool get isFastAuction => isAuction && auctionMode == 'fast';
+
+  /// Check if it's the current user's turn to nominate (fast auction)
+  bool get isMyNomination {
+    if (!isFastAuction || myRosterId == null) return false;
+    return currentNominatorRosterId == myRosterId;
+  }
+
+  /// Get the current nominator from draft order (fast auction)
+  DraftOrderEntry? get currentNominator {
+    if (currentNominatorRosterId == null || draftOrder.isEmpty) return null;
+    return draftOrder
+        .where((entry) => entry.rosterId == currentNominatorRosterId)
+        .firstOrNull;
+  }
 
   /// Get the current user's budget
   AuctionBudget? get myBudget {
@@ -118,6 +142,9 @@ class DraftRoomState {
     List<AuctionBudget>? budgets,
     OutbidNotification? outbidNotification,
     bool clearOutbidNotification = false,
+    String? auctionMode,
+    int? currentNominatorRosterId,
+    int? nominationNumber,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -130,6 +157,9 @@ class DraftRoomState {
       activeLots: activeLots ?? this.activeLots,
       budgets: budgets ?? this.budgets,
       outbidNotification: clearOutbidNotification ? null : (outbidNotification ?? this.outbidNotification),
+      auctionMode: auctionMode ?? this.auctionMode,
+      currentNominatorRosterId: currentNominatorRosterId ?? this.currentNominatorRosterId,
+      nominationNumber: nominationNumber ?? this.nominationNumber,
     );
   }
 }
@@ -157,6 +187,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
   VoidCallback? _lotWonDisposer;
   VoidCallback? _lotPassedDisposer;
   VoidCallback? _outbidDisposer;
+  VoidCallback? _nominatorChangedDisposer;
 
   DraftRoomNotifier(
     this._draftRepo,
@@ -294,6 +325,15 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
       );
       state = state.copyWith(outbidNotification: notification);
     });
+
+    // Fast auction nominator change listener
+    _nominatorChangedDisposer = _socketService.onAuctionNominatorChanged((data) {
+      if (!mounted) return;
+      state = state.copyWith(
+        currentNominatorRosterId: data['nominatorRosterId'] as int?,
+        nominationNumber: data['nominationNumber'] as int?,
+      );
+    });
   }
 
   Future<void> loadData() async {
@@ -356,14 +396,15 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
   Future<void> loadAuctionData() async {
     if (state.draft?.draftType != DraftType.auction) return;
     try {
-      final results = await Future.wait([
-        _draftRepo.getAuctionLots(leagueId, draftId),
-        _draftRepo.getAuctionBudgets(leagueId, draftId),
-      ]);
+      // Use auction state endpoint which returns all data including fast auction fields
+      final auctionState = await _draftRepo.getAuctionState(leagueId, draftId);
       if (!mounted) return;
       state = state.copyWith(
-        activeLots: results[0] as List<AuctionLot>,
-        budgets: results[1] as List<AuctionBudget>,
+        activeLots: auctionState.activeLots,
+        budgets: auctionState.budgets,
+        auctionMode: auctionState.auctionMode,
+        currentNominatorRosterId: auctionState.currentNominatorRosterId,
+        nominationNumber: auctionState.nominationNumber,
       );
     } catch (e) {
       // Silently fail - auction data is supplemental
@@ -409,6 +450,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
     _lotWonDisposer?.call();
     _lotPassedDisposer?.call();
     _outbidDisposer?.call();
+    _nominatorChangedDisposer?.call();
     super.dispose();
   }
 }
