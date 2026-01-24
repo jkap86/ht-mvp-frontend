@@ -19,6 +19,7 @@ dependencies:
 
   # HTTP client
   http: ^1.6.0
+  dio: ^5.4.0
 
   # Storage
   shared_preferences: ^2.5.3

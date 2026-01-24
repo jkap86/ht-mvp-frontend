@@ -141,7 +141,6 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
   final DraftRepository _draftRepo;
   final PlayerRepository _playerRepo;
   final SocketService _socketService;
-  final int? _currentUserId;
   final int leagueId;
   final int draftId;
 
@@ -163,10 +162,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
     this._draftRepo,
     this._playerRepo,
     this._socketService,
-    this._currentUserId,
+    int? currentUserId,
     this.leagueId,
     this.draftId,
-  ) : super(DraftRoomState(currentUserId: _currentUserId)) {
+  ) : super(DraftRoomState(currentUserId: currentUserId)) {
     _setupSocketListeners();
     loadData();
   }
