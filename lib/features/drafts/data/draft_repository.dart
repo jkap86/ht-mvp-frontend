@@ -86,7 +86,8 @@ class DraftRepository {
   Future<List<AuctionLot>> getAuctionLots(int leagueId, int draftId) async {
     final response =
         await _apiClient.get('/leagues/$leagueId/drafts/$draftId/auction/lots');
-    return (response as List)
+    final lots = response['lots'] as List;
+    return lots
         .map((json) => AuctionLot.fromJson(json as Map<String, dynamic>))
         .toList();
   }
@@ -94,7 +95,8 @@ class DraftRepository {
   Future<List<AuctionBudget>> getAuctionBudgets(int leagueId, int draftId) async {
     final response =
         await _apiClient.get('/leagues/$leagueId/drafts/$draftId/auction/budgets');
-    return (response as List)
+    final budgets = response['budgets'] as List;
+    return budgets
         .map((json) => AuctionBudget.fromJson(json as Map<String, dynamic>))
         .toList();
   }
@@ -102,7 +104,7 @@ class DraftRepository {
   Future<AuctionLot> nominate(int leagueId, int draftId, int playerId) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/actions',
-      body: {'action': 'nominate', 'player_id': playerId},
+      body: {'action': 'nominate', 'playerId': playerId},
     );
     return AuctionLot.fromJson(response['lot'] as Map<String, dynamic>);
   }
@@ -111,7 +113,7 @@ class DraftRepository {
       int leagueId, int draftId, int lotId, int maxBid) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/actions',
-      body: {'action': 'set_max_bid', 'lot_id': lotId, 'max_bid': maxBid},
+      body: {'action': 'set_max_bid', 'lotId': lotId, 'maxBid': maxBid},
     );
     return AuctionLot.fromJson(response['lot'] as Map<String, dynamic>);
   }
