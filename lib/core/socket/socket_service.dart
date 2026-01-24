@@ -35,6 +35,12 @@ class SocketService {
   /// Track active subscriptions for proper disposer handling
   final Map<String, List<void Function(dynamic)>> _activeSubscriptions = {};
 
+  /// Track active league rooms for automatic rejoin on reconnect
+  final Set<int> _activeLeagueRooms = {};
+
+  /// Track active draft rooms for automatic rejoin on reconnect
+  final Set<int> _activeDraftRooms = {};
+
   bool get isConnected => _socket?.connected ?? false;
 
   Future<void> connect() async {
@@ -57,6 +63,7 @@ class SocketService {
       debugPrint('Socket connected');
       _applyPendingSubscriptions();
       _applyPendingEmits();
+      _rejoinActiveRooms();
     });
 
     _socket!.onDisconnect((_) {
@@ -89,19 +96,37 @@ class SocketService {
     _pendingEmits.clear();
   }
 
+  /// Rejoin all active rooms after reconnection
+  void _rejoinActiveRooms() {
+    for (final leagueId in _activeLeagueRooms) {
+      _socket?.emit(SocketEvents.leagueJoin, leagueId);
+    }
+    for (final draftId in _activeDraftRooms) {
+      _socket?.emit(SocketEvents.draftJoin, draftId);
+    }
+  }
+
   void disconnect() {
     _pendingSubscriptions.clear();
     _pendingEmits.clear();
     _activeSubscriptions.clear();
+    _activeLeagueRooms.clear();
+    _activeDraftRooms.clear();
     _socket?.disconnect();
     _socket = null;
   }
 
   /// Reconnect with fresh token (used after token refresh).
   /// Disconnects existing socket and creates new connection with updated auth.
+  /// Room tracking is preserved so rooms are automatically rejoined.
   Future<void> reconnect() async {
     debugPrint('Socket reconnecting with fresh token...');
-    disconnect();
+    // Clear pending queues but preserve room tracking
+    _pendingSubscriptions.clear();
+    _pendingEmits.clear();
+    _activeSubscriptions.clear();
+    _socket?.disconnect();
+    _socket = null;
     await connect();
   }
 
@@ -116,22 +141,30 @@ class SocketService {
 
   // League room management
   void joinLeague(int leagueId) {
+    _activeLeagueRooms.add(leagueId);
     _emit(SocketEvents.leagueJoin, leagueId);
   }
 
   void leaveLeague(int leagueId) {
+    _activeLeagueRooms.remove(leagueId);
     // Leave events should only fire if connected (no point queueing leave)
-    _socket?.emit(SocketEvents.leagueLeave, leagueId);
+    if (_socket?.connected == true) {
+      _socket?.emit(SocketEvents.leagueLeave, leagueId);
+    }
   }
 
   // Draft room management
   void joinDraft(int draftId) {
+    _activeDraftRooms.add(draftId);
     _emit(SocketEvents.draftJoin, draftId);
   }
 
   void leaveDraft(int draftId) {
+    _activeDraftRooms.remove(draftId);
     // Leave events should only fire if connected (no point queueing leave)
-    _socket?.emit(SocketEvents.draftLeave, draftId);
+    if (_socket?.connected == true) {
+      _socket?.emit(SocketEvents.draftLeave, draftId);
+    }
   }
 
   /// Generic event listener that returns a disposer function.
