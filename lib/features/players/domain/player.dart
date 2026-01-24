@@ -15,7 +15,7 @@ class Player with _$Player {
     int? age,
     String? team,
     String? position,
-    int? number,
+    @JsonKey(name: 'jersey_number') int? number,
     String? status,
     @JsonKey(name: 'injury_status') String? injuryStatus,
     bool? active,

@@ -34,6 +34,7 @@ mixin _$Player {
   int? get age => throw _privateConstructorUsedError;
   String? get team => throw _privateConstructorUsedError;
   String? get position => throw _privateConstructorUsedError;
+  @JsonKey(name: 'jersey_number')
   int? get number => throw _privateConstructorUsedError;
   String? get status => throw _privateConstructorUsedError;
   @JsonKey(name: 'injury_status')
@@ -70,7 +71,7 @@ abstract class $PlayerCopyWith<$Res> {
       int? age,
       String? team,
       String? position,
-      int? number,
+      @JsonKey(name: 'jersey_number') int? number,
       String? status,
       @JsonKey(name: 'injury_status') String? injuryStatus,
       bool? active,
@@ -197,7 +198,7 @@ abstract class _$$PlayerImplCopyWith<$Res> implements $PlayerCopyWith<$Res> {
       int? age,
       String? team,
       String? position,
-      int? number,
+      @JsonKey(name: 'jersey_number') int? number,
       String? status,
       @JsonKey(name: 'injury_status') String? injuryStatus,
       bool? active,
@@ -319,7 +320,7 @@ class _$PlayerImpl implements _Player {
       this.age,
       this.team,
       this.position,
-      this.number,
+      @JsonKey(name: 'jersey_number') this.number,
       this.status,
       @JsonKey(name: 'injury_status') this.injuryStatus,
       this.active,
@@ -362,6 +363,7 @@ class _$PlayerImpl implements _Player {
   @override
   final String? position;
   @override
+  @JsonKey(name: 'jersey_number')
   final int? number;
   @override
   final String? status;
@@ -468,7 +470,7 @@ abstract class _Player implements Player {
       final int? age,
       final String? team,
       final String? position,
-      final int? number,
+      @JsonKey(name: 'jersey_number') final int? number,
       final String? status,
       @JsonKey(name: 'injury_status') final String? injuryStatus,
       final bool? active,
@@ -503,6 +505,7 @@ abstract class _Player implements Player {
   @override
   String? get position;
   @override
+  @JsonKey(name: 'jersey_number')
   int? get number;
   @override
   String? get status;
