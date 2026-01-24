@@ -273,4 +273,9 @@ class SocketService {
   VoidCallback onAuctionNominatorChanged(void Function(dynamic) callback) {
     return on(SocketEvents.auctionNominatorChanged, callback);
   }
+
+  /// Listen for auction action errors (failed bids, nominations)
+  VoidCallback onAuctionError(void Function(dynamic) callback) {
+    return on(SocketEvents.auctionError, callback);
+  }
 }

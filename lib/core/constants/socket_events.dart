@@ -33,6 +33,7 @@ class SocketEvents {
   static const auctionLotPassed = 'draft:auction_lot_passed';
   static const auctionOutbid = 'draft:auction_outbid';
   static const auctionNominatorChanged = 'draft:auction_nominator_changed';
+  static const auctionError = 'draft:auction_error';
 
   // Chat events
   static const chatMessage = 'chat:message';

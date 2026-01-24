@@ -94,16 +94,17 @@ class DraftRoomState {
 
   /// Get the current picker from draft order
   DraftOrderEntry? get currentPicker {
-    if (draft?.currentRosterId == null || draftOrder.isEmpty) return null;
+    final d = draft;
+    if (d?.currentRosterId == null || draftOrder.isEmpty) return null;
     return draftOrder
-        .where((entry) => entry.rosterId == draft!.currentRosterId)
+        .where((entry) => entry.rosterId == d!.currentRosterId)
         .firstOrNull;
   }
 
   /// Check if it's the current user's turn to pick
   bool get isMyTurn {
-    if (currentUserId == null || currentPicker == null) return false;
-    return currentPicker!.userId == currentUserId;
+    if (currentUserId == null) return false;
+    return currentPicker?.userId == currentUserId;
   }
 
   /// Get the current user's roster ID
@@ -123,9 +124,10 @@ class DraftRoomState {
 
   /// Get the draft order for current round (respects snake order)
   List<DraftOrderEntry> get currentRoundOrder {
-    if (draft == null || draftOrder.isEmpty) return draftOrder;
-    final isSnake = draft!.draftType == DraftType.snake;
-    final isReversed = isSnake && (draft!.currentRound ?? 1) % 2 == 0;
+    final d = draft;
+    if (d == null || draftOrder.isEmpty) return draftOrder;
+    final isSnake = d.draftType == DraftType.snake;
+    final isReversed = isSnake && (d.currentRound ?? 1) % 2 == 0;
     return isReversed ? draftOrder.reversed.toList() : draftOrder;
   }
 
@@ -188,6 +190,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
   VoidCallback? _lotPassedDisposer;
   VoidCallback? _outbidDisposer;
   VoidCallback? _nominatorChangedDisposer;
+  VoidCallback? _auctionErrorDisposer;
 
   DraftRoomNotifier(
     this._draftRepo,
@@ -334,6 +337,13 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
         nominationNumber: data['nominationNumber'] as int?,
       );
     });
+
+    // Auction error listener (for failed bids/nominations)
+    _auctionErrorDisposer = _socketService.onAuctionError((data) {
+      if (!mounted) return;
+      final message = data['message'] as String? ?? 'Auction action failed';
+      state = state.copyWith(error: message);
+    });
   }
 
   Future<void> loadData() async {
@@ -451,6 +461,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
     _lotPassedDisposer?.call();
     _outbidDisposer?.call();
     _nominatorChangedDisposer?.call();
+    _auctionErrorDisposer?.call();
     super.dispose();
   }
 }
