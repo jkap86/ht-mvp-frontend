@@ -6,8 +6,11 @@ import '../../../../core/widgets/states/states.dart';
 import '../../domain/roster_lineup.dart';
 import '../../domain/roster_player.dart';
 import '../providers/team_provider.dart';
+import '../widgets/lineup_locked_banner.dart';
 import '../widgets/lineup_slot_widget.dart';
+import '../widgets/move_player_sheet.dart';
 import '../widgets/roster_player_card.dart';
+import '../widgets/team_points_summary.dart';
 
 class TeamScreen extends ConsumerStatefulWidget {
   final int leagueId;
@@ -99,36 +102,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
         ),
         title: Text(state.league?.name ?? 'My Team'),
         actions: [
-          // Week selector - 18 weeks is standard for NFL regular season + playoffs
-          // TODO: Consider making this dynamic based on league settings if available
-          PopupMenuButton<int>(
-            initialValue: state.currentWeek,
-            onSelected: (week) {
-              ref.read(teamProvider(_key).notifier).changeWeek(week);
-            },
-            itemBuilder: (context) {
-              return List.generate(
-                18, // NFL regular season weeks
-                (index) => PopupMenuItem(
-                  value: index + 1,
-                  child: Text('Week ${index + 1}'),
-                ),
-              );
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Week ${state.currentWeek}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const Icon(Icons.arrow_drop_down),
-                ],
-              ),
-            ),
-          ),
+          _buildWeekSelector(state),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -158,6 +132,39 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
     );
   }
 
+  Widget _buildWeekSelector(TeamState state) {
+    // Week selector - 18 weeks is standard for NFL regular season + playoffs
+    // TODO: Consider making this dynamic based on league settings if available
+    return PopupMenuButton<int>(
+      initialValue: state.currentWeek,
+      onSelected: (week) {
+        ref.read(teamProvider(_key).notifier).changeWeek(week);
+      },
+      itemBuilder: (context) {
+        return List.generate(
+          18, // NFL regular season weeks
+          (index) => PopupMenuItem(
+            value: index + 1,
+            child: Text('Week ${index + 1}'),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Week ${state.currentWeek}',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _navigateBack(BuildContext context) {
     if (context.canPop()) {
       context.pop();
@@ -176,11 +183,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Points summary
-          _buildPointsSummary(state),
+          TeamPointsSummary(
+            totalPoints: state.totalPoints,
+            startersCount: state.starters.length,
+            benchCount: state.bench.length,
+          ),
           const SizedBox(height: 16),
-
-          // Starters section
           const Text(
             'Starters',
             style: TextStyle(
@@ -190,10 +198,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           ),
           const SizedBox(height: 8),
           ..._buildStarterSlots(state),
-
           const SizedBox(height: 24),
-
-          // Bench section
           const Text(
             'Bench',
             style: TextStyle(
@@ -214,29 +219,13 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Locked banner
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade100,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orange),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.lock, color: Colors.orange),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Lineup is locked for this week. Games have started.',
-                    style: TextStyle(color: Colors.orange),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const LineupLockedBanner(),
           const SizedBox(height: 16),
-          _buildPointsSummary(state),
+          TeamPointsSummary(
+            totalPoints: state.totalPoints,
+            startersCount: state.starters.length,
+            benchCount: state.bench.length,
+          ),
           const SizedBox(height: 16),
           ..._buildStarterSlots(state),
           const SizedBox(height: 24),
@@ -247,64 +236,6 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           const SizedBox(height: 8),
           ..._buildBenchSlots(state),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPointsSummary(TeamState state) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Column(
-              children: [
-                Text(
-                  state.totalPoints.toStringAsFixed(2),
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Text(
-                  'Total Points',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text(
-                  '${state.starters.length}',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Text(
-                  'Starters',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text(
-                  '${state.bench.length}',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Text(
-                  'Bench',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -345,7 +276,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           isLocked: state.lineup?.isLocked ?? false,
           onTap: state.lineup?.isLocked == true
               ? null
-              : () => _showMovePlayerDialog(state, player),
+              : () => _handleMovePlayer(state, player),
         ),
       );
     }).toList();
@@ -374,7 +305,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
         child: RosterPlayerCard(
           player: player,
           showActions: state.lineup?.isLocked != true,
-          onMove: () => _showMovePlayerDialog(state, player),
+          onMove: () => _handleMovePlayer(state, player),
           onDrop: () => _confirmDropPlayer(player),
         ),
       );
@@ -396,7 +327,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
               showSlot: true,
               currentSlot: state.lineup?.lineup.getPlayerSlot(player.playerId),
               showActions: true,
-              onMove: () => _showMovePlayerDialog(state, player),
+              onMove: () => _handleMovePlayer(state, player),
               onDrop: () => _confirmDropPlayer(player),
             ),
           );
@@ -405,84 +336,20 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
     );
   }
 
-  void _showMovePlayerDialog(TeamState state, RosterPlayer? player) {
+  void _handleMovePlayer(TeamState state, RosterPlayer? player) {
     if (player == null) return;
 
-    // Determine which slots this player can fill based on position
-    final position = player.position;
-    final validSlots =
-        LineupSlot.values.where((slot) => slot.canFill(position)).toList();
-
-    showModalBottomSheet(
+    showMovePlayerSheet(
       context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Move ${player.fullName ?? "Player"}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const Divider(height: 1),
-              ...validSlots.map((slot) {
-                final isCurrentSlot =
-                    state.lineup?.lineup.getPlayerSlot(player.playerId) == slot;
-                return ListTile(
-                  leading: Icon(
-                    _getSlotIcon(slot),
-                    color:
-                        isCurrentSlot ? Theme.of(context).primaryColor : null,
-                  ),
-                  title: Text(slot.displayName),
-                  trailing: isCurrentSlot
-                      ? const Icon(Icons.check, color: Colors.green)
-                      : null,
-                  onTap: isCurrentSlot
-                      ? null
-                      : () {
-                          Navigator.of(context).pop();
-                          ref.read(teamProvider(_key).notifier).movePlayer(
-                                player.playerId,
-                                slot.code,
-                              );
-                        },
-                );
-              }),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
+      player: player,
+      currentSlot: state.lineup?.lineup.getPlayerSlot(player.playerId),
+      onMove: (slotCode) {
+        ref.read(teamProvider(_key).notifier).movePlayer(
+              player.playerId,
+              slotCode,
+            );
       },
     );
-  }
-
-  IconData _getSlotIcon(LineupSlot slot) {
-    switch (slot) {
-      case LineupSlot.qb:
-        return Icons.sports_football;
-      case LineupSlot.rb:
-        return Icons.directions_run;
-      case LineupSlot.wr:
-        return Icons.catching_pokemon;
-      case LineupSlot.te:
-        return Icons.person;
-      case LineupSlot.flex:
-        return Icons.swap_horiz;
-      case LineupSlot.k:
-        return Icons.sports_soccer;
-      case LineupSlot.def:
-        return Icons.shield;
-      case LineupSlot.bn:
-        return Icons.chair;
-    }
   }
 
   void _confirmDropPlayer(RosterPlayer player) {

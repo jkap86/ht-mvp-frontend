@@ -9,6 +9,9 @@ import '../../../waivers/presentation/widgets/waiver_claim_dialog.dart';
 import '../../domain/roster_player.dart';
 import '../providers/free_agents_provider.dart';
 import '../providers/team_provider.dart';
+import '../widgets/free_agent_card.dart';
+import '../widgets/position_filter_chips.dart';
+import '../widgets/add_drop_player_sheet.dart';
 
 class FreeAgentsScreen extends ConsumerStatefulWidget {
   final int leagueId;
@@ -26,7 +29,6 @@ class FreeAgentsScreen extends ConsumerStatefulWidget {
 
 class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
   final _searchController = TextEditingController();
-  final _positions = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
 
   FreeAgentsKey get _key => (leagueId: widget.leagueId, rosterId: widget.rosterId);
   TeamKey get _teamKey => (leagueId: widget.leagueId, rosterId: widget.rosterId);
@@ -37,15 +39,12 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     super.dispose();
   }
 
-  /// Get the waiver type from league settings ('none', 'standard', 'faab')
   String _getWaiverType(Map<String, dynamic>? settings) {
     return settings?['waiver_type'] as String? ?? 'none';
   }
 
-  /// Check if waivers are enabled for this league
   bool _waiversEnabled(Map<String, dynamic>? settings) {
-    final waiverType = _getWaiverType(settings);
-    return waiverType != 'none';
+    return _getWaiverType(settings) != 'none';
   }
 
   @override
@@ -55,7 +54,6 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     final waiversKey = (leagueId: widget.leagueId, userRosterId: widget.rosterId);
     final waiversState = ref.watch(waiversProvider(waiversKey));
 
-    // Determine if waivers are enabled
     final waiversEnabled = _waiversEnabled(teamState.league?.settings);
     final isFaabLeague = _getWaiverType(teamState.league?.settings) == 'faab';
 
@@ -87,73 +85,12 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
           preferredSize: const Size.fromHeight(110),
           child: Column(
             children: [
-              // Search bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search players...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              ref.read(freeAgentsProvider(_key).notifier).setSearch('');
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surface,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  onChanged: (value) {
-                    ref.read(freeAgentsProvider(_key).notifier).setSearch(value);
-                  },
-                  onSubmitted: (value) {
-                    ref.read(freeAgentsProvider(_key).notifier).searchAndReload(value);
-                  },
-                ),
-              ),
-
-              // Position filter chips
-              SizedBox(
-                height: 40,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: FilterChip(
-                        label: const Text('All'),
-                        selected: state.selectedPosition == null,
-                        onSelected: (_) {
-                          ref.read(freeAgentsProvider(_key).notifier).setPosition(null);
-                        },
-                      ),
-                    ),
-                    ..._positions.map((pos) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: FilterChip(
-                          label: Text(pos),
-                          selected: state.selectedPosition == pos,
-                          onSelected: (_) {
-                            final currentPos = state.selectedPosition;
-                            ref.read(freeAgentsProvider(_key).notifier).setPosition(
-                                  currentPos == pos ? null : pos,
-                                );
-                          },
-                        ),
-                      );
-                    }),
-                  ],
-                ),
+              _buildSearchBar(state),
+              PositionFilterChips(
+                selectedPosition: state.selectedPosition,
+                onPositionSelected: (pos) {
+                  ref.read(freeAgentsProvider(_key).notifier).setPosition(pos);
+                },
               ),
               const SizedBox(height: 8),
             ],
@@ -165,6 +102,40 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         waiversState: waiversState,
         waiversEnabled: waiversEnabled,
         isFaabLeague: isFaabLeague,
+      ),
+    );
+  }
+
+  Widget _buildSearchBar(FreeAgentsState state) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Search players...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    ref.read(freeAgentsProvider(_key).notifier).setSearch('');
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          filled: true,
+          fillColor: Theme.of(context).colorScheme.surface,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        ),
+        onChanged: (value) {
+          ref.read(freeAgentsProvider(_key).notifier).setSearch(value);
+        },
+        onSubmitted: (value) {
+          ref.read(freeAgentsProvider(_key).notifier).searchAndReload(value);
+        },
       ),
     );
   }
@@ -216,7 +187,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: _FreeAgentCard(
+            child: FreeAgentCard(
               player: player,
               isAdding: isAdding,
               isOnWaiverWire: isOnWaiverWire,
@@ -243,14 +214,12 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     final rosterPlayers = teamState.players;
     final league = teamState.league;
 
-    // Get max roster size from league settings, fallback to 15
     final rosterConfig = league?.settings['roster_config'] as Map<String, dynamic>?;
     final maxRosterSize = rosterConfig != null
         ? rosterConfig.values.fold<int>(0, (sum, val) => sum + (val as int))
         : 15;
     final isRosterFull = rosterPlayers.length >= maxRosterSize;
 
-    // If player is on waiver wire, show waiver claim dialog
     if (isOnWaiverWire) {
       _showWaiverClaimDialog(
         player,
@@ -262,7 +231,6 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     }
 
     if (!isRosterFull) {
-      // Roster has space - just add the player
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -282,7 +250,6 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
                   messenger.showSnackBar(
                     SnackBar(content: Text('${player.fullName} added to roster')),
                   );
-                  // Refresh team data
                   ref.read(teamProvider(_teamKey).notifier).loadData();
                 }
               },
@@ -292,8 +259,22 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         ),
       );
     } else {
-      // Roster is full - need to drop a player
-      _showAddDropDialog(player, rosterPlayers);
+      showAddDropPlayerSheet(
+        context: context,
+        addPlayer: player,
+        rosterPlayers: rosterPlayers,
+        onDropSelected: (dropPlayerId) async {
+          return await ref.read(freeAgentsProvider(_key).notifier).addDropPlayer(player.id, dropPlayerId);
+        },
+        onSuccess: () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${player.fullName} added to roster')),
+            );
+            ref.read(teamProvider(_teamKey).notifier).loadData();
+          }
+        },
+      );
     }
   }
 
@@ -334,272 +315,5 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         }
       },
     );
-  }
-
-  void _showAddDropDialog(Player addPlayer, List<RosterPlayer> rosterPlayers) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (context, scrollController) {
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Select Player to Drop',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Your roster is full. Select a player to drop to add ${addPlayer.fullName}.',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    itemCount: rosterPlayers.length,
-                    itemBuilder: (context, index) {
-                      final dropPlayer = rosterPlayers[index];
-                      return ListTile(
-                        leading: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: _getPositionColor(dropPlayer.position),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              dropPlayer.position ?? '?',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                        title: Text(dropPlayer.fullName ?? 'Unknown'),
-                        subtitle: Text(dropPlayer.team ?? 'FA'),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () async {
-                          Navigator.of(context).pop();
-                          final success = await ref
-                              .read(freeAgentsProvider(_key).notifier)
-                              .addDropPlayer(addPlayer.id, dropPlayer.playerId);
-                          if (success && mounted) {
-                            ScaffoldMessenger.of(this.context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Added ${addPlayer.fullName}, dropped ${dropPlayer.fullName}',
-                                ),
-                              ),
-                            );
-                            // Refresh team data
-                            ref.read(teamProvider(_teamKey).notifier).loadData();
-                          }
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Color _getPositionColor(String? position) {
-    switch (position?.toUpperCase()) {
-      case 'QB':
-        return Colors.red;
-      case 'RB':
-        return Colors.green;
-      case 'WR':
-        return Colors.blue;
-      case 'TE':
-        return Colors.orange;
-      case 'K':
-        return Colors.purple;
-      case 'DEF':
-        return Colors.brown;
-      default:
-        return Colors.grey;
-    }
-  }
-}
-
-class _FreeAgentCard extends StatelessWidget {
-  final Player player;
-  final bool isAdding;
-  final bool isOnWaiverWire;
-  final VoidCallback onAdd;
-
-  const _FreeAgentCard({
-    required this.player,
-    required this.isAdding,
-    this.isOnWaiverWire = false,
-    required this.onAdd,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            // Position badge
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _getPositionColor(player.position),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  player.position ?? '?',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Player info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          player.fullName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (player.injuryStatus != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getInjuryColor(player.injuryStatus),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            player.injuryStatus!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    player.team ?? 'Free Agent',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Add/Claim button
-            const SizedBox(width: 8),
-            if (isAdding)
-              const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else if (isOnWaiverWire)
-              // Show "Claim" chip for waiver wire players
-              ActionChip(
-                avatar: const Icon(Icons.access_time, size: 18),
-                label: const Text('Claim'),
-                onPressed: onAdd,
-                backgroundColor: Colors.orange.withValues(alpha: 0.1),
-                side: BorderSide(color: Colors.orange.withValues(alpha: 0.3)),
-              )
-            else
-              IconButton(
-                icon: const Icon(Icons.add_circle),
-                color: Theme.of(context).primaryColor,
-                onPressed: onAdd,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _getPositionColor(String? position) {
-    switch (position?.toUpperCase()) {
-      case 'QB':
-        return Colors.red;
-      case 'RB':
-        return Colors.green;
-      case 'WR':
-        return Colors.blue;
-      case 'TE':
-        return Colors.orange;
-      case 'K':
-        return Colors.purple;
-      case 'DEF':
-        return Colors.brown;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  Color _getInjuryColor(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'OUT':
-        return Colors.red;
-      case 'DOUBTFUL':
-        return Colors.red.shade300;
-      case 'QUESTIONABLE':
-        return Colors.orange;
-      case 'PROBABLE':
-        return Colors.yellow.shade700;
-      case 'IR':
-        return Colors.red.shade900;
-      default:
-        return Colors.grey;
-    }
   }
 }

@@ -393,12 +393,13 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
     }
   }
 
-  Future<bool> makePick(int playerId) async {
+  /// Returns null on success, or an error message on failure
+  Future<String?> makePick(int playerId) async {
     try {
       await _draftRepo.makePick(leagueId, draftId, playerId);
-      return true;
+      return null;
     } catch (e) {
-      return false;
+      return e.toString();
     }
   }
 
@@ -421,21 +422,23 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
     }
   }
 
-  Future<bool> nominate(int playerId) async {
+  /// Returns null on success, or an error message on failure
+  Future<String?> nominate(int playerId) async {
     try {
       await _draftRepo.nominate(leagueId, draftId, playerId);
-      return true;
+      return null;
     } catch (e) {
-      return false;
+      return e.toString();
     }
   }
 
-  Future<bool> setMaxBid(int lotId, int maxBid) async {
+  /// Returns null on success, or an error message on failure
+  Future<String?> setMaxBid(int lotId, int maxBid) async {
     try {
       await _draftRepo.setMaxBid(leagueId, draftId, lotId, maxBid);
-      return true;
+      return null;
     } catch (e) {
-      return false;
+      return e.toString();
     }
   }
 

@@ -28,6 +28,18 @@ final _authChangeNotifierProvider = Provider<AuthChangeNotifier>((ref) {
   return AuthChangeNotifier(ref);
 });
 
+/// Safely parse an integer from route parameters, returning 0 if invalid
+int _parseIntParam(String? value) {
+  if (value == null) return 0;
+  return int.tryParse(value) ?? 0;
+}
+
+/// Safely extract int from extra, returning default if not an int
+int _extractIntExtra(Object? extra, [int defaultValue = 0]) {
+  if (extra is int) return extra;
+  return defaultValue;
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authChangeNotifier = ref.watch(_authChangeNotifierProvider);
 
@@ -71,45 +83,45 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/leagues/:leagueId',
         builder: (context, state) {
-          final leagueId = int.parse(state.pathParameters['leagueId']!);
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
           return LeagueDetailScreen(leagueId: leagueId);
         },
       ),
       GoRoute(
         path: '/leagues/:leagueId/drafts/:draftId',
         builder: (context, state) {
-          final leagueId = int.parse(state.pathParameters['leagueId']!);
-          final draftId = int.parse(state.pathParameters['draftId']!);
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
+          final draftId = _parseIntParam(state.pathParameters['draftId']);
           return DraftRoomScreen(leagueId: leagueId, draftId: draftId);
         },
       ),
       GoRoute(
         path: '/leagues/:leagueId/team/:rosterId',
         builder: (context, state) {
-          final leagueId = int.parse(state.pathParameters['leagueId']!);
-          final rosterId = int.parse(state.pathParameters['rosterId']!);
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
+          final rosterId = _parseIntParam(state.pathParameters['rosterId']);
           return TeamScreen(leagueId: leagueId, rosterId: rosterId);
         },
       ),
       GoRoute(
         path: '/leagues/:leagueId/free-agents',
         builder: (context, state) {
-          final leagueId = int.parse(state.pathParameters['leagueId']!);
-          final rosterId = state.extra as int? ?? 0;
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
+          final rosterId = _extractIntExtra(state.extra);
           return FreeAgentsScreen(leagueId: leagueId, rosterId: rosterId);
         },
       ),
       GoRoute(
         path: '/leagues/:leagueId/matchups',
         builder: (context, state) {
-          final leagueId = int.parse(state.pathParameters['leagueId']!);
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
           return MatchupScreen(leagueId: leagueId);
         },
       ),
       GoRoute(
         path: '/leagues/:leagueId/standings',
         builder: (context, state) {
-          final leagueId = int.parse(state.pathParameters['leagueId']!);
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
           return StandingsScreen(leagueId: leagueId);
         },
       ),
@@ -117,30 +129,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/leagues/:leagueId/trades',
         builder: (context, state) {
-          final leagueId = int.parse(state.pathParameters['leagueId']!);
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
           return TradesListScreen(leagueId: leagueId);
         },
       ),
       GoRoute(
         path: '/leagues/:leagueId/trades/propose',
         builder: (context, state) {
-          final leagueId = int.parse(state.pathParameters['leagueId']!);
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
           return ProposeTradeScreen(leagueId: leagueId);
         },
       ),
       GoRoute(
         path: '/leagues/:leagueId/trades/:tradeId',
         builder: (context, state) {
-          final leagueId = int.parse(state.pathParameters['leagueId']!);
-          final tradeId = int.parse(state.pathParameters['tradeId']!);
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
+          final tradeId = _parseIntParam(state.pathParameters['tradeId']);
           return TradeDetailScreen(leagueId: leagueId, tradeId: tradeId);
         },
       ),
       GoRoute(
         path: '/leagues/:leagueId/trades/:tradeId/counter',
         builder: (context, state) {
-          final leagueId = int.parse(state.pathParameters['leagueId']!);
-          final tradeId = int.parse(state.pathParameters['tradeId']!);
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
+          final tradeId = _parseIntParam(state.pathParameters['tradeId']);
           return CounterTradeScreen(
             leagueId: leagueId,
             originalTradeId: tradeId,

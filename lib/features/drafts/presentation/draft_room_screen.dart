@@ -32,47 +32,72 @@ class DraftRoomScreen extends ConsumerStatefulWidget {
 class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
   String _searchQuery = '';
   bool _showGridView = false;
+  bool _isSubmitting = false; // Prevents double-tap during API calls
 
   DraftRoomKey get _providerKey => (leagueId: widget.leagueId, draftId: widget.draftId);
   DraftQueueKey get _queueKey => (leagueId: widget.leagueId, draftId: widget.draftId);
 
   Future<void> _makePick(int playerId) async {
-    final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
-    final success = await notifier.makePick(playerId);
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error making pick')),
-      );
+    if (_isSubmitting) return; // Prevent double-tap
+    setState(() => _isSubmitting = true);
+    try {
+      final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+      final error = await notifier.makePick(playerId);
+      if (error != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
   Future<void> _addToQueue(int playerId) async {
-    final notifier = ref.read(draftQueueProvider(_queueKey).notifier);
-    final success = await notifier.addToQueue(playerId);
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error adding to queue')),
-      );
+    if (_isSubmitting) return; // Prevent double-tap
+    setState(() => _isSubmitting = true);
+    try {
+      final notifier = ref.read(draftQueueProvider(_queueKey).notifier);
+      final success = await notifier.addToQueue(playerId);
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to add player to queue'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
   Future<void> _handleNominate(int playerId) async {
-    final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
-    final success = await notifier.nominate(playerId);
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error nominating player')),
-      );
+    if (_isSubmitting) return; // Prevent double-tap
+    setState(() => _isSubmitting = true);
+    try {
+      final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+      final error = await notifier.nominate(playerId);
+      if (error != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
   Future<void> _handleSetMaxBid(int lotId, int maxBid) async {
-    final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
-    final success = await notifier.setMaxBid(lotId, maxBid);
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error setting bid')),
-      );
+    if (_isSubmitting) return; // Prevent double-tap
+    setState(() => _isSubmitting = true);
+    try {
+      final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+      final error = await notifier.setMaxBid(lotId, maxBid);
+      if (error != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 

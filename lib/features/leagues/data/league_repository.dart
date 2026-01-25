@@ -15,7 +15,8 @@ class LeagueRepository {
 
   Future<List<League>> getMyLeagues() async {
     final response = await _apiClient.get('/leagues/my-leagues');
-    return (response as List).map((json) => League.fromJson(json)).toList();
+    if (response is! List) return [];
+    return response.map((json) => League.fromJson(json)).toList();
   }
 
   Future<League> getLeague(int id) async {
@@ -49,12 +50,14 @@ class LeagueRepository {
 
   Future<List<Roster>> getLeagueMembers(int leagueId) async {
     final response = await _apiClient.get('/leagues/$leagueId/members');
-    return (response as List).map((json) => Roster.fromJson(json)).toList();
+    if (response is! List) return [];
+    return response.map((json) => Roster.fromJson(json)).toList();
   }
 
   Future<List<Draft>> getLeagueDrafts(int leagueId) async {
     final response = await _apiClient.get('/leagues/$leagueId/drafts');
-    return (response as List).map((json) => Draft.fromJson(json)).toList();
+    if (response is! List) return [];
+    return response.map((json) => Draft.fromJson(json)).toList();
   }
 
   Future<Draft> createDraft(int leagueId) async {
