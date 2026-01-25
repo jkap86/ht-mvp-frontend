@@ -278,4 +278,78 @@ class SocketService {
   VoidCallback onAuctionError(void Function(dynamic) callback) {
     return on(SocketEvents.auctionError, callback);
   }
+
+  // Trade event listeners
+  VoidCallback onTradeProposed(void Function(dynamic) callback) {
+    return on(SocketEvents.tradeProposed, callback);
+  }
+
+  VoidCallback onTradeAccepted(void Function(dynamic) callback) {
+    return on(SocketEvents.tradeAccepted, callback);
+  }
+
+  VoidCallback onTradeRejected(void Function(dynamic) callback) {
+    return on(SocketEvents.tradeRejected, callback);
+  }
+
+  VoidCallback onTradeCountered(void Function(dynamic) callback) {
+    return on(SocketEvents.tradeCountered, callback);
+  }
+
+  VoidCallback onTradeCancelled(void Function(dynamic) callback) {
+    return on(SocketEvents.tradeCancelled, callback);
+  }
+
+  VoidCallback onTradeExpired(void Function(dynamic) callback) {
+    return on(SocketEvents.tradeExpired, callback);
+  }
+
+  VoidCallback onTradeCompleted(void Function(dynamic) callback) {
+    return on(SocketEvents.tradeCompleted, callback);
+  }
+
+  VoidCallback onTradeVetoed(void Function(dynamic) callback) {
+    return on(SocketEvents.tradeVetoed, callback);
+  }
+
+  VoidCallback onTradeVoteCast(void Function(dynamic) callback) {
+    return on(SocketEvents.tradeVoteCast, callback);
+  }
+
+  VoidCallback onTradeInvalidated(void Function(dynamic) callback) {
+    return on(SocketEvents.tradeInvalidated, callback);
+  }
+
+  // Waiver event listeners
+  VoidCallback onWaiverClaimSubmitted(void Function(dynamic) callback) {
+    return on(SocketEvents.waiverClaimSubmitted, callback);
+  }
+
+  VoidCallback onWaiverClaimCancelled(void Function(dynamic) callback) {
+    return on(SocketEvents.waiverClaimCancelled, callback);
+  }
+
+  VoidCallback onWaiverClaimUpdated(void Function(dynamic) callback) {
+    return on(SocketEvents.waiverClaimUpdated, callback);
+  }
+
+  VoidCallback onWaiverProcessed(void Function(dynamic) callback) {
+    return on(SocketEvents.waiverProcessed, callback);
+  }
+
+  VoidCallback onWaiverClaimSuccessful(void Function(dynamic) callback) {
+    return on(SocketEvents.waiverClaimSuccessful, callback);
+  }
+
+  VoidCallback onWaiverClaimFailed(void Function(dynamic) callback) {
+    return on(SocketEvents.waiverClaimFailed, callback);
+  }
+
+  VoidCallback onWaiverPriorityUpdated(void Function(dynamic) callback) {
+    return on(SocketEvents.waiverPriorityUpdated, callback);
+  }
+
+  VoidCallback onWaiverBudgetUpdated(void Function(dynamic) callback) {
+    return on(SocketEvents.waiverBudgetUpdated, callback);
+  }
 }

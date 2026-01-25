@@ -1,0 +1,119 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/api/api_client.dart';
+import '../domain/trade.dart';
+
+final tradeRepositoryProvider = Provider<TradeRepository>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return TradeRepository(apiClient);
+});
+
+/// Repository for trade-related API calls
+class TradeRepository {
+  final ApiClient _apiClient;
+
+  TradeRepository(this._apiClient);
+
+  /// Get all trades for a league
+  Future<List<Trade>> getTrades(
+    int leagueId, {
+    List<String>? statuses,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    String endpoint = '/leagues/$leagueId/trades?limit=$limit&offset=$offset';
+    if (statuses != null && statuses.isNotEmpty) {
+      endpoint += '&status=${statuses.join(',')}';
+    }
+    final response = await _apiClient.get(endpoint);
+    final tradesList =
+        (response['trades'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return tradesList.map((json) => Trade.fromJson(json)).toList();
+  }
+
+  /// Get a single trade by ID
+  Future<Trade> getTrade(int leagueId, int tradeId) async {
+    final response = await _apiClient.get('/leagues/$leagueId/trades/$tradeId');
+    return Trade.fromJson(response);
+  }
+
+  /// Propose a new trade
+  Future<Trade> proposeTrade({
+    required int leagueId,
+    required int recipientRosterId,
+    required List<int> offeringPlayerIds,
+    required List<int> requestingPlayerIds,
+    String? message,
+  }) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/trades',
+      body: {
+        'recipient_roster_id': recipientRosterId,
+        'offering_player_ids': offeringPlayerIds,
+        'requesting_player_ids': requestingPlayerIds,
+        if (message != null && message.isNotEmpty) 'message': message,
+      },
+    );
+    return Trade.fromJson(response);
+  }
+
+  /// Accept a trade
+  Future<Trade> acceptTrade(int leagueId, int tradeId) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/trades/$tradeId/accept',
+    );
+    return Trade.fromJson(response);
+  }
+
+  /// Reject a trade
+  Future<Trade> rejectTrade(int leagueId, int tradeId) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/trades/$tradeId/reject',
+    );
+    return Trade.fromJson(response);
+  }
+
+  /// Cancel a trade (proposer only)
+  Future<Trade> cancelTrade(int leagueId, int tradeId) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/trades/$tradeId/cancel',
+    );
+    return Trade.fromJson(response);
+  }
+
+  /// Counter a trade with a new offer
+  Future<Trade> counterTrade({
+    required int leagueId,
+    required int tradeId,
+    required List<int> offeringPlayerIds,
+    required List<int> requestingPlayerIds,
+    String? message,
+  }) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/trades/$tradeId/counter',
+      body: {
+        'offering_player_ids': offeringPlayerIds,
+        'requesting_player_ids': requestingPlayerIds,
+        if (message != null && message.isNotEmpty) 'message': message,
+      },
+    );
+    return Trade.fromJson(response);
+  }
+
+  /// Vote on a trade during review period
+  Future<Map<String, dynamic>> voteTrade(
+    int leagueId,
+    int tradeId,
+    String vote,
+  ) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/trades/$tradeId/vote',
+      body: {
+        'vote': vote, // 'approve' or 'veto'
+      },
+    );
+    return {
+      'trade': Trade.fromJson(response['trade'] as Map<String, dynamic>),
+      'vote_count': response['vote_count'] as int? ?? 0,
+    };
+  }
+}

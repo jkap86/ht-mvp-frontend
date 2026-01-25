@@ -244,6 +244,17 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
                 : null,
           ),
         ),
+        const SizedBox(height: 8),
+        // Trades card
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.swap_horiz),
+            title: const Text('Trades'),
+            subtitle: const Text('Propose and manage trades'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/leagues/${widget.leagueId}/trades'),
+          ),
+        ),
       ],
     );
   }

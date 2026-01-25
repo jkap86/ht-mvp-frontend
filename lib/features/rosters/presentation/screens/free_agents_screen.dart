@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/widgets/states/states.dart';
 import '../../../players/domain/player.dart';
+import '../../../waivers/presentation/providers/waiver_provider.dart';
+import '../../../waivers/presentation/widgets/waiver_claim_dialog.dart';
 import '../../domain/roster_player.dart';
 import '../providers/free_agents_provider.dart';
 import '../providers/team_provider.dart';
@@ -35,9 +37,27 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     super.dispose();
   }
 
+  /// Get the waiver type from league settings ('none', 'standard', 'faab')
+  String _getWaiverType(Map<String, dynamic>? settings) {
+    return settings?['waiver_type'] as String? ?? 'none';
+  }
+
+  /// Check if waivers are enabled for this league
+  bool _waiversEnabled(Map<String, dynamic>? settings) {
+    final waiverType = _getWaiverType(settings);
+    return waiverType != 'none';
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(freeAgentsProvider(_key));
+    final teamState = ref.watch(teamProvider(_teamKey));
+    final waiversKey = (leagueId: widget.leagueId, userRosterId: widget.rosterId);
+    final waiversState = ref.watch(waiversProvider(waiversKey));
+
+    // Determine if waivers are enabled
+    final waiversEnabled = _waiversEnabled(teamState.league?.settings);
+    final isFaabLeague = _getWaiverType(teamState.league?.settings) == 'faab';
 
     // Show error snackbar
     ref.listen<FreeAgentsState>(freeAgentsProvider(_key), (previous, next) {
@@ -140,7 +160,12 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
           ),
         ),
       ),
-      body: _buildBody(state),
+      body: _buildBody(
+        state,
+        waiversState: waiversState,
+        waiversEnabled: waiversEnabled,
+        isFaabLeague: isFaabLeague,
+      ),
     );
   }
 
@@ -152,7 +177,12 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     }
   }
 
-  Widget _buildBody(FreeAgentsState state) {
+  Widget _buildBody(
+    FreeAgentsState state, {
+    required WaiversState waiversState,
+    required bool waiversEnabled,
+    required bool isFaabLeague,
+  }) {
     if (state.isLoading && state.players.isEmpty) {
       return const AppLoadingView();
     }
@@ -182,13 +212,20 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         itemBuilder: (context, index) {
           final player = players[index];
           final isAdding = state.isAddingPlayer && state.addingPlayerId == player.id;
+          final isOnWaiverWire = waiversEnabled && waiversState.isOnWaiverWire(player.id);
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: _FreeAgentCard(
               player: player,
               isAdding: isAdding,
-              onAdd: () => _showAddPlayerDialog(player),
+              isOnWaiverWire: isOnWaiverWire,
+              onAdd: () => _showAddPlayerDialog(
+                player,
+                isOnWaiverWire: isOnWaiverWire,
+                isFaabLeague: isFaabLeague,
+                waiversState: waiversState,
+              ),
             ),
           );
         },
@@ -196,7 +233,12 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     );
   }
 
-  void _showAddPlayerDialog(Player player) {
+  void _showAddPlayerDialog(
+    Player player, {
+    required bool isOnWaiverWire,
+    required bool isFaabLeague,
+    required WaiversState waiversState,
+  }) {
     final teamState = ref.read(teamProvider(_teamKey));
     final rosterPlayers = teamState.players;
     final league = teamState.league;
@@ -207,6 +249,17 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         ? rosterConfig.values.fold<int>(0, (sum, val) => sum + (val as int))
         : 15;
     final isRosterFull = rosterPlayers.length >= maxRosterSize;
+
+    // If player is on waiver wire, show waiver claim dialog
+    if (isOnWaiverWire) {
+      _showWaiverClaimDialog(
+        player,
+        rosterPlayers: rosterPlayers,
+        isFaabLeague: isFaabLeague,
+        waiversState: waiversState,
+      );
+      return;
+    }
 
     if (!isRosterFull) {
       // Roster has space - just add the player
@@ -242,6 +295,45 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
       // Roster is full - need to drop a player
       _showAddDropDialog(player, rosterPlayers);
     }
+  }
+
+  void _showWaiverClaimDialog(
+    Player player, {
+    required List<RosterPlayer> rosterPlayers,
+    required bool isFaabLeague,
+    required WaiversState waiversState,
+  }) {
+    final faabBudget = waiversState.getBudgetForRoster(widget.rosterId);
+
+    showWaiverClaimDialog(
+      context: context,
+      leagueId: widget.leagueId,
+      rosterId: widget.rosterId,
+      playerName: player.fullName,
+      playerId: player.id,
+      playerPosition: player.position,
+      playerTeam: player.team,
+      rosterPlayers: rosterPlayers,
+      faabBudget: faabBudget,
+      isFaabLeague: isFaabLeague,
+      onSubmit: ({
+        required int playerId,
+        int? dropPlayerId,
+        int bidAmount = 0,
+      }) async {
+        final waiversKey = (leagueId: widget.leagueId, userRosterId: widget.rosterId);
+        final claim = await ref.read(waiversProvider(waiversKey).notifier).submitClaim(
+          playerId: playerId,
+          dropPlayerId: dropPlayerId,
+          bidAmount: bidAmount,
+        );
+        if (claim != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Waiver claim submitted for ${player.fullName}')),
+          );
+        }
+      },
+    );
   }
 
   void _showAddDropDialog(Player addPlayer, List<RosterPlayer> rosterPlayers) {
@@ -358,11 +450,13 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
 class _FreeAgentCard extends StatelessWidget {
   final Player player;
   final bool isAdding;
+  final bool isOnWaiverWire;
   final VoidCallback onAdd;
 
   const _FreeAgentCard({
     required this.player,
     required this.isAdding,
+    this.isOnWaiverWire = false,
     required this.onAdd,
   });
 
@@ -444,13 +538,22 @@ class _FreeAgentCard extends StatelessWidget {
               ),
             ),
 
-            // Add button
+            // Add/Claim button
             const SizedBox(width: 8),
             if (isAdding)
               const SizedBox(
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else if (isOnWaiverWire)
+              // Show "Claim" chip for waiver wire players
+              ActionChip(
+                avatar: const Icon(Icons.access_time, size: 18),
+                label: const Text('Claim'),
+                onPressed: onAdd,
+                backgroundColor: Colors.orange.withValues(alpha: 0.1),
+                side: BorderSide(color: Colors.orange.withValues(alpha: 0.3)),
               )
             else
               IconButton(

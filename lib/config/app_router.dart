@@ -12,6 +12,9 @@ import '../features/rosters/presentation/screens/team_screen.dart';
 import '../features/rosters/presentation/screens/free_agents_screen.dart';
 import '../features/matchups/presentation/screens/matchup_screen.dart';
 import '../features/matchups/presentation/screens/standings_screen.dart';
+import '../features/trades/presentation/screens/trades_list_screen.dart';
+import '../features/trades/presentation/screens/trade_detail_screen.dart';
+import '../features/trades/presentation/screens/propose_trade_screen.dart';
 
 // Listenable that notifies when auth state changes
 class AuthChangeNotifier extends ChangeNotifier {
@@ -107,6 +110,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final leagueId = int.parse(state.pathParameters['leagueId']!);
           return StandingsScreen(leagueId: leagueId);
+        },
+      ),
+      // Trades routes
+      GoRoute(
+        path: '/leagues/:leagueId/trades',
+        builder: (context, state) {
+          final leagueId = int.parse(state.pathParameters['leagueId']!);
+          return TradesListScreen(leagueId: leagueId);
+        },
+      ),
+      GoRoute(
+        path: '/leagues/:leagueId/trades/propose',
+        builder: (context, state) {
+          final leagueId = int.parse(state.pathParameters['leagueId']!);
+          return ProposeTradeScreen(leagueId: leagueId);
+        },
+      ),
+      GoRoute(
+        path: '/leagues/:leagueId/trades/:tradeId',
+        builder: (context, state) {
+          final leagueId = int.parse(state.pathParameters['leagueId']!);
+          final tradeId = int.parse(state.pathParameters['tradeId']!);
+          return TradeDetailScreen(leagueId: leagueId, tradeId: tradeId);
         },
       ),
     ],

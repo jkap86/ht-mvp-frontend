@@ -37,4 +37,26 @@ class SocketEvents {
 
   // Chat events
   static const chatMessage = 'chat:message';
+
+  // Trade events
+  static const tradeProposed = 'trade:proposed';
+  static const tradeAccepted = 'trade:accepted';
+  static const tradeRejected = 'trade:rejected';
+  static const tradeCountered = 'trade:countered';
+  static const tradeCancelled = 'trade:cancelled';
+  static const tradeExpired = 'trade:expired';
+  static const tradeCompleted = 'trade:completed';
+  static const tradeVetoed = 'trade:vetoed';
+  static const tradeVoteCast = 'trade:vote_cast';
+  static const tradeInvalidated = 'trade:invalidated';
+
+  // Waiver events
+  static const waiverClaimSubmitted = 'waiver:claim_submitted';
+  static const waiverClaimCancelled = 'waiver:claim_cancelled';
+  static const waiverClaimUpdated = 'waiver:claim_updated';
+  static const waiverProcessed = 'waiver:processed';
+  static const waiverClaimSuccessful = 'waiver:claim_successful';
+  static const waiverClaimFailed = 'waiver:claim_failed';
+  static const waiverPriorityUpdated = 'waiver:priority_updated';
+  static const waiverBudgetUpdated = 'waiver:budget_updated';
 }
