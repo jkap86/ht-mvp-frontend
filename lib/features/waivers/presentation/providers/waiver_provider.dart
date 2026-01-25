@@ -113,24 +113,48 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
   void _setupSocketListeners() {
     _socketService.joinLeague(leagueId);
 
-    _claimSubmittedDisposer = _socketService.onWaiverClaimSubmitted((data) {
+    // Helper to safely parse waiver claim data - handles both full objects and minimal payloads
+    void handleClaimEvent(dynamic data, {bool reloadOnPartial = true}) {
       if (!mounted) return;
-      final claim = WaiverClaim.fromJson(Map<String, dynamic>.from(data));
-      _addOrUpdateClaim(claim);
+      if (data is! Map) return;
+
+      final dataMap = Map<String, dynamic>.from(data);
+
+      // Check if this is a full claim object (has required fields)
+      if (dataMap.containsKey('league_id') && dataMap.containsKey('status')) {
+        try {
+          final claim = WaiverClaim.fromJson(dataMap);
+          _addOrUpdateClaim(claim);
+        } catch (e) {
+          // Failed to parse, reload waiver data
+          if (reloadOnPartial) loadWaiverData();
+        }
+      } else if (reloadOnPartial) {
+        // Minimal payload (just claimId) - reload to get full data
+        loadWaiverData();
+      }
+    }
+
+    _claimSubmittedDisposer = _socketService.onWaiverClaimSubmitted((data) {
+      handleClaimEvent(data);
     });
 
     _claimCancelledDisposer = _socketService.onWaiverClaimCancelled((data) {
       if (!mounted) return;
-      final claimId = data['claimId'] as int?;
+      if (data is! Map) return;
+
+      final dataMap = Map<String, dynamic>.from(data);
+      final claimId = dataMap['claimId'] as int? ?? dataMap['claim_id'] as int?;
       if (claimId != null) {
         _removeClaim(claimId);
+      } else {
+        // No claim ID, reload to sync state
+        loadWaiverData();
       }
     });
 
     _claimUpdatedDisposer = _socketService.onWaiverClaimUpdated((data) {
-      if (!mounted) return;
-      final claim = WaiverClaim.fromJson(Map<String, dynamic>.from(data));
-      _addOrUpdateClaim(claim);
+      handleClaimEvent(data);
     });
 
     _processedDisposer = _socketService.onWaiverProcessed((data) {
@@ -140,35 +164,51 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
     });
 
     _claimSuccessfulDisposer = _socketService.onWaiverClaimSuccessful((data) {
-      if (!mounted) return;
-      final claim = WaiverClaim.fromJson(Map<String, dynamic>.from(data));
-      _addOrUpdateClaim(claim);
+      handleClaimEvent(data);
     });
 
     _claimFailedDisposer = _socketService.onWaiverClaimFailed((data) {
-      if (!mounted) return;
-      final claim = WaiverClaim.fromJson(Map<String, dynamic>.from(data));
-      _addOrUpdateClaim(claim);
+      handleClaimEvent(data);
     });
 
     _priorityUpdatedDisposer = _socketService.onWaiverPriorityUpdated((data) {
       if (!mounted) return;
-      final prioritiesList = (data['priorities'] as List?)
-              ?.cast<Map<String, dynamic>>()
-              .map((json) => WaiverPriority.fromJson(json))
-              .toList() ??
-          [];
-      state = state.copyWith(priorities: prioritiesList);
+      if (data is! Map) {
+        loadWaiverData();
+        return;
+      }
+
+      try {
+        final prioritiesList = (data['priorities'] as List?)
+                ?.cast<Map<String, dynamic>>()
+                .map((json) => WaiverPriority.fromJson(json))
+                .toList() ??
+            [];
+        state = state.copyWith(priorities: prioritiesList);
+      } catch (e) {
+        // Failed to parse, reload to sync
+        loadWaiverData();
+      }
     });
 
     _budgetUpdatedDisposer = _socketService.onWaiverBudgetUpdated((data) {
       if (!mounted) return;
-      final budgetsList = (data['budgets'] as List?)
-              ?.cast<Map<String, dynamic>>()
-              .map((json) => FaabBudget.fromJson(json))
-              .toList() ??
-          [];
-      state = state.copyWith(budgets: budgetsList);
+      if (data is! Map) {
+        loadWaiverData();
+        return;
+      }
+
+      try {
+        final budgetsList = (data['budgets'] as List?)
+                ?.cast<Map<String, dynamic>>()
+                .map((json) => FaabBudget.fromJson(json))
+                .toList() ??
+            [];
+        state = state.copyWith(budgets: budgetsList);
+      } catch (e) {
+        // Failed to parse, reload to sync
+        loadWaiverData();
+      }
     });
   }
 

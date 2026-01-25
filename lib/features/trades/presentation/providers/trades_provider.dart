@@ -85,69 +85,107 @@ class TradesNotifier extends StateNotifier<TradesState> {
   void _setupSocketListeners() {
     _socketService.joinLeague(leagueId);
 
-    _proposedDisposer = _socketService.onTradeProposed((data) {
+    // Helper to safely parse trade data - handles both full objects and tradeId-only
+    void handleTradeEvent(dynamic data, {bool reloadOnPartial = true}) {
       if (!mounted) return;
-      final trade = Trade.fromJson(Map<String, dynamic>.from(data));
-      _addOrUpdateTrade(trade);
+      if (data is! Map) return;
+
+      final dataMap = Map<String, dynamic>.from(data);
+
+      // Check if this is a full trade object (has required fields)
+      if (dataMap.containsKey('league_id') && dataMap.containsKey('status')) {
+        try {
+          final trade = Trade.fromJson(dataMap);
+          _addOrUpdateTrade(trade);
+        } catch (e) {
+          // Failed to parse, reload trades
+          if (reloadOnPartial) loadTrades();
+        }
+      } else if (reloadOnPartial) {
+        // Minimal payload (just tradeId) - reload to get full data
+        loadTrades();
+      }
+    }
+
+    _proposedDisposer = _socketService.onTradeProposed((data) {
+      handleTradeEvent(data);
     });
 
     _acceptedDisposer = _socketService.onTradeAccepted((data) {
-      if (!mounted) return;
-      final trade = Trade.fromJson(Map<String, dynamic>.from(data));
-      _addOrUpdateTrade(trade);
+      // Backend sends { tradeId, reviewEndsAt } - reload for full data
+      handleTradeEvent(data);
     });
 
     _rejectedDisposer = _socketService.onTradeRejected((data) {
-      if (!mounted) return;
-      final trade = Trade.fromJson(Map<String, dynamic>.from(data));
-      _addOrUpdateTrade(trade);
+      // Backend sends { tradeId } - reload for full data
+      handleTradeEvent(data);
     });
 
     _counteredDisposer = _socketService.onTradeCountered((data) {
       if (!mounted) return;
+      if (data is! Map) return;
+
       // Counter creates a new trade, update both original and new
-      if (data['originalTrade'] != null) {
-        final original =
-            Trade.fromJson(Map<String, dynamic>.from(data['originalTrade']));
-        _addOrUpdateTrade(original);
+      final dataMap = Map<String, dynamic>.from(data);
+      if (dataMap['originalTrade'] != null) {
+        try {
+          final original =
+              Trade.fromJson(Map<String, dynamic>.from(dataMap['originalTrade']));
+          _addOrUpdateTrade(original);
+        } catch (e) {
+          // Ignore parse errors
+        }
       }
-      if (data['newTrade'] != null) {
-        final newTrade =
-            Trade.fromJson(Map<String, dynamic>.from(data['newTrade']));
-        _addOrUpdateTrade(newTrade);
+      if (dataMap['newTrade'] != null) {
+        try {
+          final newTrade =
+              Trade.fromJson(Map<String, dynamic>.from(dataMap['newTrade']));
+          _addOrUpdateTrade(newTrade);
+        } catch (e) {
+          // Ignore parse errors
+        }
       }
+      // Always reload to ensure consistency
+      loadTrades();
     });
 
     _cancelledDisposer = _socketService.onTradeCancelled((data) {
-      if (!mounted) return;
-      final trade = Trade.fromJson(Map<String, dynamic>.from(data));
-      _addOrUpdateTrade(trade);
+      // Backend sends { tradeId } - reload for full data
+      handleTradeEvent(data);
     });
 
     _expiredDisposer = _socketService.onTradeExpired((data) {
-      if (!mounted) return;
-      final trade = Trade.fromJson(Map<String, dynamic>.from(data));
-      _addOrUpdateTrade(trade);
+      // Backend sends { tradeId } - reload for full data
+      handleTradeEvent(data);
     });
 
     _completedDisposer = _socketService.onTradeCompleted((data) {
-      if (!mounted) return;
-      final trade = Trade.fromJson(Map<String, dynamic>.from(data));
-      _addOrUpdateTrade(trade);
+      // Backend sends { tradeId } - reload for full data
+      handleTradeEvent(data);
     });
 
     _vetoedDisposer = _socketService.onTradeVetoed((data) {
-      if (!mounted) return;
-      final trade = Trade.fromJson(Map<String, dynamic>.from(data));
-      _addOrUpdateTrade(trade);
+      // Backend sends { tradeId } - reload for full data
+      handleTradeEvent(data);
     });
 
     _voteCastDisposer = _socketService.onTradeVoteCast((data) {
       if (!mounted) return;
-      if (data['trade'] != null) {
-        final trade =
-            Trade.fromJson(Map<String, dynamic>.from(data['trade']));
-        _addOrUpdateTrade(trade);
+      if (data is! Map) return;
+
+      final dataMap = Map<String, dynamic>.from(data);
+      if (dataMap['trade'] != null) {
+        try {
+          final trade =
+              Trade.fromJson(Map<String, dynamic>.from(dataMap['trade']));
+          _addOrUpdateTrade(trade);
+        } catch (e) {
+          // Failed to parse, reload
+          loadTrades();
+        }
+      } else {
+        // Just vote count update, reload
+        loadTrades();
       }
     });
 

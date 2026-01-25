@@ -15,6 +15,7 @@ import '../features/matchups/presentation/screens/standings_screen.dart';
 import '../features/trades/presentation/screens/trades_list_screen.dart';
 import '../features/trades/presentation/screens/trade_detail_screen.dart';
 import '../features/trades/presentation/screens/propose_trade_screen.dart';
+import '../features/trades/presentation/screens/counter_trade_screen.dart';
 
 // Listenable that notifies when auth state changes
 class AuthChangeNotifier extends ChangeNotifier {
@@ -133,6 +134,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           final leagueId = int.parse(state.pathParameters['leagueId']!);
           final tradeId = int.parse(state.pathParameters['tradeId']!);
           return TradeDetailScreen(leagueId: leagueId, tradeId: tradeId);
+        },
+      ),
+      GoRoute(
+        path: '/leagues/:leagueId/trades/:tradeId/counter',
+        builder: (context, state) {
+          final leagueId = int.parse(state.pathParameters['leagueId']!);
+          final tradeId = int.parse(state.pathParameters['tradeId']!);
+          return CounterTradeScreen(
+            leagueId: leagueId,
+            originalTradeId: tradeId,
+          );
         },
       ),
     ],
