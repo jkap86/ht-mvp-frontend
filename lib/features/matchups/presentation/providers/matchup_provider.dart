@@ -124,6 +124,6 @@ final matchupProvider = StateNotifierProvider.family<MatchupNotifier, MatchupSta
 final matchupDetailsProvider = FutureProvider.family<MatchupDetails, ({int leagueId, int matchupId})>(
   (ref, key) async {
     final repo = ref.watch(matchupRepositoryProvider);
-    return repo.getMatchup(key.leagueId, key.matchupId);
+    return repo.getMatchupWithLineups(key.leagueId, key.matchupId);
   },
 );

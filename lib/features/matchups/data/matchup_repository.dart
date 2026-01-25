@@ -29,10 +29,16 @@ class MatchupRepository {
         .toList();
   }
 
-  /// Get a specific matchup with details
+  /// Get a specific matchup with details (basic)
   Future<MatchupDetails> getMatchup(int leagueId, int matchupId) async {
     final response = await _apiClient.get('/leagues/$leagueId/matchups/$matchupId');
     return MatchupDetails.fromJson(response);
+  }
+
+  /// Get a matchup with full lineup details
+  Future<MatchupDetails> getMatchupWithLineups(int leagueId, int matchupId) async {
+    final response = await _apiClient.get('/leagues/$leagueId/matchups/$matchupId/detail');
+    return MatchupDetails.fromJson(response['matchup'] ?? response);
   }
 
   /// Get league standings

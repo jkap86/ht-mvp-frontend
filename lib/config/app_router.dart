@@ -10,7 +10,9 @@ import '../features/drafts/presentation/draft_room_screen.dart';
 import '../features/auth/presentation/auth_provider.dart';
 import '../features/rosters/presentation/screens/team_screen.dart';
 import '../features/rosters/presentation/screens/free_agents_screen.dart';
+import '../features/rosters/presentation/screens/lineup_screen.dart';
 import '../features/matchups/presentation/screens/matchup_screen.dart';
+import '../features/matchups/presentation/screens/matchup_detail_screen.dart';
 import '../features/matchups/presentation/screens/standings_screen.dart';
 import '../features/trades/presentation/screens/trades_list_screen.dart';
 import '../features/trades/presentation/screens/trade_detail_screen.dart';
@@ -104,6 +106,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/leagues/:leagueId/team/:rosterId/lineup',
+        builder: (context, state) {
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
+          final rosterId = _parseIntParam(state.pathParameters['rosterId']);
+          return LineupScreen(leagueId: leagueId, rosterId: rosterId);
+        },
+      ),
+      GoRoute(
         path: '/leagues/:leagueId/free-agents',
         builder: (context, state) {
           final leagueId = _parseIntParam(state.pathParameters['leagueId']);
@@ -116,6 +126,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final leagueId = _parseIntParam(state.pathParameters['leagueId']);
           return MatchupScreen(leagueId: leagueId);
+        },
+      ),
+      GoRoute(
+        path: '/leagues/:leagueId/matchups/:matchupId',
+        builder: (context, state) {
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
+          final matchupId = _parseIntParam(state.pathParameters['matchupId']);
+          return MatchupDetailScreen(leagueId: leagueId, matchupId: matchupId);
         },
       ),
       GoRoute(
