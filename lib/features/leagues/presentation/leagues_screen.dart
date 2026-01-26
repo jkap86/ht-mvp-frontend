@@ -32,12 +32,21 @@ class _LeaguesScreenState extends ConsumerState<LeaguesScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/'),
         ),
-        title: const Text('My Leagues'),
+        title: const Text('Leagues'),
       ),
       body: _buildBody(leaguesState),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          FloatingActionButton.extended(
+            heroTag: 'discover',
+            onPressed: () => context.push('/leagues/discover'),
+            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+            foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+            icon: const Icon(Icons.explore),
+            label: const Text('Browse Public'),
+          ),
+          const SizedBox(height: 12),
           FloatingActionButton.extended(
             heroTag: 'join',
             onPressed: () => showJoinLeagueDialog(
@@ -60,6 +69,7 @@ class _LeaguesScreenState extends ConsumerState<LeaguesScreen> {
                 required scoringSettings,
                 required mode,
                 required settings,
+                required isPublic,
               }) =>
                   ref.read(myLeaguesProvider.notifier).createLeague(
                         name: name,
@@ -68,6 +78,7 @@ class _LeaguesScreenState extends ConsumerState<LeaguesScreen> {
                         scoringSettings: scoringSettings,
                         mode: mode,
                         settings: settings,
+                        isPublic: isPublic,
                       ),
             ),
             icon: const Icon(Icons.add),
@@ -100,13 +111,18 @@ class _LeaguesScreenState extends ConsumerState<LeaguesScreen> {
 
     return RefreshIndicator(
       onRefresh: () => ref.read(myLeaguesProvider.notifier).loadLeagues(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: leaguesState.leagues.length,
-        itemBuilder: (context, index) {
-          final league = leaguesState.leagues[index];
-          return LeagueCard(league: league);
-        },
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: leaguesState.leagues.length,
+            itemBuilder: (context, index) {
+              final league = leaguesState.leagues[index];
+              return LeagueCard(league: league);
+            },
+          ),
+        ),
       ),
     );
   }

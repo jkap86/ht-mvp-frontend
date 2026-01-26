@@ -34,15 +34,32 @@ class LeagueRepository {
     Map<String, dynamic>? scoringSettings,
     String? mode,
     Map<String, dynamic>? settings,
+    bool isPublic = false,
   }) async {
     final response = await _apiClient.post('/leagues', body: {
       'name': name,
       'season': season,
       'total_rosters': totalRosters,
+      'is_public': isPublic,
       if (scoringSettings != null) 'scoring_settings': scoringSettings,
       if (mode != null) 'mode': mode,
       if (settings != null) 'settings': settings,
     });
+    return League.fromJson(response);
+  }
+
+  /// Discover public leagues available to join
+  Future<List<PublicLeague>> discoverPublicLeagues() async {
+    final response = await _apiClient.get('/leagues/discover');
+    if (response is! List) {
+      throw ApiException('Invalid response: expected list of leagues', 500);
+    }
+    return response.map((json) => PublicLeague.fromJson(json)).toList();
+  }
+
+  /// Join a public league by its ID
+  Future<League> joinPublicLeague(int leagueId) async {
+    final response = await _apiClient.post('/leagues/$leagueId/join');
     return League.fromJson(response);
   }
 
@@ -166,6 +183,7 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
     Map<String, dynamic>? scoringSettings,
     String? mode,
     Map<String, dynamic>? settings,
+    bool isPublic = false,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -176,6 +194,7 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
         scoringSettings: scoringSettings,
         mode: mode,
         settings: settings,
+        isPublic: isPublic,
       );
       state = state.copyWith(
         leagues: [...state.leagues, league],

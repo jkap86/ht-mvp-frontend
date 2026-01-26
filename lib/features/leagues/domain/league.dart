@@ -47,6 +47,7 @@ class League {
   final Map<String, dynamic> settings;
   final int currentWeek;
   final SeasonStatus seasonStatus;
+  final bool isPublic;
 
   League({
     required this.id,
@@ -60,6 +61,7 @@ class League {
     required this.settings,
     this.currentWeek = 1,
     this.seasonStatus = SeasonStatus.preSeason,
+    this.isPublic = false,
   });
 
   String get scoringType {
@@ -91,8 +93,48 @@ class League {
       settings: (json['settings'] as Map<String, dynamic>?) ?? {},
       currentWeek: json['current_week'] as int? ?? 1,
       seasonStatus: SeasonStatus.fromString(json['season_status'] as String?),
+      isPublic: json['is_public'] as bool? ?? false,
     );
   }
+}
+
+/// Represents a public league available for discovery
+class PublicLeague {
+  final int id;
+  final String name;
+  final String season;
+  final String mode;
+  final int totalRosters;
+  final int memberCount;
+  final bool isPublic;
+
+  PublicLeague({
+    required this.id,
+    required this.name,
+    required this.season,
+    required this.mode,
+    required this.totalRosters,
+    required this.memberCount,
+    this.isPublic = true,
+  });
+
+  factory PublicLeague.fromJson(Map<String, dynamic> json) {
+    return PublicLeague(
+      id: json['id'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+      season: json['season']?.toString() ?? '',
+      mode: json['mode'] as String? ?? 'redraft',
+      totalRosters: json['total_rosters'] as int? ?? 12,
+      memberCount: json['member_count'] as int? ?? 0,
+      isPublic: json['is_public'] as bool? ?? true,
+    );
+  }
+
+  /// Check if the league is full
+  bool get isFull => memberCount >= totalRosters;
+
+  /// Get formatted member count string
+  String get memberCountDisplay => '$memberCount/$totalRosters';
 }
 
 class Roster {
