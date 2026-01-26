@@ -5,6 +5,7 @@ import '../../../leagues/domain/league.dart';
 import '../../data/roster_repository.dart';
 import '../../domain/roster_player.dart';
 import '../../domain/roster_lineup.dart';
+import '../../domain/lineup_optimizer.dart';
 
 /// Key for team provider - needs leagueId to identify the context
 typedef TeamKey = ({int leagueId, int rosterId});
@@ -126,43 +127,7 @@ class TeamState {
   /// Calculate what the optimal lineup would score
   double get optimalProjectedPoints {
     if (players.isEmpty) return 0.0;
-
-    // Simple greedy algorithm: for each slot, pick the highest projected available player
-    final used = <int>{};
-    var total = 0.0;
-
-    // Process non-flex slots first, then flex
-    final slots = [LineupSlot.qb, LineupSlot.rb, LineupSlot.wr, LineupSlot.te,
-                   LineupSlot.k, LineupSlot.def, LineupSlot.flex];
-
-    for (final slot in slots) {
-      final slotCount = _getSlotCount(slot);
-      final eligible = players
-          .where((p) => !used.contains(p.playerId) && slot.canFill(p.position))
-          .toList()
-        ..sort((a, b) => (b.projectedPoints ?? 0).compareTo(a.projectedPoints ?? 0));
-
-      for (var i = 0; i < slotCount && i < eligible.length; i++) {
-        used.add(eligible[i].playerId);
-        total += eligible[i].projectedPoints ?? 0;
-      }
-    }
-
-    return total;
-  }
-
-  int _getSlotCount(LineupSlot slot) {
-    // Default slot counts - could be configured per league
-    switch (slot) {
-      case LineupSlot.qb: return 1;
-      case LineupSlot.rb: return 2;
-      case LineupSlot.wr: return 2;
-      case LineupSlot.te: return 1;
-      case LineupSlot.flex: return 1;
-      case LineupSlot.k: return 1;
-      case LineupSlot.def: return 1;
-      case LineupSlot.bn: return 99; // unlimited
-    }
+    return const LineupOptimizer().calculateOptimalPoints(players);
   }
 
   TeamState copyWith({
@@ -362,69 +327,14 @@ class TeamNotifier extends StateNotifier<TeamState> {
     state = state.copyWith(isSaving: true);
 
     try {
-      // Build optimal lineup using greedy algorithm
-      final used = <int>{};
-      final newLineup = <String, List<int>>{
-        'QB': [],
-        'RB': [],
-        'WR': [],
-        'TE': [],
-        'FLEX': [],
-        'K': [],
-        'DEF': [],
-        'BN': [],
-      };
-
-      // Process slots in order: position-specific first, then flex
-      final slotOrder = [
-        (slot: 'QB', positions: ['QB'], count: 1),
-        (slot: 'RB', positions: ['RB'], count: 2),
-        (slot: 'WR', positions: ['WR'], count: 2),
-        (slot: 'TE', positions: ['TE'], count: 1),
-        (slot: 'K', positions: ['K'], count: 1),
-        (slot: 'DEF', positions: ['DEF'], count: 1),
-        (slot: 'FLEX', positions: ['RB', 'WR', 'TE'], count: 1),
-      ];
-
-      for (final config in slotOrder) {
-        final eligible = state.players
-            .where((p) =>
-                !used.contains(p.playerId) &&
-                config.positions.contains(p.position?.toUpperCase()))
-            .toList()
-          ..sort((a, b) =>
-              (b.projectedPoints ?? 0).compareTo(a.projectedPoints ?? 0));
-
-        for (var i = 0; i < config.count && i < eligible.length; i++) {
-          newLineup[config.slot]!.add(eligible[i].playerId);
-          used.add(eligible[i].playerId);
-        }
-      }
-
-      // Put remaining players on bench
-      for (final player in state.players) {
-        if (!used.contains(player.playerId)) {
-          newLineup['BN']!.add(player.playerId);
-        }
-      }
-
-      // Save the lineup
-      final lineupSlots = LineupSlots(
-        qb: newLineup['QB']!,
-        rb: newLineup['RB']!,
-        wr: newLineup['WR']!,
-        te: newLineup['TE']!,
-        flex: newLineup['FLEX']!,
-        k: newLineup['K']!,
-        def: newLineup['DEF']!,
-        bn: newLineup['BN']!,
-      );
+      final optimizer = const LineupOptimizer();
+      final optimized = optimizer.buildOptimalLineup(state.players);
 
       final updatedLineup = await _rosterRepo.setLineup(
         leagueId,
         rosterId,
         state.currentWeek,
-        lineupSlots,
+        optimized.slots,
       );
 
       state = state.copyWith(
