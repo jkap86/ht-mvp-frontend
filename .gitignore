@@ -49,7 +49,7 @@ app.*.map.json
 /ios/
 /linux/
 /macos/
-/web/
+# /web/ - kept for web deployment config (_redirects, etc.)
 /windows/
 
 # Build artifacts
