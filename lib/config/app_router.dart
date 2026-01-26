@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/home/presentation/home_screen.dart';
+import '../features/leagues/presentation/leagues_screen.dart';
 import '../features/leagues/presentation/league_detail_screen.dart';
 import '../features/drafts/presentation/draft_room_screen.dart';
 import '../features/auth/presentation/auth_provider.dart';
@@ -83,6 +84,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/leagues',
+        builder: (context, state) => const LeaguesScreen(),
       ),
       GoRoute(
         path: '/leagues/:leagueId',

@@ -3,34 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/theme_provider.dart';
-import '../../../core/widgets/states/states.dart';
 import '../../auth/presentation/auth_provider.dart';
-import '../../leagues/data/league_repository.dart';
-import 'widgets/create_league_dialog.dart';
-import 'widgets/join_league_dialog.dart';
-import 'widgets/league_card.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(() => ref.read(myLeaguesProvider.notifier).loadLeagues());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final leaguesState = ref.watch(myLeaguesProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authStateProvider).user;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Leagues'),
+        title: const Text('HypeTrain Fantasy'),
         actions: [
           IconButton(
             icon: Icon(
@@ -45,6 +30,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
             onPressed: () async {
               await ref.read(authStateProvider.notifier).logout();
               if (context.mounted) {
@@ -54,79 +40,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      body: _buildBody(leaguesState),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'join',
-            onPressed: () => showJoinLeagueDialog(
-              context,
-              onJoinLeague: (code) =>
-                  ref.read(myLeaguesProvider.notifier).joinLeague(code),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Welcome section
+            Text(
+              'Welcome${user != null ? ", ${user.username}" : ""}!',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
-            icon: const Icon(Icons.group_add),
-            label: const Text('Join'),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'create',
-            onPressed: () => showCreateLeagueDialog(
-              context,
-              onCreateLeague: ({
-                required name,
-                required season,
-                required totalRosters,
-                required scoringSettings,
-                required mode,
-                required settings,
-              }) =>
-                  ref.read(myLeaguesProvider.notifier).createLeague(
-                        name: name,
-                        season: season,
-                        totalRosters: totalRosters,
-                        scoringSettings: scoringSettings,
-                        mode: mode,
-                        settings: settings,
-                      ),
+            const SizedBox(height: 8),
+            Text(
+              'What would you like to do today?',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurface.withAlpha(179),
+                  ),
             ),
-            icon: const Icon(Icons.add),
-            label: const Text('Create'),
-          ),
-        ],
+            const SizedBox(height: 32),
+
+            // Navigation cards
+            _buildNavCard(
+              context,
+              icon: Icons.emoji_events,
+              title: 'My Leagues',
+              subtitle: 'View and manage your fantasy leagues',
+              onTap: () => context.go('/leagues'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBody(LeaguesState leaguesState) {
-    if (leaguesState.isLoading) {
-      return const AppLoadingView();
-    }
+  Widget _buildNavCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
 
-    if (leaguesState.error != null) {
-      return AppErrorView(
-        message: leaguesState.error!,
-        onRetry: () => ref.read(myLeaguesProvider.notifier).loadLeagues(),
-      );
-    }
-
-    if (leaguesState.leagues.isEmpty) {
-      return const AppEmptyView(
-        icon: Icons.sports_football,
-        title: 'No leagues yet',
-        subtitle: 'Create or join a league to get started',
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => ref.read(myLeaguesProvider.notifier).loadLeagues(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: leaguesState.leagues.length,
-        itemBuilder: (context, index) {
-          final league = leaguesState.leagues[index];
-          return LeagueCard(league: league);
-        },
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  size: 28,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurface.withAlpha(153),
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: colorScheme.onSurface.withAlpha(128),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
