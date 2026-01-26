@@ -135,12 +135,22 @@ class TradeDetailScreen extends ConsumerWidget {
     if (confirmed == true) {
       final result =
           await ref.read(tradesProvider(leagueId).notifier).acceptTrade(trade.id);
-      if (result != null && context.mounted) {
-        ref.invalidate(
-            tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trade accepted!')),
-        );
+      if (context.mounted) {
+        if (result != null) {
+          ref.invalidate(
+              tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Trade accepted!')),
+          );
+        } else {
+          final error = ref.read(tradesProvider(leagueId)).error;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error ?? 'Failed to accept trade'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -169,12 +179,22 @@ class TradeDetailScreen extends ConsumerWidget {
     if (confirmed == true) {
       final result =
           await ref.read(tradesProvider(leagueId).notifier).rejectTrade(trade.id);
-      if (result != null && context.mounted) {
-        ref.invalidate(
-            tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trade rejected')),
-        );
+      if (context.mounted) {
+        if (result != null) {
+          ref.invalidate(
+              tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Trade rejected')),
+          );
+        } else {
+          final error = ref.read(tradesProvider(leagueId)).error;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error ?? 'Failed to reject trade'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -203,12 +223,22 @@ class TradeDetailScreen extends ConsumerWidget {
     if (confirmed == true) {
       final result =
           await ref.read(tradesProvider(leagueId).notifier).cancelTrade(trade.id);
-      if (result != null && context.mounted) {
-        ref.invalidate(
-            tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trade cancelled')),
-        );
+      if (context.mounted) {
+        if (result != null) {
+          ref.invalidate(
+              tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Trade cancelled')),
+          );
+        } else {
+          final error = ref.read(tradesProvider(leagueId)).error;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error ?? 'Failed to cancel trade'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -218,14 +248,24 @@ class TradeDetailScreen extends ConsumerWidget {
     final success = await ref
         .read(tradesProvider(leagueId).notifier)
         .voteTrade(trade.id, vote);
-    if (success && context.mounted) {
-      ref.invalidate(
-          tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text('Vote recorded: ${vote == 'approve' ? 'Approved' : 'Vetoed'}')),
-      );
+    if (context.mounted) {
+      if (success) {
+        ref.invalidate(
+            tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text('Vote recorded: ${vote == 'approve' ? 'Approved' : 'Vetoed'}')),
+        );
+      } else {
+        final error = ref.read(tradesProvider(leagueId)).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error ?? 'Failed to record vote'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

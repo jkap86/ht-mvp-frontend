@@ -333,6 +333,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
 
   @override
   void dispose() {
+    _socketService.leaveLeague(leagueId);
     _claimSubmittedDisposer?.call();
     _claimCancelledDisposer?.call();
     _claimUpdatedDisposer?.call();

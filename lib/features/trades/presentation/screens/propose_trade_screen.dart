@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../leagues/presentation/providers/league_detail_provider.dart';
 import '../../data/trade_repository.dart';
-import '../widgets/player_selector_widget.dart';
+import '../widgets/player_selector_widget.dart' show PlayerSelectorWidget, tradeRosterPlayersProvider;
 
 /// Screen for proposing a new trade to another team
 class ProposeTradeScreen extends ConsumerStatefulWidget {
@@ -149,7 +149,8 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
   bool _canSubmit() {
     return !_isSubmitting &&
         _selectedRecipientRosterId != null &&
-        (_offeringPlayerIds.isNotEmpty || _requestingPlayerIds.isNotEmpty);
+        _offeringPlayerIds.isNotEmpty &&
+        _requestingPlayerIds.isNotEmpty;
   }
 
   Future<void> _handleSubmit() async {
@@ -174,13 +175,15 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        // Get messenger before popping to ensure SnackBar displays on parent screen
+        final messenger = ScaffoldMessenger.of(context);
+        context.pop();
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Trade proposed!'),
             backgroundColor: Colors.green,
           ),
         );
-        context.pop();
       }
     } catch (e) {
       if (mounted) {
@@ -197,10 +200,32 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
 
   Future<bool> _showConfirmationDialog() async {
     final leagueState = ref.read(leagueDetailProvider(widget.leagueId));
+    final myRosterId = leagueState.league?.userRosterId;
     final recipientMember = leagueState.members.firstWhere(
       (m) => m.id == _selectedRecipientRosterId,
     );
     final recipientName = recipientMember.teamName ?? recipientMember.username;
+
+    // Get player names from the providers
+    final myPlayersAsync = myRosterId != null
+        ? ref.read(tradeRosterPlayersProvider((leagueId: widget.leagueId, rosterId: myRosterId)))
+        : null;
+    final theirPlayersAsync = ref.read(tradeRosterPlayersProvider((
+      leagueId: widget.leagueId,
+      rosterId: _selectedRecipientRosterId!,
+    )));
+
+    final myPlayers = myPlayersAsync?.valueOrNull ?? [];
+    final theirPlayers = theirPlayersAsync.valueOrNull ?? [];
+
+    final offeringNames = myPlayers
+        .where((p) => _offeringPlayerIds.contains(p.playerId))
+        .map((p) => p.fullName ?? 'Unknown')
+        .toList();
+    final requestingNames = theirPlayers
+        .where((p) => _requestingPlayerIds.contains(p.playerId))
+        .map((p) => p.fullName ?? 'Unknown')
+        .toList();
 
     final result = await showDialog<bool>(
       context: context,
@@ -218,14 +243,14 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
               const SizedBox(height: 16),
               _buildTradeSummarySection(
                 'You Give',
-                _offeringPlayerIds.length,
+                offeringNames,
                 Colors.red.shade100,
                 Icons.arrow_upward,
               ),
               const SizedBox(height: 8),
               _buildTradeSummarySection(
                 'You Get',
-                _requestingPlayerIds.length,
+                requestingNames,
                 Colors.green.shade100,
                 Icons.arrow_downward,
               ),
@@ -284,26 +309,41 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
 
   Widget _buildTradeSummarySection(
     String label,
-    int playerCount,
+    List<String> playerNames,
     Color backgroundColor,
     IconData icon,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18),
-          const SizedBox(width: 8),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-          const Spacer(),
-          Text(
-            '$playerCount player${playerCount != 1 ? 's' : ''}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Icon(icon, size: 18),
+              const SizedBox(width: 8),
+              Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+              const Spacer(),
+              Text(
+                '${playerNames.length} player${playerNames.length != 1 ? 's' : ''}',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ],
           ),
+          if (playerNames.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...playerNames.map((name) => Padding(
+              padding: const EdgeInsets.only(left: 26, top: 2),
+              child: Text(
+                '• $name',
+                style: const TextStyle(fontSize: 13),
+              ),
+            )),
+          ],
         ],
       ),
     );

@@ -285,6 +285,7 @@ class TradesNotifier extends StateNotifier<TradesState> {
 
   @override
   void dispose() {
+    _socketService.leaveLeague(leagueId);
     _proposedDisposer?.call();
     _acceptedDisposer?.call();
     _rejectedDisposer?.call();
