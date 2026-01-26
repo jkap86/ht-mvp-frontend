@@ -199,6 +199,25 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     }
   }
 
+  Future<bool> deleteLeague() async {
+    state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
+
+    try {
+      await _leagueRepo.deleteLeague(leagueId);
+      state = state.copyWith(
+        isProcessing: false,
+        successMessage: 'League deleted successfully',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isProcessing: false,
+      );
+      return false;
+    }
+  }
+
   void clearMessages() {
     state = state.copyWith(clearError: true, clearSuccess: true);
   }

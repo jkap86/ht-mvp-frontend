@@ -109,6 +109,51 @@ class CommissionerScreen extends ConsumerWidget {
                           context.push('/leagues/$leagueId/playoffs');
                         },
                       ),
+                      const SizedBox(height: 16),
+
+                      // Danger Zone Card
+                      Card(
+                        color: Colors.red.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.warning, color: Colors.red.shade700),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Danger Zone',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.red.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Deleting the league will permanently remove all data including rosters, drafts, matchups, and transactions. This action cannot be undone.',
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  icon: const Icon(Icons.delete_forever),
+                                  label: const Text('Delete League'),
+                                  onPressed: () => _showDeleteConfirmation(context, ref),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -121,6 +166,38 @@ class CommissionerScreen extends ConsumerWidget {
                   ),
               ],
             ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete League?'),
+        content: const Text(
+          'This will permanently delete the league and all associated data. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              final success = await ref.read(commissionerProvider(leagueId).notifier).deleteLeague();
+              if (success && context.mounted) {
+                context.go('/');
+              }
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 }

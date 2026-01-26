@@ -92,6 +92,11 @@ class LeagueRepository {
   Future<void> kickMember(int leagueId, int rosterId) async {
     await _apiClient.delete('/leagues/$leagueId/members/$rosterId');
   }
+
+  /// Delete league (commissioner only)
+  Future<void> deleteLeague(int leagueId) async {
+    await _apiClient.delete('/leagues/$leagueId');
+  }
 }
 
 // State management for leagues
