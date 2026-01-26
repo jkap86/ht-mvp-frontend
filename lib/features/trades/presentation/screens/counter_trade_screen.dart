@@ -127,12 +127,15 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Original trade info
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Original trade info
             Card(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: Padding(
@@ -205,6 +208,8 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
               maxLines: 3,
             ),
           ],
+        ),
+          ),
         ),
       ),
     );

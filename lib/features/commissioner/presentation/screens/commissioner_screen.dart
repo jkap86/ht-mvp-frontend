@@ -58,11 +58,14 @@ class CommissionerScreen extends ConsumerWidget {
           ? const AppLoadingView()
           : Stack(
               children: [
-                RefreshIndicator(
-                  onRefresh: () => ref.read(commissionerProvider(leagueId).notifier).loadData(),
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: RefreshIndicator(
+                      onRefresh: () => ref.read(commissionerProvider(leagueId).notifier).loadData(),
+                      child: ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
                       // League Status Card
                       LeagueInfoCard(state: state),
                       const SizedBox(height: 16),
@@ -168,6 +171,8 @@ class CommissionerScreen extends ConsumerWidget {
                         ),
                       ),
                     ],
+                      ),
+                    ),
                   ),
                 ),
                 if (state.isProcessing)

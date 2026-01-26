@@ -177,10 +177,13 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
 
     return RefreshIndicator(
       onRefresh: () => ref.read(freeAgentsProvider(_key).notifier).loadData(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: players.length,
-        itemBuilder: (context, index) {
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: players.length,
+            itemBuilder: (context, index) {
           final player = players[index];
           final isAdding = state.isAddingPlayer && state.addingPlayerId == player.id;
           final isOnWaiverWire = waiversEnabled && waiversState.isOnWaiverWire(player.id);
@@ -200,6 +203,8 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
             ),
           );
         },
+          ),
+        ),
       ),
     );
   }

@@ -11,11 +11,10 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider).user;
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('HypeTrain Fantasy'),
+        title: Text(user?.username ?? ''),
         actions: [
           IconButton(
             icon: Icon(
@@ -40,36 +39,23 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Welcome section
-            Text(
-              'Welcome${user != null ? ", ${user.username}" : ""}!',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildNavCard(
+                  context,
+                  icon: Icons.emoji_events,
+                  title: 'Leagues',
+                  onTap: () => context.go('/leagues'),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'What would you like to do today?',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: colorScheme.onSurface.withAlpha(179),
-                  ),
-            ),
-            const SizedBox(height: 32),
-
-            // Navigation cards
-            _buildNavCard(
-              context,
-              icon: Icons.emoji_events,
-              title: 'My Leagues',
-              subtitle: 'View and manage your fantasy leagues',
-              onTap: () => context.go('/leagues'),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -79,7 +65,6 @@ class HomeScreen extends ConsumerWidget {
     BuildContext context, {
     required IconData icon,
     required String title,
-    required String subtitle,
     required VoidCallback onTap,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -107,23 +92,11 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface.withAlpha(153),
-                          ),
-                    ),
-                  ],
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ),
               Icon(

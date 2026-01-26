@@ -55,9 +55,12 @@ class TradeDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildTradeContent(BuildContext context, WidgetRef ref, Trade trade) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TradeStatusBanner(trade: trade),
@@ -84,6 +87,8 @@ class TradeDetailScreen extends ConsumerWidget {
             onVote: (vote) => _handleVote(context, ref, trade, vote),
           ),
         ],
+          ),
+        ),
       ),
     );
   }

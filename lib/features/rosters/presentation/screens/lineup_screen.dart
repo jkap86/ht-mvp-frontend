@@ -171,9 +171,12 @@ class LineupScreen extends ConsumerWidget {
   ) {
     final isLocked = state.lineup?.isLocked == true;
 
-    return ListView(
-      padding: const EdgeInsets.all(8),
-      children: [
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: ListView(
+          padding: const EdgeInsets.all(8),
+          children: [
         LineupSlotColumn(
           playersBySlot: state.playersBySlot,
           isLocked: isLocked,
@@ -187,6 +190,8 @@ class LineupScreen extends ConsumerWidget {
               _handleBenchPlayerTap(context, ref, state, teamKey, player),
         ),
       ],
+        ),
+      ),
     );
   }
 

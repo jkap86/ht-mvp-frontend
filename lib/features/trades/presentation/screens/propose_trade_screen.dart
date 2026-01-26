@@ -60,12 +60,15 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Step 1: Select Trade Partner
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Step 1: Select Trade Partner
             Text('Trade With', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             DropdownButtonFormField<int>(
@@ -136,6 +139,8 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
               maxLines: 3,
             ),
           ],
+        ),
+          ),
         ),
       ),
     );

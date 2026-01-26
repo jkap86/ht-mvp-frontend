@@ -179,9 +179,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
     return RefreshIndicator(
       onRefresh: () => ref.read(teamProvider(_key).notifier).loadData(),
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
           TeamPointsSummary(
             totalPoints: state.totalPoints,
             startersCount: state.starters.length,
@@ -208,6 +211,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           const SizedBox(height: 8),
           ..._buildBenchSlots(state),
         ],
+          ),
+        ),
       ),
     );
   }
@@ -215,9 +220,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
   Widget _buildLockedLineup(TeamState state) {
     return RefreshIndicator(
       onRefresh: () => ref.read(teamProvider(_key).notifier).loadData(),
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
           const LineupLockedBanner(),
           const SizedBox(height: 16),
           TeamPointsSummary(
@@ -235,6 +243,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           const SizedBox(height: 8),
           ..._buildBenchSlots(state),
         ],
+          ),
+        ),
       ),
     );
   }
@@ -314,10 +324,13 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
   Widget _buildRosterTab(TeamState state) {
     return RefreshIndicator(
       onRefresh: () => ref.read(teamProvider(_key).notifier).loadData(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: state.players.length,
-        itemBuilder: (context, index) {
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: state.players.length,
+            itemBuilder: (context, index) {
           final player = state.players[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -331,6 +344,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
             ),
           );
         },
+          ),
+        ),
       ),
     );
   }

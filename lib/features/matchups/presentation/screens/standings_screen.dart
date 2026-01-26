@@ -78,11 +78,14 @@ class StandingsScreen extends ConsumerWidget {
   Widget _buildStandingsTable(BuildContext context, StandingsState state) {
     final playoffLine = (state.league?.totalRosters ?? 12) ~/ 2; // Top half makes playoffs
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
           headingRowColor: WidgetStateProperty.all(
             Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
@@ -179,6 +182,8 @@ class StandingsScreen extends ConsumerWidget {
               ],
             );
           }).toList(),
+        ),
+          ),
         ),
       ),
     );

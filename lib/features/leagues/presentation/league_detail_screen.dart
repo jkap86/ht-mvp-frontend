@@ -186,9 +186,12 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
   Widget _buildOverviewTab(LeagueDetailState state) {
     return RefreshIndicator(
       onRefresh: () => ref.read(leagueDetailProvider(widget.leagueId).notifier).loadData(),
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
           LeagueHeaderWidget(
             league: state.league!,
             memberCount: state.members.length,
@@ -221,6 +224,8 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             totalSlots: state.league!.totalRosters,
           ),
         ],
+          ),
+        ),
       ),
     );
   }
@@ -228,9 +233,12 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
   Widget _buildSeasonTab(LeagueDetailState state) {
     final rosterId = state.league?.userRosterId;
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
         // My Team card
         Card(
           child: ListTile(
@@ -323,6 +331,8 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           ),
         ],
       ],
+        ),
+      ),
     );
   }
 }

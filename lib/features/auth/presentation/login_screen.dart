@@ -46,7 +46,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Form(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Form(
               key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -148,6 +150,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
           ),
+        ),
         ),
       ),
     );

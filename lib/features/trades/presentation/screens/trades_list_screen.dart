@@ -100,20 +100,25 @@ class TradesListScreen extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () => ref.read(tradesProvider(leagueId).notifier).loadTrades(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: trades.length,
-        itemBuilder: (context, index) {
-          final trade = trades[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: TradeCard(
-              trade: trade,
-              onTap: () =>
-                  context.push('/leagues/$leagueId/trades/${trade.id}'),
-            ),
-          );
-        },
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: trades.length,
+            itemBuilder: (context, index) {
+              final trade = trades[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: TradeCard(
+                  trade: trade,
+                  onTap: () =>
+                      context.push('/leagues/$leagueId/trades/${trade.id}'),
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }

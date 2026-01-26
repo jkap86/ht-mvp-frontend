@@ -88,9 +88,12 @@ class MatchupScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(matchupProvider(leagueId).notifier).loadData(),
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
             // My matchup (featured)
             if (state.myMatchup != null) ...[
               const Text(
@@ -141,6 +144,8 @@ class MatchupScreen extends ConsumerWidget {
                 subtitle: 'No matchups scheduled for this week.',
               ),
           ],
+        ),
+          ),
         ),
       ),
     );

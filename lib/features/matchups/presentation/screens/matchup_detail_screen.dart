@@ -64,9 +64,12 @@ class MatchupDetailScreen extends ConsumerWidget {
       onRefresh: () async {
         // Trigger refresh by invalidating the provider
       },
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
           children: [
             // Score header
             _ScoreHeader(
@@ -112,6 +115,8 @@ class MatchupDetailScreen extends ConsumerWidget {
 
             const SizedBox(height: 24),
           ],
+        ),
+          ),
         ),
       ),
     );

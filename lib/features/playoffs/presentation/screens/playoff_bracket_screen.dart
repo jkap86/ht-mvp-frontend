@@ -74,23 +74,28 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
                     onRefresh: () => ref
                         .read(playoffBracketProvider(widget.leagueId).notifier)
                         .loadBracket(),
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Bracket info card
-                            if (state.bracketView?.bracket != null)
-                              _buildBracketInfoCard(context, state),
-                            const SizedBox(height: 16),
-                            // Bracket visualization
-                            BracketVisualization(
-                              bracketView: state.bracketView!,
-                              userRosterId: leagueState.league?.userRosterId,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 800),
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Bracket info card
+                                if (state.bracketView?.bracket != null)
+                                  _buildBracketInfoCard(context, state),
+                                const SizedBox(height: 16),
+                                // Bracket visualization
+                                BracketVisualization(
+                                  bracketView: state.bracketView!,
+                                  userRosterId: leagueState.league?.userRosterId,
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
