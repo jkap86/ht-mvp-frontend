@@ -1,7 +1,7 @@
 [build]
   publish = "build/web"
   command = """
-    git clone https://github.com/flutter/flutter.git --depth 1 -b stable $HOME/flutter &&
+    git clone https://github.com/flutter/flutter.git --depth 1 -b 3.27.4 $HOME/flutter &&
     export PATH="$HOME/flutter/bin:$PATH" &&
     flutter --version &&
     flutter config --enable-web &&
