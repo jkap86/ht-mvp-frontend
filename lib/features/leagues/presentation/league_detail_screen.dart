@@ -255,6 +255,39 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             onTap: () => context.push('/leagues/${widget.leagueId}/trades'),
           ),
         ),
+        // Commissioner Tools (only shown to commissioner)
+        if (state.isCommissioner) ...[
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
+          Card(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            child: ListTile(
+              leading: Icon(
+                Icons.admin_panel_settings,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+              title: Text(
+                'Commissioner Tools',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(
+                'Manage league settings and members',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                ),
+              ),
+              trailing: Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+              onTap: () => context.push('/leagues/${widget.leagueId}/commissioner'),
+            ),
+          ),
+        ],
       ],
     );
   }

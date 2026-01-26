@@ -80,6 +80,18 @@ class LeagueRepository {
     });
     return (response['results'] as List).cast<Map<String, dynamic>>();
   }
+
+  /// Get members as raw data (for commissioner screen)
+  Future<List<Map<String, dynamic>>> getMembers(int leagueId) async {
+    final response = await _apiClient.get('/leagues/$leagueId/members');
+    if (response is! List) return [];
+    return response.cast<Map<String, dynamic>>();
+  }
+
+  /// Kick a member from the league (commissioner only)
+  Future<void> kickMember(int leagueId, int rosterId) async {
+    await _apiClient.delete('/leagues/$leagueId/members/$rosterId');
+  }
 }
 
 // State management for leagues

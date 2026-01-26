@@ -59,4 +59,12 @@ class SocketEvents {
   static const waiverClaimFailed = 'waiver:claim_failed';
   static const waiverPriorityUpdated = 'waiver:priority_updated';
   static const waiverBudgetUpdated = 'waiver:budget_updated';
+
+  // Scoring events
+  static const scoringScoresUpdated = 'scoring:scores_updated';
+  static const scoringWeekFinalized = 'scoring:week_finalized';
+
+  // Member events
+  static const memberKicked = 'member:kicked';
+  static const memberJoined = 'member:joined';
 }

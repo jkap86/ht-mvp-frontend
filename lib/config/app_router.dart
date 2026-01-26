@@ -18,6 +18,8 @@ import '../features/trades/presentation/screens/trades_list_screen.dart';
 import '../features/trades/presentation/screens/trade_detail_screen.dart';
 import '../features/trades/presentation/screens/propose_trade_screen.dart';
 import '../features/trades/presentation/screens/counter_trade_screen.dart';
+import '../features/commissioner/presentation/screens/commissioner_screen.dart';
+import '../features/playoffs/presentation/screens/playoff_bracket_screen.dart';
 
 // Listenable that notifies when auth state changes
 class AuthChangeNotifier extends ChangeNotifier {
@@ -87,6 +89,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final leagueId = _parseIntParam(state.pathParameters['leagueId']);
           return LeagueDetailScreen(leagueId: leagueId);
+        },
+      ),
+      GoRoute(
+        path: '/leagues/:leagueId/commissioner',
+        builder: (context, state) {
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
+          return CommissionerScreen(leagueId: leagueId);
+        },
+      ),
+      GoRoute(
+        path: '/leagues/:leagueId/playoffs',
+        builder: (context, state) {
+          final leagueId = _parseIntParam(state.pathParameters['leagueId']);
+          return PlayoffBracketScreen(leagueId: leagueId);
         },
       ),
       GoRoute(

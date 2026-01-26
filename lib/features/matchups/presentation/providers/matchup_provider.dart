@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/socket/socket_service.dart';
 import '../../../leagues/data/league_repository.dart';
 import '../../../leagues/domain/league.dart';
 import '../../data/matchup_repository.dart';
@@ -55,14 +57,60 @@ class MatchupState {
 class MatchupNotifier extends StateNotifier<MatchupState> {
   final MatchupRepository _matchupRepo;
   final LeagueRepository _leagueRepo;
+  final SocketService _socketService;
   final int leagueId;
+
+  final List<VoidCallback> _socketDisposers = [];
 
   MatchupNotifier(
     this._matchupRepo,
     this._leagueRepo,
+    this._socketService,
     this.leagueId,
   ) : super(MatchupState()) {
+    _setupSocketListeners();
     loadData();
+  }
+
+  void _setupSocketListeners() {
+    // Listen for score updates from stats sync
+    _socketDisposers.add(_socketService.onScoresUpdated((data) {
+      final week = data['week'] as int?;
+      // Refresh if the update is for the current week we're viewing
+      if (week == null || week == state.currentWeek) {
+        _refreshMatchups();
+      }
+    }));
+
+    // Listen for week finalized events
+    _socketDisposers.add(_socketService.onWeekFinalized((data) {
+      final week = data['week'] as int?;
+      if (week == null || week == state.currentWeek) {
+        _refreshMatchups();
+      }
+    }));
+  }
+
+  /// Refresh matchups without showing loading state (background refresh)
+  Future<void> _refreshMatchups() async {
+    try {
+      final matchups = await _matchupRepo.getMatchups(leagueId, week: state.currentWeek);
+      if (mounted) {
+        state = state.copyWith(matchups: matchups);
+      }
+    } catch (e) {
+      // Silently fail on background refresh
+      debugPrint('Failed to refresh matchups: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final disposer in _socketDisposers) {
+      disposer();
+    }
+    _socketDisposers.clear();
+    super.dispose();
   }
 
   Future<void> loadData() async {
@@ -116,6 +164,7 @@ final matchupProvider = StateNotifierProvider.family<MatchupNotifier, MatchupSta
   (ref, leagueId) => MatchupNotifier(
     ref.watch(matchupRepositoryProvider),
     ref.watch(leagueRepositoryProvider),
+    ref.watch(socketServiceProvider),
     leagueId,
   ),
 );

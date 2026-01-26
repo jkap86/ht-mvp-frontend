@@ -352,4 +352,22 @@ class SocketService {
   VoidCallback onWaiverBudgetUpdated(void Function(dynamic) callback) {
     return on(SocketEvents.waiverBudgetUpdated, callback);
   }
+
+  // Scoring event listeners
+  VoidCallback onScoresUpdated(void Function(dynamic) callback) {
+    return on(SocketEvents.scoringScoresUpdated, callback);
+  }
+
+  VoidCallback onWeekFinalized(void Function(dynamic) callback) {
+    return on(SocketEvents.scoringWeekFinalized, callback);
+  }
+
+  // Member event listeners
+  VoidCallback onMemberKicked(void Function(dynamic) callback) {
+    return on(SocketEvents.memberKicked, callback);
+  }
+
+  VoidCallback onMemberJoined(void Function(dynamic) callback) {
+    return on(SocketEvents.memberJoined, callback);
+  }
 }
