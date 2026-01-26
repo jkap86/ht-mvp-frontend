@@ -90,7 +90,7 @@ class PlayoffMatchupCard extends StatelessWidget {
         if (matchup.isFinal && team.points != null) ...[
           const SizedBox(width: 8),
           Text(
-            team.points!.toStringAsFixed(1),
+            team.points!.toStringAsFixed(2),
             style: TextStyle(
               fontWeight: isWinner ? FontWeight.bold : FontWeight.normal,
               fontSize: 14,

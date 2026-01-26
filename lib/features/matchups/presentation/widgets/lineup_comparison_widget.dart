@@ -292,7 +292,7 @@ class _PointsDisplay extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        points.toStringAsFixed(1),
+        points.toStringAsFixed(2),
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,

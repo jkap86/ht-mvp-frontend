@@ -196,7 +196,7 @@ class _ScoreHeader extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      team1Points.toStringAsFixed(1),
+                      team1Points.toStringAsFixed(2),
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
@@ -264,7 +264,7 @@ class _ScoreHeader extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      team2Points.toStringAsFixed(1),
+                      team2Points.toStringAsFixed(2),
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
