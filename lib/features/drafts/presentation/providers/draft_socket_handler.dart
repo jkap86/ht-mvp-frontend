@@ -3,8 +3,6 @@ import 'dart:ui';
 import '../../../../core/socket/socket_service.dart';
 import '../../domain/auction_lot.dart';
 import '../../domain/draft_pick.dart';
-import '../../domain/draft_status.dart';
-import '../../../leagues/domain/league.dart';
 
 /// Notification when user is outbid on a lot
 class OutbidNotification {
