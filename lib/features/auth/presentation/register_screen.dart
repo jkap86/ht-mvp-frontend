@@ -58,10 +58,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
-                    Icons.sports_football,
-                    size: 80,
-                    color: Color(0xFF1E88E5),
+                  Image.asset(
+                    'assets/images/logo.png',
+                    height: 120,
                   ),
                   const SizedBox(height: 16),
                   Text(
