@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -101,17 +102,25 @@ class AuthRepository {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final newAccessToken = data['token'] as String?;
-        final newRefreshToken = data['refreshToken'] as String?;
+        try {
+          final data = jsonDecode(response.body);
+          final newAccessToken = data['token'] as String?;
+          final newRefreshToken = data['refreshToken'] as String?;
 
-        if (newAccessToken != null && newRefreshToken != null) {
-          await _apiClient.setTokens(newAccessToken, newRefreshToken);
-          return true;
+          if (newAccessToken != null && newRefreshToken != null) {
+            await _apiClient.setTokens(newAccessToken, newRefreshToken);
+            return true;
+          }
+          debugPrint('Token refresh failed: missing tokens in response');
+        } on FormatException catch (e) {
+          debugPrint('Token refresh failed: invalid JSON response - $e');
         }
+      } else {
+        debugPrint('Token refresh failed: status ${response.statusCode}');
       }
       return false;
     } catch (e) {
+      debugPrint('Token refresh failed: $e');
       return false;
     }
   }

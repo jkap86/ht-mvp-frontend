@@ -55,16 +55,15 @@ class MatchupScreen extends ConsumerWidget {
         ),
         title: Text(state.league?.name ?? 'Matchups'),
         actions: [
-          // Week selector - 18 weeks is standard for NFL regular season + playoffs
-          // TODO: Consider making this dynamic based on league settings if available
           PopupMenuButton<int>(
             initialValue: state.currentWeek,
             onSelected: (week) {
               ref.read(matchupProvider(leagueId).notifier).changeWeek(week);
             },
             itemBuilder: (context) {
+              final totalWeeks = state.league?.totalWeeks ?? 18;
               return List.generate(
-                18, // NFL regular season weeks
+                totalWeeks,
                 (index) => PopupMenuItem(
                   value: index + 1,
                   child: Text('Week ${index + 1}'),

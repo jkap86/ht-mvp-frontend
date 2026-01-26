@@ -127,7 +127,9 @@ class DraftRoomState {
     final d = draft;
     if (d == null || draftOrder.isEmpty) return draftOrder;
     final isSnake = d.draftType == DraftType.snake;
-    final isReversed = isSnake && (d.currentRound ?? 1) % 2 == 0;
+    // Ensure currentRound is at least 1 to avoid unexpected behavior
+    final currentRound = (d.currentRound ?? 1).clamp(1, d.rounds);
+    final isReversed = isSnake && currentRound % 2 == 0;
     return isReversed ? draftOrder.reversed.toList() : draftOrder;
   }
 
@@ -304,8 +306,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
           activeLots: state.activeLots.where((l) => l.id != lotId).toList(),
         );
       }
-      // Refresh budgets
-      loadAuctionData();
+      // Refresh budgets (check mounted again since we're about to start async operation)
+      if (mounted) {
+        loadAuctionData();
+      }
     });
 
     _lotPassedDisposer = _socketService.onAuctionLotPassed((data) {
@@ -379,7 +383,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState> {
       );
 
       // Load auction data if this is an auction draft
-      if (draft.draftType == DraftType.auction) {
+      if (mounted && draft.draftType == DraftType.auction) {
         loadAuctionData();
       }
     } catch (e) {

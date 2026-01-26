@@ -47,6 +47,10 @@ class RosterPlayer {
   final String? team;
   final String? status;
   final String? injuryStatus;
+  // Projection data
+  final double? projectedPoints;
+  final double? seasonPoints;
+  final int? byeWeek;
 
   RosterPlayer({
     required this.id,
@@ -59,6 +63,9 @@ class RosterPlayer {
     this.team,
     this.status,
     this.injuryStatus,
+    this.projectedPoints,
+    this.seasonPoints,
+    this.byeWeek,
   });
 
   factory RosterPlayer.fromJson(Map<String, dynamic> json) {
@@ -73,6 +80,9 @@ class RosterPlayer {
       team: json['team'] as String?,
       status: json['status'] as String?,
       injuryStatus: json['injury_status'] as String?,
+      projectedPoints: (json['projected_points'] as num?)?.toDouble(),
+      seasonPoints: (json['season_points'] as num?)?.toDouble(),
+      byeWeek: json['bye_week'] as int?,
     );
   }
 }

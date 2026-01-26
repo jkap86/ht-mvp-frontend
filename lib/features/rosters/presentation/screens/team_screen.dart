@@ -133,8 +133,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
   }
 
   Widget _buildWeekSelector(TeamState state) {
-    // Week selector - 18 weeks is standard for NFL regular season + playoffs
-    // TODO: Consider making this dynamic based on league settings if available
+    final totalWeeks = state.league?.totalWeeks ?? 18;
     return PopupMenuButton<int>(
       initialValue: state.currentWeek,
       onSelected: (week) {
@@ -142,7 +141,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
       },
       itemBuilder: (context) {
         return List.generate(
-          18, // NFL regular season weeks
+          totalWeeks,
           (index) => PopupMenuItem(
             value: index + 1,
             child: Text('Week ${index + 1}'),

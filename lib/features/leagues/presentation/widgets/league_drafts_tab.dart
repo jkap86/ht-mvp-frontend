@@ -7,15 +7,19 @@ import '../../domain/league.dart';
 class LeagueDraftsTab extends StatelessWidget {
   final int leagueId;
   final List<Draft> drafts;
+  final bool isCommissioner;
   final VoidCallback onCreateDraft;
   final Future<void> Function(Draft draft)? onStartDraft;
+  final Future<void> Function(Draft draft)? onRandomizeDraftOrder;
 
   const LeagueDraftsTab({
     super.key,
     required this.leagueId,
     required this.drafts,
+    this.isCommissioner = false,
     required this.onCreateDraft,
     this.onStartDraft,
+    this.onRandomizeDraftOrder,
   });
 
   @override
@@ -66,7 +70,9 @@ class LeagueDraftsTab extends StatelessWidget {
         return _DraftCard(
           leagueId: leagueId,
           draft: draft,
+          isCommissioner: isCommissioner,
           onStartDraft: onStartDraft,
+          onRandomizeDraftOrder: onRandomizeDraftOrder,
         );
       },
     );
@@ -76,38 +82,107 @@ class LeagueDraftsTab extends StatelessWidget {
 class _DraftCard extends StatelessWidget {
   final int leagueId;
   final Draft draft;
+  final bool isCommissioner;
   final Future<void> Function(Draft draft)? onStartDraft;
+  final Future<void> Function(Draft draft)? onRandomizeDraftOrder;
 
   const _DraftCard({
     required this.leagueId,
     required this.draft,
+    this.isCommissioner = false,
     this.onStartDraft,
+    this.onRandomizeDraftOrder,
   });
 
   @override
   Widget build(BuildContext context) {
+    final canRandomize = isCommissioner &&
+        draft.status == DraftStatus.notStarted &&
+        onRandomizeDraftOrder != null;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        title: Text(
-          'Draft #${draft.id}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
-            Text('Type: ${draft.draftType.label}'),
-            Text('Status: ${draft.status}'),
-            Text('Rounds: ${draft.rounds}'),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Draft #${draft.id}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('Type: ${draft.draftType.label}'),
+                      Text('Status: ${draft.status}'),
+                      Text('Rounds: ${draft.rounds}'),
+                    ],
+                  ),
+                ),
+                _DraftActionWidget(
+                  draft: draft,
+                  onStartDraft: onStartDraft,
+                ),
+              ],
+            ),
+            if (canRandomize) ...[
+              const Divider(height: 24),
+              Row(
+                children: [
+                  Icon(Icons.shuffle, size: 16, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 8),
+                  const Text('Commissioner Actions', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: () => _showRandomizeConfirmation(context),
+                    icon: const Icon(Icons.shuffle, size: 18),
+                    label: const Text('Randomize Order'),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => context.go('/leagues/$leagueId/drafts/${draft.id}'),
+                child: const Text('View Draft Room'),
+              ),
+            ),
           ],
         ),
-        trailing: _DraftActionWidget(
-          draft: draft,
-          onStartDraft: onStartDraft,
+      ),
+    );
+  }
+
+  void _showRandomizeConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Randomize Draft Order?'),
+        content: const Text(
+          'This will randomly shuffle the draft order for all teams. '
+          'This action can only be done before the draft starts.',
         ),
-        onTap: () => context.go('/leagues/$leagueId/drafts/${draft.id}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              onRandomizeDraftOrder?.call(draft);
+            },
+            icon: const Icon(Icons.shuffle),
+            label: const Text('Randomize'),
+          ),
+        ],
       ),
     );
   }

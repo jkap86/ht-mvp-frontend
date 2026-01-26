@@ -70,6 +70,14 @@ class League {
     return 'PPR';
   }
 
+  /// Total weeks in the season (regular season + playoffs)
+  /// Defaults to 18 (NFL standard)
+  int get totalWeeks {
+    final weeks = settings['total_weeks'];
+    if (weeks is int) return weeks;
+    return 18; // NFL regular season + playoffs default
+  }
+
   factory League.fromJson(Map<String, dynamic> json) {
     return League(
       id: json['id'] as int? ?? 0,

@@ -7,12 +7,14 @@ import '../../../core/widgets/dev_console.dart';
 import '../../../core/widgets/states/states.dart';
 import '../domain/league.dart';
 import '../../chat/presentation/chat_widget.dart';
+import '../../drafts/domain/draft_type.dart';
 import 'providers/league_detail_provider.dart';
 import 'widgets/league_header_widget.dart';
 import 'widgets/draft_status_banner.dart';
 import 'widgets/league_settings_summary.dart';
 import 'widgets/league_members_section.dart';
 import 'widgets/league_drafts_tab.dart';
+import 'widgets/create_draft_dialog.dart';
 
 class LeagueDetailScreen extends ConsumerStatefulWidget {
   final int leagueId;
@@ -39,14 +41,29 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     super.dispose();
   }
 
-  Future<void> _createDraft() async {
-    final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
-    final success = await notifier.createDraft();
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error creating draft')),
-      );
-    }
+  void _createDraft() {
+    showCreateDraftDialog(
+      context,
+      onCreateDraft: ({
+        required DraftType draftType,
+        required int rounds,
+        required int pickTimeSeconds,
+        Map<String, dynamic>? auctionSettings,
+      }) async {
+        final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
+        final success = await notifier.createDraft(
+          draftType: draftType.value,
+          rounds: rounds,
+          pickTimeSeconds: pickTimeSeconds,
+          settings: auctionSettings,
+        );
+        if (!success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error creating draft')),
+          );
+        }
+      },
+    );
   }
 
   Future<void> _startDraft(Draft draft) async {
@@ -55,6 +72,21 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error starting draft')),
+      );
+    }
+  }
+
+  Future<void> _randomizeDraftOrder(Draft draft) async {
+    final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
+    final success = await notifier.randomizeDraftOrder(draft.id);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success
+              ? 'Draft order randomized successfully'
+              : 'Error randomizing draft order'),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
       );
     }
   }
@@ -137,8 +169,10 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
               LeagueDraftsTab(
                 leagueId: widget.leagueId,
                 drafts: state.drafts,
+                isCommissioner: state.isCommissioner,
                 onCreateDraft: _createDraft,
                 onStartDraft: _startDraft,
+                onRandomizeDraftOrder: _randomizeDraftOrder,
               ),
               ChatWidget(leagueId: widget.leagueId),
             ],
@@ -160,7 +194,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             memberCount: state.members.length,
             isCommissioner: state.isCommissioner,
             onSettingsTap: () {
-              // TODO: Navigate to league settings
+              context.push('/leagues/${widget.leagueId}/commissioner');
             },
           ),
           const SizedBox(height: 16),

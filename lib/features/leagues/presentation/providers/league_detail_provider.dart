@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../drafts/domain/draft_status.dart';
+import '../../../drafts/data/draft_repository.dart';
 import '../../data/league_repository.dart';
 import '../../domain/league.dart';
 
@@ -60,9 +61,10 @@ class LeagueDetailState {
 
 class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
   final LeagueRepository _leagueRepo;
+  final DraftRepository _draftRepo;
   final int leagueId;
 
-  LeagueDetailNotifier(this._leagueRepo, this.leagueId) : super(LeagueDetailState()) {
+  LeagueDetailNotifier(this._leagueRepo, this._draftRepo, this.leagueId) : super(LeagueDetailState()) {
     loadData();
   }
 
@@ -90,9 +92,20 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     }
   }
 
-  Future<bool> createDraft() async {
+  Future<bool> createDraft({
+    String draftType = 'snake',
+    int rounds = 15,
+    int pickTimeSeconds = 90,
+    Map<String, dynamic>? settings,
+  }) async {
     try {
-      final draft = await _leagueRepo.createDraft(leagueId);
+      final draft = await _leagueRepo.createDraft(
+        leagueId,
+        draftType: draftType,
+        rounds: rounds,
+        pickTimeSeconds: pickTimeSeconds,
+        settings: settings,
+      );
       state = state.copyWith(drafts: [...state.drafts, draft]);
       return true;
     } catch (e) {
@@ -114,12 +127,22 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
       return false;
     }
   }
+
+  Future<bool> randomizeDraftOrder(int draftId) async {
+    try {
+      await _draftRepo.randomizeDraftOrder(leagueId, draftId);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }
 
 final leagueDetailProvider =
     StateNotifierProvider.family<LeagueDetailNotifier, LeagueDetailState, int>(
   (ref, leagueId) => LeagueDetailNotifier(
     ref.watch(leagueRepositoryProvider),
+    ref.watch(draftRepositoryProvider),
     leagueId,
   ),
 );

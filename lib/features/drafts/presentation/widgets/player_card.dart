@@ -54,13 +54,39 @@ class PlayerCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        player.fullName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              player.fullName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (player.injuryStatus != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              margin: const EdgeInsets.only(left: 8),
+                              decoration: BoxDecoration(
+                                color: _getInjuryColor(player.injuryStatus),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                player.injuryStatus!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Row(
@@ -91,6 +117,32 @@ class PlayerCard extends StatelessWidget {
                     ],
                   ),
                 ),
+
+                // Projection Points
+                if (player.remainingProjectedPts != null || player.priorSeasonPts != null) ...[
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        (player.remainingProjectedPts ?? player.priorSeasonPts ?? 0).toStringAsFixed(1),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                      Text(
+                        player.remainingProjectedPts != null ? 'PROJ' : 'LAST YR',
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
 
                 // Action Buttons
                 if (!isDrafted) _buildActionButtons(context),
@@ -140,6 +192,25 @@ class PlayerCard extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  Color _getInjuryColor(String? status) {
+    switch (status?.toUpperCase()) {
+      case 'OUT':
+        return Colors.red;
+      case 'DOUBTFUL':
+        return Colors.red.shade300;
+      case 'QUESTIONABLE':
+        return Colors.orange;
+      case 'PROBABLE':
+        return Colors.yellow.shade700;
+      case 'IR':
+        return Colors.red.shade900;
+      case 'PUP':
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
   }
 }
 

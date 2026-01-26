@@ -72,15 +72,14 @@ class RosterRepository {
     return ((response['players'] as List?) ?? []).map((json) => Player.fromJson(json as Map<String, dynamic>)).toList();
   }
 
-  /// Get roster transactions history
+  /// Get league transactions history
   Future<List<RosterTransaction>> getTransactions(
-    int leagueId,
-    int rosterId, {
+    int leagueId, {
     int limit = 50,
     int offset = 0,
   }) async {
     final response = await _apiClient.get(
-      '/leagues/$leagueId/rosters/$rosterId/transactions?limit=$limit&offset=$offset',
+      '/leagues/$leagueId/transactions?limit=$limit&offset=$offset',
     );
     return ((response['transactions'] as List?) ?? []).map((json) => RosterTransaction.fromJson(json as Map<String, dynamic>)).toList();
   }

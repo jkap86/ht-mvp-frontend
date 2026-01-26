@@ -49,9 +49,11 @@ class Matchup {
     return null;
   }
 
-  /// Get opponent's roster ID
-  int opponentId(int rosterId) {
-    return rosterId == roster1Id ? roster2Id : roster1Id;
+  /// Get opponent's roster ID (null if rosterId not in matchup)
+  int? opponentId(int rosterId) {
+    if (rosterId == roster1Id) return roster2Id;
+    if (rosterId == roster2Id) return roster1Id;
+    return null;
   }
 
   factory Matchup.fromJson(Map<String, dynamic> json) {
@@ -86,10 +88,12 @@ class MatchupDetails {
   });
 
   factory MatchupDetails.fromJson(Map<String, dynamic> json) {
+    // Ensure we have proper structure - if matchup key exists, use it; otherwise treat json as matchup data
+    final matchupData = json['matchup'] as Map<String, dynamic>?;
     return MatchupDetails(
-      matchup: Matchup.fromJson(json['matchup'] ?? json),
-      team1: MatchupTeam.fromJson(json['team1'] ?? {}),
-      team2: MatchupTeam.fromJson(json['team2'] ?? {}),
+      matchup: Matchup.fromJson(matchupData ?? json),
+      team1: MatchupTeam.fromJson(json['team1'] as Map<String, dynamic>? ?? {}),
+      team2: MatchupTeam.fromJson(json['team2'] as Map<String, dynamic>? ?? {}),
     );
   }
 }

@@ -10,9 +10,13 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    // Backend returns 'userId', fallback to 'id' for compatibility
+    final userId = (json['userId'] ?? json['id']) as String?;
+    if (userId == null || userId.isEmpty) {
+      throw FormatException('Invalid user data: missing or empty user ID');
+    }
     return User(
-      // Backend returns 'userId', fallback to 'id' for compatibility
-      id: (json['userId'] ?? json['id']) as String? ?? '',
+      id: userId,
       username: json['username'] as String? ?? '',
       email: json['email'] as String? ?? '',
     );

@@ -9,6 +9,7 @@ import '../widgets/member_management_card.dart';
 import '../widgets/playoff_management_card.dart';
 import '../widgets/schedule_management_card.dart';
 import '../widgets/scoring_card.dart';
+import '../widgets/waiver_management_card.dart';
 
 class CommissionerScreen extends ConsumerWidget {
   final int leagueId;
@@ -88,6 +89,18 @@ class CommissionerScreen extends ConsumerWidget {
                         currentWeek: state.league?.currentWeek ?? 1,
                         onFinalizeWeek: (week) {
                           ref.read(commissionerProvider(leagueId).notifier).finalizeWeek(week);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Waiver Management Card
+                      WaiverManagementCard(
+                        waiversInitialized: state.waiversInitialized,
+                        onInitializeWaivers: ({int? faabBudget}) {
+                          ref.read(commissionerProvider(leagueId).notifier).initializeWaivers(faabBudget: faabBudget);
+                        },
+                        onProcessWaivers: () {
+                          ref.read(commissionerProvider(leagueId).notifier).processWaivers();
                         },
                       ),
                       const SizedBox(height: 16),

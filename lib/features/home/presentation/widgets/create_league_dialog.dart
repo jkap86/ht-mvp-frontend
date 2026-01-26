@@ -21,10 +21,33 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
   final _formKey = GlobalKey<FormState>();
   String _selectedSeason = DateTime.now().year.toString();
   int _selectedRosters = 12;
-  String _selectedScoringType = 'ppr';
   String _selectedLeagueMode = 'redraft';
-  String _selectedDraftType = 'snake';
-  int _auctionBudget = 200;
+
+  // Scoring categories (Sleeper-style)
+  // Passing
+  int _passingTdPoints = 4;
+  int _passingYardsPerPoint = 25;
+  int _interceptionPoints = -1;
+
+  // Rushing
+  int _rushingTdPoints = 6;
+  int _rushingYardsPerPoint = 10;
+
+  // Receiving
+  double _pprValue = 1.0;
+  int _receivingTdPoints = 6;
+  int _receivingYardsPerPoint = 10;
+  double _tePremium = 0.0;
+
+  // Bonuses
+  int _bonus100YardRush = 0;
+  int _bonus100YardRec = 0;
+  int _bonus300YardPass = 0;
+  int _bonus40YardTd = 0;
+
+  // Misc
+  int _fumbleLostPoints = -2;
+  int _twoPtConversion = 2;
 
   // Roster position configuration
   int _qbSlots = 1;
@@ -43,17 +66,140 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
     super.dispose();
   }
 
-  Map<String, dynamic> _getScoringSettings(String type) {
-    switch (type) {
-      case 'standard':
-        return {'rec': 0.0};
-      case 'half_ppr':
-        return {'rec': 0.5};
-      case 'ppr':
-        return {'rec': 1.0};
-      default:
-        return {'rec': 1.0};
-    }
+  Map<String, dynamic> _getScoringSettings() {
+    return {
+      // Passing
+      'pass_td': _passingTdPoints,
+      'pass_yd': 1.0 / _passingYardsPerPoint,
+      'pass_int': _interceptionPoints,
+      // Rushing
+      'rush_td': _rushingTdPoints,
+      'rush_yd': 1.0 / _rushingYardsPerPoint,
+      // Receiving
+      'rec': _pprValue,
+      'rec_td': _receivingTdPoints,
+      'rec_yd': 1.0 / _receivingYardsPerPoint,
+      'te_premium': _tePremium,
+      // Bonuses
+      'bonus_rush_yd_100': _bonus100YardRush,
+      'bonus_rec_yd_100': _bonus100YardRec,
+      'bonus_pass_yd_300': _bonus300YardPass,
+      'bonus_40_yd_td': _bonus40YardTd,
+      // Misc
+      'fum_lost': _fumbleLostPoints,
+      'two_pt': _twoPtConversion,
+    };
+  }
+
+  Widget _buildScoringOption({
+    required String label,
+    required List<({String label, dynamic value})> options,
+    required dynamic selectedValue,
+    required void Function(dynamic) onSelected,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurface.withAlpha(204),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Container(
+              height: 32,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest.withAlpha(128),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: options.map((option) {
+                  final isSelected = option.value == selectedValue;
+                  final isFirst = options.first == option;
+                  final isLast = options.last == option;
+
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => onSelected(option.value),
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isSelected ? colorScheme.primary : Colors.transparent,
+                          borderRadius: BorderRadius.horizontal(
+                            left: isFirst ? const Radius.circular(8) : Radius.zero,
+                            right: isLast ? const Radius.circular(8) : Radius.zero,
+                          ),
+                        ),
+                        child: Text(
+                          option.label,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface.withAlpha(179),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScoringSection({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+            child: Row(
+              children: [
+                Icon(icon, size: 16, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+            child: Column(children: children),
+          ),
+        ],
+      ),
+    );
   }
 
   Map<String, int> _getRosterConfig() {
@@ -111,14 +257,26 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return AlertDialog(
-      title: const Text('Create League'),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+      title: Row(
+        children: [
+          Icon(Icons.emoji_events, color: colorScheme.primary),
+          const SizedBox(width: 10),
+          const Text('Create League'),
+        ],
+      ),
+      contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -172,23 +330,6 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedScoringType,
-                decoration: const InputDecoration(
-                  labelText: 'Scoring Type',
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'standard', child: Text('Standard')),
-                  DropdownMenuItem(value: 'half_ppr', child: Text('Half-PPR')),
-                  DropdownMenuItem(value: 'ppr', child: Text('PPR')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedScoringType = value);
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
                 value: _selectedLeagueMode,
                 decoration: const InputDecoration(
                   labelText: 'League Mode',
@@ -204,89 +345,221 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
                   }
                 },
               ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedDraftType,
-                decoration: const InputDecoration(
-                  labelText: 'Draft Type',
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'snake', child: Text('Snake')),
-                  DropdownMenuItem(value: 'linear', child: Text('Linear')),
-                  DropdownMenuItem(value: 'auction', child: Text('Auction')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedDraftType = value);
-                  }
-                },
-              ),
-              if (_selectedDraftType == 'auction') ...[
-                const SizedBox(height: 16),
-                DropdownButtonFormField<int>(
-                  value: _auctionBudget,
-                  decoration: const InputDecoration(
-                    labelText: 'Auction Budget',
-                  ),
-                  items: [
-                    for (int budget in [100, 150, 200, 250, 300, 500])
-                      DropdownMenuItem(value: budget, child: Text('\$$budget')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _auctionBudget = value);
-                    }
-                  },
-                ),
-              ],
-              const SizedBox(height: 16),
-              // Roster Position Configuration
-              ExpansionTile(
-                title: const Text('Roster Positions'),
-                subtitle: Text(
-                  'QB:$_qbSlots RB:$_rbSlots WR:$_wrSlots TE:$_teSlots FLEX:$_flexSlots',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                initiallyExpanded: _rosterConfigExpanded,
-                onExpansionChanged: (expanded) {
-                  setState(() => _rosterConfigExpanded = expanded);
-                },
+              const SizedBox(height: 20),
+              // Scoring Categories Header
+              Row(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        _buildPositionSlotRow('QB', _qbSlots, 0, 2, (v) => setState(() => _qbSlots = v)),
-                        _buildPositionSlotRow('RB', _rbSlots, 0, 4, (v) => setState(() => _rbSlots = v)),
-                        _buildPositionSlotRow('WR', _wrSlots, 0, 4, (v) => setState(() => _wrSlots = v)),
-                        _buildPositionSlotRow('TE', _teSlots, 0, 2, (v) => setState(() => _teSlots = v)),
-                        _buildPositionSlotRow('FLEX', _flexSlots, 0, 4, (v) => setState(() => _flexSlots = v)),
-                        _buildPositionSlotRow('K', _kSlots, 0, 2, (v) => setState(() => _kSlots = v)),
-                        _buildPositionSlotRow('DEF', _defSlots, 0, 2, (v) => setState(() => _defSlots = v)),
-                        _buildPositionSlotRow('Bench', _bnSlots, 0, 10, (v) => setState(() => _bnSlots = v)),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Total: ${_qbSlots + _rbSlots + _wrSlots + _teSlots + _flexSlots + _kSlots + _defSlots + _bnSlots} roster spots',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                  Icon(Icons.scoreboard_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Scoring Settings',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(height: 8),
-                      ],
-                    ),
                   ),
                 ],
               ),
-            ],
+              const SizedBox(height: 12),
+
+              // Passing Section
+              _buildScoringSection(
+                title: 'Passing',
+                icon: Icons.sports_football,
+                children: [
+                  _buildScoringOption(
+                    label: 'Passing TD',
+                    options: [(label: '4', value: 4), (label: '5', value: 5), (label: '6', value: 6)],
+                    selectedValue: _passingTdPoints,
+                    onSelected: (v) => setState(() => _passingTdPoints = v),
+                  ),
+                  _buildScoringOption(
+                    label: 'Yards / Point',
+                    options: [(label: '20', value: 20), (label: '25', value: 25), (label: '30', value: 30)],
+                    selectedValue: _passingYardsPerPoint,
+                    onSelected: (v) => setState(() => _passingYardsPerPoint = v),
+                  ),
+                  _buildScoringOption(
+                    label: 'Interception',
+                    options: [(label: '0', value: 0), (label: '-1', value: -1), (label: '-2', value: -2)],
+                    selectedValue: _interceptionPoints,
+                    onSelected: (v) => setState(() => _interceptionPoints = v),
+                  ),
+                ],
+              ),
+
+              // Rushing Section
+              _buildScoringSection(
+                title: 'Rushing',
+                icon: Icons.directions_run,
+                children: [
+                  _buildScoringOption(
+                    label: 'Rushing TD',
+                    options: [(label: '6', value: 6), (label: '7', value: 7), (label: '8', value: 8)],
+                    selectedValue: _rushingTdPoints,
+                    onSelected: (v) => setState(() => _rushingTdPoints = v),
+                  ),
+                  _buildScoringOption(
+                    label: 'Yards / Point',
+                    options: [(label: '8', value: 8), (label: '10', value: 10), (label: '12', value: 12)],
+                    selectedValue: _rushingYardsPerPoint,
+                    onSelected: (v) => setState(() => _rushingYardsPerPoint = v),
+                  ),
+                ],
+              ),
+
+              // Receiving Section
+              _buildScoringSection(
+                title: 'Receiving',
+                icon: Icons.catching_pokemon,
+                children: [
+                  _buildScoringOption(
+                    label: 'PPR',
+                    options: [(label: '0', value: 0.0), (label: '0.5', value: 0.5), (label: '1', value: 1.0)],
+                    selectedValue: _pprValue,
+                    onSelected: (v) => setState(() => _pprValue = v),
+                  ),
+                  _buildScoringOption(
+                    label: 'Receiving TD',
+                    options: [(label: '6', value: 6), (label: '7', value: 7), (label: '8', value: 8)],
+                    selectedValue: _receivingTdPoints,
+                    onSelected: (v) => setState(() => _receivingTdPoints = v),
+                  ),
+                  _buildScoringOption(
+                    label: 'Yards / Point',
+                    options: [(label: '8', value: 8), (label: '10', value: 10), (label: '12', value: 12)],
+                    selectedValue: _receivingYardsPerPoint,
+                    onSelected: (v) => setState(() => _receivingYardsPerPoint = v),
+                  ),
+                  _buildScoringOption(
+                    label: 'TE Premium',
+                    options: [(label: 'Off', value: 0.0), (label: '+0.5', value: 0.5), (label: '+1', value: 1.0)],
+                    selectedValue: _tePremium,
+                    onSelected: (v) => setState(() => _tePremium = v),
+                  ),
+                ],
+              ),
+
+              // Bonuses Section
+              _buildScoringSection(
+                title: 'Bonuses',
+                icon: Icons.star_outline,
+                children: [
+                  _buildScoringOption(
+                    label: '100+ Rush Yds',
+                    options: [(label: 'Off', value: 0), (label: '+3', value: 3), (label: '+5', value: 5)],
+                    selectedValue: _bonus100YardRush,
+                    onSelected: (v) => setState(() => _bonus100YardRush = v),
+                  ),
+                  _buildScoringOption(
+                    label: '100+ Rec Yds',
+                    options: [(label: 'Off', value: 0), (label: '+3', value: 3), (label: '+5', value: 5)],
+                    selectedValue: _bonus100YardRec,
+                    onSelected: (v) => setState(() => _bonus100YardRec = v),
+                  ),
+                  _buildScoringOption(
+                    label: '300+ Pass Yds',
+                    options: [(label: 'Off', value: 0), (label: '+3', value: 3), (label: '+5', value: 5)],
+                    selectedValue: _bonus300YardPass,
+                    onSelected: (v) => setState(() => _bonus300YardPass = v),
+                  ),
+                  _buildScoringOption(
+                    label: '40+ Yd TD',
+                    options: [(label: 'Off', value: 0), (label: '+1', value: 1), (label: '+2', value: 2)],
+                    selectedValue: _bonus40YardTd,
+                    onSelected: (v) => setState(() => _bonus40YardTd = v),
+                  ),
+                ],
+              ),
+
+              // Misc Section
+              _buildScoringSection(
+                title: 'Miscellaneous',
+                icon: Icons.more_horiz,
+                children: [
+                  _buildScoringOption(
+                    label: 'Fumble Lost',
+                    options: [(label: '0', value: 0), (label: '-1', value: -1), (label: '-2', value: -2)],
+                    selectedValue: _fumbleLostPoints,
+                    onSelected: (v) => setState(() => _fumbleLostPoints = v),
+                  ),
+                  _buildScoringOption(
+                    label: '2PT Conversion',
+                    options: [(label: '1', value: 1), (label: '2', value: 2), (label: '3', value: 3)],
+                    selectedValue: _twoPtConversion,
+                    onSelected: (v) => setState(() => _twoPtConversion = v),
+                  ),
+                ],
+              ),
+              // Roster Position Configuration
+              Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
+                ),
+                child: Theme(
+                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    leading: Icon(Icons.groups, size: 18, color: colorScheme.primary),
+                    title: const Text('Roster Positions', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    subtitle: Text(
+                      'QB:$_qbSlots  RB:$_rbSlots  WR:$_wrSlots  TE:$_teSlots  FLEX:$_flexSlots',
+                      style: TextStyle(fontSize: 11, color: colorScheme.onSurface.withAlpha(153)),
+                    ),
+                    initiallyExpanded: _rosterConfigExpanded,
+                    onExpansionChanged: (expanded) {
+                      setState(() => _rosterConfigExpanded = expanded);
+                    },
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: Column(
+                          children: [
+                            _buildPositionSlotRow('QB', _qbSlots, 0, 3, (v) => setState(() => _qbSlots = v)),
+                            _buildPositionSlotRow('RB', _rbSlots, 0, 4, (v) => setState(() => _rbSlots = v)),
+                            _buildPositionSlotRow('WR', _wrSlots, 0, 4, (v) => setState(() => _wrSlots = v)),
+                            _buildPositionSlotRow('TE', _teSlots, 0, 3, (v) => setState(() => _teSlots = v)),
+                            _buildPositionSlotRow('FLEX', _flexSlots, 0, 4, (v) => setState(() => _flexSlots = v)),
+                            _buildPositionSlotRow('K', _kSlots, 0, 2, (v) => setState(() => _kSlots = v)),
+                            _buildPositionSlotRow('DEF', _defSlots, 0, 2, (v) => setState(() => _defSlots = v)),
+                            _buildPositionSlotRow('Bench', _bnSlots, 0, 15, (v) => setState(() => _bnSlots = v)),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primaryContainer.withAlpha(128),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Total: ${_qbSlots + _rbSlots + _wrSlots + _teSlots + _flexSlots + _kSlots + _defSlots + _bnSlots} roster spots',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),
+      actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text('Cancel', style: TextStyle(color: colorScheme.onSurface.withAlpha(179))),
         ),
-        ElevatedButton(
+        const SizedBox(width: 8),
+        FilledButton.icon(
           onPressed: () async {
             if (_formKey.currentState!.validate()) {
               Navigator.pop(context);
@@ -294,17 +567,16 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
                 name: _nameController.text,
                 season: _selectedSeason,
                 totalRosters: _selectedRosters,
-                scoringSettings: _getScoringSettings(_selectedScoringType),
+                scoringSettings: _getScoringSettings(),
                 mode: _selectedLeagueMode,
                 settings: {
-                  'draft_type': _selectedDraftType,
                   'roster_config': _getRosterConfig(),
-                  if (_selectedDraftType == 'auction') 'auction_budget': _auctionBudget,
                 },
               );
             }
           },
-          child: const Text('Create'),
+          icon: const Icon(Icons.add, size: 18),
+          label: const Text('Create League'),
         ),
       ],
     );

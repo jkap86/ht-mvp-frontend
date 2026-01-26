@@ -150,6 +150,10 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
   Future<void> _handleSubmit() async {
     if (!_canSubmit()) return;
 
+    // Show confirmation dialog
+    final confirmed = await _showConfirmationDialog();
+    if (!confirmed) return;
+
     setState(() => _isSubmitting = true);
 
     try {
@@ -166,7 +170,10 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trade proposed!')),
+          const SnackBar(
+            content: Text('Trade proposed!'),
+            backgroundColor: Colors.green,
+          ),
         );
         context.pop();
       }
@@ -181,5 +188,119 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  Future<bool> _showConfirmationDialog() async {
+    final leagueState = ref.read(leagueDetailProvider(widget.leagueId));
+    final recipientMember = leagueState.members.firstWhere(
+      (m) => m.id == _selectedRecipientRosterId,
+    );
+    final recipientName = recipientMember.teamName ?? recipientMember.username;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Trade Proposal'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Trade with $recipientName',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              _buildTradeSummarySection(
+                'You Give',
+                _offeringPlayerIds.length,
+                Colors.red.shade100,
+                Icons.arrow_upward,
+              ),
+              const SizedBox(height: 8),
+              _buildTradeSummarySection(
+                'You Get',
+                _requestingPlayerIds.length,
+                Colors.green.shade100,
+                Icons.arrow_downward,
+              ),
+              if (_messageController.text.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text('Message:', style: TextStyle(fontWeight: FontWeight.w500)),
+                const SizedBox(height: 4),
+                Text(
+                  _messageController.text,
+                  style: TextStyle(
+                    fontStyle: FontStyle.italic,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 20, color: Colors.amber),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Once sent, you can cancel this trade from the trades screen if it\'s still pending.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.send),
+            label: const Text('Send Trade'),
+          ),
+        ],
+      ),
+    );
+
+    return result ?? false;
+  }
+
+  Widget _buildTradeSummarySection(
+    String label,
+    int playerCount,
+    Color backgroundColor,
+    IconData icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: 8),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          const Spacer(),
+          Text(
+            '$playerCount player${playerCount != 1 ? 's' : ''}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
   }
 }

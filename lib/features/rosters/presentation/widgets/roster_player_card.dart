@@ -110,6 +110,24 @@ class RosterPlayerCard extends StatelessWidget {
                             ),
                           ),
                         ],
+                        if (player.byeWeek != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'BYE ${player.byeWeek}',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                         const Spacer(),
                         Text(
                           player.acquiredType.displayName,
@@ -123,6 +141,31 @@ class RosterPlayerCard extends StatelessWidget {
                   ],
                 ),
               ),
+
+              // Projected Points
+              if (player.projectedPoints != null) ...[
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      player.projectedPoints!.toStringAsFixed(1),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                    Text(
+                      'PROJ',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
 
               // Actions
               if (showActions) ...[

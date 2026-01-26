@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../config/theme_provider.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../leagues/data/league_repository.dart';
@@ -31,6 +32,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         title: const Text('My Leagues'),
         actions: [
+          IconButton(
+            icon: Icon(
+              ref.watch(themeModeProvider) == ThemeMode.dark
+                  ? Icons.light_mode
+                  : Icons.dark_mode,
+            ),
+            tooltip: 'Toggle theme',
+            onPressed: () {
+              ref.read(themeModeProvider.notifier).toggleTheme();
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {

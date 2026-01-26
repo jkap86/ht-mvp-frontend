@@ -5,12 +5,14 @@ import '../../../leagues/domain/league.dart';
 import '../../../matchups/data/matchup_repository.dart';
 import '../../../playoffs/data/playoff_repository.dart';
 import '../../../playoffs/domain/playoff.dart';
+import '../../../waivers/data/waiver_repository.dart';
 
 /// Commissioner dashboard state
 class CommissionerState {
   final League? league;
   final List<Map<String, dynamic>> members;
   final PlayoffBracketView? bracketView;
+  final bool waiversInitialized;
   final bool isLoading;
   final bool isProcessing;
   final String? error;
@@ -20,6 +22,7 @@ class CommissionerState {
     this.league,
     this.members = const [],
     this.bracketView,
+    this.waiversInitialized = false,
     this.isLoading = true,
     this.isProcessing = false,
     this.error,
@@ -32,6 +35,7 @@ class CommissionerState {
     League? league,
     List<Map<String, dynamic>>? members,
     PlayoffBracketView? bracketView,
+    bool? waiversInitialized,
     bool? isLoading,
     bool? isProcessing,
     String? error,
@@ -44,6 +48,7 @@ class CommissionerState {
       league: league ?? this.league,
       members: members ?? this.members,
       bracketView: clearBracket ? null : (bracketView ?? this.bracketView),
+      waiversInitialized: waiversInitialized ?? this.waiversInitialized,
       isLoading: isLoading ?? this.isLoading,
       isProcessing: isProcessing ?? this.isProcessing,
       error: clearError ? null : (error ?? this.error),
@@ -57,12 +62,14 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
   final LeagueRepository _leagueRepo;
   final MatchupRepository _matchupRepo;
   final PlayoffRepository _playoffRepo;
+  final WaiverRepository _waiverRepo;
   final int leagueId;
 
   CommissionerNotifier(
     this._leagueRepo,
     this._matchupRepo,
     this._playoffRepo,
+    this._waiverRepo,
     this.leagueId,
   ) : super(CommissionerState()) {
     loadData();
@@ -221,6 +228,47 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
   void clearMessages() {
     state = state.copyWith(clearError: true, clearSuccess: true);
   }
+
+  Future<bool> initializeWaivers({int? faabBudget}) async {
+    state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
+
+    try {
+      await _waiverRepo.initializeWaivers(leagueId, faabBudget: faabBudget);
+      state = state.copyWith(
+        waiversInitialized: true,
+        isProcessing: false,
+        successMessage: 'Waiver system initialized successfully',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isProcessing: false,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> processWaivers() async {
+    state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
+
+    try {
+      final result = await _waiverRepo.processWaivers(leagueId);
+      final processed = result['processed'] ?? 0;
+      final successful = result['successful'] ?? 0;
+      state = state.copyWith(
+        isProcessing: false,
+        successMessage: 'Processed $processed claims ($successful successful)',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isProcessing: false,
+      );
+      return false;
+    }
+  }
 }
 
 /// Provider for commissioner screen
@@ -229,6 +277,7 @@ final commissionerProvider = StateNotifierProvider.family<CommissionerNotifier, 
     ref.watch(leagueRepositoryProvider),
     ref.watch(matchupRepositoryProvider),
     ref.watch(playoffRepositoryProvider),
+    ref.watch(waiverRepositoryProvider),
     leagueId,
   ),
 );

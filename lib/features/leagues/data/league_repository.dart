@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/api/api_exceptions.dart';
 import '../domain/league.dart';
 
 final leagueRepositoryProvider = Provider<LeagueRepository>((ref) {
@@ -15,7 +16,9 @@ class LeagueRepository {
 
   Future<List<League>> getMyLeagues() async {
     final response = await _apiClient.get('/leagues/my-leagues');
-    if (response is! List) return [];
+    if (response is! List) {
+      throw ApiException('Invalid response: expected list of leagues', 500);
+    }
     return response.map((json) => League.fromJson(json)).toList();
   }
 
@@ -50,18 +53,33 @@ class LeagueRepository {
 
   Future<List<Roster>> getLeagueMembers(int leagueId) async {
     final response = await _apiClient.get('/leagues/$leagueId/members');
-    if (response is! List) return [];
+    if (response is! List) {
+      throw ApiException('Invalid response: expected list of members', 500);
+    }
     return response.map((json) => Roster.fromJson(json)).toList();
   }
 
   Future<List<Draft>> getLeagueDrafts(int leagueId) async {
     final response = await _apiClient.get('/leagues/$leagueId/drafts');
-    if (response is! List) return [];
+    if (response is! List) {
+      throw ApiException('Invalid response: expected list of drafts', 500);
+    }
     return response.map((json) => Draft.fromJson(json)).toList();
   }
 
-  Future<Draft> createDraft(int leagueId) async {
-    final response = await _apiClient.post('/leagues/$leagueId/drafts');
+  Future<Draft> createDraft(
+    int leagueId, {
+    String draftType = 'snake',
+    int rounds = 15,
+    int pickTimeSeconds = 90,
+    Map<String, dynamic>? settings,
+  }) async {
+    final response = await _apiClient.post('/leagues/$leagueId/drafts', body: {
+      'draft_type': draftType,
+      'rounds': rounds,
+      'pick_time_seconds': pickTimeSeconds,
+      if (settings != null) 'settings': settings,
+    });
     return Draft.fromJson(response);
   }
 
@@ -84,7 +102,9 @@ class LeagueRepository {
   /// Get members as raw data (for commissioner screen)
   Future<List<Map<String, dynamic>>> getMembers(int leagueId) async {
     final response = await _apiClient.get('/leagues/$leagueId/members');
-    if (response is! List) return [];
+    if (response is! List) {
+      throw ApiException('Invalid response: expected list of members', 500);
+    }
     return response.cast<Map<String, dynamic>>();
   }
 

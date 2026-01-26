@@ -10,6 +10,7 @@ import '../widgets/bench_list.dart';
 import '../widgets/lineup_locked_banner.dart';
 import '../widgets/lineup_slot_column.dart';
 import '../widgets/move_player_modal.dart';
+import '../widgets/optimal_lineup_banner.dart';
 
 class LineupScreen extends ConsumerWidget {
   final int leagueId;
@@ -72,6 +73,16 @@ class LineupScreen extends ConsumerWidget {
           children: [
             if (state.lineup?.isLocked == true) const LineupLockedBanner(),
             _buildPointsSummary(context, state),
+            // Show optimal lineup suggestions if not locked and not optimal
+            if (state.lineup?.isLocked != true && !state.isOptimalLineup)
+              OptimalLineupBanner(
+                issues: state.lineupIssues,
+                currentProjected: state.projectedStarterPoints,
+                optimalProjected: state.optimalProjectedPoints,
+                isSaving: state.isSaving,
+                onSetOptimal: () =>
+                    ref.read(teamProvider(teamKey).notifier).setOptimalLineup(),
+              ),
             Expanded(
               child: _buildLineupList(context, ref, state, teamKey),
             ),

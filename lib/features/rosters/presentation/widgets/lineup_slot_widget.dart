@@ -58,8 +58,32 @@ class LineupSlotWidget extends StatelessWidget {
               // Points or lock icon
               if (isLocked)
                 const Icon(Icons.lock, color: Colors.grey, size: 20)
-              else if (player != null)
-                const Icon(Icons.chevron_right, color: Colors.grey),
+              else if (player != null) ...[
+                if (player!.projectedPoints != null)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        player!.projectedPoints!.toStringAsFixed(1),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                      Text(
+                        'PROJ',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  const Icon(Icons.chevron_right, color: Colors.grey),
+              ],
             ],
           ),
         ),
@@ -102,12 +126,34 @@ class LineupSlotWidget extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        Text(
-          '${player!.position ?? "?"} - ${player!.team ?? "FA"}',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 14,
-          ),
+        Row(
+          children: [
+            Text(
+              '${player!.position ?? "?"} - ${player!.team ?? "FA"}',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+            if (player!.byeWeek != null) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'BYE ${player!.byeWeek}',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );
