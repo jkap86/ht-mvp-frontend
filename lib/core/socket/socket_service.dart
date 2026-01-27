@@ -197,6 +197,10 @@ class SocketService {
   // Call the returned function in dispose() to remove only your listener
   // Now always returns a non-null VoidCallback (subscriptions are queued if not connected)
 
+  VoidCallback onDraftCreated(void Function(dynamic) callback) {
+    return on(SocketEvents.draftCreated, callback);
+  }
+
   VoidCallback onDraftStarted(void Function(dynamic) callback) {
     return on(SocketEvents.draftStarted, callback);
   }

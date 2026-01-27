@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/socket/socket_service.dart';
 import '../../../drafts/domain/draft_status.dart';
 import '../../../drafts/data/draft_repository.dart';
 import '../../data/league_repository.dart';
@@ -62,10 +64,48 @@ class LeagueDetailState {
 class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
   final LeagueRepository _leagueRepo;
   final DraftRepository _draftRepo;
+  final SocketService _socketService;
   final int leagueId;
+  VoidCallback? _memberJoinedDisposer;
+  VoidCallback? _draftCreatedDisposer;
 
-  LeagueDetailNotifier(this._leagueRepo, this._draftRepo, this.leagueId) : super(LeagueDetailState()) {
+  LeagueDetailNotifier(this._leagueRepo, this._draftRepo, this._socketService, this.leagueId) : super(LeagueDetailState()) {
+    _setupSocketListeners();
     loadData();
+  }
+
+  void _setupSocketListeners() {
+    _socketService.joinLeague(leagueId);
+    _memberJoinedDisposer = _socketService.onMemberJoined((data) {
+      if (!mounted) return;
+      _refreshMembers();
+    });
+    _draftCreatedDisposer = _socketService.onDraftCreated((data) {
+      if (!mounted) return;
+      _refreshDrafts();
+    });
+  }
+
+  Future<void> _refreshMembers() async {
+    try {
+      final members = await _leagueRepo.getLeagueMembers(leagueId);
+      state = state.copyWith(members: members);
+    } catch (_) {}
+  }
+
+  Future<void> _refreshDrafts() async {
+    try {
+      final drafts = await _leagueRepo.getLeagueDrafts(leagueId);
+      state = state.copyWith(drafts: drafts);
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _memberJoinedDisposer?.call();
+    _draftCreatedDisposer?.call();
+    _socketService.leaveLeague(leagueId);
+    super.dispose();
   }
 
   Future<void> loadData() async {
@@ -143,6 +183,7 @@ final leagueDetailProvider =
   (ref, leagueId) => LeagueDetailNotifier(
     ref.watch(leagueRepositoryProvider),
     ref.watch(draftRepositoryProvider),
+    ref.watch(socketServiceProvider),
     leagueId,
   ),
 );
