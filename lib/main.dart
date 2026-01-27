@@ -5,6 +5,7 @@ import 'config/app_config.dart';
 import 'config/app_theme.dart';
 import 'config/app_router.dart';
 import 'config/theme_provider.dart';
+import 'core/services/snack_bar_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +26,7 @@ class HypeTrainApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       routerConfig: router,
+      scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
     );
   }

@@ -1,11 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../leagues/data/league_repository.dart';
+import '../../data/commissioner_repository.dart';
 import '../../../leagues/domain/league.dart';
-import '../../../matchups/data/matchup_repository.dart';
-import '../../../playoffs/data/playoff_repository.dart';
 import '../../../playoffs/domain/playoff.dart';
-import '../../../waivers/data/waiver_repository.dart';
 
 /// Commissioner dashboard state
 class CommissionerState {
@@ -59,17 +56,11 @@ class CommissionerState {
 
 /// Commissioner dashboard notifier
 class CommissionerNotifier extends StateNotifier<CommissionerState> {
-  final LeagueRepository _leagueRepo;
-  final MatchupRepository _matchupRepo;
-  final PlayoffRepository _playoffRepo;
-  final WaiverRepository _waiverRepo;
+  final CommissionerRepository _repo;
   final int leagueId;
 
   CommissionerNotifier(
-    this._leagueRepo,
-    this._matchupRepo,
-    this._playoffRepo,
-    this._waiverRepo,
+    this._repo,
     this.leagueId,
   ) : super(CommissionerState()) {
     loadData();
@@ -79,16 +70,12 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final results = await Future.wait([
-        _leagueRepo.getLeague(leagueId),
-        _leagueRepo.getMembers(leagueId),
-        _playoffRepo.getBracket(leagueId),
-      ]);
+      final data = await _repo.loadCommissionerData(leagueId);
 
       state = state.copyWith(
-        league: results[0] as League,
-        members: results[1] as List<Map<String, dynamic>>,
-        bracketView: results[2] as PlayoffBracketView?,
+        league: data.league,
+        members: data.members,
+        bracketView: data.bracketView,
         isLoading: false,
       );
     } catch (e) {
@@ -103,9 +90,9 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _leagueRepo.kickMember(leagueId, rosterId);
+      await _repo.kickMember(leagueId, rosterId);
       // Reload members
-      final members = await _leagueRepo.getMembers(leagueId);
+      final members = await _repo.getMembers(leagueId);
       state = state.copyWith(
         members: members,
         isProcessing: false,
@@ -125,7 +112,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _matchupRepo.generateSchedule(leagueId, weeks: weeks);
+      await _repo.generateSchedule(leagueId, weeks: weeks);
       state = state.copyWith(
         isProcessing: false,
         successMessage: 'Schedule generated for $weeks weeks',
@@ -144,7 +131,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _matchupRepo.finalizeMatchups(leagueId, week);
+      await _repo.finalizeMatchups(leagueId, week);
       state = state.copyWith(
         isProcessing: false,
         successMessage: 'Week $week has been finalized',
@@ -166,7 +153,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      final bracketView = await _playoffRepo.generateBracket(
+      final bracketView = await _repo.generatePlayoffBracket(
         leagueId,
         playoffTeams: playoffTeams,
         startWeek: startWeek,
@@ -190,7 +177,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      final bracketView = await _playoffRepo.advanceWinners(leagueId, week);
+      final bracketView = await _repo.advanceWinners(leagueId, week);
       state = state.copyWith(
         bracketView: bracketView,
         isProcessing: false,
@@ -210,7 +197,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _leagueRepo.deleteLeague(leagueId);
+      await _repo.deleteLeague(leagueId);
       state = state.copyWith(
         isProcessing: false,
         successMessage: 'League deleted successfully',
@@ -238,7 +225,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _leagueRepo.resetLeague(
+      await _repo.resetLeague(
         leagueId,
         newSeason: newSeason,
         confirmationName: confirmationName,
@@ -264,7 +251,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _waiverRepo.initializeWaivers(leagueId, faabBudget: faabBudget);
+      await _repo.initializeWaivers(leagueId, faabBudget: faabBudget);
       state = state.copyWith(
         waiversInitialized: true,
         isProcessing: false,
@@ -284,7 +271,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      final result = await _waiverRepo.processWaivers(leagueId);
+      final result = await _repo.processWaivers(leagueId);
       final processed = result['processed'] ?? 0;
       final successful = result['successful'] ?? 0;
       state = state.copyWith(
@@ -305,10 +292,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
 /// Provider for commissioner screen
 final commissionerProvider = StateNotifierProvider.family<CommissionerNotifier, CommissionerState, int>(
   (ref, leagueId) => CommissionerNotifier(
-    ref.watch(leagueRepositoryProvider),
-    ref.watch(matchupRepositoryProvider),
-    ref.watch(playoffRepositoryProvider),
-    ref.watch(waiverRepositoryProvider),
+    ref.watch(commissionerRepositoryProvider),
     leagueId,
   ),
 );
