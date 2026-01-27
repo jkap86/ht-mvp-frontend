@@ -9,6 +9,7 @@ import '../widgets/member_management_card.dart';
 import '../widgets/playoff_management_card.dart';
 import '../widgets/schedule_management_card.dart';
 import '../widgets/scoring_card.dart';
+import '../widgets/season_reset_card.dart';
 import '../widgets/waiver_management_card.dart';
 
 class CommissionerScreen extends ConsumerWidget {
@@ -123,6 +124,25 @@ class CommissionerScreen extends ConsumerWidget {
                         },
                         onViewBracket: () {
                           context.push('/leagues/$leagueId/playoffs');
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Season Reset Card
+                      SeasonResetCard(
+                        state: state,
+                        onReset: ({
+                          required String newSeason,
+                          required String confirmationName,
+                          bool keepMembers = false,
+                          bool clearChat = true,
+                        }) {
+                          return ref.read(commissionerProvider(leagueId).notifier).resetLeague(
+                            newSeason: newSeason,
+                            confirmationName: confirmationName,
+                            keepMembers: keepMembers,
+                            clearChat: clearChat,
+                          );
                         },
                       ),
                       const SizedBox(height: 16),

@@ -64,13 +64,20 @@ class DraftStatusBanner extends StatelessWidget {
                 ],
               ),
             ),
-            ElevatedButton(
-              onPressed: _isLive ? onJoinDraft : (isCommissioner ? onStartDraft : null),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isLive ? Colors.green : Colors.orange,
-              ),
-              child: Text(
-                _isLive ? 'Join' : (isCommissioner ? 'Start' : 'Waiting'),
+            Tooltip(
+              message: !_isLive && isCommissioner && !draft.orderConfirmed
+                  ? 'Randomize draft order first'
+                  : '',
+              child: ElevatedButton(
+                onPressed: _isLive
+                    ? onJoinDraft
+                    : (isCommissioner && draft.orderConfirmed ? onStartDraft : null),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isLive ? Colors.green : Colors.orange,
+                ),
+                child: Text(
+                  _isLive ? 'Join' : (isCommissioner ? 'Start' : 'Waiting'),
+                ),
               ),
             ),
           ],

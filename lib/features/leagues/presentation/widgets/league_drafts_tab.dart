@@ -202,9 +202,13 @@ class _DraftActionWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (draft.status) {
       case DraftStatus.notStarted:
-        return ElevatedButton(
-          onPressed: onStartDraft != null ? () => onStartDraft!(draft) : null,
-          child: const Text('Start'),
+        final canStart = draft.orderConfirmed && onStartDraft != null;
+        return Tooltip(
+          message: draft.orderConfirmed ? '' : 'Randomize draft order first',
+          child: ElevatedButton(
+            onPressed: canStart ? () => onStartDraft!(draft) : null,
+            child: const Text('Start'),
+          ),
         );
       case DraftStatus.inProgress:
         return const Chip(

@@ -229,6 +229,37 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     state = state.copyWith(clearError: true, clearSuccess: true);
   }
 
+  Future<bool> resetLeague({
+    required String newSeason,
+    required String confirmationName,
+    bool keepMembers = false,
+    bool clearChat = true,
+  }) async {
+    state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
+
+    try {
+      await _leagueRepo.resetLeague(
+        leagueId,
+        newSeason: newSeason,
+        confirmationName: confirmationName,
+        keepMembers: keepMembers,
+        clearChat: clearChat,
+      );
+      state = state.copyWith(
+        isProcessing: false,
+        successMessage: 'League reset for $newSeason season',
+      );
+      await loadData();
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isProcessing: false,
+      );
+      return false;
+    }
+  }
+
   Future<bool> initializeWaivers({int? faabBudget}) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 

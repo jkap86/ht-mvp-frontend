@@ -134,6 +134,23 @@ class LeagueRepository {
   Future<void> deleteLeague(int leagueId) async {
     await _apiClient.delete('/leagues/$leagueId');
   }
+
+  /// Reset league for new season (commissioner only)
+  Future<League> resetLeague(
+    int leagueId, {
+    required String newSeason,
+    required String confirmationName,
+    bool keepMembers = false,
+    bool clearChat = true,
+  }) async {
+    final response = await _apiClient.post('/leagues/$leagueId/reset', body: {
+      'new_season': newSeason,
+      'keep_members': keepMembers,
+      'clear_chat': clearChat,
+      'confirmation_name': confirmationName,
+    });
+    return League.fromJson(response);
+  }
 }
 
 // State management for leagues

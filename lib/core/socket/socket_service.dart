@@ -41,6 +41,9 @@ class SocketService {
   /// Track active draft rooms for automatic rejoin on reconnect
   final Set<int> _activeDraftRooms = {};
 
+  /// Temporarily store listeners during reconnect for re-registration
+  Map<String, List<void Function(dynamic)>>? _listenersToRestore;
+
   bool get isConnected => _socket?.connected ?? false;
 
   Future<void> connect() async {
@@ -96,13 +99,26 @@ class SocketService {
     _pendingEmits.clear();
   }
 
-  /// Rejoin all active rooms after reconnection
+  /// Rejoin all active rooms and restore listeners after reconnection
   void _rejoinActiveRooms() {
     for (final leagueId in _activeLeagueRooms) {
       _socket?.emit(SocketEvents.leagueJoin, leagueId);
     }
     for (final draftId in _activeDraftRooms) {
       _socket?.emit(SocketEvents.draftJoin, draftId);
+    }
+
+    // Re-register preserved listeners from reconnect
+    if (_listenersToRestore != null && _socket != null) {
+      for (final entry in _listenersToRestore!.entries) {
+        final event = entry.key;
+        for (final callback in entry.value) {
+          _socket!.on(event, callback);
+          _activeSubscriptions.putIfAbsent(event, () => []).add(callback);
+        }
+      }
+      debugPrint('Restored ${_listenersToRestore!.length} event listener groups after reconnect');
+      _listenersToRestore = null;
     }
   }
 
@@ -118,9 +134,15 @@ class SocketService {
 
   /// Reconnect with fresh token (used after token refresh).
   /// Disconnects existing socket and creates new connection with updated auth.
-  /// Room tracking is preserved so rooms are automatically rejoined.
+  /// Room tracking and listeners are preserved so they are automatically restored.
   Future<void> reconnect() async {
     debugPrint('Socket reconnecting with fresh token...');
+
+    // Preserve listener metadata for re-registration after reconnect
+    _listenersToRestore = Map<String, List<void Function(dynamic)>>.from(
+      _activeSubscriptions.map((event, callbacks) => MapEntry(event, List.from(callbacks))),
+    );
+
     // Clear pending queues but preserve room tracking
     _pendingSubscriptions.clear();
     _pendingEmits.clear();

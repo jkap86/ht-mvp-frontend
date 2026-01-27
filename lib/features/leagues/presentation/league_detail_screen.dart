@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/widgets/dev_console.dart';
 import '../../../core/widgets/states/states.dart';
 import '../domain/league.dart';
-import '../../chat/presentation/chat_widget.dart';
+import '../../chat/presentation/floating_chat_widget.dart';
 import '../../drafts/domain/draft_type.dart';
 import 'providers/league_detail_provider.dart';
 import 'widgets/league_header_widget.dart';
@@ -32,7 +32,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -176,7 +176,6 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             Tab(text: 'Overview'),
             Tab(text: 'Season'),
             Tab(text: 'Drafts'),
-            Tab(text: 'Chat'),
           ],
         ),
       ),
@@ -195,9 +194,9 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
                 onStartDraft: _startDraft,
                 onRandomizeDraftOrder: _randomizeDraftOrder,
               ),
-              ChatWidget(leagueId: widget.leagueId),
             ],
           ),
+          FloatingChatWidget(leagueId: widget.leagueId),
           if (!kReleaseMode) DevConsole(leagueId: widget.leagueId),
         ],
       ),
