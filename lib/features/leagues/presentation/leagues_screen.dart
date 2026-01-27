@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/states/states.dart';
 import '../data/league_repository.dart';
-import '../../home/presentation/widgets/create_league_dialog.dart';
-import '../../home/presentation/widgets/join_league_dialog.dart';
 import '../../home/presentation/widgets/league_card.dart';
 
 class LeaguesScreen extends ConsumerStatefulWidget {
@@ -35,56 +33,10 @@ class _LeaguesScreenState extends ConsumerState<LeaguesScreen> {
         title: const Text('Leagues'),
       ),
       body: _buildBody(leaguesState),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'discover',
-            onPressed: () => context.push('/leagues/discover'),
-            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-            foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-            icon: const Icon(Icons.explore),
-            label: const Text('Browse Public'),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'join',
-            onPressed: () => showJoinLeagueDialog(
-              context,
-              onJoinLeague: (code) =>
-                  ref.read(myLeaguesProvider.notifier).joinLeague(code),
-            ),
-            icon: const Icon(Icons.group_add),
-            label: const Text('Join'),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'create',
-            onPressed: () => showCreateLeagueDialog(
-              context,
-              onCreateLeague: ({
-                required name,
-                required season,
-                required totalRosters,
-                required scoringSettings,
-                required mode,
-                required settings,
-                required isPublic,
-              }) =>
-                  ref.read(myLeaguesProvider.notifier).createLeague(
-                        name: name,
-                        season: season,
-                        totalRosters: totalRosters,
-                        scoringSettings: scoringSettings,
-                        mode: mode,
-                        settings: settings,
-                        isPublic: isPublic,
-                      ),
-            ),
-            icon: const Icon(Icons.add),
-            label: const Text('Create'),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'add-league',
+        onPressed: () => context.push('/leagues/add'),
+        child: const Icon(Icons.add),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_exceptions.dart';
 import '../domain/league.dart';
+import '../domain/invitation.dart';
 
 final leagueRepositoryProvider = Provider<LeagueRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
@@ -150,6 +151,71 @@ class LeagueRepository {
       'confirmation_name': confirmationName,
     });
     return League.fromJson(response);
+  }
+
+  // ============= Invitation Methods =============
+
+  /// Get pending invitations for the current user
+  Future<List<LeagueInvitation>> getPendingInvitations() async {
+    final response = await _apiClient.get('/invitations/pending');
+    if (response is! List) {
+      throw ApiException('Invalid response: expected list of invitations', 500);
+    }
+    return response.map((json) => LeagueInvitation.fromJson(json)).toList();
+  }
+
+  /// Accept an invitation and join the league
+  Future<League> acceptInvitation(int invitationId) async {
+    final response = await _apiClient.post('/invitations/$invitationId/accept');
+    return League.fromJson(response['league']);
+  }
+
+  /// Decline an invitation
+  Future<void> declineInvitation(int invitationId) async {
+    await _apiClient.post('/invitations/$invitationId/decline');
+  }
+
+  /// Send an invitation (commissioner only)
+  Future<LeagueInvitation> sendInvitation(
+    int leagueId,
+    String username, {
+    String? message,
+  }) async {
+    final response = await _apiClient.post('/leagues/$leagueId/invitations', body: {
+      'username': username,
+      if (message != null && message.isNotEmpty) 'message': message,
+    });
+    return LeagueInvitation.fromJson(response);
+  }
+
+  /// Get pending invitations for a league (commissioner only)
+  Future<List<Map<String, dynamic>>> getLeagueInvitations(int leagueId) async {
+    final response = await _apiClient.get('/leagues/$leagueId/invitations');
+    if (response is! List) {
+      throw ApiException('Invalid response: expected list of invitations', 500);
+    }
+    return response.cast<Map<String, dynamic>>();
+  }
+
+  /// Cancel an invitation (commissioner only)
+  Future<void> cancelInvitation(int invitationId) async {
+    await _apiClient.delete('/invitations/$invitationId');
+  }
+
+  /// Search users for inviting (commissioner only)
+  Future<List<UserSearchResult>> searchUsersForInvite(int leagueId, String query) async {
+    final encodedQuery = Uri.encodeQueryComponent(query);
+    final response = await _apiClient.get('/leagues/$leagueId/users/search?q=$encodedQuery');
+    if (response is! List) {
+      throw ApiException('Invalid response: expected list of users', 500);
+    }
+    return response.map((json) => UserSearchResult.fromJson(json)).toList();
+  }
+
+  /// Get NFL state from Sleeper API (includes league_create_season)
+  Future<Map<String, dynamic>> getNflState() async {
+    final response = await _apiClient.get('/players/nfl-state');
+    return response as Map<String, dynamic>;
   }
 }
 

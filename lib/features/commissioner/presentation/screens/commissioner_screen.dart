@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../providers/commissioner_provider.dart';
 import '../widgets/league_info_card.dart';
+import '../widgets/invite_member_card.dart';
 import '../widgets/member_management_card.dart';
 import '../widgets/playoff_management_card.dart';
 import '../widgets/schedule_management_card.dart';
@@ -78,6 +79,10 @@ class CommissionerScreen extends ConsumerWidget {
                           ref.read(commissionerProvider(leagueId).notifier).kickMember(rosterId, teamName);
                         },
                       ),
+                      const SizedBox(height: 16),
+
+                      // Invite Members Card
+                      InviteMemberCard(leagueId: leagueId),
                       const SizedBox(height: 16),
 
                       // Schedule Management Card

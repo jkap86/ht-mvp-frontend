@@ -68,4 +68,10 @@ class SocketEvents {
   // Member events
   static const memberKicked = 'member:kicked';
   static const memberJoined = 'member:joined';
+
+  // Invitation events
+  static const invitationReceived = 'invitation:received';
+  static const invitationAccepted = 'invitation:accepted';
+  static const invitationDeclined = 'invitation:declined';
+  static const invitationCancelled = 'invitation:cancelled';
 }
