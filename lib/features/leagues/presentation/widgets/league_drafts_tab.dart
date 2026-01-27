@@ -31,14 +31,15 @@ class LeagueDraftsTab extends StatelessWidget {
               ? _buildEmptyState(context)
               : _buildDraftsList(context),
         ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: ElevatedButton.icon(
-            onPressed: onCreateDraft,
-            icon: const Icon(Icons.add),
-            label: const Text('Create Draft'),
+        if (isCommissioner)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton.icon(
+              onPressed: onCreateDraft,
+              icon: const Icon(Icons.add),
+              label: const Text('Create Draft'),
+            ),
           ),
-        ),
       ],
     );
   }
