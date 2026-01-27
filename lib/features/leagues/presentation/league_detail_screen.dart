@@ -41,9 +41,30 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     super.dispose();
   }
 
+  int _calculateRosterSlots(League league) {
+    final rosterConfig = league.settings['roster_config'];
+    if (rosterConfig is Map) {
+      return ((rosterConfig['QB'] as int?) ?? 0) +
+          ((rosterConfig['RB'] as int?) ?? 0) +
+          ((rosterConfig['WR'] as int?) ?? 0) +
+          ((rosterConfig['TE'] as int?) ?? 0) +
+          ((rosterConfig['FLEX'] as int?) ?? 0) +
+          ((rosterConfig['K'] as int?) ?? 0) +
+          ((rosterConfig['DEF'] as int?) ?? 0) +
+          ((rosterConfig['BN'] as int?) ?? 0);
+    }
+    return 15; // fallback
+  }
+
   void _createDraft() {
+    final league = ref.read(leagueDetailProvider(widget.leagueId)).league;
+    if (league == null) return;
+
     showCreateDraftDialog(
       context,
+      leagueMode: league.mode,
+      rosterSlotsCount: _calculateRosterSlots(league),
+      rookieDraftRounds: league.settings['rookie_draft_rounds'] as int?,
       onCreateDraft: ({
         required DraftType draftType,
         required int rounds,

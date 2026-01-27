@@ -48,6 +48,7 @@ class League {
   final int currentWeek;
   final SeasonStatus seasonStatus;
   final bool isPublic;
+  final String mode;
 
   League({
     required this.id,
@@ -62,6 +63,7 @@ class League {
     this.currentWeek = 1,
     this.seasonStatus = SeasonStatus.preSeason,
     this.isPublic = false,
+    this.mode = 'redraft',
   });
 
   String get scoringType {
@@ -94,6 +96,7 @@ class League {
       currentWeek: json['current_week'] as int? ?? 1,
       seasonStatus: SeasonStatus.fromString(json['season_status'] as String?),
       isPublic: json['is_public'] as bool? ?? false,
+      mode: json['mode'] as String? ?? 'redraft',
     );
   }
 }
@@ -180,6 +183,7 @@ class Draft {
   final DateTime? startedAt;
   final DateTime? completedAt;
   final AuctionSettings? settings;
+  final bool orderConfirmed;
 
   Draft({
     required this.id,
@@ -195,6 +199,7 @@ class Draft {
     this.startedAt,
     this.completedAt,
     this.settings,
+    this.orderConfirmed = false,
   });
 
   /// Check if this is an auction draft
@@ -224,6 +229,7 @@ class Draft {
       settings: settingsJson != null && settingsJson.isNotEmpty
           ? AuctionSettings.fromJson(settingsJson)
           : null,
+      orderConfirmed: json['order_confirmed'] as bool? ?? false,
     );
   }
 
@@ -241,6 +247,7 @@ class Draft {
     DateTime? startedAt,
     DateTime? completedAt,
     AuctionSettings? settings,
+    bool? orderConfirmed,
     bool clearCurrentPick = false,
     bool clearCurrentRound = false,
     bool clearCurrentRosterId = false,
@@ -261,6 +268,7 @@ class Draft {
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
       settings: clearSettings ? null : (settings ?? this.settings),
+      orderConfirmed: orderConfirmed ?? this.orderConfirmed,
     );
   }
 }

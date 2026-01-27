@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../drafts/domain/draft_type.dart';
 
@@ -10,7 +11,17 @@ class CreateDraftDialog extends StatefulWidget {
     Map<String, dynamic>? auctionSettings,
   }) onCreateDraft;
 
-  const CreateDraftDialog({super.key, required this.onCreateDraft});
+  final String leagueMode;
+  final int rosterSlotsCount;
+  final int? rookieDraftRounds;
+
+  const CreateDraftDialog({
+    super.key,
+    required this.onCreateDraft,
+    required this.leagueMode,
+    required this.rosterSlotsCount,
+    this.rookieDraftRounds,
+  });
 
   @override
   State<CreateDraftDialog> createState() => _CreateDraftDialogState();
@@ -18,13 +29,49 @@ class CreateDraftDialog extends StatefulWidget {
 
 class _CreateDraftDialogState extends State<CreateDraftDialog> {
   DraftType _selectedDraftType = DraftType.snake;
-  int _rounds = 15;
-  int _pickTimeSeconds = 90;
+  late int _rounds;
+  late int _pickTimeSeconds;
+  String _draftSubtype = 'startup'; // For dynasty leagues: 'startup' or 'rookie'
+
+  // Controllers for text inputs
+  late TextEditingController _roundsController;
+  late TextEditingController _timerController;
 
   // Auction settings
   int _auctionBudget = 200;
   int _minBid = 1;
   int _nominationTimeSeconds = 30;
+
+  @override
+  void initState() {
+    super.initState();
+    _pickTimeSeconds = 90;
+    _rounds = _calculateDefaultRounds();
+    _roundsController = TextEditingController(text: _rounds.toString());
+    _timerController = TextEditingController(text: _pickTimeSeconds.toString());
+  }
+
+  @override
+  void dispose() {
+    _roundsController.dispose();
+    _timerController.dispose();
+    super.dispose();
+  }
+
+  int _calculateDefaultRounds() {
+    if (widget.leagueMode == 'dynasty' && _draftSubtype == 'rookie') {
+      return widget.rookieDraftRounds ?? 5;
+    }
+    return widget.rosterSlotsCount;
+  }
+
+  void _updateRoundsForSubtype(String subtype) {
+    setState(() {
+      _draftSubtype = subtype;
+      _rounds = _calculateDefaultRounds();
+      _roundsController.text = _rounds.toString();
+    });
+  }
 
   Widget _buildOptionSelector({
     required String label,
@@ -96,6 +143,104 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
     );
   }
 
+  Widget _buildNumericInput({
+    required String label,
+    required TextEditingController controller,
+    required int min,
+    required int max,
+    required void Function(int) onChanged,
+    String? helperText,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurface.withAlpha(204),
+                  ),
+                ),
+                if (helperText != null)
+                  Text(
+                    helperText,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: colorScheme.onSurface.withAlpha(128),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: () {
+                    final current = int.tryParse(controller.text) ?? min;
+                    if (current > min) {
+                      final newValue = current - 1;
+                      controller.text = newValue.toString();
+                      onChanged(newValue);
+                    }
+                  },
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      final parsed = int.tryParse(value);
+                      if (parsed != null && parsed >= min && parsed <= max) {
+                        onChanged(parsed);
+                      }
+                    },
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: () {
+                    final current = int.tryParse(controller.text) ?? max;
+                    if (current < max) {
+                      final newValue = current + 1;
+                      controller.text = newValue.toString();
+                      onChanged(newValue);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSection({
     required String title,
     required IconData icon,
@@ -139,9 +284,79 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
     );
   }
 
+  Widget _buildDynastySubtypeSelector() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Draft For',
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurface.withAlpha(204),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest.withAlpha(128),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  _buildSubtypeOption('startup', 'Startup', isFirst: true),
+                  _buildSubtypeOption('rookie', 'Rookie', isLast: true),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubtypeOption(String value, String label, {bool isFirst = false, bool isLast = false}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isSelected = _draftSubtype == value;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _updateRoundsForSubtype(value),
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? colorScheme.primary : Colors.transparent,
+            borderRadius: BorderRadius.horizontal(
+              left: isFirst ? const Radius.circular(8) : Radius.zero,
+              right: isLast ? const Radius.circular(8) : Radius.zero,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              color: isSelected
+                  ? colorScheme.onPrimary
+                  : colorScheme.onSurface.withAlpha(179),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDynasty = widget.leagueMode == 'dynasty';
 
     return AlertDialog(
       title: Row(
@@ -236,27 +451,22 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                 title: 'Settings',
                 icon: Icons.settings,
                 children: [
-                  _buildOptionSelector(
+                  if (isDynasty) _buildDynastySubtypeSelector(),
+                  _buildNumericInput(
                     label: 'Rounds',
-                    options: [
-                      (label: '12', value: 12),
-                      (label: '15', value: 15),
-                      (label: '18', value: 18),
-                      (label: '20', value: 20),
-                    ],
-                    selectedValue: _rounds,
-                    onSelected: (v) => setState(() => _rounds = v),
+                    controller: _roundsController,
+                    min: 1,
+                    max: 30,
+                    onChanged: (v) => setState(() => _rounds = v),
+                    helperText: '1-30 rounds',
                   ),
-                  _buildOptionSelector(
+                  _buildNumericInput(
                     label: 'Pick Timer',
-                    options: [
-                      (label: '30s', value: 30),
-                      (label: '60s', value: 60),
-                      (label: '90s', value: 90),
-                      (label: '120s', value: 120),
-                    ],
-                    selectedValue: _pickTimeSeconds,
-                    onSelected: (v) => setState(() => _pickTimeSeconds = v),
+                    controller: _timerController,
+                    min: 30,
+                    max: 600,
+                    onChanged: (v) => setState(() => _pickTimeSeconds = v),
+                    helperText: '30-600 seconds',
                   ),
                 ],
               ),
@@ -313,11 +523,28 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
         const SizedBox(width: 8),
         FilledButton.icon(
           onPressed: () async {
+            // Validate inputs before creating
+            final rounds = int.tryParse(_roundsController.text) ?? _rounds;
+            final timer = int.tryParse(_timerController.text) ?? _pickTimeSeconds;
+
+            if (rounds < 1 || rounds > 30) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Rounds must be between 1 and 30')),
+              );
+              return;
+            }
+            if (timer < 30 || timer > 600) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Timer must be between 30 and 600 seconds')),
+              );
+              return;
+            }
+
             Navigator.pop(context);
             await widget.onCreateDraft(
               draftType: _selectedDraftType,
-              rounds: _rounds,
-              pickTimeSeconds: _pickTimeSeconds,
+              rounds: rounds,
+              pickTimeSeconds: timer,
               auctionSettings: _selectedDraftType == DraftType.auction
                   ? {
                       'budget': _auctionBudget,
@@ -337,6 +564,9 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
 
 void showCreateDraftDialog(
   BuildContext context, {
+  required String leagueMode,
+  required int rosterSlotsCount,
+  int? rookieDraftRounds,
   required Future<void> Function({
     required DraftType draftType,
     required int rounds,
@@ -346,6 +576,11 @@ void showCreateDraftDialog(
 }) {
   showDialog(
     context: context,
-    builder: (context) => CreateDraftDialog(onCreateDraft: onCreateDraft),
+    builder: (context) => CreateDraftDialog(
+      onCreateDraft: onCreateDraft,
+      leagueMode: leagueMode,
+      rosterSlotsCount: rosterSlotsCount,
+      rookieDraftRounds: rookieDraftRounds,
+    ),
   );
 }
