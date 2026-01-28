@@ -57,17 +57,61 @@ class Trade {
   });
 
   factory Trade.fromJson(Map<String, dynamic> json) {
+    // Validate required fields to prevent silent data issues
+    final id = json['id'] as int?;
+    final leagueId = json['league_id'] as int?;
+    final proposerRosterId = json['proposer_roster_id'] as int?;
+    final recipientRosterId = json['recipient_roster_id'] as int?;
+
+    if (id == null || id <= 0) {
+      throw FormatException('Trade.fromJson: missing or invalid id: $id');
+    }
+    if (leagueId == null || leagueId <= 0) {
+      throw FormatException('Trade.fromJson: missing or invalid league_id: $leagueId');
+    }
+    if (proposerRosterId == null || proposerRosterId <= 0) {
+      throw FormatException('Trade.fromJson: missing or invalid proposer_roster_id: $proposerRosterId');
+    }
+    if (recipientRosterId == null || recipientRosterId <= 0) {
+      throw FormatException('Trade.fromJson: missing or invalid recipient_roster_id: $recipientRosterId');
+    }
+
     final itemsList = (json['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final votesList = (json['votes'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
+    // Parse timestamps with validation
+    final expiresAtStr = json['expires_at']?.toString();
+    final expiresAt = expiresAtStr != null && expiresAtStr.isNotEmpty
+        ? DateTime.tryParse(expiresAtStr)
+        : null;
+    if (expiresAt == null) {
+      throw FormatException('Trade.fromJson: missing or invalid expires_at: $expiresAtStr');
+    }
+
+    final createdAtStr = json['created_at']?.toString();
+    final createdAt = createdAtStr != null && createdAtStr.isNotEmpty
+        ? DateTime.tryParse(createdAtStr)
+        : null;
+    if (createdAt == null) {
+      throw FormatException('Trade.fromJson: missing or invalid created_at: $createdAtStr');
+    }
+
+    final updatedAtStr = json['updated_at']?.toString();
+    final updatedAt = updatedAtStr != null && updatedAtStr.isNotEmpty
+        ? DateTime.tryParse(updatedAtStr)
+        : null;
+    if (updatedAt == null) {
+      throw FormatException('Trade.fromJson: missing or invalid updated_at: $updatedAtStr');
+    }
+
     return Trade(
-      id: json['id'] as int? ?? 0,
-      leagueId: json['league_id'] as int? ?? 0,
-      proposerRosterId: json['proposer_roster_id'] as int? ?? 0,
-      recipientRosterId: json['recipient_roster_id'] as int? ?? 0,
+      id: id,
+      leagueId: leagueId,
+      proposerRosterId: proposerRosterId,
+      recipientRosterId: recipientRosterId,
       status: TradeStatus.fromString(json['status'] as String?),
       parentTradeId: json['parent_trade_id'] as int?,
-      expiresAt: DateTime.tryParse(json['expires_at']?.toString() ?? '') ?? DateTime.now(),
+      expiresAt: expiresAt,
       reviewStartsAt: json['review_starts_at'] != null
           ? DateTime.tryParse(json['review_starts_at'].toString())
           : null,
@@ -77,8 +121,8 @@ class Trade {
       message: json['message'] as String?,
       season: json['season'] as int? ?? DateTime.now().year,
       week: json['week'] as int? ?? 1,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: createdAt,
+      updatedAt: updatedAt,
       completedAt: json['completed_at'] != null
           ? DateTime.tryParse(json['completed_at'].toString())
           : null,

@@ -155,7 +155,8 @@ class MatchupScreen extends ConsumerWidget {
     if (context.canPop()) {
       context.pop();
     } else {
-      context.go('/leagues/$leagueId');
+      // At root of Matchups tab, go to leagues list
+      context.go('/leagues');
     }
   }
 

@@ -1,0 +1,197 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../domain/notification_model.dart';
+
+/// Widget displaying a single notification in a list
+class NotificationItem extends StatelessWidget {
+  final AppNotification notification;
+  final VoidCallback? onTap;
+  final VoidCallback? onDismiss;
+
+  const NotificationItem({
+    super.key,
+    required this.notification,
+    this.onTap,
+    this.onDismiss,
+  });
+
+  IconData _getIcon() {
+    switch (notification.type) {
+      case NotificationType.tradePending:
+      case NotificationType.tradeAccepted:
+      case NotificationType.tradeRejected:
+      case NotificationType.tradeCompleted:
+        return Icons.swap_horiz;
+      case NotificationType.draftStarting:
+      case NotificationType.draftStarted:
+      case NotificationType.draftPick:
+        return Icons.timer;
+      case NotificationType.waiverProcessed:
+        return Icons.assignment;
+      case NotificationType.messageReceived:
+        return Icons.chat_bubble_outline;
+      case NotificationType.leagueInvite:
+        return Icons.person_add;
+      case NotificationType.matchupResult:
+        return Icons.sports_football;
+    }
+  }
+
+  Color _getIconColor(ColorScheme colorScheme) {
+    switch (notification.type) {
+      case NotificationType.tradePending:
+        return Colors.orange;
+      case NotificationType.tradeAccepted:
+      case NotificationType.tradeCompleted:
+        return Colors.green;
+      case NotificationType.tradeRejected:
+        return Colors.red;
+      case NotificationType.draftStarting:
+      case NotificationType.draftStarted:
+      case NotificationType.draftPick:
+        return Colors.purple;
+      case NotificationType.waiverProcessed:
+        return Colors.blue;
+      case NotificationType.messageReceived:
+        return colorScheme.primary;
+      case NotificationType.leagueInvite:
+        return Colors.teal;
+      case NotificationType.matchupResult:
+        return Colors.brown;
+    }
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final diff = now.difference(dateTime);
+
+    if (diff.inMinutes < 1) {
+      return 'Just now';
+    } else if (diff.inMinutes < 60) {
+      return '${diff.inMinutes}m ago';
+    } else if (diff.inHours < 24) {
+      return '${diff.inHours}h ago';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays}d ago';
+    } else {
+      return DateFormat.MMMd().format(dateTime);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Dismissible(
+      key: Key(notification.id),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onDismiss?.call(),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        color: colorScheme.error,
+        child: Icon(
+          Icons.delete,
+          color: colorScheme.onError,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: notification.isRead ? null : colorScheme.primaryContainer.withValues(alpha: 0.3),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _getIconColor(colorScheme).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _getIcon(),
+                  color: _getIconColor(colorScheme),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            notification.title,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
+                                ),
+                          ),
+                        ),
+                        Text(
+                          _formatTime(notification.createdAt),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      notification.body,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (notification.leagueName != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.emoji_events,
+                            size: 12,
+                            color: colorScheme.outline,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            notification.leagueName!,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.outline,
+                                  fontSize: 11,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              // Unread indicator
+              if (!notification.isRead) ...[
+                const SizedBox(width: 8),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

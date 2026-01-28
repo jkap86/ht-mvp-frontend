@@ -34,24 +34,21 @@ class DraftQueueWidget extends ConsumerWidget {
         .toList();
 
     if (availableQueue.isEmpty) {
+      // Compact empty state - single row to fit in collapsed drawer
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.grey[100],
-          border: Border(top: BorderSide(color: Colors.grey[300]!)),
         ),
-        child: const Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
-            Icon(Icons.queue, color: Colors.grey),
-            SizedBox(height: 8),
-            Text(
-              'Your queue is empty',
-              style: TextStyle(color: Colors.grey),
-            ),
-            Text(
-              'Add players to auto-draft from when the timer runs out',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+            Icon(Icons.queue, size: 18, color: Colors.grey[400]),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Queue empty - add players below',
+                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+              ),
             ),
           ],
         ),
@@ -61,7 +58,6 @@ class DraftQueueWidget extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.blue[50],
-        border: Border(top: BorderSide(color: Colors.blue[200]!)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -168,7 +168,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
     if (context.canPop()) {
       context.pop();
     } else {
-      context.go('/leagues/${widget.leagueId}');
+      // At root of Team tab, go to leagues list
+      context.go('/leagues');
     }
   }
 

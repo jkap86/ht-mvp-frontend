@@ -9,6 +9,7 @@ import '../features/leagues/presentation/leagues_screen.dart';
 import '../features/leagues/presentation/league_detail_screen.dart';
 import '../features/leagues/presentation/public_leagues_screen.dart';
 import '../features/leagues/presentation/add_league_screen.dart';
+import '../features/leagues/presentation/screens/league_shell_screen.dart';
 import '../features/drafts/presentation/draft_room_screen.dart';
 import '../features/auth/presentation/auth_provider.dart';
 import '../features/rosters/presentation/screens/team_screen.dart';
@@ -23,6 +24,8 @@ import '../features/trades/presentation/screens/propose_trade_screen.dart';
 import '../features/trades/presentation/screens/counter_trade_screen.dart';
 import '../features/commissioner/presentation/screens/commissioner_screen.dart';
 import '../features/playoffs/presentation/screens/playoff_bracket_screen.dart';
+import '../features/notifications/presentation/screens/notifications_screen.dart';
+import '../core/providers/league_context_provider.dart';
 
 // Listenable that notifies when auth state changes
 class AuthChangeNotifier extends ChangeNotifier {
@@ -93,6 +96,37 @@ class _ErrorScreen extends StatelessWidget {
   }
 }
 
+/// Widget that redirects to the user's team after fetching league context
+class _LeagueTeamRedirect extends ConsumerWidget {
+  final int leagueId;
+
+  const _LeagueTeamRedirect({required this.leagueId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final contextAsync = ref.watch(leagueContextProvider(leagueId));
+
+    return contextAsync.when(
+      data: (leagueContext) {
+        final rosterId = leagueContext.userRosterId;
+        if (rosterId != null) {
+          // Redirect to the user's team
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            context.go('/leagues/$leagueId/team/$rosterId');
+          });
+        }
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      },
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => _ErrorScreen(message: 'Failed to load team: $error'),
+    );
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authChangeNotifier = ref.watch(_authChangeNotifierProvider);
 
@@ -141,6 +175,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
         path: '/leagues',
         builder: (context, state) => const LeaguesScreen(),
       ),
@@ -152,128 +190,196 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/leagues/discover',
         builder: (context, state) => const PublicLeaguesScreen(),
       ),
+      // League shell with bottom navigation - parent route captures :leagueId
       GoRoute(
         path: '/leagues/:leagueId',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          return LeagueDetailScreen(leagueId: leagueId);
+        redirect: (context, state) {
+          // Validate leagueId parameter
+          final error = _validateParams(state.pathParameters, ['leagueId']);
+          if (error != null) return error;
+          // Redirect bare /leagues/:leagueId to the overview tab
+          final leagueId = state.pathParameters['leagueId'];
+          if (state.uri.path == '/leagues/$leagueId') {
+            return '/leagues/$leagueId/overview';
+          }
+          return null;
         },
-      ),
-      GoRoute(
-        path: '/leagues/:leagueId/commissioner',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          return CommissionerScreen(leagueId: leagueId);
-        },
-      ),
-      GoRoute(
-        path: '/leagues/:leagueId/playoffs',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          return PlayoffBracketScreen(leagueId: leagueId);
-        },
-      ),
-      GoRoute(
-        path: '/leagues/:leagueId/drafts/:draftId',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'draftId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          final draftId = _parseIntParam(state.pathParameters['draftId'])!;
-          return DraftRoomScreen(leagueId: leagueId, draftId: draftId);
-        },
-      ),
-      GoRoute(
-        path: '/leagues/:leagueId/team/:rosterId',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'rosterId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          final rosterId = _parseIntParam(state.pathParameters['rosterId'])!;
-          return TeamScreen(leagueId: leagueId, rosterId: rosterId);
-        },
-      ),
-      GoRoute(
-        path: '/leagues/:leagueId/team/:rosterId/lineup',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'rosterId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          final rosterId = _parseIntParam(state.pathParameters['rosterId'])!;
-          return LineupScreen(leagueId: leagueId, rosterId: rosterId);
-        },
-      ),
-      GoRoute(
-        path: '/leagues/:leagueId/free-agents',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          final rosterId = _extractIntExtra(state.extra);
-          return FreeAgentsScreen(leagueId: leagueId, rosterId: rosterId);
-        },
-      ),
-      GoRoute(
-        path: '/leagues/:leagueId/matchups',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          return MatchupScreen(leagueId: leagueId);
-        },
-      ),
-      GoRoute(
-        path: '/leagues/:leagueId/matchups/:matchupId',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'matchupId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          final matchupId = _parseIntParam(state.pathParameters['matchupId'])!;
-          return MatchupDetailScreen(leagueId: leagueId, matchupId: matchupId);
-        },
-      ),
-      GoRoute(
-        path: '/leagues/:leagueId/standings',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          return StandingsScreen(leagueId: leagueId);
-        },
-      ),
-      // Trades routes
-      GoRoute(
-        path: '/leagues/:leagueId/trades',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          return TradesListScreen(leagueId: leagueId);
-        },
-      ),
-      GoRoute(
-        path: '/leagues/:leagueId/trades/propose',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          return ProposeTradeScreen(leagueId: leagueId);
-        },
-      ),
-      GoRoute(
-        path: '/leagues/:leagueId/trades/:tradeId',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'tradeId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          final tradeId = _parseIntParam(state.pathParameters['tradeId'])!;
-          return TradeDetailScreen(leagueId: leagueId, tradeId: tradeId);
-        },
-      ),
-      GoRoute(
-        path: '/leagues/:leagueId/trades/:tradeId/counter',
-        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'tradeId']),
-        builder: (context, state) {
-          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-          final tradeId = _parseIntParam(state.pathParameters['tradeId'])!;
-          return CounterTradeScreen(
-            leagueId: leagueId,
-            originalTradeId: tradeId,
-          );
-        },
+        routes: [
+          StatefulShellRoute.indexedStack(
+            builder: (context, state, navigationShell) {
+              final leagueId = _parseIntParam(state.pathParameters['leagueId']);
+              if (leagueId == null) {
+                return const _ErrorScreen(message: 'Invalid league ID');
+              }
+              return LeagueShellScreen(
+                leagueId: leagueId,
+                navigationShell: navigationShell,
+              );
+            },
+            branches: [
+              // Team tab (index 0)
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: 'team',
+                    builder: (context, state) {
+                      final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+                      // Get rosterId from query params or context
+                      final rosterIdParam = state.uri.queryParameters['rosterId'];
+                      final rosterId = _parseIntParam(rosterIdParam);
+                      if (rosterId != null) {
+                        return TeamScreen(leagueId: leagueId, rosterId: rosterId);
+                      }
+                      // Show loading and fetch user's roster
+                      return _LeagueTeamRedirect(leagueId: leagueId);
+                    },
+                    routes: [
+                      GoRoute(
+                        path: ':rosterId',
+                        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'rosterId']),
+                        builder: (context, state) {
+                          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+                          final rosterId = _parseIntParam(state.pathParameters['rosterId'])!;
+                          return TeamScreen(leagueId: leagueId, rosterId: rosterId);
+                        },
+                        routes: [
+                          GoRoute(
+                            path: 'lineup',
+                            redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'rosterId']),
+                            builder: (context, state) {
+                              final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+                              final rosterId = _parseIntParam(state.pathParameters['rosterId'])!;
+                              return LineupScreen(leagueId: leagueId, rosterId: rosterId);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              // Matchups tab (index 1)
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: 'matchups',
+                    builder: (context, state) {
+                      final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+                      return MatchupScreen(leagueId: leagueId);
+                    },
+                    routes: [
+                      GoRoute(
+                        path: ':matchupId',
+                        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'matchupId']),
+                        builder: (context, state) {
+                          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+                          final matchupId = _parseIntParam(state.pathParameters['matchupId'])!;
+                          return MatchupDetailScreen(leagueId: leagueId, matchupId: matchupId);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              // Trades tab (index 2)
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: 'trades',
+                    builder: (context, state) {
+                      final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+                      return TradesListScreen(leagueId: leagueId);
+                    },
+                    routes: [
+                      GoRoute(
+                        path: 'propose',
+                        builder: (context, state) {
+                          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+                          return ProposeTradeScreen(leagueId: leagueId);
+                        },
+                      ),
+                      GoRoute(
+                        path: ':tradeId',
+                        redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'tradeId']),
+                        builder: (context, state) {
+                          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+                          final tradeId = _parseIntParam(state.pathParameters['tradeId'])!;
+                          return TradeDetailScreen(leagueId: leagueId, tradeId: tradeId);
+                        },
+                        routes: [
+                          GoRoute(
+                            path: 'counter',
+                            redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'tradeId']),
+                            builder: (context, state) {
+                              final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+                              final tradeId = _parseIntParam(state.pathParameters['tradeId'])!;
+                              return CounterTradeScreen(
+                                leagueId: leagueId,
+                                originalTradeId: tradeId,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              // League/Overview tab (index 3)
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: 'overview',
+                    builder: (context, state) {
+                      final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+                      return LeagueDetailScreen(leagueId: leagueId);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Sub-routes at same level as shell (NOT under overview)
+          // These preserve existing navigation paths like /leagues/:leagueId/commissioner
+          GoRoute(
+            path: 'commissioner',
+            builder: (context, state) {
+              final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+              return CommissionerScreen(leagueId: leagueId);
+            },
+          ),
+          GoRoute(
+            path: 'playoffs',
+            builder: (context, state) {
+              final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+              return PlayoffBracketScreen(leagueId: leagueId);
+            },
+          ),
+          GoRoute(
+            path: 'standings',
+            builder: (context, state) {
+              final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+              return StandingsScreen(leagueId: leagueId);
+            },
+          ),
+          GoRoute(
+            path: 'free-agents',
+            builder: (context, state) {
+              final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+              final rosterId = _extractIntExtra(state.extra);
+              return FreeAgentsScreen(leagueId: leagueId, rosterId: rosterId);
+            },
+          ),
+          GoRoute(
+            path: 'drafts/:draftId',
+            redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'draftId']),
+            builder: (context, state) {
+              final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+              final draftId = _parseIntParam(state.pathParameters['draftId'])!;
+              return DraftRoomScreen(leagueId: leagueId, draftId: draftId);
+            },
+          ),
+        ],
       ),
     ],
     errorBuilder: (context, state) {

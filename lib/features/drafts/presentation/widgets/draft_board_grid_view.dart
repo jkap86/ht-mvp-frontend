@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_pick.dart';
+import '../../domain/draft_pick_asset.dart';
 import '../../../leagues/domain/league.dart';
 import '../providers/draft_room_provider.dart';
 import '../utils/draft_board_helpers.dart';
@@ -56,6 +57,7 @@ class DraftBoardGridView extends ConsumerWidget {
                 draft: draft,
                 draftOrder: state.draftOrder,
                 currentCell: currentCell,
+                pickAssets: state.pickAssets,
               )),
             ],
           ),
@@ -103,6 +105,7 @@ class DraftBoardGridView extends ConsumerWidget {
     required Draft draft,
     required List<DraftOrderEntry> draftOrder,
     required ({int rosterId, int round})? currentCell,
+    required List<DraftPickAsset> pickAssets,
   }) {
     final isCurrentTeam = currentCell?.rosterId == entry.rosterId;
 
@@ -156,6 +159,7 @@ class DraftBoardGridView extends ConsumerWidget {
             round: round,
             draft: draft,
             draftOrder: draftOrder,
+            pickAssets: pickAssets,
           ),
       ],
     );
@@ -168,6 +172,7 @@ class DraftBoardGridView extends ConsumerWidget {
     required int round,
     required Draft draft,
     required List<DraftOrderEntry> draftOrder,
+    required List<DraftPickAsset> pickAssets,
   }) {
     // Calculate the pick number for this cell
     final pickNumber = getPickNumberForGridPosition(
@@ -182,10 +187,17 @@ class DraftBoardGridView extends ConsumerWidget {
       draftType: draft.draftType,
     );
 
+    // Find the pick asset for this slot (if any)
+    final pickAsset = pickAssets
+        .where((asset) =>
+            asset.round == round && asset.originalRosterId == entry.rosterId)
+        .firstOrNull;
+
     return DraftGridCell(
       pick: pick,
       isCurrentPick: isCurrentPick,
       pickNumber: pickNumber,
+      pickAsset: pickAsset,
     );
   }
 }

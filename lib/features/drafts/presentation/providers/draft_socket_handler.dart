@@ -3,6 +3,7 @@ import 'dart:ui';
 import '../../../../core/socket/socket_service.dart';
 import '../../domain/auction_lot.dart';
 import '../../domain/draft_pick.dart';
+import '../../domain/draft_pick_asset.dart';
 
 /// Notification when user is outbid on a lot
 class OutbidNotification {
@@ -37,6 +38,10 @@ abstract class DraftSocketCallbacks {
   void onAuctionErrorReceived(String message);
   // Autodraft callback
   void onAutodraftToggledReceived(int rosterId, bool enabled, bool forced);
+  // Pick trading callback
+  void onPickTradedReceived(DraftPickAsset pickAsset);
+  // Settings updated callback (commissioner changed settings)
+  void onDraftSettingsUpdatedReceived(Map<String, dynamic> data);
 }
 
 /// Handles all socket event subscriptions for the draft room
@@ -137,6 +142,22 @@ class DraftSocketHandler {
       final enabled = data['enabled'] as bool? ?? false;
       final forced = data['forced'] as bool? ?? false;
       _callbacks.onAutodraftToggledReceived(rosterId, enabled, forced);
+    }));
+
+    // Pick traded listener
+    _addDisposer(_socketService.onDraftPickTraded((data) {
+      final pickAssetData = data['pick_asset'] ?? data['pickAsset'] ?? data;
+      final pickAsset = DraftPickAsset.fromJson(
+        Map<String, dynamic>.from(pickAssetData as Map),
+      );
+      _callbacks.onPickTradedReceived(pickAsset);
+    }));
+
+    // Settings updated listener
+    _addDisposer(_socketService.onDraftSettingsUpdated((data) {
+      _callbacks.onDraftSettingsUpdatedReceived(
+        Map<String, dynamic>.from(data as Map),
+      );
     }));
   }
 

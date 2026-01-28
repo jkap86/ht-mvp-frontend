@@ -45,6 +45,12 @@ class LeagueDetailState {
     return drafts.first.draftType.label;
   }
 
+  /// Count of pending trades requiring user's attention (for badge)
+  int get pendingTradesCount => 0; // TODO: Implement when trades data is added to state
+
+  /// Count of unread messages (for badge)
+  int get unreadMessagesCount => 0; // TODO: Implement when chat data is added to state
+
   LeagueDetailState copyWith({
     League? league,
     List<Roster>? members,
@@ -201,6 +207,31 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
       return order;
     } catch (e) {
       return null;
+    }
+  }
+
+  /// Update draft settings (commissioner only)
+  Future<void> updateDraftSettings(
+    int draftId, {
+    String? draftType,
+    int? rounds,
+    int? pickTimeSeconds,
+    Map<String, dynamic>? auctionSettings,
+  }) async {
+    final updatedDraft = await _draftRepo.updateDraftSettings(
+      leagueId,
+      draftId,
+      draftType: draftType,
+      rounds: rounds,
+      pickTimeSeconds: pickTimeSeconds,
+      auctionSettings: auctionSettings,
+    );
+    // Update the draft in state
+    final index = state.drafts.indexWhere((d) => d.id == draftId);
+    if (index != -1) {
+      final updatedDrafts = [...state.drafts];
+      updatedDrafts[index] = updatedDraft;
+      state = state.copyWith(drafts: updatedDrafts);
     }
   }
 }

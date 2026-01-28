@@ -20,14 +20,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
   int? _selectedRecipientRosterId;
   final List<int> _offeringPlayerIds = [];
   final List<int> _requestingPlayerIds = [];
-  final _messageController = TextEditingController();
   bool _isSubmitting = false;
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +35,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
 
     final myRosterId = leagueState.league?.userRosterId;
     final otherMembers =
-        leagueState.members.where((m) => m.id != myRosterId).toList();
+        leagueState.members.where((m) => m.rosterId != myRosterId).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -62,7 +55,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: const BoxConstraints(maxWidth: 900),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -79,7 +72,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
               ),
               items: otherMembers
                   .map((member) => DropdownMenuItem(
-                        value: member.id,
+                        value: member.rosterId,
                         child: Text(member.teamName ?? member.username),
                       ))
                   .toList(),
@@ -92,52 +85,73 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Step 2: Select players you're offering
-            if (myRosterId != null) ...[
-              Text('You Give', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              PlayerSelectorWidget(
-                leagueId: widget.leagueId,
-                rosterId: myRosterId,
-                selectedPlayerIds: _offeringPlayerIds,
-                onSelectionChanged: (ids) => setState(() {
-                  _offeringPlayerIds
-                    ..clear()
-                    ..addAll(ids);
-                }),
+            // Step 2: Side-by-side roster selection
+            if (myRosterId != null)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // You Give section
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('You Give', style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        PlayerSelectorWidget(
+                          leagueId: widget.leagueId,
+                          rosterId: myRosterId,
+                          selectedPlayerIds: _offeringPlayerIds,
+                          onSelectionChanged: (ids) => setState(() {
+                            _offeringPlayerIds
+                              ..clear()
+                              ..addAll(ids);
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // You Get section
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('You Get', style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        if (_selectedRecipientRosterId != null)
+                          PlayerSelectorWidget(
+                            leagueId: widget.leagueId,
+                            rosterId: _selectedRecipientRosterId!,
+                            selectedPlayerIds: _requestingPlayerIds,
+                            onSelectionChanged: (ids) => setState(() {
+                              _requestingPlayerIds
+                                ..clear()
+                                ..addAll(ids);
+                            }),
+                          )
+                        else
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.grey.shade50,
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Select a trade partner',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-            ],
-
-            // Step 3: Select players you want
-            if (_selectedRecipientRosterId != null) ...[
-              Text('You Get', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              PlayerSelectorWidget(
-                leagueId: widget.leagueId,
-                rosterId: _selectedRecipientRosterId!,
-                selectedPlayerIds: _requestingPlayerIds,
-                onSelectionChanged: (ids) => setState(() {
-                  _requestingPlayerIds
-                    ..clear()
-                    ..addAll(ids);
-                }),
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // Step 4: Optional message
-            Text('Message (Optional)',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _messageController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Add a message...',
-              ),
-              maxLines: 3,
-            ),
           ],
         ),
           ),
@@ -169,9 +183,6 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
         recipientRosterId: _selectedRecipientRosterId!,
         offeringPlayerIds: _offeringPlayerIds,
         requestingPlayerIds: _requestingPlayerIds,
-        message: _messageController.text.isNotEmpty
-            ? _messageController.text
-            : null,
       );
 
       if (mounted) {
@@ -201,9 +212,20 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
   Future<bool> _showConfirmationDialog() async {
     final leagueState = ref.read(leagueDetailProvider(widget.leagueId));
     final myRosterId = leagueState.league?.userRosterId;
-    final recipientMember = leagueState.members.firstWhere(
-      (m) => m.id == _selectedRecipientRosterId,
-    );
+
+    // Use firstWhereOrNull pattern to prevent crash if member not found
+    final recipientMember = leagueState.members
+        .where((m) => m.rosterId == _selectedRecipientRosterId)
+        .firstOrNull;
+    if (recipientMember == null) {
+      // Member not found - show error and cancel
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error: Recipient not found')),
+        );
+      }
+      return false;
+    }
     final recipientName = recipientMember.teamName ?? recipientMember.username;
 
     // Get player names from the providers
@@ -254,18 +276,6 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
                 Colors.green.shade100,
                 Icons.arrow_downward,
               ),
-              if (_messageController.text.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const Text('Message:', style: TextStyle(fontWeight: FontWeight.w500)),
-                const SizedBox(height: 4),
-                Text(
-                  _messageController.text,
-                  style: TextStyle(
-                    fontStyle: FontStyle.italic,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-              ],
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),

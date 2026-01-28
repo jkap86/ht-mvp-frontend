@@ -9,6 +9,7 @@ import '../domain/league.dart';
 import '../../chat/presentation/floating_chat_widget.dart';
 import '../../drafts/domain/draft_order_entry.dart';
 import '../../drafts/domain/draft_type.dart';
+import '../../notifications/presentation/widgets/notification_bell.dart';
 import 'providers/league_detail_provider.dart';
 import 'widgets/league_header_widget.dart';
 import 'widgets/draft_status_banner.dart';
@@ -17,6 +18,7 @@ import 'widgets/league_members_section.dart';
 import 'widgets/league_drafts_section.dart';
 import 'widgets/create_draft_dialog.dart';
 import 'widgets/invite_member_sheet.dart';
+import '../../drafts/presentation/widgets/edit_draft_settings_dialog.dart';
 
 class LeagueDetailScreen extends ConsumerStatefulWidget {
   final int leagueId;
@@ -41,6 +43,15 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _navigateBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      // At root of League tab, go to leagues list
+      context.go('/leagues');
+    }
   }
 
   int _calculateRosterSlots(League league) {
@@ -113,6 +124,28 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     return order;
   }
 
+  Future<void> _editDraftSettings(Draft draft) async {
+    await EditDraftSettingsDialog.show(
+      context,
+      draft: draft,
+      onSave: ({
+        String? draftType,
+        int? rounds,
+        int? pickTimeSeconds,
+        Map<String, dynamic>? auctionSettings,
+      }) async {
+        final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
+        await notifier.updateDraftSettings(
+          draft.id,
+          draftType: draftType,
+          rounds: rounds,
+          pickTimeSeconds: pickTimeSeconds,
+          auctionSettings: auctionSettings,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(leagueDetailProvider(widget.leagueId));
@@ -122,13 +155,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/');
-              }
-            },
+            onPressed: () => _navigateBack(context),
           ),
           title: const Text('Loading...'),
         ),
@@ -141,13 +168,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/');
-              }
-            },
+            onPressed: () => _navigateBack(context),
           ),
           title: const Text('Error'),
         ),
@@ -162,15 +183,12 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/');
-              }
-            },
+          onPressed: () => _navigateBack(context),
         ),
         title: Text(state.league?.name ?? 'League'),
+        actions: const [
+          NotificationBell(),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -218,7 +236,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
               draft: state.activeDraft!,
               isCommissioner: state.isCommissioner,
               onJoinDraft: () {
-                context.push('/leagues/${widget.leagueId}/drafts/${state.activeDraft!.id}');
+                context.go('/leagues/${widget.leagueId}/drafts/${state.activeDraft!.id}');
               },
               onStartDraft: () => _startDraft(state.activeDraft!),
             ),
@@ -243,6 +261,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             onCreateDraft: _createDraft,
             onStartDraft: _startDraft,
             onRandomizeDraftOrder: _randomizeDraftOrder,
+            onEditSettings: _editDraftSettings,
           ),
         ],
           ),
@@ -260,7 +279,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-        // My Team card
+        // My Team card - navigates to Team tab
         Card(
           child: ListTile(
             leading: const Icon(Icons.groups),
@@ -268,19 +287,19 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             subtitle: const Text('View roster and set lineup'),
             trailing: const Icon(Icons.chevron_right),
             onTap: rosterId != null
-                ? () => context.push('/leagues/${widget.leagueId}/team/$rosterId')
+                ? () => context.go('/leagues/${widget.leagueId}/team/$rosterId')
                 : null,
           ),
         ),
         const SizedBox(height: 8),
-        // Matchups card
+        // Matchups card - navigates to Matchups tab
         Card(
           child: ListTile(
             leading: const Icon(Icons.sports_football),
             title: const Text('Matchups'),
             subtitle: const Text('Weekly head-to-head'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/leagues/${widget.leagueId}/matchups'),
+            onTap: () => context.go('/leagues/${widget.leagueId}/matchups'),
           ),
         ),
         const SizedBox(height: 8),
@@ -308,14 +327,14 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           ),
         ),
         const SizedBox(height: 8),
-        // Trades card
+        // Trades card - navigates to Trades tab
         Card(
           child: ListTile(
             leading: const Icon(Icons.swap_horiz),
             title: const Text('Trades'),
             subtitle: const Text('Propose and manage trades'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/leagues/${widget.leagueId}/trades'),
+            onTap: () => context.go('/leagues/${widget.leagueId}/trades'),
           ),
         ),
         // Invite Members card - visible to all members when league not full

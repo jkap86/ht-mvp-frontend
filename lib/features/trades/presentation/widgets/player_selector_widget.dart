@@ -75,46 +75,54 @@ class PlayerSelectorWidget extends ConsumerWidget {
           final player = players[index];
           final isSelected = selectedPlayerIds.contains(player.playerId);
 
-          return CheckboxListTile(
-            value: isSelected,
-            onChanged: (value) {
+          return InkWell(
+            onTap: () {
               final newSelection = List<int>.from(selectedPlayerIds);
-              if (value == true) {
-                newSelection.add(player.playerId);
-              } else {
+              if (isSelected) {
                 newSelection.remove(player.playerId);
+              } else {
+                newSelection.add(player.playerId);
               }
               onSelectionChanged(newSelection);
             },
-            secondary: PositionBadge(position: player.position ?? '?', size: 36),
-            title: Text(
-              player.fullName ?? 'Unknown Player',
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Row(
-              children: [
-                Text(player.team ?? 'FA'),
-                if (player.injuryStatus != null) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: _getInjuryColor(player.injuryStatus),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      player.injuryStatus!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+            child: Container(
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primaryContainer
+                  : null,
+              child: ListTile(
+                leading:
+                    PositionBadge(position: player.position ?? '?', size: 28),
+                title: Text(
+                  player.fullName ?? 'Unknown Player',
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Row(
+                  children: [
+                    Text(player.team ?? 'FA'),
+                    if (player.injuryStatus != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: _getInjuryColor(player.injuryStatus),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          player.injuryStatus!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ],
+                    ],
+                  ],
+                ),
+                dense: true,
+              ),
             ),
-            dense: true,
           );
         },
       ),

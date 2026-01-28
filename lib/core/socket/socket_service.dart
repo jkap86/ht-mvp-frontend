@@ -318,6 +318,16 @@ class SocketService {
     return on(SocketEvents.draftAutodraftToggled, callback);
   }
 
+  /// Listen for draft pick traded events
+  VoidCallback onDraftPickTraded(void Function(dynamic) callback) {
+    return on(SocketEvents.draftPickTraded, callback);
+  }
+
+  /// Listen for draft settings updated events (commissioner changes)
+  VoidCallback onDraftSettingsUpdated(void Function(dynamic) callback) {
+    return on(SocketEvents.draftSettingsUpdated, callback);
+  }
+
   /// Listen for server-side errors (e.g., authorization failures)
   VoidCallback onAppError(void Function(dynamic) callback) {
     return on(SocketEvents.appError, callback);

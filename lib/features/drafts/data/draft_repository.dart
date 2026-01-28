@@ -158,4 +158,26 @@ class DraftRepository {
     );
     return response as Map<String, dynamic>;
   }
+
+  /// Update draft settings (commissioner only)
+  Future<Draft> updateDraftSettings(
+    int leagueId,
+    int draftId, {
+    String? draftType,
+    int? rounds,
+    int? pickTimeSeconds,
+    Map<String, dynamic>? auctionSettings,
+  }) async {
+    final body = <String, dynamic>{};
+    if (draftType != null) body['draft_type'] = draftType;
+    if (rounds != null) body['rounds'] = rounds;
+    if (pickTimeSeconds != null) body['pick_time_seconds'] = pickTimeSeconds;
+    if (auctionSettings != null) body['auction_settings'] = auctionSettings;
+
+    final response = await _apiClient.patch(
+      '/leagues/$leagueId/drafts/$draftId/settings',
+      body: body,
+    );
+    return Draft.fromJson(response as Map<String, dynamic>);
+  }
 }

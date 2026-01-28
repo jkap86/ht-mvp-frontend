@@ -5,11 +5,13 @@ import '../../../auth/presentation/auth_provider.dart';
 import '../../../leagues/domain/league.dart';
 import '../../../players/data/player_repository.dart';
 import '../../../players/domain/player.dart';
+import '../../data/draft_pick_asset_repository.dart';
 import '../../data/draft_repository.dart';
 import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_pick.dart';
+import '../../domain/draft_pick_asset.dart';
 import '../../domain/draft_status.dart';
 import '../../domain/draft_type.dart';
 import 'draft_socket_handler.dart';
@@ -32,6 +34,8 @@ class DraftRoomState {
   final String auctionMode;
   final int? currentNominatorRosterId;
   final int? nominationNumber;
+  // Pick asset tracking for traded picks
+  final List<DraftPickAsset> pickAssets;
 
   DraftRoomState({
     this.draft,
@@ -47,6 +51,7 @@ class DraftRoomState {
     this.auctionMode = 'slow',
     this.currentNominatorRosterId,
     this.nominationNumber,
+    this.pickAssets = const [],
   });
 
   bool get isAuction => draft?.draftType == DraftType.auction;
@@ -115,6 +120,15 @@ class DraftRoomState {
     return isReversed ? draftOrder.reversed.toList() : draftOrder;
   }
 
+  /// Get pick asset for a specific round and roster
+  /// Used to determine if a pick slot has been traded
+  DraftPickAsset? getPickAssetForSlot(int round, int originalRosterId) {
+    return pickAssets
+        .where((asset) =>
+            asset.round == round && asset.originalRosterId == originalRosterId)
+        .firstOrNull;
+  }
+
   DraftRoomState copyWith({
     Draft? draft,
     List<Player>? players,
@@ -131,6 +145,7 @@ class DraftRoomState {
     String? auctionMode,
     int? currentNominatorRosterId,
     int? nominationNumber,
+    List<DraftPickAsset>? pickAssets,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -149,6 +164,7 @@ class DraftRoomState {
       currentNominatorRosterId:
           currentNominatorRosterId ?? this.currentNominatorRosterId,
       nominationNumber: nominationNumber ?? this.nominationNumber,
+      pickAssets: pickAssets ?? this.pickAssets,
     );
   }
 }
@@ -159,6 +175,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     implements DraftSocketCallbacks {
   final DraftRepository _draftRepo;
   final PlayerRepository _playerRepo;
+  final DraftPickAssetRepository _pickAssetRepo;
   final int leagueId;
   final int draftId;
 
@@ -167,6 +184,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   DraftRoomNotifier(
     this._draftRepo,
     this._playerRepo,
+    this._pickAssetRepo,
     SocketService socketService,
     String? currentUserId,
     this.leagueId,
@@ -319,11 +337,13 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         _playerRepo.getPlayers().catchError((e) => <Player>[]),
         _draftRepo.getDraftOrder(leagueId, draftId).catchError((e) => <Map<String, dynamic>>[]),
         _draftRepo.getDraftPicks(leagueId, draftId).catchError((e) => <Map<String, dynamic>>[]),
+        _pickAssetRepo.getLeaguePickAssets(leagueId).catchError((e) => <DraftPickAsset>[]),
       ]);
 
       final players = results[0] as List<Player>;
       final orderData = results[1] as List<Map<String, dynamic>>;
       final picksData = results[2] as List<Map<String, dynamic>>;
+      final pickAssets = results[3] as List<DraftPickAsset>;
 
       final draftOrder = orderData.map((e) => DraftOrderEntry.fromJson(e)).toList();
       final picks = picksData.map((e) => DraftPick.fromJson(e)).toList();
@@ -335,6 +355,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         players: players,
         draftOrder: draftOrder,
         picks: picks,
+        pickAssets: pickAssets,
         isLoading: false,
       );
 
@@ -421,6 +442,30 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   }
 
   @override
+  void onPickTradedReceived(DraftPickAsset pickAsset) {
+    if (!mounted) return;
+    // Update or add the pick asset in the state
+    final existingIndex = state.pickAssets.indexWhere((a) => a.id == pickAsset.id);
+    if (existingIndex >= 0) {
+      // Update existing pick asset
+      final updatedAssets = [...state.pickAssets];
+      updatedAssets[existingIndex] = pickAsset;
+      state = state.copyWith(pickAssets: updatedAssets);
+    } else {
+      // Add new pick asset
+      state = state.copyWith(pickAssets: [...state.pickAssets, pickAsset]);
+    }
+  }
+
+  @override
+  void onDraftSettingsUpdatedReceived(Map<String, dynamic> data) {
+    if (!mounted) return;
+    // Update draft with new settings from commissioner
+    final updatedDraft = Draft.fromJson(data);
+    state = state.copyWith(draft: updatedDraft);
+  }
+
+  @override
   void dispose() {
     _socketHandler.dispose();
     super.dispose();
@@ -436,6 +481,7 @@ final draftRoomProvider =
     return DraftRoomNotifier(
       ref.watch(draftRepositoryProvider),
       ref.watch(playerRepositoryProvider),
+      ref.watch(draftPickAssetRepositoryProvider),
       ref.watch(socketServiceProvider),
       currentUserId,
       key.leagueId,

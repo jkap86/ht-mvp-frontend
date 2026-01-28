@@ -10,6 +10,7 @@ class AvailablePlayersList extends StatelessWidget {
   final void Function(int playerId)? onDraftPlayer;
   final void Function(int playerId)? onAddToQueue;
   final Set<int> queuedPlayerIds;
+  final ScrollController? scrollController;
 
   const AvailablePlayersList({
     super.key,
@@ -19,11 +20,13 @@ class AvailablePlayersList extends StatelessWidget {
     this.onDraftPlayer,
     this.onAddToQueue,
     this.queuedPlayerIds = const {},
+    this.scrollController,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      controller: scrollController,
       itemCount: players.length,
       itemBuilder: (context, index) {
         final player = players[index];

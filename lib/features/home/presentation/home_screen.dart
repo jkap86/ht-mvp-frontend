@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../config/theme_provider.dart';
 import '../../../core/providers/league_context_provider.dart';
+import '../../../core/widgets/skeletons/skeletons.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../commissioner/presentation/providers/commissioner_provider.dart';
 import '../../commissioner/presentation/providers/league_invitations_provider.dart';
@@ -11,6 +12,13 @@ import '../../leagues/data/invitations_provider.dart';
 import '../../leagues/data/league_repository.dart';
 import '../../leagues/data/public_leagues_provider.dart';
 import '../../leagues/presentation/providers/league_detail_provider.dart';
+import '../../notifications/presentation/providers/notifications_provider.dart';
+import '../../notifications/presentation/widgets/notification_bell.dart';
+import 'providers/home_dashboard_provider.dart';
+import 'widgets/home_draft_alert_card.dart';
+import 'widgets/home_leagues_card.dart';
+import 'widgets/home_matchups_card.dart';
+import 'widgets/home_pending_trades_card.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -18,11 +26,13 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider).user;
+    final dashboardState = ref.watch(homeDashboardProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(user?.username ?? ''),
+        title: Text(user?.username ?? 'Home'),
         actions: [
+          const NotificationBell(),
           IconButton(
             icon: Icon(
               ref.watch(themeModeProvider) == ThemeMode.dark
@@ -44,6 +54,8 @@ class HomeScreen extends ConsumerWidget {
               ref.invalidate(myLeaguesProvider);
               ref.invalidate(invitationsProvider);
               ref.invalidate(publicLeaguesProvider);
+              ref.invalidate(homeDashboardProvider);
+              ref.invalidate(notificationsProvider);
 
               // Invalidate family providers (clears ALL cached instances)
               ref.invalidate(leagueDetailProvider);
@@ -58,72 +70,191 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildNavCard(
-                  context,
-                  icon: Icons.emoji_events,
-                  title: 'Leagues',
-                  onTap: () => context.go('/leagues'),
-                ),
-              ],
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(homeDashboardProvider.notifier).loadDashboard(),
+        child: _buildBody(context, dashboardState),
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, HomeDashboardState state) {
+    if (state.isLoading) {
+      return _buildLoadingSkeleton();
+    }
+
+    if (state.error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
             ),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading dashboard',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              state.error!,
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Active drafts (highest priority - shown first if any)
+              HomeDraftAlertCard(drafts: state.upcomingDrafts),
+              if (state.upcomingDrafts.isNotEmpty) const SizedBox(height: 12),
+
+              // Pending trades requiring action
+              HomePendingTradesCard(trades: state.pendingTrades),
+              if (state.pendingTrades.isNotEmpty) const SizedBox(height: 12),
+
+              // This week's matchups
+              HomeMatchupsCard(matchups: state.matchups),
+              if (state.matchups.isNotEmpty) const SizedBox(height: 12),
+
+              // Leagues card (always shown)
+              HomeLeaguesCard(leagues: state.leagues),
+
+              // Empty state for new users
+              if (state.leagues.isEmpty) ...[
+                const SizedBox(height: 24),
+                _buildEmptyState(context),
+              ],
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNavCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
+  Widget _buildLoadingSkeleton() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: Column(
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  size: 28,
-                  color: colorScheme.onPrimaryContainer,
+              // Leagues card skeleton
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SkeletonShimmer(
+                    child: Row(
+                      children: [
+                        const SkeletonBox(width: 48, height: 48, borderRadius: 12),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              SkeletonBox(height: 16, width: 100),
+                              SizedBox(height: 8),
+                              SkeletonBox(height: 12, width: 140),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+              const SizedBox(height: 12),
+
+              // Matchups skeleton
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SkeletonShimmer(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: const [
+                            SkeletonCircle(size: 20),
+                            SizedBox(width: 8),
+                            SkeletonBox(height: 16, width: 160),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const SkeletonBox(height: 50),
+                        const SizedBox(height: 8),
+                        const SkeletonBox(height: 50),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: colorScheme.onSurface.withAlpha(128),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      color: colorScheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Icon(
+              Icons.sports_football_outlined,
+              size: 48,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Welcome to HypeTrainFF!',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Get started by creating or joining a league.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FilledButton.icon(
+                  onPressed: () => context.push('/leagues/add'),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Create'),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/leagues/discover'),
+                  icon: const Icon(Icons.search),
+                  label: const Text('Join'),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

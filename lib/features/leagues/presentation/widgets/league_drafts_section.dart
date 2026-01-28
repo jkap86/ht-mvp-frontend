@@ -15,6 +15,7 @@ class LeagueDraftsSection extends StatelessWidget {
   final VoidCallback onCreateDraft;
   final Future<void> Function(Draft draft) onStartDraft;
   final Future<List<DraftOrderEntry>?> Function(Draft draft) onRandomizeDraftOrder;
+  final Future<void> Function(Draft draft) onEditSettings;
 
   const LeagueDraftsSection({
     super.key,
@@ -24,6 +25,7 @@ class LeagueDraftsSection extends StatelessWidget {
     required this.onCreateDraft,
     required this.onStartDraft,
     required this.onRandomizeDraftOrder,
+    required this.onEditSettings,
   });
 
   @override
@@ -62,6 +64,7 @@ class LeagueDraftsSection extends StatelessWidget {
                     isCommissioner: isCommissioner,
                     onStartDraft: onStartDraft,
                     onRandomizeDraftOrder: onRandomizeDraftOrder,
+                    onEditSettings: onEditSettings,
                   )),
           ],
         ),
@@ -96,6 +99,7 @@ class _DraftItem extends StatefulWidget {
   final bool isCommissioner;
   final Future<void> Function(Draft draft) onStartDraft;
   final Future<List<DraftOrderEntry>?> Function(Draft draft) onRandomizeDraftOrder;
+  final Future<void> Function(Draft draft) onEditSettings;
 
   const _DraftItem({
     super.key,
@@ -104,6 +108,7 @@ class _DraftItem extends StatefulWidget {
     required this.isCommissioner,
     required this.onStartDraft,
     required this.onRandomizeDraftOrder,
+    required this.onEditSettings,
   });
 
   @override
@@ -209,6 +214,13 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
                   ],
                 ),
               ),
+              // Edit settings button for commissioners (not shown for completed drafts)
+              if (widget.isCommissioner && widget.draft.status != DraftStatus.completed)
+                IconButton(
+                  icon: const Icon(Icons.settings, size: 20),
+                  tooltip: 'Edit Settings',
+                  onPressed: () => widget.onEditSettings(widget.draft),
+                ),
               _buildStatusBadge(context),
             ],
           ),
@@ -217,7 +229,7 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => context.push('/leagues/${widget.leagueId}/drafts/${widget.draft.id}'),
+                  onPressed: () => context.go('/leagues/${widget.leagueId}/drafts/${widget.draft.id}'),
                   child: const Text('View Draft Room'),
                 ),
               ),

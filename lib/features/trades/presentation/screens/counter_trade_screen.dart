@@ -52,7 +52,14 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
     // Pre-fill with inverted players from original trade
     // What they were requesting becomes what we offer
     // What they were offering becomes what we request
+    // NOTE: Only process player items - draft picks are not supported in counter trades yet
     for (final item in originalTrade.items) {
+      // Skip draft pick items - only process player trades
+      if (!item.isPlayer) continue;
+
+      // Validate playerId is valid (> 0) before adding
+      if (item.playerId <= 0) continue;
+
       if (item.toRosterId == myRosterId) {
         // They were giving this player to us, so we request it
         _requestingPlayerIds.add(item.playerId);

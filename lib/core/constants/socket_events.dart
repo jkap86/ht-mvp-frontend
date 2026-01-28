@@ -27,6 +27,8 @@ class SocketEvents {
   static const draftPickUndone = 'draft:pick_undone';
   static const draftQueueUpdated = 'draft:queue_updated';
   static const draftAutodraftToggled = 'draft:autodraft_toggled';
+  static const draftPickTraded = 'draft:pick_traded';
+  static const draftSettingsUpdated = 'draft:settings_updated';
 
   // Auction events
   static const auctionLotCreated = 'draft:auction_lot_created';

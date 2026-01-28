@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/widgets/states/states.dart';
 import '../data/league_repository.dart';
 import '../../home/presentation/widgets/league_card.dart';
+import '../../notifications/presentation/widgets/notification_bell.dart';
 
 class LeaguesScreen extends ConsumerStatefulWidget {
   const LeaguesScreen({super.key});
@@ -31,6 +32,9 @@ class _LeaguesScreenState extends ConsumerState<LeaguesScreen> {
           onPressed: () => context.go('/'),
         ),
         title: const Text('Leagues'),
+        actions: const [
+          NotificationBell(),
+        ],
       ),
       body: _buildBody(leaguesState),
       floatingActionButton: FloatingActionButton(
