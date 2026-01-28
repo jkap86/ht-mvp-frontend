@@ -6,6 +6,7 @@ import 'config/app_theme.dart';
 import 'config/app_router.dart';
 import 'config/theme_provider.dart';
 import 'core/services/snack_bar_service.dart';
+import 'core/services/app_lifecycle_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,9 @@ class HypeTrainApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
+
+    // Initialize the app lifecycle service to track background/foreground
+    ref.watch(appLifecycleServiceProvider);
 
     return MaterialApp.router(
       title: AppConfig.appName,

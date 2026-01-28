@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
+import '../../../../core/services/invalidation_service.dart';
 import '../../../drafts/domain/draft_order_entry.dart';
 import '../../../drafts/domain/draft_status.dart';
 import '../../../drafts/data/draft_repository.dart';
@@ -66,18 +67,34 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
   final LeagueRepository _leagueRepo;
   final DraftRepository _draftRepo;
   final SocketService _socketService;
+  final InvalidationService _invalidationService;
   final int leagueId;
   VoidCallback? _memberJoinedDisposer;
+  VoidCallback? _memberKickedDisposer;
   VoidCallback? _draftCreatedDisposer;
+  VoidCallback? _invalidationDisposer;
 
-  LeagueDetailNotifier(this._leagueRepo, this._draftRepo, this._socketService, this.leagueId) : super(LeagueDetailState()) {
+  LeagueDetailNotifier(this._leagueRepo, this._draftRepo, this._socketService, this._invalidationService, this.leagueId) : super(LeagueDetailState()) {
     _setupSocketListeners();
+    _registerInvalidationCallback();
     loadData();
+  }
+
+  void _registerInvalidationCallback() {
+    _invalidationDisposer = _invalidationService.register(
+      InvalidationType.leagueDetail,
+      leagueId,
+      loadData,
+    );
   }
 
   void _setupSocketListeners() {
     _socketService.joinLeague(leagueId);
     _memberJoinedDisposer = _socketService.onMemberJoined((data) {
+      if (!mounted) return;
+      _refreshMembers();
+    });
+    _memberKickedDisposer = _socketService.onMemberKicked((data) {
       if (!mounted) return;
       _refreshMembers();
     });
@@ -104,7 +121,9 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
   @override
   void dispose() {
     _memberJoinedDisposer?.call();
+    _memberKickedDisposer?.call();
     _draftCreatedDisposer?.call();
+    _invalidationDisposer?.call();
     _socketService.leaveLeague(leagueId);
     super.dispose();
   }
@@ -192,6 +211,7 @@ final leagueDetailProvider =
     ref.watch(leagueRepositoryProvider),
     ref.watch(draftRepositoryProvider),
     ref.watch(socketServiceProvider),
+    ref.watch(invalidationServiceProvider),
     leagueId,
   ),
 );

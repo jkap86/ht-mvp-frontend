@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/invalidation_service.dart';
 import '../../../leagues/data/league_repository.dart';
 import '../../../leagues/domain/league.dart';
 import '../../data/roster_repository.dart';
@@ -33,6 +35,7 @@ class TeamState {
   final bool isLoading;
   final String? error;
   final bool isSaving;
+  final DateTime? lastUpdated;
 
   TeamState({
     this.league,
@@ -42,7 +45,14 @@ class TeamState {
     this.isLoading = true,
     this.error,
     this.isSaving = false,
+    this.lastUpdated,
   });
+
+  /// Check if data is stale (older than 5 minutes)
+  bool get isStale {
+    if (lastUpdated == null) return true;
+    return DateTime.now().difference(lastUpdated!) > const Duration(minutes: 5);
+  }
 
   /// Group players by their lineup slot for display
   Map<LineupSlot, List<RosterPlayer>> get playersBySlot {
@@ -139,6 +149,7 @@ class TeamState {
     String? error,
     bool clearError = false,
     bool? isSaving,
+    DateTime? lastUpdated,
   }) {
     return TeamState(
       league: league ?? this.league,
@@ -148,6 +159,7 @@ class TeamState {
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
       isSaving: isSaving ?? this.isSaving,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
 }
@@ -155,16 +167,35 @@ class TeamState {
 class TeamNotifier extends StateNotifier<TeamState> {
   final RosterRepository _rosterRepo;
   final LeagueRepository _leagueRepo;
+  final InvalidationService _invalidationService;
   final int leagueId;
   final int rosterId;
+
+  VoidCallback? _invalidationDisposer;
 
   TeamNotifier(
     this._rosterRepo,
     this._leagueRepo,
+    this._invalidationService,
     this.leagueId,
     this.rosterId,
   ) : super(TeamState()) {
+    _registerInvalidationCallback();
     loadData();
+  }
+
+  void _registerInvalidationCallback() {
+    _invalidationDisposer = _invalidationService.register(
+      InvalidationType.team,
+      leagueId,
+      loadData,
+    );
+  }
+
+  @override
+  void dispose() {
+    _invalidationDisposer?.call();
+    super.dispose();
   }
 
   Future<void> loadData() async {
@@ -192,6 +223,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
         lineup: lineup,
         currentWeek: currentWeek,
         isLoading: false,
+        lastUpdated: DateTime.now(),
       );
     } catch (e) {
       state = state.copyWith(
@@ -356,6 +388,7 @@ final teamProvider = StateNotifierProvider.family<TeamNotifier, TeamState, TeamK
   (ref, key) => TeamNotifier(
     ref.watch(rosterRepositoryProvider),
     ref.watch(leagueRepositoryProvider),
+    ref.watch(invalidationServiceProvider),
     key.leagueId,
     key.rosterId,
   ),

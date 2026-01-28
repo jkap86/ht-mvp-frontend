@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/invalidation_service.dart';
 import '../../../leagues/data/league_repository.dart';
 import '../../../leagues/domain/league.dart';
 import '../../data/matchup_repository.dart';
@@ -11,6 +13,7 @@ class StandingsState {
   final int? myRosterId;
   final bool isLoading;
   final String? error;
+  final DateTime? lastUpdated;
 
   StandingsState({
     this.league,
@@ -18,7 +21,14 @@ class StandingsState {
     this.myRosterId,
     this.isLoading = true,
     this.error,
+    this.lastUpdated,
   });
+
+  /// Check if data is stale (older than 5 minutes)
+  bool get isStale {
+    if (lastUpdated == null) return true;
+    return DateTime.now().difference(lastUpdated!) > const Duration(minutes: 5);
+  }
 
   /// Get the current user's standing
   Standing? get myStanding {
@@ -36,6 +46,7 @@ class StandingsState {
     bool? isLoading,
     String? error,
     bool clearError = false,
+    DateTime? lastUpdated,
   }) {
     return StandingsState(
       league: league ?? this.league,
@@ -43,6 +54,7 @@ class StandingsState {
       myRosterId: myRosterId ?? this.myRosterId,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
+      lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
 }
@@ -50,14 +62,33 @@ class StandingsState {
 class StandingsNotifier extends StateNotifier<StandingsState> {
   final MatchupRepository _matchupRepo;
   final LeagueRepository _leagueRepo;
+  final InvalidationService _invalidationService;
   final int leagueId;
+
+  VoidCallback? _invalidationDisposer;
 
   StandingsNotifier(
     this._matchupRepo,
     this._leagueRepo,
+    this._invalidationService,
     this.leagueId,
   ) : super(StandingsState()) {
+    _registerInvalidationCallback();
     loadData();
+  }
+
+  void _registerInvalidationCallback() {
+    _invalidationDisposer = _invalidationService.register(
+      InvalidationType.standings,
+      leagueId,
+      loadData,
+    );
+  }
+
+  @override
+  void dispose() {
+    _invalidationDisposer?.call();
+    super.dispose();
   }
 
   Future<void> loadData() async {
@@ -77,6 +108,7 @@ class StandingsNotifier extends StateNotifier<StandingsState> {
         standings: standings,
         myRosterId: league.userRosterId,
         isLoading: false,
+        lastUpdated: DateTime.now(),
       );
     } catch (e) {
       state = state.copyWith(
@@ -91,10 +123,11 @@ class StandingsNotifier extends StateNotifier<StandingsState> {
   }
 }
 
-final standingsProvider = StateNotifierProvider.family<StandingsNotifier, StandingsState, int>(
+final standingsProvider = StateNotifierProvider.autoDispose.family<StandingsNotifier, StandingsState, int>(
   (ref, leagueId) => StandingsNotifier(
     ref.watch(matchupRepositoryProvider),
     ref.watch(leagueRepositoryProvider),
+    ref.watch(invalidationServiceProvider),
     leagueId,
   ),
 );

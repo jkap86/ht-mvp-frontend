@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/socket/socket_service.dart';
+import '../../../../core/services/invalidation_service.dart';
 import '../../data/waiver_repository.dart';
 import '../../domain/waiver_claim.dart';
 import '../../domain/waiver_priority.dart';
@@ -87,6 +88,7 @@ class WaiversState {
 class WaiversNotifier extends StateNotifier<WaiversState> {
   final WaiverRepository _waiverRepo;
   final SocketService _socketService;
+  final InvalidationService _invalidationService;
   final int leagueId;
   final int? userRosterId;
 
@@ -99,15 +101,27 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
   VoidCallback? _claimFailedDisposer;
   VoidCallback? _priorityUpdatedDisposer;
   VoidCallback? _budgetUpdatedDisposer;
+  VoidCallback? _memberKickedDisposer;
+  VoidCallback? _invalidationDisposer;
 
   WaiversNotifier(
     this._waiverRepo,
     this._socketService,
+    this._invalidationService,
     this.leagueId,
     this.userRosterId,
   ) : super(WaiversState()) {
     _setupSocketListeners();
+    _registerInvalidationCallback();
     loadWaiverData();
+  }
+
+  void _registerInvalidationCallback() {
+    _invalidationDisposer = _invalidationService.register(
+      InvalidationType.waivers,
+      leagueId,
+      loadWaiverData,
+    );
   }
 
   void _setupSocketListeners() {
@@ -209,6 +223,13 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
         // Failed to parse, reload to sync
         loadWaiverData();
       }
+    });
+
+    // Listen for member kicked events - refresh if kicked user had waiver claims
+    _memberKickedDisposer = _socketService.onMemberKicked((data) {
+      if (!mounted) return;
+      // Reload waiver data as kicked member's claims may have been affected
+      loadWaiverData();
     });
   }
 
@@ -342,6 +363,8 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
     _claimFailedDisposer?.call();
     _priorityUpdatedDisposer?.call();
     _budgetUpdatedDisposer?.call();
+    _memberKickedDisposer?.call();
+    _invalidationDisposer?.call();
     super.dispose();
   }
 }
@@ -352,6 +375,7 @@ final waiversProvider =
   (ref, params) => WaiversNotifier(
     ref.watch(waiverRepositoryProvider),
     ref.watch(socketServiceProvider),
+    ref.watch(invalidationServiceProvider),
     params.leagueId,
     params.userRosterId,
   ),

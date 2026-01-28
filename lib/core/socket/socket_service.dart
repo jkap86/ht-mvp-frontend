@@ -44,7 +44,35 @@ class SocketService {
   /// Temporarily store listeners during reconnect for re-registration
   Map<String, List<void Function(dynamic)>>? _listenersToRestore;
 
+  /// Callbacks to notify when socket reconnects
+  final List<VoidCallback> _reconnectCallbacks = [];
+
+  /// Track when the socket was disconnected to determine refresh scope
+  DateTime? _disconnectedAt;
+
+  /// Duration threshold for determining if full data refresh is needed after reconnect
+  static const reconnectRefreshThreshold = Duration(seconds: 30);
+
   bool get isConnected => _socket?.connected ?? false;
+
+  /// Get the active league room IDs
+  Set<int> get activeLeagueRooms => Set.unmodifiable(_activeLeagueRooms);
+
+  /// Get the active draft room IDs
+  Set<int> get activeDraftRooms => Set.unmodifiable(_activeDraftRooms);
+
+  /// Check if we were disconnected long enough to need a full refresh
+  bool get needsFullRefresh {
+    if (_disconnectedAt == null) return false;
+    return DateTime.now().difference(_disconnectedAt!) > reconnectRefreshThreshold;
+  }
+
+  /// Register a callback to be called when socket reconnects.
+  /// Returns a function to unregister the callback.
+  VoidCallback onReconnected(VoidCallback callback) {
+    _reconnectCallbacks.add(callback);
+    return () => _reconnectCallbacks.remove(callback);
+  }
 
   Future<void> connect() async {
     if (_socket != null && _socket!.connected) return;
@@ -64,13 +92,29 @@ class SocketService {
 
     _socket!.onConnect((_) {
       debugPrint('Socket connected');
+      final wasDisconnected = _disconnectedAt != null;
+      final shouldRefresh = needsFullRefresh;
       _applyPendingSubscriptions();
       _applyPendingEmits();
       _rejoinActiveRooms();
+
+      // Notify reconnect callbacks if this was a reconnection
+      if (wasDisconnected) {
+        debugPrint('Socket reconnected after ${_disconnectedAt != null ? DateTime.now().difference(_disconnectedAt!).inSeconds : 0}s, triggering ${_reconnectCallbacks.length} callbacks, needsFullRefresh: $shouldRefresh');
+        _disconnectedAt = null;
+        for (final callback in _reconnectCallbacks) {
+          try {
+            callback();
+          } catch (e) {
+            debugPrint('Error in reconnect callback: $e');
+          }
+        }
+      }
     });
 
     _socket!.onDisconnect((_) {
       debugPrint('Socket disconnected');
+      _disconnectedAt = DateTime.now();
     });
 
     _socket!.onConnectError((error) {
@@ -400,5 +444,22 @@ class SocketService {
 
   VoidCallback onMemberJoined(void Function(dynamic) callback) {
     return on(SocketEvents.memberJoined, callback);
+  }
+
+  // Invitation event listeners
+  VoidCallback onInvitationReceived(void Function(dynamic) callback) {
+    return on(SocketEvents.invitationReceived, callback);
+  }
+
+  VoidCallback onInvitationAccepted(void Function(dynamic) callback) {
+    return on(SocketEvents.invitationAccepted, callback);
+  }
+
+  VoidCallback onInvitationDeclined(void Function(dynamic) callback) {
+    return on(SocketEvents.invitationDeclined, callback);
+  }
+
+  VoidCallback onInvitationCancelled(void Function(dynamic) callback) {
+    return on(SocketEvents.invitationCancelled, callback);
   }
 }

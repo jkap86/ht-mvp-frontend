@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/invalidation_service.dart';
 import '../../../players/domain/player.dart';
 import '../../data/roster_repository.dart';
 
@@ -11,6 +13,7 @@ class FreeAgentsState {
   final String? error;
   final bool isAddingPlayer;
   final int? addingPlayerId;
+  final DateTime? lastUpdated;
 
   FreeAgentsState({
     this.players = const [],
@@ -20,7 +23,14 @@ class FreeAgentsState {
     this.error,
     this.isAddingPlayer = false,
     this.addingPlayerId,
+    this.lastUpdated,
   });
+
+  /// Check if data is stale (older than 5 minutes)
+  bool get isStale {
+    if (lastUpdated == null) return true;
+    return DateTime.now().difference(lastUpdated!) > const Duration(minutes: 5);
+  }
 
   /// Get filtered players based on position and search
   List<Player> get filteredPlayers {
@@ -53,6 +63,7 @@ class FreeAgentsState {
     bool? isAddingPlayer,
     int? addingPlayerId,
     bool clearAddingPlayer = false,
+    DateTime? lastUpdated,
   }) {
     return FreeAgentsState(
       players: players ?? this.players,
@@ -62,21 +73,41 @@ class FreeAgentsState {
       error: clearError ? null : (error ?? this.error),
       isAddingPlayer: isAddingPlayer ?? this.isAddingPlayer,
       addingPlayerId: clearAddingPlayer ? null : (addingPlayerId ?? this.addingPlayerId),
+      lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
 }
 
 class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
   final RosterRepository _rosterRepo;
+  final InvalidationService _invalidationService;
   final int leagueId;
   final int rosterId;
 
+  VoidCallback? _invalidationDisposer;
+
   FreeAgentsNotifier(
     this._rosterRepo,
+    this._invalidationService,
     this.leagueId,
     this.rosterId,
   ) : super(FreeAgentsState()) {
+    _registerInvalidationCallback();
     loadData();
+  }
+
+  void _registerInvalidationCallback() {
+    _invalidationDisposer = _invalidationService.register(
+      InvalidationType.freeAgents,
+      leagueId,
+      loadData,
+    );
+  }
+
+  @override
+  void dispose() {
+    _invalidationDisposer?.call();
+    super.dispose();
   }
 
   Future<void> loadData() async {
@@ -93,6 +124,7 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
       state = state.copyWith(
         players: players,
         isLoading: false,
+        lastUpdated: DateTime.now(),
       );
     } catch (e) {
       state = state.copyWith(
@@ -126,22 +158,34 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
     loadData();
   }
 
-  /// Add a player to the roster
+  /// Add a player to the roster with optimistic update and rollback on failure
   Future<bool> addPlayer(int playerId) async {
-    state = state.copyWith(isAddingPlayer: true, addingPlayerId: playerId);
+    // Save state for rollback
+    final previousState = state;
+
+    // Optimistic update - remove player from list immediately
+    state = state.copyWith(
+      isAddingPlayer: true,
+      addingPlayerId: playerId,
+      players: state.players.where((p) => p.id != playerId).toList(),
+    );
 
     try {
       await _rosterRepo.addPlayer(leagueId, rosterId, playerId);
 
-      // Remove the player from the list
+      // Success - just clear loading state
       state = state.copyWith(
-        players: state.players.where((p) => p.id != playerId).toList(),
         isAddingPlayer: false,
         clearAddingPlayer: true,
       );
+
+      // Trigger cross-provider invalidation
+      _invalidationService.invalidate(InvalidationEvent.playerAdded, leagueId);
+
       return true;
     } catch (e) {
-      state = state.copyWith(
+      // ROLLBACK: Restore previous state on failure
+      state = previousState.copyWith(
         error: e.toString(),
         isAddingPlayer: false,
         clearAddingPlayer: true,
@@ -150,22 +194,35 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
     }
   }
 
-  /// Add a player and drop another in the same transaction
+  /// Add a player and drop another in the same transaction with optimistic update
   Future<bool> addDropPlayer(int addPlayerId, int dropPlayerId) async {
-    state = state.copyWith(isAddingPlayer: true, addingPlayerId: addPlayerId);
+    // Save state for rollback
+    final previousState = state;
+
+    // Optimistic update - remove added player from list
+    state = state.copyWith(
+      isAddingPlayer: true,
+      addingPlayerId: addPlayerId,
+      players: state.players.where((p) => p.id != addPlayerId).toList(),
+    );
 
     try {
       await _rosterRepo.addDropPlayer(leagueId, rosterId, addPlayerId, dropPlayerId);
 
-      // Remove the added player from the free agents list
+      // Success - just clear loading state
       state = state.copyWith(
-        players: state.players.where((p) => p.id != addPlayerId).toList(),
         isAddingPlayer: false,
         clearAddingPlayer: true,
       );
+
+      // Trigger cross-provider invalidation for both add and drop
+      _invalidationService.invalidate(InvalidationEvent.playerAdded, leagueId);
+      _invalidationService.invalidate(InvalidationEvent.playerDropped, leagueId);
+
       return true;
     } catch (e) {
-      state = state.copyWith(
+      // ROLLBACK: Restore previous state on failure
+      state = previousState.copyWith(
         error: e.toString(),
         isAddingPlayer: false,
         clearAddingPlayer: true,
@@ -183,9 +240,10 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
 typedef FreeAgentsKey = ({int leagueId, int rosterId});
 
 final freeAgentsProvider =
-    StateNotifierProvider.family<FreeAgentsNotifier, FreeAgentsState, FreeAgentsKey>(
+    StateNotifierProvider.autoDispose.family<FreeAgentsNotifier, FreeAgentsState, FreeAgentsKey>(
   (ref, key) => FreeAgentsNotifier(
     ref.watch(rosterRepositoryProvider),
+    ref.watch(invalidationServiceProvider),
     key.leagueId,
     key.rosterId,
   ),

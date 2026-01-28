@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/socket/socket_service.dart';
+import '../../../../core/services/invalidation_service.dart';
 import '../../data/trade_repository.dart';
 import '../../domain/trade.dart';
 import '../../domain/trade_status.dart';
@@ -11,13 +12,21 @@ class TradesState {
   final bool isLoading;
   final String? error;
   final String filter; // 'all', 'pending', 'completed'
+  final DateTime? lastUpdated;
 
   TradesState({
     this.trades = const [],
     this.isLoading = true,
     this.error,
     this.filter = 'all',
+    this.lastUpdated,
   });
+
+  /// Check if data is stale (older than 5 minutes)
+  bool get isStale {
+    if (lastUpdated == null) return true;
+    return DateTime.now().difference(lastUpdated!) > const Duration(minutes: 5);
+  }
 
   /// Get trades filtered by current filter
   List<Trade> get filteredTrades {
@@ -45,12 +54,14 @@ class TradesState {
     String? error,
     String? filter,
     bool clearError = false,
+    DateTime? lastUpdated,
   }) {
     return TradesState(
       trades: trades ?? this.trades,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
       filter: filter ?? this.filter,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
 }
@@ -59,6 +70,7 @@ class TradesState {
 class TradesNotifier extends StateNotifier<TradesState> {
   final TradeRepository _tradeRepo;
   final SocketService _socketService;
+  final InvalidationService _invalidationService;
   final int leagueId;
 
   // Socket listener disposers
@@ -72,14 +84,26 @@ class TradesNotifier extends StateNotifier<TradesState> {
   VoidCallback? _vetoedDisposer;
   VoidCallback? _voteCastDisposer;
   VoidCallback? _invalidatedDisposer;
+  VoidCallback? _memberKickedDisposer;
+  VoidCallback? _invalidationDisposer;
 
   TradesNotifier(
     this._tradeRepo,
     this._socketService,
+    this._invalidationService,
     this.leagueId,
   ) : super(TradesState()) {
     _setupSocketListeners();
+    _registerInvalidationCallback();
     loadTrades();
+  }
+
+  void _registerInvalidationCallback() {
+    _invalidationDisposer = _invalidationService.register(
+      InvalidationType.trades,
+      leagueId,
+      loadTrades,
+    );
   }
 
   void _setupSocketListeners() {
@@ -194,6 +218,13 @@ class TradesNotifier extends StateNotifier<TradesState> {
       // Reload trades to get updated status after invalidation
       loadTrades();
     });
+
+    // Listen for member kicked events - trades involving kicked member become invalid
+    _memberKickedDisposer = _socketService.onMemberKicked((data) {
+      if (!mounted) return;
+      // Reload to get updated trade statuses
+      loadTrades();
+    });
   }
 
   /// Add or update a trade in the list
@@ -217,7 +248,7 @@ class TradesNotifier extends StateNotifier<TradesState> {
     try {
       final trades = await _tradeRepo.getTrades(leagueId);
       if (!mounted) return;
-      state = state.copyWith(trades: trades, isLoading: false);
+      state = state.copyWith(trades: trades, isLoading: false, lastUpdated: DateTime.now());
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(error: e.toString(), isLoading: false);
@@ -234,6 +265,10 @@ class TradesNotifier extends StateNotifier<TradesState> {
     try {
       final trade = await _tradeRepo.acceptTrade(leagueId, tradeId);
       _addOrUpdateTrade(trade);
+
+      // Trigger cross-provider invalidation when trade is accepted
+      _invalidationService.invalidate(InvalidationEvent.tradeAccepted, leagueId);
+
       return trade;
     } catch (e) {
       state = state.copyWith(error: e.toString());
@@ -296,6 +331,8 @@ class TradesNotifier extends StateNotifier<TradesState> {
     _vetoedDisposer?.call();
     _voteCastDisposer?.call();
     _invalidatedDisposer?.call();
+    _memberKickedDisposer?.call();
+    _invalidationDisposer?.call();
     super.dispose();
   }
 }
@@ -306,6 +343,7 @@ final tradesProvider =
   (ref, leagueId) => TradesNotifier(
     ref.watch(tradeRepositoryProvider),
     ref.watch(socketServiceProvider),
+    ref.watch(invalidationServiceProvider),
     leagueId,
   ),
 );

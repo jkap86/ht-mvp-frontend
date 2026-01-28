@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
+import '../../../../core/services/invalidation_service.dart';
 import '../../../leagues/data/league_repository.dart';
 import '../../../leagues/domain/league.dart';
 import '../../data/matchup_repository.dart';
@@ -14,6 +15,7 @@ class MatchupState {
   final int? myRosterId;
   final bool isLoading;
   final String? error;
+  final DateTime? lastUpdated;
 
   MatchupState({
     this.league,
@@ -22,7 +24,14 @@ class MatchupState {
     this.myRosterId,
     this.isLoading = true,
     this.error,
+    this.lastUpdated,
   });
+
+  /// Check if data is stale (older than 5 minutes)
+  bool get isStale {
+    if (lastUpdated == null) return true;
+    return DateTime.now().difference(lastUpdated!) > const Duration(minutes: 5);
+  }
 
   /// Get the current user's matchup
   Matchup? get myMatchup {
@@ -42,6 +51,7 @@ class MatchupState {
     bool? isLoading,
     String? error,
     bool clearError = false,
+    DateTime? lastUpdated,
   }) {
     return MatchupState(
       league: league ?? this.league,
@@ -50,6 +60,7 @@ class MatchupState {
       myRosterId: myRosterId ?? this.myRosterId,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
+      lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
 }
@@ -58,18 +69,30 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
   final MatchupRepository _matchupRepo;
   final LeagueRepository _leagueRepo;
   final SocketService _socketService;
+  final InvalidationService _invalidationService;
   final int leagueId;
 
   final List<VoidCallback> _socketDisposers = [];
+  VoidCallback? _invalidationDisposer;
 
   MatchupNotifier(
     this._matchupRepo,
     this._leagueRepo,
     this._socketService,
+    this._invalidationService,
     this.leagueId,
   ) : super(MatchupState()) {
     _setupSocketListeners();
+    _registerInvalidationCallback();
     loadData();
+  }
+
+  void _registerInvalidationCallback() {
+    _invalidationDisposer = _invalidationService.register(
+      InvalidationType.matchups,
+      leagueId,
+      loadData,
+    );
   }
 
   void _setupSocketListeners() {
@@ -110,6 +133,7 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
       disposer();
     }
     _socketDisposers.clear();
+    _invalidationDisposer?.call();
     super.dispose();
   }
 
@@ -127,6 +151,7 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
         currentWeek: currentWeek,
         myRosterId: league.userRosterId,
         isLoading: false,
+        lastUpdated: DateTime.now(),
       );
     } catch (e) {
       state = state.copyWith(
@@ -160,11 +185,12 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
   }
 }
 
-final matchupProvider = StateNotifierProvider.family<MatchupNotifier, MatchupState, int>(
+final matchupProvider = StateNotifierProvider.autoDispose.family<MatchupNotifier, MatchupState, int>(
   (ref, leagueId) => MatchupNotifier(
     ref.watch(matchupRepositoryProvider),
     ref.watch(leagueRepositoryProvider),
     ref.watch(socketServiceProvider),
+    ref.watch(invalidationServiceProvider),
     leagueId,
   ),
 );
