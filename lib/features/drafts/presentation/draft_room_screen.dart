@@ -297,6 +297,7 @@ class _DraftAuctionBody extends ConsumerWidget {
     final state = ref.read(draftRoomProvider(providerKey));
     final currentPickerName = state.currentPicker?.username;
     final isMyTurn = state.isMyTurn;
+    final isAutodraftEnabled = state.isMyAutodraftEnabled;
 
     return Column(
       children: [
@@ -304,6 +305,16 @@ class _DraftAuctionBody extends ConsumerWidget {
           draft: draft,
           currentPickerName: currentPickerName,
           isMyTurn: isMyTurn,
+          isAutodraftEnabled: isAutodraftEnabled,
+          onToggleAutodraft: () async {
+            final notifier = ref.read(draftRoomProvider(providerKey).notifier);
+            final error = await notifier.toggleAutodraft(!isAutodraftEnabled);
+            if (error != null && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(error), backgroundColor: Colors.red),
+              );
+            }
+          },
         ),
         Expanded(
           child: AuctionLotsPanel(
@@ -429,6 +440,11 @@ class _DraftLinearBody extends ConsumerWidget {
       draftRoomProvider(providerKey).select((s) => s.currentPicker?.username),
     );
 
+    // Autodraft state
+    final isAutodraftEnabled = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.isMyAutodraftEnabled),
+    );
+
     final query = searchQuery.toLowerCase();
     final availablePlayers = players
         .where((p) =>
@@ -444,6 +460,16 @@ class _DraftLinearBody extends ConsumerWidget {
           draft: draft,
           currentPickerName: currentPickerName,
           isMyTurn: isMyTurn,
+          isAutodraftEnabled: isAutodraftEnabled,
+          onToggleAutodraft: () async {
+            final notifier = ref.read(draftRoomProvider(providerKey).notifier);
+            final error = await notifier.toggleAutodraft(!isAutodraftEnabled);
+            if (error != null && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(error), backgroundColor: Colors.red),
+              );
+            }
+          },
         ),
         PlayerSearchBar(onSearchChanged: onSearchChanged),
         Expanded(

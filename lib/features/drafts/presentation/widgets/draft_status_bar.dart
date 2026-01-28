@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
 
 import '../../../leagues/domain/league.dart';
+import 'autodraft_toggle_widget.dart';
 import 'draft_timer_widget.dart';
 
 class DraftStatusBar extends StatelessWidget {
   final Draft? draft;
   final String? currentPickerName;
   final bool isMyTurn;
+  final bool? isAutodraftEnabled;
+  final bool isAutodraftLoading;
+  final VoidCallback? onToggleAutodraft;
 
   const DraftStatusBar({
     super.key,
     required this.draft,
     this.currentPickerName,
     this.isMyTurn = false,
+    this.isAutodraftEnabled,
+    this.isAutodraftLoading = false,
+    this.onToggleAutodraft,
   });
 
   @override
@@ -62,10 +69,20 @@ class DraftStatusBar extends StatelessWidget {
               ],
             ),
           ),
-          // Timer
+          // Timer first (more important, shows countdown)
           if (isInProgress && draft?.pickDeadline != null)
-            DraftTimerWidget(
-              pickDeadline: draft!.pickDeadline,
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: DraftTimerWidget(
+                pickDeadline: draft!.pickDeadline,
+              ),
+            ),
+          // Autodraft toggle
+          if (isInProgress && isAutodraftEnabled != null)
+            AutodraftToggleWidget(
+              isEnabled: isAutodraftEnabled!,
+              isLoading: isAutodraftLoading,
+              onToggle: onToggleAutodraft,
             ),
         ],
       ),

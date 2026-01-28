@@ -35,6 +35,8 @@ abstract class DraftSocketCallbacks {
   void onOutbidReceived(OutbidNotification notification);
   void onNominatorChangedReceived(int? rosterId, int? nominationNumber);
   void onAuctionErrorReceived(String message);
+  // Autodraft callback
+  void onAutodraftToggledReceived(int rosterId, bool enabled, bool forced);
 }
 
 /// Handles all socket event subscriptions for the draft room
@@ -127,6 +129,14 @@ class DraftSocketHandler {
     _addDisposer(_socketService.onAuctionError((data) {
       final message = data['message'] as String? ?? 'Auction action failed';
       _callbacks.onAuctionErrorReceived(message);
+    }));
+
+    // Autodraft listener
+    _addDisposer(_socketService.onAutodraftToggled((data) {
+      final rosterId = data['rosterId'] as int? ?? data['roster_id'] as int? ?? 0;
+      final enabled = data['enabled'] as bool? ?? false;
+      final forced = data['forced'] as bool? ?? false;
+      _callbacks.onAutodraftToggledReceived(rosterId, enabled, forced);
     }));
   }
 

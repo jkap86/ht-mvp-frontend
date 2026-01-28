@@ -148,4 +148,14 @@ class DraftRepository {
     if (stateData == null) throw Exception('Invalid response: missing auction state');
     return AuctionState.fromJson(stateData);
   }
+
+  /// Toggle autodraft for the current user
+  Future<Map<String, dynamic>> toggleAutodraft(
+      int leagueId, int draftId, bool enabled) async {
+    final response = await _apiClient.patch(
+      '/leagues/$leagueId/drafts/$draftId/autodraft',
+      body: {'enabled': enabled},
+    );
+    return response as Map<String, dynamic>;
+  }
 }

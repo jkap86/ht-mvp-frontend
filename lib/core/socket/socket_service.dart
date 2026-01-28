@@ -269,6 +269,11 @@ class SocketService {
     return on(SocketEvents.draftQueueUpdated, callback);
   }
 
+  /// Listen for autodraft toggle events
+  VoidCallback onAutodraftToggled(void Function(dynamic) callback) {
+    return on(SocketEvents.draftAutodraftToggled, callback);
+  }
+
   /// Listen for server-side errors (e.g., authorization failures)
   VoidCallback onAppError(void Function(dynamic) callback) {
     return on(SocketEvents.appError, callback);

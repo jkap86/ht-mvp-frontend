@@ -151,6 +151,17 @@ class ApiClient {
     );
   }
 
+  Future<dynamic> patch(String endpoint, {dynamic body, bool auth = true}) async {
+    return _executeWithRetry(
+      auth: auth,
+      executeRequest: (headers) => http.patch(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: headers,
+        body: body != null ? jsonEncode(body) : null,
+      ),
+    );
+  }
+
   dynamic _handleResponse(http.Response response) {
     final body = response.body.isNotEmpty ? jsonDecode(response.body) : null;
 

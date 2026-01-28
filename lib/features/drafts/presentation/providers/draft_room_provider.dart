@@ -97,6 +97,15 @@ class DraftRoomState {
     return picks.where((pick) => pick.rosterId == myRosterId).toList();
   }
 
+  /// Whether autodraft is enabled for the current user
+  bool get isMyAutodraftEnabled {
+    if (myRosterId == null || draftOrder.isEmpty) return false;
+    final myEntry = draftOrder
+        .where((entry) => entry.rosterId == myRosterId)
+        .firstOrNull;
+    return myEntry?.isAutodraftEnabled ?? false;
+  }
+
   List<DraftOrderEntry> get currentRoundOrder {
     final d = draft;
     if (d == null || draftOrder.isEmpty) return draftOrder;
@@ -385,6 +394,30 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
   void clearOutbidNotification() {
     state = state.copyWith(clearOutbidNotification: true);
+  }
+
+  /// Toggle autodraft for the current user
+  Future<String?> toggleAutodraft(bool enabled) async {
+    try {
+      await _draftRepo.toggleAutodraft(leagueId, draftId, enabled);
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  @override
+  void onAutodraftToggledReceived(int rosterId, bool enabled, bool forced) {
+    if (!mounted) return;
+    // Update the draft order with the new autodraft state
+    state = state.copyWith(
+      draftOrder: state.draftOrder.map((entry) {
+        if (entry.rosterId == rosterId) {
+          return entry.copyWith(isAutodraftEnabled: enabled);
+        }
+        return entry;
+      }).toList(),
+    );
   }
 
   @override
