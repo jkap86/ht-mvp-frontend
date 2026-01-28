@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
+import '../../../drafts/domain/draft_order_entry.dart';
 import '../../../drafts/domain/draft_status.dart';
 import '../../../drafts/data/draft_repository.dart';
 import '../../data/league_repository.dart';
@@ -168,12 +169,19 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     }
   }
 
-  Future<bool> randomizeDraftOrder(int draftId) async {
+  Future<List<DraftOrderEntry>?> randomizeDraftOrder(int draftId) async {
     try {
-      await _draftRepo.randomizeDraftOrder(leagueId, draftId);
-      return true;
+      final order = await _draftRepo.randomizeDraftOrder(leagueId, draftId);
+      // Update the draft to mark orderConfirmed as true
+      final index = state.drafts.indexWhere((d) => d.id == draftId);
+      if (index != -1) {
+        final updatedDrafts = [...state.drafts];
+        updatedDrafts[index] = updatedDrafts[index].copyWith(orderConfirmed: true);
+        state = state.copyWith(drafts: updatedDrafts);
+      }
+      return order;
     } catch (e) {
-      return false;
+      return null;
     }
   }
 }

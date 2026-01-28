@@ -7,14 +7,16 @@ import '../../../core/widgets/dev_console.dart';
 import '../../../core/widgets/states/states.dart';
 import '../domain/league.dart';
 import '../../chat/presentation/floating_chat_widget.dart';
+import '../../drafts/domain/draft_order_entry.dart';
 import '../../drafts/domain/draft_type.dart';
 import 'providers/league_detail_provider.dart';
 import 'widgets/league_header_widget.dart';
 import 'widgets/draft_status_banner.dart';
 import 'widgets/league_settings_summary.dart';
 import 'widgets/league_members_section.dart';
-import 'widgets/league_drafts_tab.dart';
+import 'widgets/league_drafts_section.dart';
 import 'widgets/create_draft_dialog.dart';
+import 'widgets/invite_member_sheet.dart';
 
 class LeagueDetailScreen extends ConsumerStatefulWidget {
   final int leagueId;
@@ -32,7 +34,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -97,19 +99,18 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     }
   }
 
-  Future<void> _randomizeDraftOrder(Draft draft) async {
+  Future<List<DraftOrderEntry>?> _randomizeDraftOrder(Draft draft) async {
     final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
-    final success = await notifier.randomizeDraftOrder(draft.id);
-    if (mounted) {
+    final order = await notifier.randomizeDraftOrder(draft.id);
+    if (order == null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success
-              ? 'Draft order randomized successfully'
-              : 'Error randomizing draft order'),
-          backgroundColor: success ? Colors.green : Colors.red,
+        const SnackBar(
+          content: Text('Error randomizing draft order'),
+          backgroundColor: Colors.red,
         ),
       );
     }
+    return order;
   }
 
   @override
@@ -175,7 +176,6 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           tabs: const [
             Tab(text: 'Overview'),
             Tab(text: 'Season'),
-            Tab(text: 'Drafts'),
           ],
         ),
       ),
@@ -186,14 +186,6 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             children: [
               _buildOverviewTab(state),
               _buildSeasonTab(state),
-              LeagueDraftsTab(
-                leagueId: widget.leagueId,
-                drafts: state.drafts,
-                isCommissioner: state.isCommissioner,
-                onCreateDraft: _createDraft,
-                onStartDraft: _startDraft,
-                onRandomizeDraftOrder: _randomizeDraftOrder,
-              ),
             ],
           ),
           FloatingChatWidget(leagueId: widget.leagueId),
@@ -226,7 +218,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
               draft: state.activeDraft!,
               isCommissioner: state.isCommissioner,
               onJoinDraft: () {
-                context.go('/leagues/${widget.leagueId}/drafts/${state.activeDraft!.id}');
+                context.push('/leagues/${widget.leagueId}/drafts/${state.activeDraft!.id}');
               },
               onStartDraft: () => _startDraft(state.activeDraft!),
             ),
@@ -242,6 +234,15 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             league: state.league!,
             members: state.members,
             totalSlots: state.league!.totalRosters,
+          ),
+          const SizedBox(height: 16),
+          LeagueDraftsSection(
+            leagueId: widget.leagueId,
+            drafts: state.drafts,
+            isCommissioner: state.isCommissioner,
+            onCreateDraft: _createDraft,
+            onStartDraft: _startDraft,
+            onRandomizeDraftOrder: _randomizeDraftOrder,
           ),
         ],
           ),
@@ -317,6 +318,19 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             onTap: () => context.push('/leagues/${widget.leagueId}/trades'),
           ),
         ),
+        // Invite Members card - visible to all members when league not full
+        if (state.members.length < state.league!.totalRosters) ...[
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.person_add_alt),
+              title: const Text('Invite Members'),
+              subtitle: Text('${state.league!.totalRosters - state.members.length} spots available'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => showInviteMemberSheet(context, widget.leagueId),
+            ),
+          ),
+        ],
         // Commissioner Tools (only shown to commissioner)
         if (state.isCommissioner) ...[
           const SizedBox(height: 16),

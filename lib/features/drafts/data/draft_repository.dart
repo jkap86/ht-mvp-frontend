@@ -5,6 +5,7 @@ import '../../leagues/domain/league.dart';
 import '../domain/auction_budget.dart';
 import '../domain/auction_lot.dart';
 import '../domain/auction_state.dart';
+import '../domain/draft_order_entry.dart';
 
 final draftRepositoryProvider = Provider<DraftRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
@@ -54,8 +55,12 @@ class DraftRepository {
     return pickData;
   }
 
-  Future<void> randomizeDraftOrder(int leagueId, int draftId) async {
-    await _apiClient.post('/leagues/$leagueId/drafts/$draftId/randomize');
+  Future<List<DraftOrderEntry>> randomizeDraftOrder(int leagueId, int draftId) async {
+    final response = await _apiClient.post('/leagues/$leagueId/drafts/$draftId/randomize');
+    final order = (response as List?) ?? [];
+    return order
+        .map((json) => DraftOrderEntry.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   // Queue methods
