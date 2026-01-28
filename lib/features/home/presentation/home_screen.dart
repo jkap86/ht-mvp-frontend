@@ -3,7 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/theme_provider.dart';
+import '../../../core/providers/league_context_provider.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../commissioner/presentation/providers/commissioner_provider.dart';
+import '../../commissioner/presentation/providers/league_invitations_provider.dart';
+import '../../leagues/data/invitations_provider.dart';
+import '../../leagues/data/league_repository.dart';
+import '../../leagues/data/public_leagues_provider.dart';
+import '../../leagues/presentation/providers/league_detail_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -32,6 +39,18 @@ class HomeScreen extends ConsumerWidget {
             tooltip: 'Logout',
             onPressed: () async {
               await ref.read(authStateProvider.notifier).logout();
+
+              // Invalidate global user-specific providers
+              ref.invalidate(myLeaguesProvider);
+              ref.invalidate(invitationsProvider);
+              ref.invalidate(publicLeaguesProvider);
+
+              // Invalidate family providers (clears ALL cached instances)
+              ref.invalidate(leagueDetailProvider);
+              ref.invalidate(leagueContextProvider);
+              ref.invalidate(commissionerProvider);
+              ref.invalidate(leagueInvitationsProvider);
+
               if (context.mounted) {
                 context.go('/login');
               }

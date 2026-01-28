@@ -71,7 +71,10 @@ class _LeaguesScreenState extends ConsumerState<LeaguesScreen> {
             itemCount: leaguesState.leagues.length,
             itemBuilder: (context, index) {
               final league = leaguesState.leagues[index];
-              return LeagueCard(league: league);
+              return LeagueCard(
+                league: league,
+                onNavigate: () => ref.read(myLeaguesProvider.notifier).loadLeagues(),
+              );
             },
           ),
         ),

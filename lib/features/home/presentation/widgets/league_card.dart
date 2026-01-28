@@ -5,8 +5,9 @@ import '../../../leagues/domain/league.dart';
 
 class LeagueCard extends StatelessWidget {
   final League league;
+  final VoidCallback? onNavigate;
 
-  const LeagueCard({super.key, required this.league});
+  const LeagueCard({super.key, required this.league, this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +29,10 @@ class LeagueCard extends StatelessWidget {
         ),
         subtitle: Text('${league.status} - Season ${league.season}'),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.go('/leagues/${league.id}'),
+        onTap: () async {
+          await context.push('/leagues/${league.id}');
+          onNavigate?.call();
+        },
       ),
     );
   }
