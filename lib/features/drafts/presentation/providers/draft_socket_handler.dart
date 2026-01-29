@@ -79,15 +79,37 @@ class DraftSocketHandler {
     }));
 
     _addDisposer(_socketService.onNextPick((data) {
-      _callbacks.onNextPickReceived(data);
+      // Defensive parsing: ensure data is a valid Map before processing
+      if (data is! Map) return;
+      try {
+        _callbacks.onNextPickReceived(Map<String, dynamic>.from(data));
+      } catch (e) {
+        // Log parsing error but don't crash - malformed socket data shouldn't break UI
+        // ignore: avoid_print
+        print('Failed to parse next pick: $e');
+      }
     }));
 
     _addDisposer(_socketService.onDraftCompleted((data) {
-      _callbacks.onDraftCompletedReceived(data);
+      // Defensive parsing: ensure data is a valid Map before processing
+      if (data is! Map) return;
+      try {
+        _callbacks.onDraftCompletedReceived(Map<String, dynamic>.from(data));
+      } catch (e) {
+        // ignore: avoid_print
+        print('Failed to parse draft completed: $e');
+      }
     }));
 
     _addDisposer(_socketService.onPickUndone((data) {
-      _callbacks.onPickUndoneReceived(data);
+      // Defensive parsing: ensure data is a valid Map before processing
+      if (data is! Map) return;
+      try {
+        _callbacks.onPickUndoneReceived(Map<String, dynamic>.from(data));
+      } catch (e) {
+        // ignore: avoid_print
+        print('Failed to parse pick undone: $e');
+      }
     }));
 
     _addDisposer(_socketService.onDraftPaused((data) {

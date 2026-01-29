@@ -217,9 +217,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       state = state.copyWith(
         draft: currentDraft.copyWith(
           status: statusStr != null ? DraftStatus.fromString(statusStr) : null,
-          currentPick: data['currentPick'] as int?,
-          currentRound: data['currentRound'] as int?,
-          currentRosterId: data['currentRosterId'] as int?,
+          // Use safe numeric conversion - socket.io may send ints as doubles
+          currentPick: (data['currentPick'] as num?)?.toInt(),
+          currentRound: (data['currentRound'] as num?)?.toInt(),
+          currentRosterId: (data['currentRosterId'] as num?)?.toInt(),
           pickDeadline: data['pickDeadline'] != null
               ? DateTime.tryParse(data['pickDeadline'].toString())
               : null,
