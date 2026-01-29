@@ -469,9 +469,30 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   @override
   void onDraftSettingsUpdatedReceived(Map<String, dynamic> data) {
     if (!mounted) return;
-    // Update draft with new settings from commissioner
-    final updatedDraft = Draft.fromJson(data);
-    state = state.copyWith(draft: updatedDraft);
+
+    // Handle full draft object if present (from updateDraftSettings)
+    if (data.containsKey('id')) {
+      final updatedDraft = Draft.fromJson(data);
+      state = state.copyWith(draft: updatedDraft);
+    } else if (data['order_confirmed'] == true) {
+      // Partial update for order confirmation only
+      final currentDraft = state.draft;
+      if (currentDraft != null) {
+        state = state.copyWith(
+          draft: currentDraft.copyWith(orderConfirmed: true),
+        );
+      }
+    }
+
+    // If draft order was included, update it immediately
+    final orderData = data['draft_order'] as List?;
+    if (orderData != null) {
+      final newOrder = orderData
+          .map((json) =>
+              DraftOrderEntry.fromJson(Map<String, dynamic>.from(json as Map)))
+          .toList();
+      state = state.copyWith(draftOrder: newOrder);
+    }
   }
 
   @override
