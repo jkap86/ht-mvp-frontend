@@ -36,6 +36,8 @@ class DraftRoomState {
   final int? nominationNumber;
   // Pick asset tracking for traded picks
   final List<DraftPickAsset> pickAssets;
+  // Grid display preference: true = teams on X-axis (columns), false = teams on Y-axis (rows)
+  final bool teamsOnXAxis;
 
   DraftRoomState({
     this.draft,
@@ -52,6 +54,7 @@ class DraftRoomState {
     this.currentNominatorRosterId,
     this.nominationNumber,
     this.pickAssets = const [],
+    this.teamsOnXAxis = true,
   });
 
   bool get isAuction => draft?.draftType == DraftType.auction;
@@ -146,6 +149,7 @@ class DraftRoomState {
     int? currentNominatorRosterId,
     int? nominationNumber,
     List<DraftPickAsset>? pickAssets,
+    bool? teamsOnXAxis,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -165,6 +169,7 @@ class DraftRoomState {
           currentNominatorRosterId ?? this.currentNominatorRosterId,
       nominationNumber: nominationNumber ?? this.nominationNumber,
       pickAssets: pickAssets ?? this.pickAssets,
+      teamsOnXAxis: teamsOnXAxis ?? this.teamsOnXAxis,
     );
   }
 }
@@ -424,6 +429,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
   void clearOutbidNotification() {
     state = state.copyWith(clearOutbidNotification: true);
+  }
+
+  /// Toggle the grid axis orientation
+  void toggleGridAxis() {
+    state = state.copyWith(teamsOnXAxis: !state.teamsOnXAxis);
   }
 
   /// Toggle autodraft for the current user
