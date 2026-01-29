@@ -66,8 +66,16 @@ class DraftSocketHandler {
 
     // Standard draft listeners
     _addDisposer(_socketService.onDraftPick((data) {
-      final pick = DraftPick.fromJson(Map<String, dynamic>.from(data));
-      _callbacks.onPickReceived(pick);
+      // Defensive parsing: ensure data is a valid Map before processing
+      if (data is! Map) return;
+      try {
+        final pick = DraftPick.fromJson(Map<String, dynamic>.from(data));
+        _callbacks.onPickReceived(pick);
+      } catch (e) {
+        // Log parsing error but don't crash - malformed socket data shouldn't break UI
+        // ignore: avoid_print
+        print('Failed to parse draft pick: $e');
+      }
     }));
 
     _addDisposer(_socketService.onNextPick((data) {
@@ -92,13 +100,29 @@ class DraftSocketHandler {
 
     // Auction listeners
     _addDisposer(_socketService.onAuctionLotCreated((data) {
-      final lot = AuctionLot.fromJson(Map<String, dynamic>.from(data['lot'] ?? data));
-      _callbacks.onLotCreatedReceived(lot);
+      // Defensive parsing: ensure data contains valid lot information
+      try {
+        final lotData = data['lot'] ?? data;
+        if (lotData is! Map) return;
+        final lot = AuctionLot.fromJson(Map<String, dynamic>.from(lotData));
+        _callbacks.onLotCreatedReceived(lot);
+      } catch (e) {
+        // ignore: avoid_print
+        print('Failed to parse auction lot created: $e');
+      }
     }));
 
     _addDisposer(_socketService.onAuctionLotUpdated((data) {
-      final lot = AuctionLot.fromJson(Map<String, dynamic>.from(data['lot'] ?? data));
-      _callbacks.onLotUpdatedReceived(lot);
+      // Defensive parsing: ensure data contains valid lot information
+      try {
+        final lotData = data['lot'] ?? data;
+        if (lotData is! Map) return;
+        final lot = AuctionLot.fromJson(Map<String, dynamic>.from(lotData));
+        _callbacks.onLotUpdatedReceived(lot);
+      } catch (e) {
+        // ignore: avoid_print
+        print('Failed to parse auction lot updated: $e');
+      }
     }));
 
     _addDisposer(_socketService.onAuctionLotWon((data) {
@@ -146,18 +170,32 @@ class DraftSocketHandler {
 
     // Pick traded listener
     _addDisposer(_socketService.onDraftPickTraded((data) {
-      final pickAssetData = data['pick_asset'] ?? data['pickAsset'] ?? data;
-      final pickAsset = DraftPickAsset.fromJson(
-        Map<String, dynamic>.from(pickAssetData as Map),
-      );
-      _callbacks.onPickTradedReceived(pickAsset);
+      // Defensive parsing: ensure data contains valid pick asset
+      try {
+        final pickAssetData = data['pick_asset'] ?? data['pickAsset'] ?? data;
+        if (pickAssetData is! Map) return;
+        final pickAsset = DraftPickAsset.fromJson(
+          Map<String, dynamic>.from(pickAssetData),
+        );
+        _callbacks.onPickTradedReceived(pickAsset);
+      } catch (e) {
+        // ignore: avoid_print
+        print('Failed to parse pick traded: $e');
+      }
     }));
 
     // Settings updated listener
     _addDisposer(_socketService.onDraftSettingsUpdated((data) {
-      _callbacks.onDraftSettingsUpdatedReceived(
-        Map<String, dynamic>.from(data as Map),
-      );
+      // Defensive parsing: ensure data is a valid Map
+      if (data is! Map) return;
+      try {
+        _callbacks.onDraftSettingsUpdatedReceived(
+          Map<String, dynamic>.from(data),
+        );
+      } catch (e) {
+        // ignore: avoid_print
+        print('Failed to parse draft settings: $e');
+      }
     }));
   }
 

@@ -4,10 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../players/domain/player.dart';
 import '../providers/draft_room_provider.dart';
 import '../providers/draft_queue_provider.dart';
+import '../utils/player_filtering.dart';
 import '../utils/position_colors.dart';
-import 'draft_queue_widget.dart';
-import 'auction_lots_panel.dart';
 import 'auction_bid_dialog.dart';
+import 'auction_lots_panel.dart';
+import 'draft_queue_widget.dart';
+import 'drawer_drag_handle.dart';
+import 'nomination_hint_row.dart';
+import 'player_search_filter_panel.dart';
 
 /// Unified bottom drawer for the draft room.
 /// Adapts content based on draft type:
@@ -96,23 +100,7 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
           child: Column(
             children: [
               // Drag handle (tap to toggle) - stays outside scrollable
-              GestureDetector(
-                onTap: _toggleDrawer,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.only(top: 8, bottom: 4),
-                  child: Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[400],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              DrawerDragHandle(onTap: _toggleDrawer),
               // ALL content inside one scrollable for proper drag gestures
               // Queue is now a pinned sliver inside _SnakeLinearDrawerContent
               Expanded(
@@ -167,8 +155,6 @@ class _SnakeLinearDrawerContent extends ConsumerWidget {
   final Future<void> Function(int) onMakePick;
   final Future<void> Function(int) onAddToQueue;
 
-  static const List<String> _positions = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
-
   const _SnakeLinearDrawerContent({
     required this.providerKey,
     required this.queueKey,
@@ -202,17 +188,18 @@ class _SnakeLinearDrawerContent extends ConsumerWidget {
       draftQueueProvider(queueKey).select((s) => s.queuedPlayerIds),
     );
 
-    final availablePlayers = _filterPlayers(players, draftedPlayerIds);
+    final availablePlayers = filterAvailablePlayers(
+      players,
+      draftedIds: draftedPlayerIds,
+      selectedPosition: selectedPosition,
+      searchQuery: searchQuery,
+    );
     final isDraftInProgress = draft?.status.isActive ?? false;
 
-    // Use CustomScrollView with scrollController as PRIMARY scrollable
-    // This is required for DraggableScrollableSheet drag gestures to work
-    // Queue is inside the scrollable as a pinned header so dragging works everywhere
     return CustomScrollView(
       controller: scrollController,
       slivers: [
         // PINNED queue header - stays visible at top while scrolling
-        // Being inside the CustomScrollView allows drag gestures to propagate
         SliverPersistentHeader(
           pinned: true,
           delegate: _QueueHeaderDelegate(
@@ -225,7 +212,14 @@ class _SnakeLinearDrawerContent extends ConsumerWidget {
         ),
 
         // Search bar with position filter
-        SliverToBoxAdapter(child: _buildSearchWithFilter(context)),
+        SliverToBoxAdapter(
+          child: PlayerSearchFilterPanel(
+            searchQuery: searchQuery,
+            selectedPosition: selectedPosition,
+            onSearchChanged: onSearchChanged,
+            onPositionChanged: onPositionChanged,
+          ),
+        ),
 
         // Available players list
         SliverList.builder(
@@ -311,69 +305,6 @@ class _SnakeLinearDrawerContent extends ConsumerWidget {
     );
   }
 
-  List<Player> _filterPlayers(List<Player> players, Set<int> draftedIds) {
-    final query = searchQuery.toLowerCase();
-    return players.where((p) {
-      if (draftedIds.contains(p.id)) return false;
-      if (selectedPosition != null && p.primaryPosition != selectedPosition) return false;
-      if (query.isNotEmpty) {
-        return p.fullName.toLowerCase().contains(query) ||
-            p.primaryPosition.toLowerCase().contains(query) ||
-            (p.team?.toLowerCase().contains(query) ?? false);
-      }
-      return true;
-    }).toList();
-  }
-
-  Widget _buildSearchWithFilter(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Column(
-        children: [
-          // Search field
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Search players...',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              isDense: true,
-            ),
-            onChanged: onSearchChanged,
-          ),
-          const SizedBox(height: 8),
-          // Position filter chips
-          SizedBox(
-            height: 32,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _buildFilterChip(context, 'All', null),
-                ..._positions.map((pos) => _buildFilterChip(context, pos, pos)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(BuildContext context, String label, String? position) {
-    final isSelected = selectedPosition == position;
-    return Padding(
-      padding: const EdgeInsets.only(right: 6),
-      child: FilterChip(
-        label: Text(label, style: const TextStyle(fontSize: 12)),
-        selected: isSelected,
-        onSelected: (_) => onPositionChanged(isSelected ? null : position),
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        labelPadding: const EdgeInsets.symmetric(horizontal: 2),
-        visualDensity: VisualDensity.compact,
-      ),
-    );
-  }
 }
 
 /// Content for auction drafts
@@ -386,8 +317,6 @@ class _AuctionDrawerContent extends ConsumerWidget {
   final ValueChanged<String?> onPositionChanged;
   final Future<void> Function(int playerId)? onNominate;
   final Future<void> Function(int lotId, int maxBid)? onSetMaxBid;
-
-  static const List<String> _positions = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
 
   const _AuctionDrawerContent({
     required this.providerKey,
@@ -407,10 +336,13 @@ class _AuctionDrawerContent extends ConsumerWidget {
     final draftedPlayerIds = state.draftedPlayerIds;
     final myBudget = state.myBudget;
 
-    final availablePlayers = _filterPlayers(players, draftedPlayerIds);
+    final availablePlayers = filterAvailablePlayers(
+      players,
+      draftedIds: draftedPlayerIds,
+      selectedPosition: selectedPosition,
+      searchQuery: searchQuery,
+    );
 
-    // Use CustomScrollView with scrollController as PRIMARY scrollable
-    // This is required for DraggableScrollableSheet drag gestures to work
     return CustomScrollView(
       controller: scrollController,
       slivers: [
@@ -419,7 +351,8 @@ class _AuctionDrawerContent extends ConsumerWidget {
           child: AuctionLotsPanel(
             state: state,
             onBidTap: (lot) {
-              final player = players.where((p) => p.id == lot.playerId).firstOrNull;
+              final player =
+                  players.where((p) => p.id == lot.playerId).firstOrNull;
               if (player == null || onSetMaxBid == null) return;
               AuctionBidDialog.show(
                 context,
@@ -438,28 +371,18 @@ class _AuctionDrawerContent extends ConsumerWidget {
         const SliverToBoxAdapter(child: Divider(height: 1)),
 
         // Search bar with position filter
-        SliverToBoxAdapter(child: _buildSearchWithFilter(context)),
-
-        // Label for nomination section
         SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Row(
-              children: [
-                Icon(Icons.person_add, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  'Tap a player to nominate',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
+          child: PlayerSearchFilterPanel(
+            searchQuery: searchQuery,
+            selectedPosition: selectedPosition,
+            onSearchChanged: onSearchChanged,
+            onPositionChanged: onPositionChanged,
+            hintText: 'Search players to nominate...',
           ),
         ),
+
+        // Label for nomination section
+        const SliverToBoxAdapter(child: NominationHintRow()),
 
         // Players list for nomination
         SliverList.builder(
@@ -479,7 +402,8 @@ class _AuctionDrawerContent extends ConsumerWidget {
                   ),
                 ),
               ),
-              title: Text(player.fullName, style: const TextStyle(fontSize: 14)),
+              title:
+                  Text(player.fullName, style: const TextStyle(fontSize: 14)),
               subtitle: Text(
                 '${player.team ?? 'FA'} - ${player.primaryPosition}',
                 style: const TextStyle(fontSize: 12),
@@ -490,70 +414,6 @@ class _AuctionDrawerContent extends ConsumerWidget {
           },
         ),
       ],
-    );
-  }
-
-  List<Player> _filterPlayers(List<Player> players, Set<int> draftedIds) {
-    final query = searchQuery.toLowerCase();
-    return players.where((p) {
-      if (draftedIds.contains(p.id)) return false;
-      if (selectedPosition != null && p.primaryPosition != selectedPosition) return false;
-      if (query.isNotEmpty) {
-        return p.fullName.toLowerCase().contains(query) ||
-            p.primaryPosition.toLowerCase().contains(query) ||
-            (p.team?.toLowerCase().contains(query) ?? false);
-      }
-      return true;
-    }).toList();
-  }
-
-  Widget _buildSearchWithFilter(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Column(
-        children: [
-          // Search field
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Search players to nominate...',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              isDense: true,
-            ),
-            onChanged: onSearchChanged,
-          ),
-          const SizedBox(height: 8),
-          // Position filter chips
-          SizedBox(
-            height: 32,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _buildFilterChip(context, 'All', null),
-                ..._positions.map((pos) => _buildFilterChip(context, pos, pos)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(BuildContext context, String label, String? position) {
-    final isSelected = selectedPosition == position;
-    return Padding(
-      padding: const EdgeInsets.only(right: 6),
-      child: FilterChip(
-        label: Text(label, style: const TextStyle(fontSize: 12)),
-        selected: isSelected,
-        onSelected: (_) => onPositionChanged(isSelected ? null : position),
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        labelPadding: const EdgeInsets.symmetric(horizontal: 2),
-        visualDensity: VisualDensity.compact,
-      ),
     );
   }
 }

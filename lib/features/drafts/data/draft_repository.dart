@@ -33,7 +33,8 @@ class DraftRepository {
     final response =
         await _apiClient.get('/leagues/$leagueId/drafts/$draftId/picks');
     final picks = (response as List?) ?? [];
-    return picks.cast<Map<String, dynamic>>();
+    // Safe cast: filter out any non-Map elements to prevent runtime crashes
+    return picks.whereType<Map<String, dynamic>>().toList();
   }
 
   Future<List<Map<String, dynamic>>> getDraftOrder(
@@ -41,7 +42,8 @@ class DraftRepository {
     final response =
         await _apiClient.get('/leagues/$leagueId/drafts/$draftId/order');
     final order = (response as List?) ?? [];
-    return order.cast<Map<String, dynamic>>();
+    // Safe cast: filter out any non-Map elements to prevent runtime crashes
+    return order.whereType<Map<String, dynamic>>().toList();
   }
 
   Future<Map<String, dynamic>> makePick(
@@ -68,7 +70,8 @@ class DraftRepository {
     final response =
         await _apiClient.get('/leagues/$leagueId/drafts/$draftId/queue');
     final queue = (response as List?) ?? [];
-    return queue.cast<Map<String, dynamic>>();
+    // Safe cast: filter out any non-Map elements to prevent runtime crashes
+    return queue.whereType<Map<String, dynamic>>().toList();
   }
 
   Future<Map<String, dynamic>> addToQueue(
@@ -93,7 +96,8 @@ class DraftRepository {
       body: {'player_ids': playerIds},
     );
     final reordered = (response as List?) ?? [];
-    return reordered.cast<Map<String, dynamic>>();
+    // Safe cast: filter out any non-Map elements to prevent runtime crashes
+    return reordered.whereType<Map<String, dynamic>>().toList();
   }
 
   // Auction methods

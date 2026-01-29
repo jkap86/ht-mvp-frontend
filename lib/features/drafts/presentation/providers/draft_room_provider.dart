@@ -203,6 +203,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   @override
   void onPickReceived(DraftPick pick) {
     if (!mounted) return;
+    // Dedupe: prevent duplicate picks from socket replays or reconnection
+    if (state.picks.any((p) => p.id == pick.id)) return;
     state = state.copyWith(picks: [...state.picks, pick]);
   }
 
@@ -381,7 +383,13 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         nominationNumber: auctionState.nominationNumber,
       );
     } catch (e) {
-      // Silently fail - auction data is supplemental
+      // Auction data is supplemental - log for debugging but don't block UI
+      // ignore: avoid_print
+      print('Failed to load auction data: $e');
+      // Still update state with error for potential UI feedback
+      if (mounted) {
+        state = state.copyWith(error: 'Failed to load auction data');
+      }
     }
   }
 
