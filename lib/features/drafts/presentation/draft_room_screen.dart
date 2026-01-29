@@ -25,72 +25,76 @@ class DraftRoomScreen extends ConsumerStatefulWidget {
 }
 
 class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
-  bool _isSubmitting = false; // Prevents double-tap during API calls
+  // Separate flags per operation to prevent one failed operation from blocking others
+  bool _isPickSubmitting = false;
+  bool _isQueueSubmitting = false;
+  bool _isNominateSubmitting = false;
+  bool _isMaxBidSubmitting = false;
 
   DraftRoomKey get _providerKey => (leagueId: widget.leagueId, draftId: widget.draftId);
   DraftQueueKey get _queueKey => (leagueId: widget.leagueId, draftId: widget.draftId);
 
   Future<void> _makePick(int playerId) async {
-    if (_isSubmitting) return; // Prevent double-tap
-    setState(() => _isSubmitting = true);
+    if (_isPickSubmitting) return; // Prevent double-tap
+    setState(() => _isPickSubmitting = true);
     try {
       final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
       final error = await notifier.makePick(playerId);
-      if (error != null && mounted) {
+      if (error != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Colors.red),
+          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
         );
       }
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (context.mounted) setState(() => _isPickSubmitting = false);
     }
   }
 
   Future<void> _addToQueue(int playerId) async {
-    if (_isSubmitting) return; // Prevent double-tap
-    setState(() => _isSubmitting = true);
+    if (_isQueueSubmitting) return; // Prevent double-tap
+    setState(() => _isQueueSubmitting = true);
     try {
       final notifier = ref.read(draftQueueProvider(_queueKey).notifier);
       final success = await notifier.addToQueue(playerId);
-      if (!success && mounted) {
+      if (!success && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to add player to queue'), backgroundColor: Colors.red),
+          SnackBar(content: const Text('Failed to add player to queue'), backgroundColor: Theme.of(context).colorScheme.error),
         );
       }
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (context.mounted) setState(() => _isQueueSubmitting = false);
     }
   }
 
   Future<void> _handleNominate(int playerId) async {
-    if (_isSubmitting) return; // Prevent double-tap
-    setState(() => _isSubmitting = true);
+    if (_isNominateSubmitting) return; // Prevent double-tap
+    setState(() => _isNominateSubmitting = true);
     try {
       final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
       final error = await notifier.nominate(playerId);
-      if (error != null && mounted) {
+      if (error != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Colors.red),
+          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
         );
       }
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (context.mounted) setState(() => _isNominateSubmitting = false);
     }
   }
 
   Future<void> _handleSetMaxBid(int lotId, int maxBid) async {
-    if (_isSubmitting) return; // Prevent double-tap
-    setState(() => _isSubmitting = true);
+    if (_isMaxBidSubmitting) return; // Prevent double-tap
+    setState(() => _isMaxBidSubmitting = true);
     try {
       final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
       final error = await notifier.setMaxBid(lotId, maxBid);
-      if (error != null && mounted) {
+      if (error != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Colors.red),
+          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
         );
       }
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (context.mounted) setState(() => _isMaxBidSubmitting = false);
     }
   }
 

@@ -25,7 +25,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authStateProvider).user;
+    final user = ref.watch(authStateProvider.select((s) => s.user));
     final dashboardState = ref.watch(homeDashboardProvider);
 
     return Scaffold(

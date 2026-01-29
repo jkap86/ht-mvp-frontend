@@ -89,7 +89,7 @@ class RosterRepository {
     final response = await _apiClient.get(
       '/leagues/$leagueId/rosters/$rosterId/lineup?week=$week',
     );
-    return RosterLineup.fromJson(response);
+    return RosterLineup.fromJson(response['lineup']);
   }
 
   /// Set lineup for a specific week
@@ -106,7 +106,7 @@ class RosterRepository {
         'lineup': lineup.toJson(),
       },
     );
-    return RosterLineup.fromJson(response);
+    return RosterLineup.fromJson(response['lineup']);
   }
 
   /// Move a player to a different slot
@@ -125,6 +125,6 @@ class RosterRepository {
         'toSlot': toSlot,
       },
     );
-    return RosterLineup.fromJson(response);
+    return RosterLineup.fromJson(response['lineup']);
   }
 }

@@ -87,7 +87,7 @@ class _TradeItem extends StatelessWidget {
               width: 4,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.orange,
+                color: colorScheme.tertiary,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -116,14 +116,14 @@ class _TradeItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
+                color: colorScheme.tertiaryContainer,
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                border: Border.all(color: colorScheme.tertiary.withValues(alpha: 0.3)),
               ),
               child: Text(
                 trade.trade.status.label,
-                style: const TextStyle(
-                  color: Colors.orange,
+                style: TextStyle(
+                  color: colorScheme.onTertiaryContainer,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),

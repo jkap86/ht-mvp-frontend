@@ -76,9 +76,9 @@ class _MatchupItem extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: isWinning
-                    ? Colors.green
+                    ? colorScheme.primary
                     : isLosing
-                        ? Colors.red
+                        ? colorScheme.error
                         : colorScheme.outline,
                 borderRadius: BorderRadius.circular(2),
               ),
@@ -116,7 +116,7 @@ class _MatchupItem extends StatelessWidget {
                       matchup.userScore?.toStringAsFixed(1) ?? '-',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: isWinning ? Colors.green : null,
+                            color: isWinning ? colorScheme.primary : null,
                           ),
                     ),
                     Text(
@@ -127,7 +127,7 @@ class _MatchupItem extends StatelessWidget {
                       matchup.opponentScore?.toStringAsFixed(1) ?? '-',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: isLosing ? Colors.red : null,
+                            color: isLosing ? colorScheme.error : null,
                           ),
                     ),
                   ],
@@ -136,13 +136,13 @@ class _MatchupItem extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade100,
+                      color: colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Final',
                       style: TextStyle(
-                        color: Colors.green,
+                        color: colorScheme.onPrimaryContainer,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),

@@ -184,7 +184,7 @@ class SocketService {
 
     // Preserve listener metadata for re-registration after reconnect
     _listenersToRestore = Map<String, List<void Function(dynamic)>>.from(
-      _activeSubscriptions.map((event, callbacks) => MapEntry(event, List.from(callbacks))),
+      _activeSubscriptions.map((event, callbacks) => MapEntry(event, List<void Function(dynamic)>.from(callbacks))),
     );
 
     // Clear pending queues but preserve room tracking

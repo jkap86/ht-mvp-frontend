@@ -174,8 +174,11 @@ class HomeDashboardNotifier extends StateNotifier<HomeDashboardState> {
       }
 
       final matchupsResults = await Future.wait(matchupsFutures);
+      if (!mounted) return; // Early exit if disposed
       final tradesResults = await Future.wait(tradesFutures);
+      if (!mounted) return; // Early exit if disposed
       final draftsResults = await Future.wait(draftsFutures);
+      if (!mounted) return; // Early exit if disposed
 
       // Flatten results
       final allMatchups = matchupsResults.expand((m) => m).toList();

@@ -7,6 +7,9 @@ class LineupSlotWidget extends StatelessWidget {
   final LineupSlot slot;
   final RosterPlayer? player;
   final bool isLocked;
+  final bool isSelected;
+  final bool isHighlighted;
+  final bool isOneWayHighlight;
   final VoidCallback? onTap;
 
   const LineupSlotWidget({
@@ -14,26 +17,46 @@ class LineupSlotWidget extends StatelessWidget {
     required this.slot,
     this.player,
     this.isLocked = false,
+    this.isSelected = false,
+    this.isHighlighted = false,
+    this.isOneWayHighlight = false,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: isSelected
+            ? const BorderSide(color: Colors.blue, width: 2)
+            : isHighlighted
+                ? const BorderSide(color: Colors.green, width: 2)
+                : isOneWayHighlight
+                    ? const BorderSide(color: Colors.orange, width: 2)
+                    : BorderSide.none,
+      ),
+      color: isSelected
+          ? Colors.blue.shade50
+          : isHighlighted
+              ? Colors.green.shade50
+              : isOneWayHighlight
+                  ? Colors.orange.shade50
+                  : null,
       child: InkWell(
         onTap: isLocked ? null : onTap,
         borderRadius: BorderRadius.circular(8),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           child: Row(
             children: [
-              // Slot badge
+              // Slot badge (compact)
               Container(
-                width: 48,
-                height: 48,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: _getSlotColor(),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Center(
                   child: Text(
@@ -41,12 +64,12 @@ class LineupSlotWidget extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: 12,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
 
               // Player info or empty state
               Expanded(
@@ -68,7 +91,7 @@ class LineupSlotWidget extends StatelessWidget {
                         player!.projectedPoints!.toStringAsFixed(1),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 14,
                           color: Theme.of(context).primaryColor,
                         ),
                       ),
@@ -102,7 +125,7 @@ class LineupSlotWidget extends StatelessWidget {
                 player!.fullName ?? 'Unknown Player',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 14,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -161,7 +184,7 @@ class LineupSlotWidget extends StatelessWidget {
 
   Widget _buildEmptyState(BuildContext context) {
     return Text(
-      'Empty ${slot.displayName}',
+      'Empty',
       style: TextStyle(
         color: Colors.grey[400],
         fontStyle: FontStyle.italic,

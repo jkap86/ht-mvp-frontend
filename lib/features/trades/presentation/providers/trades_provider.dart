@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/socket/socket_service.dart';
@@ -87,6 +88,10 @@ class TradesNotifier extends StateNotifier<TradesState> {
   VoidCallback? _memberKickedDisposer;
   VoidCallback? _invalidationDisposer;
 
+  // Debounce timer for socket events that trigger loadTrades
+  Timer? _loadTradesDebounceTimer;
+  static const _debounceDelay = Duration(milliseconds: 300);
+
   TradesNotifier(
     this._tradeRepo,
     this._socketService,
@@ -96,6 +101,14 @@ class TradesNotifier extends StateNotifier<TradesState> {
     _setupSocketListeners();
     _registerInvalidationCallback();
     loadTrades();
+  }
+
+  /// Debounced version of loadTrades to prevent multiple rapid calls
+  void _debouncedLoadTrades() {
+    _loadTradesDebounceTimer?.cancel();
+    _loadTradesDebounceTimer = Timer(_debounceDelay, () {
+      if (mounted) loadTrades();
+    });
   }
 
   void _registerInvalidationCallback() {
@@ -122,12 +135,12 @@ class TradesNotifier extends StateNotifier<TradesState> {
           final trade = Trade.fromJson(dataMap);
           _addOrUpdateTrade(trade);
         } catch (e) {
-          // Failed to parse, reload trades
-          if (reloadOnPartial) loadTrades();
+          // Failed to parse, reload trades with debounce
+          if (reloadOnPartial) _debouncedLoadTrades();
         }
       } else if (reloadOnPartial) {
-        // Minimal payload (just tradeId) - reload to get full data
-        loadTrades();
+        // Minimal payload (just tradeId) - reload to get full data with debounce
+        _debouncedLoadTrades();
       }
     }
 
@@ -169,8 +182,8 @@ class TradesNotifier extends StateNotifier<TradesState> {
           // Ignore parse errors
         }
       }
-      // Always reload to ensure consistency
-      loadTrades();
+      // Always reload to ensure consistency (with debounce)
+      _debouncedLoadTrades();
     });
 
     _cancelledDisposer = _socketService.onTradeCancelled((data) {
@@ -204,26 +217,26 @@ class TradesNotifier extends StateNotifier<TradesState> {
               Trade.fromJson(Map<String, dynamic>.from(dataMap['trade']));
           _addOrUpdateTrade(trade);
         } catch (e) {
-          // Failed to parse, reload
-          loadTrades();
+          // Failed to parse, reload with debounce
+          _debouncedLoadTrades();
         }
       } else {
-        // Just vote count update, reload
-        loadTrades();
+        // Just vote count update, reload with debounce
+        _debouncedLoadTrades();
       }
     });
 
     _invalidatedDisposer = _socketService.onTradeInvalidated((data) {
       if (!mounted) return;
-      // Reload trades to get updated status after invalidation
-      loadTrades();
+      // Reload trades to get updated status after invalidation (with debounce)
+      _debouncedLoadTrades();
     });
 
     // Listen for member kicked events - trades involving kicked member become invalid
     _memberKickedDisposer = _socketService.onMemberKicked((data) {
       if (!mounted) return;
-      // Reload to get updated trade statuses
-      loadTrades();
+      // Reload to get updated trade statuses (with debounce)
+      _debouncedLoadTrades();
     });
   }
 
@@ -304,7 +317,11 @@ class TradesNotifier extends StateNotifier<TradesState> {
   Future<bool> voteTrade(int tradeId, String vote) async {
     try {
       final result = await _tradeRepo.voteTrade(leagueId, tradeId, vote);
-      final trade = result['trade'] as Trade;
+      final tradeData = result['trade'];
+      if (tradeData == null) {
+        throw Exception('Vote response missing trade data');
+      }
+      final trade = tradeData as Trade;
       _addOrUpdateTrade(trade);
       return true;
     } catch (e) {
@@ -320,6 +337,7 @@ class TradesNotifier extends StateNotifier<TradesState> {
 
   @override
   void dispose() {
+    _loadTradesDebounceTimer?.cancel();
     _socketService.leaveLeague(leagueId);
     _proposedDisposer?.call();
     _acceptedDisposer?.call();

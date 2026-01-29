@@ -72,16 +72,48 @@ class TradeItem {
   });
 
   factory TradeItem.fromJson(Map<String, dynamic> json) {
+    // Validate required fields
+    final id = json['id'] as int?;
+    final tradeId = json['trade_id'] as int?;
+    final fromRosterId = json['from_roster_id'] as int?;
+    final toRosterId = json['to_roster_id'] as int?;
+
+    if (id == null || id <= 0) {
+      throw FormatException('TradeItem missing required field: id');
+    }
+    if (tradeId == null || tradeId <= 0) {
+      throw FormatException('TradeItem missing required field: trade_id');
+    }
+    if (fromRosterId == null || fromRosterId <= 0) {
+      throw FormatException('TradeItem missing required field: from_roster_id');
+    }
+    if (toRosterId == null || toRosterId <= 0) {
+      throw FormatException('TradeItem missing required field: to_roster_id');
+    }
+
     final itemType = TradeItemType.fromString(json['item_type'] as String?);
 
+    // For player items, validate player fields
+    final playerId = json['player_id'] as int? ?? 0;
+    if (itemType == TradeItemType.player && playerId <= 0) {
+      throw FormatException('TradeItem of type player missing required field: player_id');
+    }
+
+    // For draft pick items, validate pick fields
+    final draftPickAssetId = json['draft_pick_asset_id'] as int? ??
+        json['draftPickAssetId'] as int?;
+    if (itemType == TradeItemType.draftPick && (draftPickAssetId == null || draftPickAssetId <= 0)) {
+      throw FormatException('TradeItem of type draft_pick missing required field: draft_pick_asset_id');
+    }
+
     return TradeItem(
-      id: json['id'] as int? ?? 0,
-      tradeId: json['trade_id'] as int? ?? 0,
-      fromRosterId: json['from_roster_id'] as int? ?? 0,
-      toRosterId: json['to_roster_id'] as int? ?? 0,
+      id: id,
+      tradeId: tradeId,
+      fromRosterId: fromRosterId,
+      toRosterId: toRosterId,
       itemType: itemType,
       // Player fields
-      playerId: json['player_id'] as int? ?? 0,
+      playerId: playerId,
       playerName: json['player_name'] as String? ?? '',
       playerPosition: json['player_position'] as String?,
       playerTeam: json['player_team'] as String?,
@@ -90,8 +122,7 @@ class TradeItem {
       team: json['team'] as String?,
       status: json['status'] as String?,
       // Draft pick fields
-      draftPickAssetId: json['draft_pick_asset_id'] as int? ??
-          json['draftPickAssetId'] as int?,
+      draftPickAssetId: draftPickAssetId,
       pickSeason: json['pick_season'] as int? ?? json['pickSeason'] as int?,
       pickRound: json['pick_round'] as int? ?? json['pickRound'] as int?,
       pickOriginalTeam: json['pick_original_team'] as String? ??

@@ -37,7 +37,7 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
   final List<int> _requestingPlayerIds = [];
   final _messageController = TextEditingController();
   bool _isSubmitting = false;
-  bool _initialized = false;
+  int? _initializedForTradeId;
 
   @override
   void dispose() {
@@ -46,8 +46,13 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
   }
 
   void _initializeFromOriginalTrade(Trade originalTrade, int myRosterId) {
-    if (_initialized) return;
-    _initialized = true;
+    // Only initialize once per trade - if trade ID changes, re-initialize
+    if (_initializedForTradeId == originalTrade.id) return;
+    _initializedForTradeId = originalTrade.id;
+
+    // Clear any existing selections when re-initializing
+    _offeringPlayerIds.clear();
+    _requestingPlayerIds.clear();
 
     // Pre-fill with inverted players from original trade
     // What they were requesting becomes what we offer

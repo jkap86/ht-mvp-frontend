@@ -14,7 +14,6 @@ import '../features/drafts/presentation/draft_room_screen.dart';
 import '../features/auth/presentation/auth_provider.dart';
 import '../features/rosters/presentation/screens/team_screen.dart';
 import '../features/rosters/presentation/screens/free_agents_screen.dart';
-import '../features/rosters/presentation/screens/lineup_screen.dart';
 import '../features/matchups/presentation/screens/matchup_screen.dart';
 import '../features/matchups/presentation/screens/matchup_detail_screen.dart';
 import '../features/matchups/presentation/screens/standings_screen.dart';
@@ -242,17 +241,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                           final rosterId = _parseIntParam(state.pathParameters['rosterId'])!;
                           return TeamScreen(leagueId: leagueId, rosterId: rosterId);
                         },
-                        routes: [
-                          GoRoute(
-                            path: 'lineup',
-                            redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'rosterId']),
-                            builder: (context, state) {
-                              final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-                              final rosterId = _parseIntParam(state.pathParameters['rosterId'])!;
-                              return LineupScreen(leagueId: leagueId, rosterId: rosterId);
-                            },
-                          ),
-                        ],
                       ),
                     ],
                   ),

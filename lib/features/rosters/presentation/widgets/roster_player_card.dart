@@ -7,8 +7,9 @@ class RosterPlayerCard extends StatelessWidget {
   final RosterPlayer player;
   final bool showSlot;
   final LineupSlot? currentSlot;
-  final bool showActions;
-  final VoidCallback? onMove;
+  final bool isSelected;
+  final bool isHighlighted;
+  final VoidCallback? onTap;
   final VoidCallback? onDrop;
 
   const RosterPlayerCard({
@@ -16,28 +17,42 @@ class RosterPlayerCard extends StatelessWidget {
     required this.player,
     this.showSlot = false,
     this.currentSlot,
-    this.showActions = false,
-    this.onMove,
+    this.isSelected = false,
+    this.isHighlighted = false,
+    this.onTap,
     this.onDrop,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final card = Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: isSelected
+            ? const BorderSide(color: Colors.blue, width: 2)
+            : isHighlighted
+                ? const BorderSide(color: Colors.green, width: 2)
+                : BorderSide.none,
+      ),
+      color: isSelected
+          ? Colors.blue.shade50
+          : isHighlighted
+              ? Colors.green.shade50
+              : null,
       child: InkWell(
-        onTap: showActions ? onMove : null,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           child: Row(
             children: [
-              // Position badge
+              // Position badge (compact)
               Container(
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: _getPositionColor(player.position),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Center(
                   child: Text(
@@ -50,7 +65,7 @@ class RosterPlayerCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
 
               // Player info
               Expanded(
@@ -64,7 +79,7 @@ class RosterPlayerCard extends StatelessWidget {
                             player.fullName ?? 'Unknown Player',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                              fontSize: 14,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -128,14 +143,6 @@ class RosterPlayerCard extends StatelessWidget {
                             ),
                           ),
                         ],
-                        const Spacer(),
-                        Text(
-                          player.acquiredType.displayName,
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 12,
-                          ),
-                        ),
                       ],
                     ),
                   ],
@@ -152,7 +159,7 @@ class RosterPlayerCard extends StatelessWidget {
                       player.projectedPoints!.toStringAsFixed(1),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 14,
                         color: Theme.of(context).primaryColor,
                       ),
                     ),
@@ -166,51 +173,43 @@ class RosterPlayerCard extends StatelessWidget {
                   ],
                 ),
               ],
-
-              // Actions
-              if (showActions) ...[
-                const SizedBox(width: 8),
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'move':
-                        onMove?.call();
-                        break;
-                      case 'drop':
-                        onDrop?.call();
-                        break;
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'move',
-                      child: Row(
-                        children: [
-                          Icon(Icons.swap_horiz, size: 20),
-                          SizedBox(width: 8),
-                          Text('Move'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'drop',
-                      child: Row(
-                        children: [
-                          Icon(Icons.remove_circle_outline, size: 20, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Drop', style: TextStyle(color: Colors.red)),
-                        ],
-                      ),
-                    ),
-                  ],
-                  child: const Icon(Icons.more_vert),
-                ),
-              ],
             ],
           ),
         ),
       ),
     );
+
+    // Wrap in Dismissible for swipe-to-drop if onDrop is provided
+    if (onDrop != null) {
+      return Dismissible(
+        key: Key('player-${player.playerId}'),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (_) async => true,
+        onDismissed: (_) => onDrop?.call(),
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 16),
+          color: Colors.red,
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Icon(Icons.delete, color: Colors.white),
+              SizedBox(width: 8),
+              Text(
+                'Drop',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        child: card,
+      );
+    }
+
+    return card;
   }
 
   Color _getPositionColor(String? position) {
