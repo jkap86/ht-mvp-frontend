@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../data/public_leagues_provider.dart';
 import '../../domain/league.dart';
+import '../providers/league_detail_provider.dart';
 
 class BrowsePublicTab extends ConsumerStatefulWidget {
   const BrowsePublicTab({super.key});
@@ -82,6 +83,8 @@ class _BrowsePublicTabState extends ConsumerState<BrowsePublicTab>
           behavior: SnackBarBehavior.floating,
         ),
       );
+      // Invalidate cached provider to prevent stale "not member" errors
+      ref.invalidate(leagueDetailProvider(joinedLeague.id));
       // Navigate to the league
       context.push('/leagues/${joinedLeague.id}');
     } else {

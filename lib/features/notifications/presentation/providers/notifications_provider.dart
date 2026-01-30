@@ -152,6 +152,7 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
     required String body,
     dynamic data,
   }) {
+    if (!mounted) return;
     final dataMap = data is Map<String, dynamic> ? data : <String, dynamic>{};
 
     final notification = AppNotification(
@@ -169,17 +170,21 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
   }
 
   Future<void> loadNotifications() async {
+    if (!mounted) return;
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       final notifications = await _repository.getNotifications();
+      if (!mounted) return;
       state = state.copyWith(notifications: notifications, isLoading: false);
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(error: e.toString(), isLoading: false);
     }
   }
 
   Future<void> addNotification(AppNotification notification) async {
+    if (!mounted) return;
     // Add to state immediately
     final updated = [notification, ...state.notifications];
     state = state.copyWith(notifications: updated);
@@ -189,6 +194,7 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
   }
 
   Future<void> markAsRead(String notificationId) async {
+    if (!mounted) return;
     final index = state.notifications.indexWhere((n) => n.id == notificationId);
     if (index >= 0) {
       final updated = [...state.notifications];
@@ -199,18 +205,21 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
   }
 
   Future<void> markAllAsRead() async {
+    if (!mounted) return;
     final updated = state.notifications.map((n) => n.copyWith(isRead: true)).toList();
     state = state.copyWith(notifications: updated);
     await _repository.markAllAsRead();
   }
 
   Future<void> deleteNotification(String notificationId) async {
+    if (!mounted) return;
     final updated = state.notifications.where((n) => n.id != notificationId).toList();
     state = state.copyWith(notifications: updated);
     await _repository.deleteNotification(notificationId);
   }
 
   Future<void> clearAll() async {
+    if (!mounted) return;
     state = state.copyWith(notifications: []);
     await _repository.clearAll();
   }
