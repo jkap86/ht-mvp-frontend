@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
@@ -185,6 +187,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   final int draftId;
 
   late final DraftSocketHandler _socketHandler;
+  Timer? _budgetRefreshTimer;
 
   DraftRoomNotifier(
     this._draftRepo,
@@ -292,8 +295,21 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   void onLotUpdatedReceived(AuctionLot lot) {
     if (!mounted) return;
     state = state.copyWith(
-      activeLots: state.activeLots.map((l) => l.id == lot.id ? lot : l).toList(),
+      activeLots: state.activeLots.map((l) {
+        if (l.id == lot.id) {
+          // Preserve user's myMaxBid when merging socket update
+          // (socket broadcasts don't include user-specific data)
+          return lot.copyWith(myMaxBid: l.myMaxBid);
+        }
+        return l;
+      }).toList(),
     );
+
+    // Debounce budget refresh to avoid spamming API during rapid bidding
+    _budgetRefreshTimer?.cancel();
+    _budgetRefreshTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) loadAuctionData();
+    });
   }
 
   @override
@@ -421,6 +437,15 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   Future<String?> setMaxBid(int lotId, int maxBid) async {
     try {
       await _draftRepo.setMaxBid(leagueId, draftId, lotId, maxBid);
+      // Optimistic update: immediately reflect user's max bid in state
+      if (mounted) {
+        state = state.copyWith(
+          activeLots: state.activeLots.map((l) {
+            if (l.id == lotId) return l.copyWith(myMaxBid: maxBid);
+            return l;
+          }).toList(),
+        );
+      }
       return null;
     } catch (e) {
       return e.toString();
@@ -507,6 +532,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
   @override
   void dispose() {
+    _budgetRefreshTimer?.cancel();
     _socketHandler.dispose();
     super.dispose();
   }
