@@ -18,7 +18,7 @@ import 'providers/home_dashboard_provider.dart';
 import 'widgets/home_draft_alert_card.dart';
 import 'widgets/home_leagues_card.dart';
 import 'widgets/home_matchups_card.dart';
-import 'widgets/home_pending_trades_card.dart';
+import 'widgets/home_transactions_card.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -116,26 +116,24 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Active drafts (highest priority - shown first if any)
-              HomeDraftAlertCard(drafts: state.upcomingDrafts),
-              if (state.upcomingDrafts.isNotEmpty) const SizedBox(height: 12),
-
-              // Pending trades requiring action
-              HomePendingTradesCard(trades: state.pendingTrades),
-              if (state.pendingTrades.isNotEmpty) const SizedBox(height: 12),
-
-              // This week's matchups
-              HomeMatchupsCard(matchups: state.matchups),
-              if (state.matchups.isNotEmpty) const SizedBox(height: 12),
-
-              // Leagues card (always shown)
-              HomeLeaguesCard(leagues: state.leagues),
-
-              // Empty state for new users
-              if (state.leagues.isEmpty) ...[
-                const SizedBox(height: 24),
-                _buildEmptyState(context),
+              // 1. DRAFTS (highest urgency - can't miss)
+              if (state.upcomingDrafts.isNotEmpty) ...[
+                HomeDraftAlertCard(drafts: state.upcomingDrafts),
+                const SizedBox(height: 12),
               ],
+
+              // 2. MATCHUPS (what users want to see)
+              if (state.matchups.isNotEmpty) ...[
+                HomeMatchupsCard(matchups: state.matchups),
+                const SizedBox(height: 12),
+              ],
+
+              // 3. TRANSACTIONS (actionable items)
+              HomeTransactionsCard(tradeCount: state.pendingTrades.length),
+              const SizedBox(height: 12),
+
+              // 4. LEAGUES (navigation)
+              HomeLeaguesCard(leagueCount: state.leagues.length),
             ],
           ),
         ),
@@ -149,114 +147,43 @@ class HomeScreen extends ConsumerWidget {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 500),
-          child: Column(
-            children: [
-              // Leagues card skeleton
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SkeletonShimmer(
-                    child: Row(
-                      children: [
-                        const SkeletonBox(width: 48, height: 48, borderRadius: 12),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              SkeletonBox(height: 16, width: 100),
-                              SizedBox(height: 8),
-                              SkeletonBox(height: 12, width: 140),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Matchups skeleton
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SkeletonShimmer(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: const [
-                            SkeletonCircle(size: 20),
-                            SizedBox(width: 8),
-                            SkeletonBox(height: 16, width: 160),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const SkeletonBox(height: 50),
-                        const SizedBox(height: 8),
-                        const SkeletonBox(height: 50),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          child: SkeletonShimmer(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildCardSkeleton(),
+                const SizedBox(height: 12),
+                _buildCardSkeleton(),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
+  Widget _buildCardSkeleton() {
     return Card(
-      color: colorScheme.surfaceContainerHighest,
       child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
+        padding: const EdgeInsets.all(16),
+        child: Row(
           children: [
-            Icon(
-              Icons.sports_football_outlined,
-              size: 48,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Welcome to HypeTrainFF!',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Get started by creating or joining a league.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FilledButton.icon(
-                  onPressed: () => context.push('/leagues/add'),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Create'),
-                ),
-                const SizedBox(width: 12),
-                OutlinedButton.icon(
-                  onPressed: () => context.push('/leagues/discover'),
-                  icon: const Icon(Icons.search),
-                  label: const Text('Join'),
-                ),
-              ],
+            const SkeletonBox(width: 48, height: 48, borderRadius: 12),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  SkeletonBox(height: 16, width: 100),
+                  SizedBox(height: 8),
+                  SkeletonBox(height: 12, width: 140),
+                ],
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
 }

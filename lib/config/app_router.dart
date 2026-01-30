@@ -24,6 +24,7 @@ import '../features/trades/presentation/screens/counter_trade_screen.dart';
 import '../features/commissioner/presentation/screens/commissioner_screen.dart';
 import '../features/playoffs/presentation/screens/playoff_bracket_screen.dart';
 import '../features/notifications/presentation/screens/notifications_screen.dart';
+import '../features/transactions/presentation/transactions_screen.dart';
 import '../core/providers/league_context_provider.dart';
 
 // Listenable that notifies when auth state changes
@@ -176,6 +177,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/transactions',
+        builder: (context, state) => const TransactionsScreen(),
       ),
       GoRoute(
         path: '/leagues',

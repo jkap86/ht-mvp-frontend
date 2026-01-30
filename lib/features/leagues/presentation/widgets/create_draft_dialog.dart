@@ -41,6 +41,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
   int _auctionBudget = 200;
   int _minBid = 1;
   int _nominationTimeSeconds = 30;
+  String _auctionMode = 'slow'; // 'slow' or 'fast'
 
   @override
   void initState() {
@@ -478,6 +479,15 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                   icon: Icons.attach_money,
                   children: [
                     _buildOptionSelector(
+                      label: 'Mode',
+                      options: [
+                        (label: 'Slow', value: 'slow'),
+                        (label: 'Fast', value: 'fast'),
+                      ],
+                      selectedValue: _auctionMode,
+                      onSelected: (v) => setState(() => _auctionMode = v),
+                    ),
+                    _buildOptionSelector(
                       label: 'Budget',
                       options: [
                         (label: '\$100', value: 100),
@@ -550,6 +560,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                       'budget': _auctionBudget,
                       'min_bid': _minBid,
                       'nomination_time_seconds': _nominationTimeSeconds,
+                      'auction_mode': _auctionMode,
                     }
                   : null,
             );

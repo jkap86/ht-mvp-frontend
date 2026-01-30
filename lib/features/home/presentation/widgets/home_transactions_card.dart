@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Card showing leagues summary with navigation to leagues page
-class HomeLeaguesCard extends StatelessWidget {
-  final int leagueCount;
+/// Card showing transactions summary with navigation to transactions page
+class HomeTransactionsCard extends StatelessWidget {
+  final int tradeCount;
 
-  const HomeLeaguesCard({
+  const HomeTransactionsCard({
     super.key,
-    required this.leagueCount,
+    required this.tradeCount,
   });
 
   @override
@@ -16,7 +16,7 @@ class HomeLeaguesCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: () => context.go('/leagues'),
+        onTap: () => context.go('/transactions'),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -26,13 +26,17 @@ class HomeLeaguesCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
+                  color: colorScheme.tertiaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  Icons.emoji_events,
-                  size: 24,
-                  color: colorScheme.onPrimaryContainer,
+                child: Badge(
+                  isLabelVisible: tradeCount > 0,
+                  label: Text('$tradeCount'),
+                  child: Icon(
+                    Icons.swap_horiz,
+                    size: 24,
+                    color: colorScheme.onTertiaryContainer,
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -41,15 +45,15 @@ class HomeLeaguesCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Leagues',
+                      'Transactions',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                     ),
                     Text(
-                      leagueCount == 0
-                          ? 'Join or create a league'
-                          : '$leagueCount active league${leagueCount == 1 ? '' : 's'}',
+                      tradeCount == 0
+                          ? 'No pending trades'
+                          : '$tradeCount trade${tradeCount == 1 ? '' : 's'} requiring action',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
