@@ -347,8 +347,9 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     );
 
     // Debounce budget refresh to avoid spamming API during rapid bidding
+    // Using 200ms for faster UI responsiveness in fast auctions
     _budgetRefreshTimer?.cancel();
-    _budgetRefreshTimer = Timer(const Duration(milliseconds: 500), () {
+    _budgetRefreshTimer = Timer(const Duration(milliseconds: 200), () {
       if (mounted) loadAuctionData();
     });
   }
@@ -485,19 +486,27 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   }
 
   Future<String?> setMaxBid(int lotId, int maxBid) async {
+    // Save current state for rollback on error
+    final previousLots = state.activeLots;
+
+    // Optimistic update: immediately reflect user's max bid in state
+    if (mounted) {
+      state = state.copyWith(
+        activeLots: state.activeLots.map((l) {
+          if (l.id == lotId) return l.copyWith(myMaxBid: maxBid);
+          return l;
+        }).toList(),
+      );
+    }
+
     try {
       await _draftRepo.setMaxBid(leagueId, draftId, lotId, maxBid);
-      // Optimistic update: immediately reflect user's max bid in state
-      if (mounted) {
-        state = state.copyWith(
-          activeLots: state.activeLots.map((l) {
-            if (l.id == lotId) return l.copyWith(myMaxBid: maxBid);
-            return l;
-          }).toList(),
-        );
-      }
       return null;
     } catch (e) {
+      // Rollback optimistic update on error
+      if (mounted) {
+        state = state.copyWith(activeLots: previousLots);
+      }
       return e.toString();
     }
   }

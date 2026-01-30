@@ -77,6 +77,8 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
   Duration _timeRemaining = Duration.zero;
   List<BidHistoryEntry>? _bidHistory;
   bool _isLoadingHistory = true;
+  bool _historyLoadError = false;
+  bool _isSubmitting = false;
 
   int get _myRosterId => widget.myBudget?.rosterId ?? -1;
   bool get _isCurrentLeader => widget.lot.currentBidderRosterId == _myRosterId;
@@ -110,6 +112,12 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
   }
 
   Future<void> _loadBidHistory() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoadingHistory = true;
+      _historyLoadError = false;
+    });
+
     try {
       // Use injected repository if provided, otherwise create a new one
       final repo = widget.draftRepository ?? DraftRepository(ApiClient());
@@ -122,11 +130,15 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
         setState(() {
           _bidHistory = history;
           _isLoadingHistory = false;
+          _historyLoadError = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoadingHistory = false);
+        setState(() {
+          _isLoadingHistory = false;
+          _historyLoadError = true;
+        });
       }
     }
   }
@@ -173,6 +185,26 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
+                ),
+              )
+            else if (_historyLoadError)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Text(
+                      'Failed to load bid history',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: _loadBidHistory,
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Retry'),
+                    ),
+                  ],
                 ),
               )
             else if (_bidHistory == null || _bidHistory!.isEmpty)
@@ -308,11 +340,22 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
     return null;
   }
 
-  void _onSubmit() {
-    if (_formKey.currentState!.validate()) {
+  void _onSubmit() async {
+    if (_isSubmitting) return;
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
       final bid = int.parse(_bidController.text);
-      Navigator.pop(context);
       widget.onSubmit(bid);
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -449,12 +492,18 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: _isSubmitting ? null : () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: isExpired ? null : _onSubmit,
-          child: const Text('Place Bid'),
+          onPressed: isExpired || _isSubmitting ? null : _onSubmit,
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Place Bid'),
         ),
       ],
     );
