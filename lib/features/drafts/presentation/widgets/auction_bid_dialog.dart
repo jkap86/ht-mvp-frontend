@@ -3,39 +3,55 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/api/api_client.dart';
+import '../../data/draft_repository.dart';
 import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
+import '../../domain/bid_history_entry.dart';
+import '../../domain/draft_order_entry.dart';
 import '../../../players/domain/player.dart';
 
 /// Dialog for placing bids on auction lots.
 class AuctionBidDialog extends StatefulWidget {
+  final int leagueId;
+  final int draftId;
   final AuctionLot lot;
   final Player player;
   final AuctionBudget? myBudget;
+  final List<DraftOrderEntry> draftOrder;
   final void Function(int maxBid) onSubmit;
 
   const AuctionBidDialog({
     super.key,
+    required this.leagueId,
+    required this.draftId,
     required this.lot,
     required this.player,
     this.myBudget,
+    required this.draftOrder,
     required this.onSubmit,
   });
 
   /// Shows the auction bid dialog.
   static Future<void> show(
     BuildContext context, {
+    required int leagueId,
+    required int draftId,
     required AuctionLot lot,
     required Player player,
     AuctionBudget? myBudget,
+    required List<DraftOrderEntry> draftOrder,
     required void Function(int maxBid) onSubmit,
   }) {
     return showDialog(
       context: context,
       builder: (context) => AuctionBidDialog(
+        leagueId: leagueId,
+        draftId: draftId,
         lot: lot,
         player: player,
         myBudget: myBudget,
+        draftOrder: draftOrder,
         onSubmit: onSubmit,
       ),
     );
@@ -50,6 +66,8 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
   final _formKey = GlobalKey<FormState>();
   Timer? _timer;
   Duration _timeRemaining = Duration.zero;
+  List<BidHistoryEntry>? _bidHistory;
+  bool _isLoadingHistory = true;
 
   int get _minBid => widget.lot.currentBid + 1;
   int? get _maxBid => widget.myBudget?.available;
@@ -60,6 +78,139 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
     _bidController = TextEditingController(text: _minBid.toString());
     _updateTimeRemaining();
     _startTimer();
+    _loadBidHistory();
+  }
+
+  Future<void> _loadBidHistory() async {
+    try {
+      final repo = DraftRepository(ApiClient());
+      final history = await repo.getBidHistory(
+        widget.leagueId,
+        widget.draftId,
+        widget.lot.id,
+      );
+      if (mounted) {
+        setState(() {
+          _bidHistory = history;
+          _isLoadingHistory = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingHistory = false);
+      }
+    }
+  }
+
+  String _getUsernameForRoster(int rosterId) {
+    final entry = widget.draftOrder
+        .where((e) => e.rosterId == rosterId)
+        .firstOrNull;
+    return entry?.username ?? 'Team $rosterId';
+  }
+
+  String _formatTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final diff = now.difference(dateTime);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'just now';
+  }
+
+  Widget _buildBidHistorySection(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+          title: Text(
+            'Bid Activity (${widget.lot.bidCount})',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          children: [
+            if (_isLoadingHistory)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else if (_bidHistory == null || _bidHistory!.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'No bid activity yet',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else
+              ..._bidHistory!.reversed.map((entry) => _buildHistoryTile(entry, theme)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryTile(BidHistoryEntry entry, ThemeData theme) {
+    final username = entry.username ?? _getUsernameForRoster(entry.rosterId);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant, width: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            entry.isProxy ? Icons.autorenew : Icons.person,
+            size: 16,
+            color: entry.isProxy
+                ? theme.colorScheme.tertiary
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  username,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  _formatTimeAgo(entry.createdAt),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '\$${entry.bidAmount}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -164,9 +315,12 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
               if (widget.lot.currentBidderRosterId != null)
                 _buildInfoRow(
                   'Leading Bidder',
-                  'Roster #${widget.lot.currentBidderRosterId}',
+                  _getUsernameForRoster(widget.lot.currentBidderRosterId!),
                 ),
-              _buildInfoRow('Bid Count', '${widget.lot.bidCount}'),
+
+              // Bid History Section
+              const SizedBox(height: 8),
+              _buildBidHistorySection(theme),
 
               const SizedBox(height: 8),
 

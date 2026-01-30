@@ -9,6 +9,7 @@ import 'providers/draft_queue_provider.dart';
 import 'widgets/draft_status_bar.dart';
 import 'widgets/draft_board_grid_view.dart';
 import 'widgets/draft_bottom_drawer.dart';
+import 'widgets/slow_auction/slow_auction_roster_drawer.dart';
 import 'widgets/slow_auction/slow_auction_screen.dart';
 
 class DraftRoomScreen extends ConsumerStatefulWidget {
@@ -232,8 +233,20 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
                 labelStyle: const TextStyle(color: Colors.white),
               ),
             ),
+          // Team rosters button for slow auctions
+          if (isSlowAuction)
+            Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.groups),
+                tooltip: 'Team Rosters',
+                onPressed: () => Scaffold.of(context).openEndDrawer(),
+              ),
+            ),
         ],
       ),
+      endDrawer: isSlowAuction
+          ? SlowAuctionRosterDrawer(providerKey: _providerKey)
+          : null,
       body: _DraftRoomBody(
         providerKey: _providerKey,
         queueKey: _queueKey,

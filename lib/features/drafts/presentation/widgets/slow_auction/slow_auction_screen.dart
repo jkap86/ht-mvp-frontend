@@ -208,9 +208,12 @@ class SlowAuctionScreen extends ConsumerWidget {
 
     AuctionBidDialog.show(
       context,
+      leagueId: leagueId,
+      draftId: draftId,
       lot: lot,
       player: player,
       myBudget: myBudget,
+      draftOrder: draftOrder,
       onSubmit: (maxBid) => onSetMaxBid(lot.id, maxBid),
     );
   }

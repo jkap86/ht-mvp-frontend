@@ -5,6 +5,7 @@ import '../../leagues/domain/league.dart';
 import '../domain/auction_budget.dart';
 import '../domain/auction_lot.dart';
 import '../domain/auction_state.dart';
+import '../domain/bid_history_entry.dart';
 import '../domain/draft_order_entry.dart';
 
 final draftRepositoryProvider = Provider<DraftRepository>((ref) {
@@ -142,6 +143,18 @@ class DraftRepository {
       throw Exception('SetMaxBid response missing lot data');
     }
     return AuctionLot.fromJson(lotData as Map<String, dynamic>);
+  }
+
+  /// Get bid history for a specific auction lot
+  Future<List<BidHistoryEntry>> getBidHistory(
+      int leagueId, int draftId, int lotId) async {
+    final response = await _apiClient.get(
+      '/leagues/$leagueId/drafts/$draftId/auction/lots/$lotId/history',
+    );
+    final historyData = (response['history'] as List?) ?? [];
+    return historyData
+        .map((json) => BidHistoryEntry.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   /// Get the current auction state (for both slow and fast auctions)

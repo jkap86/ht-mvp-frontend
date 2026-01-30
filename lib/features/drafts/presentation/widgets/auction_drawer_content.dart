@@ -61,9 +61,12 @@ class AuctionDrawerContent extends ConsumerWidget {
               if (player == null || onSetMaxBid == null) return;
               AuctionBidDialog.show(
                 context,
+                leagueId: providerKey.leagueId,
+                draftId: providerKey.draftId,
                 lot: lot,
                 player: player,
                 myBudget: myBudget,
+                draftOrder: state.draftOrder,
                 onSubmit: (maxBid) => onSetMaxBid!(lot.id, maxBid),
               );
             },
