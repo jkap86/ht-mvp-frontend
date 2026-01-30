@@ -64,14 +64,19 @@ class DraftStatusBanner extends StatelessWidget {
                 ],
               ),
             ),
-            Tooltip(
-              message: !_isLive && isCommissioner && !draft.orderConfirmed
-                  ? 'Randomize draft order first'
-                  : '',
-              child: ElevatedButton(
-                onPressed: _isLive
-                    ? onJoinDraft
-                    : (isCommissioner && draft.orderConfirmed ? onStartDraft : null),
+            Builder(builder: (context) {
+              // Slow auctions don't require order confirmation
+              final isSlowAuction = draft.isAuction &&
+                  draft.settings?.isFastAuction != true;
+              final canStart = draft.orderConfirmed || isSlowAuction;
+              return Tooltip(
+                message: !_isLive && isCommissioner && !canStart
+                    ? 'Randomize draft order first'
+                    : '',
+                child: ElevatedButton(
+                  onPressed: _isLive
+                      ? onJoinDraft
+                      : (isCommissioner && canStart ? onStartDraft : null),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _isLive ? Colors.green : Colors.orange,
                 ),
@@ -79,7 +84,8 @@ class DraftStatusBanner extends StatelessWidget {
                   _isLive ? 'Join' : (isCommissioner ? 'Start' : 'Waiting'),
                 ),
               ),
-            ),
+            );
+            }),
           ],
         ),
       ),
