@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../players/domain/player.dart';
 import '../../../domain/auction_budget.dart';
 import '../../../domain/auction_lot.dart';
+import '../../../domain/auction_settings.dart';
 import '../../../domain/draft_order_entry.dart';
 import '../../providers/draft_room_provider.dart';
 import '../auction_bid_dialog.dart';
@@ -58,6 +59,9 @@ class SlowAuctionScreen extends ConsumerWidget {
     final globalCapReached = ref.watch(
       draftRoomProvider(providerKey).select((s) => s.globalCapReached),
     );
+    final auctionSettings = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.auctionSettings),
+    );
 
     // Find lots where user has bid but is outbid (not currently winning)
     final outbidLots = activeLots.where((lot) {
@@ -95,6 +99,7 @@ class SlowAuctionScreen extends ConsumerWidget {
                       players,
                       draftOrder,
                       myBudget,
+                      auctionSettings,
                     ),
                     dailyNominationsRemaining: dailyNominationsRemaining,
                     dailyNominationLimit: dailyNominationLimit,
@@ -169,6 +174,7 @@ class SlowAuctionScreen extends ConsumerWidget {
                               players,
                               draftOrder,
                               myBudget,
+                              auctionSettings,
                             ),
                           ),
                         );
@@ -202,6 +208,7 @@ class SlowAuctionScreen extends ConsumerWidget {
     List<Player> players,
     List<DraftOrderEntry> draftOrder,
     AuctionBudget? myBudget,
+    AuctionSettings? settings,
   ) {
     final player = players.where((p) => p.id == lot.playerId).firstOrNull;
     if (player == null) return;
@@ -214,6 +221,7 @@ class SlowAuctionScreen extends ConsumerWidget {
       player: player,
       myBudget: myBudget,
       draftOrder: draftOrder,
+      settings: settings ?? AuctionSettings.defaults,
       onSubmit: (maxBid) => onSetMaxBid(lot.id, maxBid),
     );
   }

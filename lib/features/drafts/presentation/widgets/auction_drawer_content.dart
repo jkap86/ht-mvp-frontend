@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../players/domain/player.dart';
+import '../../domain/auction_settings.dart';
 import '../providers/draft_room_provider.dart';
 import '../utils/player_filtering.dart';
 import '../utils/position_colors.dart';
@@ -40,6 +41,7 @@ class AuctionDrawerContent extends ConsumerWidget {
     final players = state.players;
     final draftedPlayerIds = state.draftedPlayerIds;
     final myBudget = state.myBudget;
+    final auctionSettings = state.auctionSettings;
 
     final availablePlayers = filterAvailablePlayers(
       players,
@@ -67,6 +69,7 @@ class AuctionDrawerContent extends ConsumerWidget {
                 player: player,
                 myBudget: myBudget,
                 draftOrder: state.draftOrder,
+                settings: auctionSettings ?? AuctionSettings.defaults,
                 onSubmit: (maxBid) => onSetMaxBid!(lot.id, maxBid),
               );
             },

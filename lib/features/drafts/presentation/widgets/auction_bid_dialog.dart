@@ -7,6 +7,7 @@ import '../../../../core/api/api_client.dart';
 import '../../data/draft_repository.dart';
 import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
+import '../../domain/auction_settings.dart';
 import '../../domain/bid_history_entry.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../../players/domain/player.dart';
@@ -19,6 +20,8 @@ class AuctionBidDialog extends StatefulWidget {
   final Player player;
   final AuctionBudget? myBudget;
   final List<DraftOrderEntry> draftOrder;
+  final AuctionSettings settings;
+  final DraftRepository? draftRepository;
   final void Function(int maxBid) onSubmit;
 
   const AuctionBidDialog({
@@ -29,6 +32,8 @@ class AuctionBidDialog extends StatefulWidget {
     required this.player,
     this.myBudget,
     required this.draftOrder,
+    required this.settings,
+    this.draftRepository,
     required this.onSubmit,
   });
 
@@ -41,6 +46,8 @@ class AuctionBidDialog extends StatefulWidget {
     required Player player,
     AuctionBudget? myBudget,
     required List<DraftOrderEntry> draftOrder,
+    required AuctionSettings settings,
+    DraftRepository? draftRepository,
     required void Function(int maxBid) onSubmit,
   }) {
     return showDialog(
@@ -52,6 +59,8 @@ class AuctionBidDialog extends StatefulWidget {
         player: player,
         myBudget: myBudget,
         draftOrder: draftOrder,
+        settings: settings,
+        draftRepository: draftRepository,
         onSubmit: onSubmit,
       ),
     );
@@ -69,8 +78,27 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
   List<BidHistoryEntry>? _bidHistory;
   bool _isLoadingHistory = true;
 
-  int get _minBid => widget.lot.currentBid + 1;
-  int? get _maxBid => widget.myBudget?.available;
+  int get _myRosterId => widget.myBudget?.rosterId ?? -1;
+  bool get _isCurrentLeader => widget.lot.currentBidderRosterId == _myRosterId;
+
+  int get _minBid {
+    if (_isCurrentLeader) {
+      // Leader can raise max bid from current position
+      return widget.lot.currentBid;
+    }
+    // Non-leader must beat currentBid + minIncrement
+    return widget.lot.currentBid + widget.settings.minIncrement;
+  }
+
+  int? get _maxBid {
+    if (widget.myBudget == null) return null;
+    int available = widget.myBudget!.available;
+    // Leader can reuse their current commitment
+    if (_isCurrentLeader) {
+      available += widget.lot.currentBid;
+    }
+    return available;
+  }
 
   @override
   void initState() {
@@ -83,7 +111,8 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
 
   Future<void> _loadBidHistory() async {
     try {
-      final repo = DraftRepository(ApiClient());
+      // Use injected repository if provided, otherwise create a new one
+      final repo = widget.draftRepository ?? DraftRepository(ApiClient());
       final history = await repo.getBidHistory(
         widget.leagueId,
         widget.draftId,
@@ -256,8 +285,20 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
       return 'Please enter a valid number';
     }
 
-    if (bid < _minBid) {
-      return 'Bid must be at least \$$_minBid';
+    if (_isCurrentLeader) {
+      // Leader must bid at least minBid (the system setting)
+      if (bid < widget.settings.minBid) {
+        return 'Bid must be at least \$${widget.settings.minBid}';
+      }
+      // Max bid should be >= their current commitment to be meaningful
+      if (bid < widget.lot.currentBid) {
+        return 'Max bid must be at least \$${widget.lot.currentBid} (your current commitment)';
+      }
+    } else {
+      // Non-leader must bid above current price + increment
+      if (bid < _minBid) {
+        return 'Bid must be at least \$$_minBid';
+      }
     }
 
     if (_maxBid != null && bid > _maxBid!) {
@@ -390,8 +431,9 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
                   labelText: 'Your Max Bid',
                   hintText: 'Enter your maximum bid',
                   prefixText: '\$ ',
-                  helperText: 'Minimum bid: \$$_minBid'
-                      '${_maxBid != null ? ' | Max: \$$_maxBid' : ''}',
+                  helperText: _isCurrentLeader
+                      ? 'You are leading. Raise your max bid to protect your position.'
+                      : 'Minimum bid: \$$_minBid${_maxBid != null ? ' | Max: \$$_maxBid' : ''}',
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [

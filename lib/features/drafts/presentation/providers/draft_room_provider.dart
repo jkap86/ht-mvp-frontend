@@ -11,6 +11,7 @@ import '../../data/draft_pick_asset_repository.dart';
 import '../../data/draft_repository.dart';
 import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
+import '../../domain/auction_settings.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_pick.dart';
 import '../../domain/draft_pick_asset.dart';
@@ -40,6 +41,8 @@ class DraftRoomState {
   final int? dailyNominationsRemaining;
   final int? dailyNominationLimit;
   final bool globalCapReached;
+  // Auction settings
+  final AuctionSettings? auctionSettings;
   // Pick asset tracking for traded picks
   final List<DraftPickAsset> pickAssets;
   // Grid display preference: true = teams on X-axis (columns), false = teams on Y-axis (rows)
@@ -62,6 +65,7 @@ class DraftRoomState {
     this.dailyNominationsRemaining,
     this.dailyNominationLimit,
     this.globalCapReached = false,
+    this.auctionSettings,
     this.pickAssets = const [],
     this.teamsOnXAxis = true,
   });
@@ -160,6 +164,7 @@ class DraftRoomState {
     int? dailyNominationsRemaining,
     int? dailyNominationLimit,
     bool? globalCapReached,
+    AuctionSettings? auctionSettings,
     List<DraftPickAsset>? pickAssets,
     bool? teamsOnXAxis,
   }) {
@@ -184,6 +189,7 @@ class DraftRoomState {
           dailyNominationsRemaining ?? this.dailyNominationsRemaining,
       dailyNominationLimit: dailyNominationLimit ?? this.dailyNominationLimit,
       globalCapReached: globalCapReached ?? this.globalCapReached,
+      auctionSettings: auctionSettings ?? this.auctionSettings,
       pickAssets: pickAssets ?? this.pickAssets,
       teamsOnXAxis: teamsOnXAxis ?? this.teamsOnXAxis,
     );
@@ -299,10 +305,31 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     }
   }
 
+  /// Helper to upsert a lot and maintain sorted order by bidDeadline.
+  /// Prevents duplicates and preserves user's myMaxBid on updates.
+  void _upsertAndSortLot(AuctionLot lot) {
+    final existingIndex = state.activeLots.indexWhere((l) => l.id == lot.id);
+    List<AuctionLot> updated;
+    if (existingIndex >= 0) {
+      // Update existing, preserving myMaxBid if the new lot doesn't have it
+      final existing = state.activeLots[existingIndex];
+      final merged = lot.myMaxBid == null && existing.myMaxBid != null
+          ? lot.copyWith(myMaxBid: existing.myMaxBid)
+          : lot;
+      updated = [...state.activeLots];
+      updated[existingIndex] = merged;
+    } else {
+      updated = [...state.activeLots, lot];
+    }
+    // Sort by bidDeadline ASC (matches backend ordering)
+    updated.sort((a, b) => a.bidDeadline.compareTo(b.bidDeadline));
+    state = state.copyWith(activeLots: updated);
+  }
+
   @override
   void onLotCreatedReceived(AuctionLot lot) {
     if (!mounted) return;
-    state = state.copyWith(activeLots: [...state.activeLots, lot]);
+    _upsertAndSortLot(lot);
   }
 
   @override
@@ -420,6 +447,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         dailyNominationsRemaining: auctionState.dailyNominationsRemaining,
         dailyNominationLimit: auctionState.dailyNominationLimit,
         globalCapReached: auctionState.globalCapReached,
+        auctionSettings: auctionState.settings,
       );
     } catch (e) {
       // Auction data is supplemental - log for debugging but don't block UI
@@ -446,8 +474,9 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     try {
       final lot = await _draftRepo.nominate(leagueId, draftId, playerId);
       // Immediately add the new lot to state (don't wait for WebSocket)
+      // Use upsert to prevent duplicates if socket message arrives first
       if (mounted) {
-        state = state.copyWith(activeLots: [...state.activeLots, lot]);
+        _upsertAndSortLot(lot);
       }
       return null;
     } catch (e) {
