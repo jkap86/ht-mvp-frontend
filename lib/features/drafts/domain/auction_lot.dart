@@ -11,6 +11,7 @@ class AuctionLot {
   final String status; // active, won, passed
   final int? winningRosterId;
   final int? winningBid;
+  final int? myMaxBid; // User's max bid on this lot (null if no bid placed)
 
   AuctionLot({
     required this.id,
@@ -24,6 +25,7 @@ class AuctionLot {
     required this.status,
     this.winningRosterId,
     this.winningBid,
+    this.myMaxBid,
   });
 
   factory AuctionLot.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,7 @@ class AuctionLot {
       status: json['status'] as String? ?? 'active',
       winningRosterId: json['winning_roster_id'] as int? ?? json['winningRosterId'] as int?,
       winningBid: json['winning_bid'] as int? ?? json['winningBid'] as int?,
+      myMaxBid: json['my_max_bid'] as int? ?? json['myMaxBid'] as int?,
     );
   }
 
@@ -55,6 +58,7 @@ class AuctionLot {
       'status': status,
       'winning_roster_id': winningRosterId,
       'winning_bid': winningBid,
+      if (myMaxBid != null) 'my_max_bid': myMaxBid,
     };
   }
 
@@ -70,6 +74,7 @@ class AuctionLot {
     String? status,
     int? winningRosterId,
     int? winningBid,
+    int? myMaxBid,
   }) {
     return AuctionLot(
       id: id ?? this.id,
@@ -83,6 +88,7 @@ class AuctionLot {
       status: status ?? this.status,
       winningRosterId: winningRosterId ?? this.winningRosterId,
       winningBid: winningBid ?? this.winningBid,
+      myMaxBid: myMaxBid ?? this.myMaxBid,
     );
   }
 

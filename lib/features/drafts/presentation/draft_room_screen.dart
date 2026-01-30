@@ -9,6 +9,7 @@ import 'providers/draft_queue_provider.dart';
 import 'widgets/draft_status_bar.dart';
 import 'widgets/draft_board_grid_view.dart';
 import 'widgets/draft_bottom_drawer.dart';
+import 'widgets/slow_auction/slow_auction_screen.dart';
 
 class DraftRoomScreen extends ConsumerStatefulWidget {
   final int leagueId;
@@ -282,7 +283,22 @@ class _DraftRoomBody extends ConsumerWidget {
     final isAutodraftEnabled = ref.watch(
       draftRoomProvider(providerKey).select((s) => s.isMyAutodraftEnabled),
     );
+    final isFastAuction = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.isFastAuction),
+    );
 
+    // Slow auction uses completely different UI (no grid)
+    if (isAuction && !isFastAuction) {
+      return SlowAuctionScreen(
+        providerKey: providerKey,
+        leagueId: leagueId,
+        draftId: draftId,
+        onNominate: onNominate,
+        onSetMaxBid: onSetMaxBid,
+      );
+    }
+
+    // Snake, linear, and fast auction use grid view
     return Stack(
       children: [
         // Main content: status bar + grid view
