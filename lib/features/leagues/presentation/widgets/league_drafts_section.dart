@@ -182,9 +182,14 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
 
   @override
   Widget build(BuildContext context) {
+    // Slow auctions don't use draft order - nominations are open to all teams
+    final isSlowAuction = widget.draft.isAuction &&
+        widget.draft.settings?.isFastAuction != true;
+
     final canRandomize = widget.isCommissioner &&
         widget.draft.status == DraftStatus.notStarted &&
-        !widget.draft.orderConfirmed;
+        !widget.draft.orderConfirmed &&
+        !isSlowAuction;
 
     return Container(
       margin: const EdgeInsets.only(top: 12),
