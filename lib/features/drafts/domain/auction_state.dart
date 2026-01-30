@@ -25,6 +25,11 @@ class AuctionState {
   /// All roster budgets
   final List<AuctionBudget> budgets;
 
+  // Slow auction nomination stats
+  final int? dailyNominationsRemaining;
+  final int? dailyNominationLimit;
+  final bool globalCapReached;
+
   AuctionState({
     required this.auctionMode,
     this.activeLot,
@@ -33,31 +38,43 @@ class AuctionState {
     this.nominationNumber,
     this.settings,
     required this.budgets,
+    this.dailyNominationsRemaining,
+    this.dailyNominationLimit,
+    this.globalCapReached = false,
   });
 
   /// Whether this is a fast auction
   bool get isFastAuction => auctionMode == 'fast';
 
   factory AuctionState.fromJson(Map<String, dynamic> json) {
-    final activeLotJson = json['activeLot'] as Map<String, dynamic>?;
-    final activeLotsJson = json['activeLots'] as List<dynamic>? ?? [];
+    // API returns snake_case keys
+    final activeLotJson = json['active_lot'] as Map<String, dynamic>?;
+    final activeLotsJson = json['active_lots'] as List<dynamic>? ?? [];
     final settingsJson = json['settings'] as Map<String, dynamic>?;
     final budgetsJson = json['budgets'] as List<dynamic>? ?? [];
+    final nominationStatsJson =
+        json['nomination_stats'] as Map<String, dynamic>?;
 
     return AuctionState(
-      auctionMode: json['auctionMode'] as String? ?? 'slow',
+      auctionMode: json['auction_mode'] as String? ?? 'slow',
       activeLot:
           activeLotJson != null ? AuctionLot.fromJson(activeLotJson) : null,
       activeLots: activeLotsJson
           .map((lot) => AuctionLot.fromJson(lot as Map<String, dynamic>))
           .toList(),
-      currentNominatorRosterId: json['currentNominatorRosterId'] as int?,
-      nominationNumber: json['nominationNumber'] as int?,
+      currentNominatorRosterId: json['current_nominator_roster_id'] as int?,
+      nominationNumber: json['nomination_number'] as int?,
       settings:
           settingsJson != null ? AuctionSettings.fromJson(settingsJson) : null,
       budgets: budgetsJson
           .map((b) => AuctionBudget.fromJson(b as Map<String, dynamic>))
           .toList(),
+      dailyNominationsRemaining:
+          nominationStatsJson?['daily_nominations_remaining'] as int?,
+      dailyNominationLimit:
+          nominationStatsJson?['daily_nomination_limit'] as int?,
+      globalCapReached:
+          nominationStatsJson?['global_cap_reached'] as bool? ?? false,
     );
   }
 
@@ -69,6 +86,9 @@ class AuctionState {
     int? nominationNumber,
     AuctionSettings? settings,
     List<AuctionBudget>? budgets,
+    int? dailyNominationsRemaining,
+    int? dailyNominationLimit,
+    bool? globalCapReached,
   }) {
     return AuctionState(
       auctionMode: auctionMode ?? this.auctionMode,
@@ -79,6 +99,10 @@ class AuctionState {
       nominationNumber: nominationNumber ?? this.nominationNumber,
       settings: settings ?? this.settings,
       budgets: budgets ?? this.budgets,
+      dailyNominationsRemaining:
+          dailyNominationsRemaining ?? this.dailyNominationsRemaining,
+      dailyNominationLimit: dailyNominationLimit ?? this.dailyNominationLimit,
+      globalCapReached: globalCapReached ?? this.globalCapReached,
     );
   }
 

@@ -59,10 +59,18 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
   late String _draftType;
   late TextEditingController _roundsController;
   late TextEditingController _pickTimeController;
+
+  // Auction timing settings
   late TextEditingController _bidWindowController;
   late TextEditingController _nominationSecondsController;
   late TextEditingController _resetOnBidSecondsController;
   late TextEditingController _minIncrementController;
+
+  // Auction mode and nomination limits
+  late String _auctionMode;
+  late TextEditingController _maxActivePerTeamController;
+  late TextEditingController _maxActiveGlobalController;
+  late TextEditingController _dailyNominationLimitController;
 
   bool get _isNotStarted => widget.draft.status == DraftStatus.notStarted;
   bool get _isPaused => widget.draft.status == DraftStatus.paused;
@@ -81,6 +89,8 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
 
     final settings =
         (widget.draft.settings as Map<String, dynamic>?) ?? <String, dynamic>{};
+
+    // Auction timing settings
     _bidWindowController = TextEditingController(
       text: (settings['bidWindowSeconds'] ?? 43200).toString(),
     );
@@ -93,6 +103,18 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
     _minIncrementController = TextEditingController(
       text: (settings['minIncrement'] ?? 1).toString(),
     );
+
+    // Auction mode and nomination limits
+    _auctionMode = (settings['auctionMode'] as String?) ?? 'slow';
+    _maxActivePerTeamController = TextEditingController(
+      text: (settings['maxActiveNominationsPerTeam'] ?? 2).toString(),
+    );
+    _maxActiveGlobalController = TextEditingController(
+      text: (settings['maxActiveNominationsGlobal'] ?? 25).toString(),
+    );
+    _dailyNominationLimitController = TextEditingController(
+      text: settings['dailyNominationLimit']?.toString() ?? '',
+    );
   }
 
   @override
@@ -103,6 +125,9 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
     _nominationSecondsController.dispose();
     _resetOnBidSecondsController.dispose();
     _minIncrementController.dispose();
+    _maxActivePerTeamController.dispose();
+    _maxActiveGlobalController.dispose();
+    _dailyNominationLimitController.dispose();
     super.dispose();
   }
 
@@ -156,29 +181,54 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
         }
 
         if (_isAuction) {
+          final settings =
+              (widget.draft.settings as Map<String, dynamic>?) ??
+                  <String, dynamic>{};
+
           final newBidWindow = int.parse(_bidWindowController.text);
           final newNominationSeconds =
               int.parse(_nominationSecondsController.text);
           final newResetOnBid = int.parse(_resetOnBidSecondsController.text);
           final newMinIncrement = int.parse(_minIncrementController.text);
+          final newMaxPerTeam = int.parse(_maxActivePerTeamController.text);
+          final newMaxGlobal = int.parse(_maxActiveGlobalController.text);
+          final newDailyLimit = _dailyNominationLimitController.text.isEmpty
+              ? null
+              : int.parse(_dailyNominationLimitController.text);
 
-          final settings =
-              (widget.draft.settings as Map<String, dynamic>?) ??
-                  <String, dynamic>{};
-          final hasChanges =
+          // Check for changes
+          final hasTimingChanges =
               newBidWindow != (settings['bidWindowSeconds'] ?? 43200) ||
                   newNominationSeconds !=
                       (settings['nominationSeconds'] ?? 45) ||
                   newResetOnBid != (settings['resetOnBidSeconds'] ?? 10) ||
                   newMinIncrement != (settings['minIncrement'] ?? 1);
 
-          if (hasChanges) {
+          final hasModeChange = _canEditStructural &&
+              _auctionMode != (settings['auctionMode'] ?? 'slow');
+
+          final hasLimitChanges =
+              newMaxPerTeam !=
+                  (settings['maxActiveNominationsPerTeam'] ?? 2) ||
+                  newMaxGlobal !=
+                      (settings['maxActiveNominationsGlobal'] ?? 25) ||
+                  newDailyLimit != settings['dailyNominationLimit'];
+
+          if (hasTimingChanges || hasModeChange || hasLimitChanges) {
             auctionSettings = {
               'bid_window_seconds': newBidWindow,
               'nomination_seconds': newNominationSeconds,
               'reset_on_bid_seconds': newResetOnBid,
               'min_increment': newMinIncrement,
+              'max_active_nominations_per_team': newMaxPerTeam,
+              'max_active_nominations_global': newMaxGlobal,
+              if (newDailyLimit != null) 'daily_nomination_limit': newDailyLimit,
             };
+
+            // Only include auction_mode if we can edit it
+            if (_canEditStructural) {
+              auctionSettings['auction_mode'] = _auctionMode;
+            }
           }
         }
       }
@@ -266,6 +316,13 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
                   nominationSecondsController: _nominationSecondsController,
                   resetOnBidSecondsController: _resetOnBidSecondsController,
                   minIncrementController: _minIncrementController,
+                  auctionMode: _auctionMode,
+                  onAuctionModeChanged: (mode) =>
+                      setState(() => _auctionMode = mode),
+                  canEditMode: _canEditStructural,
+                  maxActivePerTeamController: _maxActivePerTeamController,
+                  maxActiveGlobalController: _maxActiveGlobalController,
+                  dailyNominationLimitController: _dailyNominationLimitController,
                   enabled: _canEditTimers,
                   validator: _validatePositiveInt,
                 ),

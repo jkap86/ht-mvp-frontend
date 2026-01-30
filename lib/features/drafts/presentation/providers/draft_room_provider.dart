@@ -36,6 +36,10 @@ class DraftRoomState {
   final String auctionMode;
   final int? currentNominatorRosterId;
   final int? nominationNumber;
+  // Slow auction nomination stats
+  final int? dailyNominationsRemaining;
+  final int? dailyNominationLimit;
+  final bool globalCapReached;
   // Pick asset tracking for traded picks
   final List<DraftPickAsset> pickAssets;
   // Grid display preference: true = teams on X-axis (columns), false = teams on Y-axis (rows)
@@ -55,6 +59,9 @@ class DraftRoomState {
     this.auctionMode = 'slow',
     this.currentNominatorRosterId,
     this.nominationNumber,
+    this.dailyNominationsRemaining,
+    this.dailyNominationLimit,
+    this.globalCapReached = false,
     this.pickAssets = const [],
     this.teamsOnXAxis = true,
   });
@@ -150,6 +157,9 @@ class DraftRoomState {
     String? auctionMode,
     int? currentNominatorRosterId,
     int? nominationNumber,
+    int? dailyNominationsRemaining,
+    int? dailyNominationLimit,
+    bool? globalCapReached,
     List<DraftPickAsset>? pickAssets,
     bool? teamsOnXAxis,
   }) {
@@ -170,6 +180,10 @@ class DraftRoomState {
       currentNominatorRosterId:
           currentNominatorRosterId ?? this.currentNominatorRosterId,
       nominationNumber: nominationNumber ?? this.nominationNumber,
+      dailyNominationsRemaining:
+          dailyNominationsRemaining ?? this.dailyNominationsRemaining,
+      dailyNominationLimit: dailyNominationLimit ?? this.dailyNominationLimit,
+      globalCapReached: globalCapReached ?? this.globalCapReached,
       pickAssets: pickAssets ?? this.pickAssets,
       teamsOnXAxis: teamsOnXAxis ?? this.teamsOnXAxis,
     );
@@ -403,6 +417,9 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         auctionMode: auctionState.auctionMode,
         currentNominatorRosterId: auctionState.currentNominatorRosterId,
         nominationNumber: auctionState.nominationNumber,
+        dailyNominationsRemaining: auctionState.dailyNominationsRemaining,
+        dailyNominationLimit: auctionState.dailyNominationLimit,
+        globalCapReached: auctionState.globalCapReached,
       );
     } catch (e) {
       // Auction data is supplemental - log for debugging but don't block UI

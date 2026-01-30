@@ -17,6 +17,11 @@ class SlowAuctionActionSection extends StatelessWidget {
   final VoidCallback? onViewAllOutbid;
   final VoidCallback? onViewAllEndingSoon;
 
+  // Nomination limit tracking
+  final int? dailyNominationsRemaining;
+  final int? dailyNominationLimit;
+  final bool globalCapReached;
+
   const SlowAuctionActionSection({
     super.key,
     required this.activeLots,
@@ -28,6 +33,9 @@ class SlowAuctionActionSection extends StatelessWidget {
     required this.onViewLot,
     this.onViewAllOutbid,
     this.onViewAllEndingSoon,
+    this.dailyNominationsRemaining,
+    this.dailyNominationLimit,
+    this.globalCapReached = false,
   });
 
   @override
@@ -129,10 +137,36 @@ class SlowAuctionActionSection extends StatelessWidget {
   Widget _buildNominateCard(BuildContext context) {
     final theme = Theme.of(context);
 
+    // Check if nominations are blocked
+    final isBlocked = globalCapReached ||
+        (dailyNominationsRemaining != null && dailyNominationsRemaining! <= 0);
+
+    // Build subtitle text
+    String subtitle;
+    Color? subtitleColor;
+    if (globalCapReached) {
+      subtitle = 'Maximum active auctions reached league-wide';
+      subtitleColor = theme.colorScheme.error;
+    } else if (dailyNominationsRemaining != null &&
+        dailyNominationsRemaining! <= 0) {
+      subtitle = 'Daily nomination limit reached. Try again tomorrow.';
+      subtitleColor = theme.colorScheme.error;
+    } else if (dailyNominationsRemaining != null &&
+        dailyNominationLimit != null) {
+      subtitle =
+          '$dailyNominationsRemaining of $dailyNominationLimit nominations remaining today';
+      subtitleColor = dailyNominationsRemaining == 1
+          ? theme.colorScheme.tertiary
+          : theme.colorScheme.onSurfaceVariant;
+    } else {
+      subtitle = 'Add a player to the auction block';
+      subtitleColor = theme.colorScheme.onSurfaceVariant;
+    }
+
     return Card(
       margin: EdgeInsets.zero,
       child: InkWell(
-        onTap: onNominate,
+        onTap: isBlocked ? null : onNominate,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -141,12 +175,16 @@ class SlowAuctionActionSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withAlpha(30),
+                  color: isBlocked
+                      ? theme.colorScheme.surfaceContainerHighest
+                      : theme.colorScheme.primary.withAlpha(30),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  Icons.person_add,
-                  color: theme.colorScheme.primary,
+                  isBlocked ? Icons.block : Icons.person_add,
+                  color: isBlocked
+                      ? theme.colorScheme.onSurfaceVariant
+                      : theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(width: 16),
@@ -158,12 +196,15 @@ class SlowAuctionActionSection extends StatelessWidget {
                       'Nominate Player',
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: isBlocked
+                            ? theme.colorScheme.onSurfaceVariant
+                            : null,
                       ),
                     ),
                     Text(
-                      'Add a player to the auction block',
+                      subtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: subtitleColor,
                       ),
                     ),
                   ],

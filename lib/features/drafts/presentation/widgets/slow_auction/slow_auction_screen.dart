@@ -49,6 +49,15 @@ class SlowAuctionScreen extends ConsumerWidget {
     final draft = ref.watch(
       draftRoomProvider(providerKey).select((s) => s.draft),
     );
+    final dailyNominationsRemaining = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.dailyNominationsRemaining),
+    );
+    final dailyNominationLimit = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.dailyNominationLimit),
+    );
+    final globalCapReached = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.globalCapReached),
+    );
 
     // Find lots where user has bid but is outbid (not currently winning)
     final outbidLots = activeLots.where((lot) {
@@ -87,6 +96,9 @@ class SlowAuctionScreen extends ConsumerWidget {
                       draftOrder,
                       myBudget,
                     ),
+                    dailyNominationsRemaining: dailyNominationsRemaining,
+                    dailyNominationLimit: dailyNominationLimit,
+                    globalCapReached: globalCapReached,
                   ),
                 ),
 
