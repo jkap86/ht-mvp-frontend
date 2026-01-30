@@ -444,7 +444,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
   Future<String?> nominate(int playerId) async {
     try {
-      await _draftRepo.nominate(leagueId, draftId, playerId);
+      final lot = await _draftRepo.nominate(leagueId, draftId, playerId);
+      // Immediately add the new lot to state (don't wait for WebSocket)
+      if (mounted) {
+        state = state.copyWith(activeLots: [...state.activeLots, lot]);
+      }
       return null;
     } catch (e) {
       return e.toString();

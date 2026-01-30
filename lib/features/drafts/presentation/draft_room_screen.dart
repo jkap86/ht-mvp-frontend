@@ -165,6 +165,10 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     final isAuction = ref.watch(
       draftRoomProvider(_providerKey).select((s) => s.isAuction),
     );
+    final isFastAuction = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.isFastAuction),
+    );
+    final isSlowAuction = isAuction && !isFastAuction;
     final myBudget = ref.watch(
       draftRoomProvider(_providerKey).select((s) => s.myBudget),
     );
@@ -205,7 +209,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
             }
           },
         ),
-        title: Text('Draft - Round $currentRound'),
+        title: Text(isSlowAuction ? 'Slow Auction' : 'Draft - Round $currentRound'),
         actions: [
           // Budget chip for auction drafts
           if (isAuction && myBudget != null)
@@ -218,8 +222,8 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
                 labelStyle: TextStyle(color: Colors.green[800], fontWeight: FontWeight.bold),
               ),
             ),
-          // Pick chip for active drafts
-          if (isDraftActive)
+          // Pick chip for active drafts (not applicable to slow auctions)
+          if (isDraftActive && !isSlowAuction)
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Chip(
