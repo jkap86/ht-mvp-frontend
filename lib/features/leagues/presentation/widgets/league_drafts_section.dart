@@ -234,7 +234,7 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => context.go('/leagues/${widget.leagueId}/drafts/${widget.draft.id}'),
+                  onPressed: () => context.push('/leagues/${widget.leagueId}/drafts/${widget.draft.id}'),
                   child: const Text('View Draft Room'),
                 ),
               ),

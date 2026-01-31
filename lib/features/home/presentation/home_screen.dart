@@ -15,7 +15,7 @@ import '../../leagues/presentation/providers/league_detail_provider.dart';
 import '../../notifications/presentation/providers/notifications_provider.dart';
 import '../../notifications/presentation/widgets/notification_bell.dart';
 import 'providers/home_dashboard_provider.dart';
-import 'widgets/home_draft_alert_card.dart';
+import 'widgets/home_drafts_card.dart';
 import 'widgets/home_leagues_card.dart';
 import 'widgets/home_matchups_card.dart';
 import 'widgets/home_transactions_card.dart';
@@ -116,11 +116,11 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. DRAFTS (highest urgency - can't miss)
-              if (state.upcomingDrafts.isNotEmpty) ...[
-                HomeDraftAlertCard(drafts: state.upcomingDrafts),
-                const SizedBox(height: 12),
-              ],
+              // 1. DRAFTS (always shown, highlights active drafts)
+              HomeDraftsCard(
+                activeCount: state.upcomingDrafts.where((d) => d.isInProgress).length,
+              ),
+              const SizedBox(height: 12),
 
               // 2. MATCHUPS (what users want to see)
               if (state.matchups.isNotEmpty) ...[

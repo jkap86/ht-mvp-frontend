@@ -473,10 +473,31 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     }
   }
 
+  /// Lightweight resync of draft state and picks (for when socket may have missed events)
+  Future<void> _refreshDraftState() async {
+    try {
+      final results = await Future.wait<dynamic>([
+        _draftRepo.getDraft(leagueId, draftId),
+        _draftRepo.getDraftPicks(leagueId, draftId),
+      ]);
+
+      final draft = results[0] as Draft;
+      final picksData = results[1] as List<Map<String, dynamic>>;
+      final picks = picksData.map((e) => DraftPick.fromJson(e)).toList();
+
+      if (!mounted) return;
+      state = state.copyWith(draft: draft, picks: picks);
+    } catch (e) {
+      // Resync failed silently - socket events are primary update mechanism
+    }
+  }
+
   // Action methods
   Future<String?> makePick(int playerId) async {
     try {
       await _draftRepo.makePick(leagueId, draftId, playerId);
+      // Resync to ensure UI is updated even if socket event was missed
+      if (mounted) await _refreshDraftState();
       return null;
     } catch (e) {
       return e.toString();
@@ -548,6 +569,23 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       final updatedDraft = await _draftRepo.startDraft(leagueId, draftId);
       if (mounted) {
         state = state.copyWith(draft: updatedDraft);
+      }
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  /// Confirm draft order without randomizing (commissioner only)
+  Future<String?> confirmDraftOrder() async {
+    try {
+      await _draftRepo.confirmDraftOrder(leagueId, draftId);
+      // Update local state to reflect confirmed order
+      final currentDraft = state.draft;
+      if (mounted && currentDraft != null) {
+        state = state.copyWith(
+          draft: currentDraft.copyWith(orderConfirmed: true),
+        );
       }
       return null;
     } catch (e) {

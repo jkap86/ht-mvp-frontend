@@ -33,6 +33,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
   bool _isNominateSubmitting = false;
   bool _isMaxBidSubmitting = false;
   bool _isStartingDraft = false;
+  bool _isConfirmingOrder = false;
 
   DraftRoomKey get _providerKey => (leagueId: widget.leagueId, draftId: widget.draftId);
   DraftQueueKey get _queueKey => (leagueId: widget.leagueId, draftId: widget.draftId);
@@ -118,6 +119,23 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       }
     } finally {
       _isStartingDraft = false; // Always reset flag
+      if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
+    }
+  }
+
+  Future<void> _confirmOrder() async {
+    if (_isConfirmingOrder) return; // Prevent double-tap
+    setState(() => _isConfirmingOrder = true);
+    try {
+      final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+      final error = await notifier.confirmDraftOrder();
+      if (error != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
+        );
+      }
+    } finally {
+      _isConfirmingOrder = false; // Always reset flag
       if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
     }
   }
@@ -281,6 +299,8 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         onSetMaxBid: _handleSetMaxBid,
         onStartDraft: _startDraft,
         isStartingDraft: _isStartingDraft,
+        onConfirmOrder: _confirmOrder,
+        isConfirmingOrder: _isConfirmingOrder,
       ),
     );
   }
@@ -299,6 +319,8 @@ class _DraftRoomBody extends ConsumerWidget {
   final Future<void> Function(int, int) onSetMaxBid;
   final Future<void> Function() onStartDraft;
   final bool isStartingDraft;
+  final Future<void> Function() onConfirmOrder;
+  final bool isConfirmingOrder;
 
   const _DraftRoomBody({
     required this.providerKey,
@@ -312,6 +334,8 @@ class _DraftRoomBody extends ConsumerWidget {
     required this.onSetMaxBid,
     required this.onStartDraft,
     required this.isStartingDraft,
+    required this.onConfirmOrder,
+    required this.isConfirmingOrder,
   });
 
   @override
@@ -341,6 +365,11 @@ class _DraftRoomBody extends ConsumerWidget {
     final canStartDraft = isDraftNotStarted &&
         isCommissioner &&
         (draft?.orderConfirmed == true || isAuction);
+    // Check if order needs confirmation (non-auction drafts only)
+    final needsOrderConfirmation = isDraftNotStarted &&
+        isCommissioner &&
+        draft?.orderConfirmed != true &&
+        !isAuction;
 
     // Slow auction uses completely different UI (no grid)
     if (isAuction && !isFastAuction) {
@@ -361,6 +390,37 @@ class _DraftRoomBody extends ConsumerWidget {
         // Main content: status bar + grid view
         Column(
           children: [
+            // Confirm Order banner for commissioners (before start)
+            if (needsOrderConfirmation)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                color: Theme.of(context).colorScheme.tertiaryContainer,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Confirm draft order to start',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onTertiaryContainer,
+                        ),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: isConfirmingOrder ? null : onConfirmOrder,
+                      icon: isConfirmingOrder
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check),
+                      label: Text(isConfirmingOrder ? 'Confirming...' : 'Confirm Order'),
+                    ),
+                  ],
+                ),
+              ),
             // Start Draft banner for commissioners
             if (canStartDraft)
               Container(

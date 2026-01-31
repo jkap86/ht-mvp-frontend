@@ -236,7 +236,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
               draft: state.activeDraft!,
               isCommissioner: state.isCommissioner,
               onJoinDraft: () {
-                context.go('/leagues/${widget.leagueId}/drafts/${state.activeDraft!.id}');
+                context.push('/leagues/${widget.leagueId}/drafts/${state.activeDraft!.id}');
               },
               onStartDraft: () => _startDraft(state.activeDraft!),
             ),

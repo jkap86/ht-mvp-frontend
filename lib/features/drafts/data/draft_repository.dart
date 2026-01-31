@@ -66,6 +66,14 @@ class DraftRepository {
         .toList();
   }
 
+  Future<List<DraftOrderEntry>> confirmDraftOrder(int leagueId, int draftId) async {
+    final response = await _apiClient.post('/leagues/$leagueId/drafts/$draftId/order/confirm');
+    final order = (response as List?) ?? [];
+    return order
+        .map((json) => DraftOrderEntry.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
   // Queue methods
   Future<List<Map<String, dynamic>>> getQueue(int leagueId, int draftId) async {
     final response =
