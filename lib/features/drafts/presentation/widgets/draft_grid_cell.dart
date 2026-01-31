@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
 import '../../domain/draft_pick.dart';
 import '../../domain/draft_pick_asset.dart';
 import '../utils/position_colors.dart';
@@ -34,28 +35,38 @@ class DraftGridCell extends StatelessWidget {
   }
 
   Widget _buildEmptyCell(BuildContext context) {
-    // Determine colors based on traded status
-    final borderColor = isCurrentPick
-        ? Colors.amber
-        : isTraded
-            ? Colors.orange.shade300
-            : Colors.grey.shade300;
-    final backgroundColor = isCurrentPick
-        ? Colors.amber.shade50
-        : isTraded
-            ? Colors.orange.shade50
-            : Colors.grey.shade50;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Theme-aware colors
+    final Color borderColor;
+    final Color backgroundColor;
+    final Color textColor;
+
+    if (isCurrentPick) {
+      borderColor = AppTheme.draftActionPrimary;
+      backgroundColor = AppTheme.draftActionPrimary.withAlpha(isDark ? 30 : 20);
+      textColor = AppTheme.draftActionPrimary;
+    } else if (isTraded) {
+      borderColor = AppTheme.draftWarning.withAlpha(180);
+      backgroundColor = AppTheme.draftWarning.withAlpha(isDark ? 25 : 15);
+      textColor = AppTheme.draftWarning;
+    } else {
+      borderColor = theme.colorScheme.outlineVariant;
+      backgroundColor = theme.colorScheme.surfaceContainerLowest;
+      textColor = theme.colorScheme.onSurfaceVariant.withAlpha(150);
+    }
 
     final cell = Container(
-      width: 80,
-      height: 52,
+      width: 90,
+      height: 56,
       margin: const EdgeInsets.all(1),
       decoration: BoxDecoration(
         border: Border.all(
           color: borderColor,
           width: isCurrentPick ? 2 : 1,
         ),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
         color: backgroundColor,
       ),
       child: Stack(
@@ -67,21 +78,25 @@ class DraftGridCell extends StatelessWidget {
                 Text(
                   '#$pickNumber',
                   style: TextStyle(
-                    fontSize: 10,
-                    color: isTraded ? Colors.orange.shade700 : Colors.grey.shade400,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: textColor,
                   ),
                 ),
                 if (isTraded && pickAsset?.originalUsername != null) ...[
                   const SizedBox(height: 2),
-                  Text(
-                    pickAsset!.originalUsername!,
-                    style: TextStyle(
-                      fontSize: 8,
-                      color: Colors.orange.shade600,
-                      fontStyle: FontStyle.italic,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      pickAsset!.originalUsername!,
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: AppTheme.draftWarning,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ],
@@ -90,12 +105,12 @@ class DraftGridCell extends StatelessWidget {
           // Traded indicator icon
           if (isTraded)
             Positioned(
-              top: 2,
-              right: 2,
+              top: 4,
+              right: 4,
               child: Icon(
                 Icons.swap_horiz,
                 size: 12,
-                color: Colors.orange.shade600,
+                color: AppTheme.draftWarning,
               ),
             ),
         ],
@@ -114,21 +129,31 @@ class DraftGridCell extends StatelessWidget {
   }
 
   Widget _buildFilledCell(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final positionColor = getPositionColor(pick!.playerPosition ?? '');
 
     final cell = Container(
-      width: 80,
-      height: 52,
+      width: 90,
+      height: 56,
       margin: const EdgeInsets.all(1),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         border: Border.all(
           color: isTraded
-              ? Colors.orange.withValues(alpha: 0.7)
-              : positionColor.withValues(alpha: 0.5),
+              ? AppTheme.draftWarning.withAlpha(180)
+              : positionColor.withAlpha(isDark ? 150 : 120),
+          width: 1,
         ),
-        borderRadius: BorderRadius.circular(4),
-        color: positionColor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        color: positionColor.withAlpha(isDark ? 40 : 30),
+        boxShadow: [
+          BoxShadow(
+            color: positionColor.withAlpha(isDark ? 20 : 15),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Stack(
         children: [
@@ -138,38 +163,39 @@ class DraftGridCell extends StatelessWidget {
             children: [
               Text(
                 pick!.playerName ?? 'Unknown',
-                style: const TextStyle(
-                  fontSize: 9,
+                style: TextStyle(
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 1),
+              const SizedBox(height: 2),
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     decoration: BoxDecoration(
-                      color: positionColor.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
+                      color: positionColor.withAlpha(isDark ? 80 : 60),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                     child: Text(
                       pick!.playerPosition ?? '',
                       style: TextStyle(
-                        fontSize: 8,
+                        fontSize: 9,
                         fontWeight: FontWeight.bold,
-                        color: positionColor.withValues(alpha: 0.8),
+                        color: isDark ? Colors.white : positionColor,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 3),
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       pick!.playerTeam ?? '',
                       style: TextStyle(
-                        fontSize: 8,
-                        color: Colors.grey.shade600,
+                        fontSize: 9,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -186,8 +212,8 @@ class DraftGridCell extends StatelessWidget {
               right: 0,
               child: Icon(
                 Icons.swap_horiz,
-                size: 10,
-                color: Colors.orange.shade600,
+                size: 11,
+                color: AppTheme.draftWarning,
               ),
             ),
         ],

@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
 import '../../../players/domain/player.dart';
 import '../../domain/auction_lot.dart';
+import '../utils/position_colors.dart';
 
 /// Card widget showing the active lot in fast auction mode.
 /// Displays countdown timer, player info, current bid, and bid button.
@@ -75,6 +77,7 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final player = widget.player;
     final playerName = player?.fullName ?? 'Unknown Player';
     final position = player?.primaryPosition ?? '';
@@ -92,15 +95,15 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
           child: Column(
             children: [
               // Timer - prominent at top
-              _buildTimerDisplay(isExpired, isUrgent),
+              _buildTimerDisplay(theme, isExpired, isUrgent),
               const SizedBox(height: 16),
 
               // Player info row
-              _buildPlayerInfoRow(playerName, position, team),
+              _buildPlayerInfoRow(theme, playerName, position, team),
               const SizedBox(height: 16),
 
               // Bid button
-              _buildBidButton(isExpired),
+              _buildBidButton(theme, isExpired),
             ],
           ),
         ),
@@ -108,41 +111,50 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
     );
   }
 
-  Widget _buildTimerDisplay(bool isExpired, bool isUrgent) {
+  Widget _buildTimerDisplay(ThemeData theme, bool isExpired, bool isUrgent) {
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color timerColor;
+    final Color backgroundColor;
+
+    if (isExpired) {
+      timerColor = const Color(0xFF6E7681);
+      backgroundColor = theme.colorScheme.surfaceContainerHighest;
+    } else if (isUrgent) {
+      timerColor = AppTheme.draftUrgent;
+      backgroundColor = AppTheme.draftUrgent.withAlpha(isDark ? 40 : 25);
+    } else if (_remaining.inSeconds <= 30) {
+      timerColor = AppTheme.draftWarning;
+      backgroundColor = AppTheme.draftWarning.withAlpha(isDark ? 40 : 25);
+    } else {
+      timerColor = AppTheme.draftNormal;
+      backgroundColor = AppTheme.draftNormal.withAlpha(isDark ? 40 : 25);
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
       decoration: BoxDecoration(
-        color: isExpired
-            ? Colors.grey[300]
-            : isUrgent
-                ? Colors.red[100]
-                : Colors.blue[100],
-        borderRadius: BorderRadius.circular(8),
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: timerColor.withAlpha(100), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.timer,
-            size: 24,
-            color: isExpired
-                ? Colors.grey
-                : isUrgent
-                    ? Colors.red
-                    : Colors.blue,
+            isExpired ? Icons.hourglass_empty : Icons.timer,
+            size: 28,
+            color: timerColor,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Text(
             isExpired ? 'SETTLING...' : _formatDuration(_remaining),
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
               fontFamily: 'monospace',
-              color: isExpired
-                  ? Colors.grey
-                  : isUrgent
-                      ? Colors.red
-                      : Colors.blue,
+              letterSpacing: 1,
+              color: timerColor,
             ),
           ),
         ],
@@ -150,9 +162,33 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
     );
   }
 
-  Widget _buildPlayerInfoRow(String playerName, String position, String team) {
+  Widget _buildPlayerInfoRow(ThemeData theme, String playerName, String position, String team) {
+    final positionColor = getPositionColor(position);
+
     return Row(
       children: [
+        // Position badge
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: positionColor.withAlpha(40),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: positionColor.withAlpha(100), width: 1.5),
+          ),
+          child: Center(
+            child: Text(
+              position,
+              style: TextStyle(
+                color: positionColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+
         // Player details
         Expanded(
           child: Column(
@@ -160,16 +196,18 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
             children: [
               Text(
                 playerName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
+              const SizedBox(height: 2),
               Text(
-                '$position - $team',
+                team,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -185,14 +223,16 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.green[700],
+                fontFamily: 'monospace',
+                color: AppTheme.draftActionPrimary,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               widget.leadingBidderName ?? 'No bids',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[600],
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -201,17 +241,26 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
     );
   }
 
-  Widget _buildBidButton(bool isExpired) {
+  Widget _buildBidButton(ThemeData theme, bool isExpired) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: isExpired ? null : widget.onBidTap,
-        icon: const Icon(Icons.attach_money),
-        label: const Text('Set Max Bid'),
+        icon: const Icon(Icons.gavel),
+        label: const Text(
+          'Place Bid',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+        ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.deepPurple,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: theme.colorScheme.onPrimary,
+          disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest,
+          disabledForegroundColor: theme.colorScheme.onSurfaceVariant,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
         ),
       ),
     );

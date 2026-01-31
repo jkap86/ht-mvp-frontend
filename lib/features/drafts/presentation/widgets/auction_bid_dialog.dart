@@ -3,16 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../core/api/api_client.dart';
-import '../../data/draft_repository.dart';
 import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
 import '../../domain/auction_settings.dart';
-import '../../domain/bid_history_entry.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../../players/domain/player.dart';
 
 /// Dialog for placing bids on auction lots.
+/// Bid history is now shown on the lot card, so this dialog is simplified.
 class AuctionBidDialog extends StatefulWidget {
   final int leagueId;
   final int draftId;
@@ -21,7 +19,6 @@ class AuctionBidDialog extends StatefulWidget {
   final AuctionBudget? myBudget;
   final List<DraftOrderEntry> draftOrder;
   final AuctionSettings settings;
-  final DraftRepository? draftRepository;
   final void Function(int maxBid) onSubmit;
 
   const AuctionBidDialog({
@@ -33,7 +30,6 @@ class AuctionBidDialog extends StatefulWidget {
     this.myBudget,
     required this.draftOrder,
     required this.settings,
-    this.draftRepository,
     required this.onSubmit,
   });
 
@@ -47,7 +43,6 @@ class AuctionBidDialog extends StatefulWidget {
     AuctionBudget? myBudget,
     required List<DraftOrderEntry> draftOrder,
     required AuctionSettings settings,
-    DraftRepository? draftRepository,
     required void Function(int maxBid) onSubmit,
   }) {
     return showDialog(
@@ -60,7 +55,6 @@ class AuctionBidDialog extends StatefulWidget {
         myBudget: myBudget,
         draftOrder: draftOrder,
         settings: settings,
-        draftRepository: draftRepository,
         onSubmit: onSubmit,
       ),
     );
@@ -75,9 +69,6 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
   final _formKey = GlobalKey<FormState>();
   Timer? _timer;
   Duration _timeRemaining = Duration.zero;
-  List<BidHistoryEntry>? _bidHistory;
-  bool _isLoadingHistory = true;
-  bool _historyLoadError = false;
   bool _isSubmitting = false;
 
   int get _myRosterId => widget.myBudget?.rosterId ?? -1;
@@ -108,39 +99,6 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
     _bidController = TextEditingController(text: _minBid.toString());
     _updateTimeRemaining();
     _startTimer();
-    _loadBidHistory();
-  }
-
-  Future<void> _loadBidHistory() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoadingHistory = true;
-      _historyLoadError = false;
-    });
-
-    try {
-      // Use injected repository if provided, otherwise create a new one
-      final repo = widget.draftRepository ?? DraftRepository(ApiClient());
-      final history = await repo.getBidHistory(
-        widget.leagueId,
-        widget.draftId,
-        widget.lot.id,
-      );
-      if (mounted) {
-        setState(() {
-          _bidHistory = history;
-          _isLoadingHistory = false;
-          _historyLoadError = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingHistory = false;
-          _historyLoadError = true;
-        });
-      }
-    }
   }
 
   String _getUsernameForRoster(int rosterId) {
@@ -148,130 +106,6 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
         .where((e) => e.rosterId == rosterId)
         .firstOrNull;
     return entry?.username ?? 'Team $rosterId';
-  }
-
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final diff = now.difference(dateTime);
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-    return 'just now';
-  }
-
-  Widget _buildBidHistorySection(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Theme(
-        data: theme.copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-          title: Text(
-            'Bid Activity (${widget.lot.bidCount})',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          children: [
-            if (_isLoadingHistory)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              )
-            else if (_historyLoadError)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Text(
-                      'Failed to load bid history',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.error,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: _loadBidHistory,
-                      icon: const Icon(Icons.refresh, size: 16),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              )
-            else if (_bidHistory == null || _bidHistory!.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'No bid activity yet',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              )
-            else
-              ..._bidHistory!.reversed.map((entry) => _buildHistoryTile(entry, theme)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHistoryTile(BidHistoryEntry entry, ThemeData theme) {
-    final username = entry.username ?? _getUsernameForRoster(entry.rosterId);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant, width: 0.5),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            entry.isProxy ? Icons.autorenew : Icons.person,
-            size: 16,
-            color: entry.isProxy
-                ? theme.colorScheme.tertiary
-                : theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  username,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  _formatTimeAgo(entry.createdAt),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '\$${entry.bidAmount}',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -401,10 +235,6 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
                   'Leading Bidder',
                   _getUsernameForRoster(widget.lot.currentBidderRosterId!),
                 ),
-
-              // Bid History Section
-              const SizedBox(height: 8),
-              _buildBidHistorySection(theme),
 
               const SizedBox(height: 8),
 

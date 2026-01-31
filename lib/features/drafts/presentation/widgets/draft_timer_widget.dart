@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+
 class DraftTimerWidget extends StatefulWidget {
   final DateTime? pickDeadline;
   final VoidCallback? onTimeExpired;
@@ -28,10 +30,10 @@ class _DraftTimerWidgetState extends State<DraftTimerWidget>
   void initState() {
     super.initState();
     _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.12).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
     _startTimer();
@@ -95,10 +97,19 @@ class _DraftTimerWidgetState extends State<DraftTimerWidget>
   }
 
   Color _getTimerColor() {
-    if (_secondsRemaining <= 0) return Colors.grey;
-    if (_secondsRemaining <= 10) return Colors.red;
-    if (_secondsRemaining <= 30) return Colors.orange;
-    return Colors.green;
+    if (_secondsRemaining <= 0) {
+      return const Color(0xFF6E7681); // Grey for expired
+    }
+    if (_secondsRemaining <= 10) {
+      return AppTheme.draftUrgent; // Red - urgent
+    }
+    if (_secondsRemaining <= 30) {
+      return AppTheme.draftWarning; // Amber - warning
+    }
+    if (_secondsRemaining <= 60) {
+      return AppTheme.draftNormal; // Blue - normal
+    }
+    return AppTheme.draftSuccess; // Green - plenty of time
   }
 
   String _formatTime() {
@@ -119,14 +130,16 @@ class _DraftTimerWidgetState extends State<DraftTimerWidget>
       return const SizedBox.shrink();
     }
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final color = _getTimerColor();
     final timeText = _formatTime();
 
     Widget timerContent = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
+        color: color.withAlpha(isDark ? 40 : 30),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: color, width: 2),
       ),
       child: Row(
@@ -135,15 +148,17 @@ class _DraftTimerWidgetState extends State<DraftTimerWidget>
           Icon(
             _secondsRemaining <= 0 ? Icons.smart_toy : Icons.timer,
             color: color,
-            size: 18,
+            size: 20,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Text(
             timeText,
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: 18,
+              fontFamily: 'monospace',
+              letterSpacing: 0.5,
             ),
           ),
         ],

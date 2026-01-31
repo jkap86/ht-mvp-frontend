@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/app_theme.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_pick.dart';
 import '../../domain/draft_pick_asset.dart';
@@ -59,15 +60,15 @@ class DraftBoardGridView extends ConsumerWidget {
         // Grid content
         Expanded(
           child: state.teamsOnXAxis
-              ? _buildTeamsOnXAxis(state, draft)
-              : _buildTeamsOnYAxis(state, draft),
+              ? _buildTeamsOnXAxis(context, state, draft)
+              : _buildTeamsOnYAxis(context, state, draft),
         ),
       ],
     );
   }
 
   /// Teams on X-axis (columns), Rounds on Y-axis (rows) - NEW DEFAULT
-  Widget _buildTeamsOnXAxis(DraftRoomState state, Draft draft) {
+  Widget _buildTeamsOnXAxis(BuildContext context, DraftRoomState state, Draft draft) {
     final grid = buildDraftGrid(
       picks: state.picks,
       draftOrder: state.draftOrder,
@@ -84,11 +85,12 @@ class DraftBoardGridView extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header row with team names
-              _buildTeamHeaderRow(state.draftOrder, currentCell),
+              _buildTeamHeaderRow(context, state.draftOrder, currentCell),
               const SizedBox(height: 4),
               // Round rows
               for (int round = 1; round <= draft.rounds; round++)
                 _buildRoundRow(
+                  context: context,
                   round: round,
                   draftOrder: state.draftOrder,
                   grid: grid,
@@ -104,7 +106,7 @@ class DraftBoardGridView extends ConsumerWidget {
   }
 
   /// Teams on Y-axis (rows), Rounds on X-axis (columns) - ORIGINAL
-  Widget _buildTeamsOnYAxis(DraftRoomState state, Draft draft) {
+  Widget _buildTeamsOnYAxis(BuildContext context, DraftRoomState state, Draft draft) {
     final grid = buildDraftGrid(
       picks: state.picks,
       draftOrder: state.draftOrder,
@@ -121,10 +123,11 @@ class DraftBoardGridView extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header row with round numbers
-              _buildRoundHeaderRow(draft.rounds),
+              _buildRoundHeaderRow(context, draft.rounds),
               const SizedBox(height: 4),
               // Team rows
               ...state.draftOrder.map((entry) => _buildTeamRow(
+                context: context,
                 entry: entry,
                 roundPicks: grid[entry.rosterId] ?? {},
                 draft: draft,
@@ -139,33 +142,43 @@ class DraftBoardGridView extends ConsumerWidget {
     );
   }
 
-  Widget _buildRoundHeaderRow(int totalRounds) {
+  Widget _buildRoundHeaderRow(BuildContext context, int totalRounds) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         // Empty cell for team name column
         Container(
           width: 100,
-          height: 28,
+          height: 32,
           alignment: Alignment.center,
-          child: const Text(
+          child: Text(
             'Team',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
         ),
         // Round number headers
         for (int round = 1; round <= totalRounds; round++)
           Container(
-            width: 82,
-            height: 28,
+            width: 92,
+            height: 32,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(4),
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(6),
             ),
             margin: const EdgeInsets.symmetric(horizontal: 1),
             child: Text(
               'R$round',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
           ),
       ],
@@ -174,39 +187,51 @@ class DraftBoardGridView extends ConsumerWidget {
 
   /// Header row with team names (for teams-on-X-axis layout)
   Widget _buildTeamHeaderRow(
+    BuildContext context,
     List<DraftOrderEntry> draftOrder,
     ({int rosterId, int round})? currentCell,
   ) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         // Empty cell for round label column
         Container(
-          width: 50,
-          height: 54,
+          width: 54,
+          height: 58,
           alignment: Alignment.center,
-          child: const Text(
+          child: Text(
             'Round',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
         ),
         // Team headers
         for (final entry in draftOrder)
-          _buildTeamHeaderCell(entry, currentCell?.rosterId == entry.rosterId),
+          _buildTeamHeaderCell(context, entry, currentCell?.rosterId == entry.rosterId),
       ],
     );
   }
 
-  Widget _buildTeamHeaderCell(DraftOrderEntry entry, bool isCurrentTeam) {
+  Widget _buildTeamHeaderCell(BuildContext context, DraftOrderEntry entry, bool isCurrentTeam) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      width: 82,
-      height: 54,
+      width: 92,
+      height: 58,
       alignment: Alignment.center,
       margin: const EdgeInsets.symmetric(horizontal: 1),
       decoration: BoxDecoration(
-        color: isCurrentTeam ? Colors.amber.shade100 : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(4),
+        color: isCurrentTeam
+            ? AppTheme.draftActionPrimary.withAlpha(isDark ? 40 : 25)
+            : theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: isCurrentTeam ? Colors.amber : Colors.transparent,
+          color: isCurrentTeam ? AppTheme.draftActionPrimary : Colors.transparent,
           width: isCurrentTeam ? 2 : 0,
         ),
       ),
@@ -221,8 +246,11 @@ class DraftBoardGridView extends ConsumerWidget {
                 child: Text(
                   entry.username,
                   style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: isCurrentTeam ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 10,
+                    fontWeight: isCurrentTeam ? FontWeight.w600 : FontWeight.w500,
+                    color: isCurrentTeam
+                        ? AppTheme.draftActionPrimary
+                        : theme.colorScheme.onSurface,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -230,21 +258,25 @@ class DraftBoardGridView extends ConsumerWidget {
               ),
               if (entry.isAutodraftEnabled)
                 Padding(
-                  padding: const EdgeInsets.only(left: 2),
+                  padding: const EdgeInsets.only(left: 3),
                   child: Tooltip(
                     message: 'Autodraft enabled',
                     child: Icon(
                       Icons.flash_auto,
                       size: 12,
-                      color: Colors.orange.shade700,
+                      color: AppTheme.draftWarning,
                     ),
                   ),
                 ),
             ],
           ),
+          const SizedBox(height: 2),
           Text(
             '#${entry.draftPosition}',
-            style: TextStyle(fontSize: 8, color: Colors.grey.shade600),
+            style: TextStyle(
+              fontSize: 9,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -253,6 +285,7 @@ class DraftBoardGridView extends ConsumerWidget {
 
   /// Row of picks for a single round (for teams-on-X-axis layout)
   Widget _buildRoundRow({
+    required BuildContext context,
     required int round,
     required List<DraftOrderEntry> draftOrder,
     required Map<int, Map<int, DraftPick?>> grid,
@@ -260,21 +293,27 @@ class DraftBoardGridView extends ConsumerWidget {
     required ({int rosterId, int round})? currentCell,
     required List<DraftPickAsset> pickAssets,
   }) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         // Round label
         Container(
-          width: 50,
-          height: 54,
+          width: 54,
+          height: 58,
           alignment: Alignment.center,
           margin: const EdgeInsets.symmetric(vertical: 1),
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(4),
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
             'R$round',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
         ),
         // Pick cells for each team
@@ -294,6 +333,7 @@ class DraftBoardGridView extends ConsumerWidget {
   }
 
   Widget _buildTeamRow({
+    required BuildContext context,
     required DraftOrderEntry entry,
     required Map<int, DraftPick?> roundPicks,
     required Draft draft,
@@ -301,6 +341,8 @@ class DraftBoardGridView extends ConsumerWidget {
     required ({int rosterId, int round})? currentCell,
     required List<DraftPickAsset> pickAssets,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isCurrentTeam = currentCell?.rosterId == entry.rosterId;
 
     return Row(
@@ -308,15 +350,17 @@ class DraftBoardGridView extends ConsumerWidget {
         // Team name cell
         Container(
           width: 100,
-          height: 54,
+          height: 58,
           alignment: Alignment.centerLeft,
           padding: const EdgeInsets.symmetric(horizontal: 8),
           margin: const EdgeInsets.symmetric(vertical: 1),
           decoration: BoxDecoration(
-            color: isCurrentTeam ? Colors.amber.shade100 : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(4),
+            color: isCurrentTeam
+                ? AppTheme.draftActionPrimary.withAlpha(isDark ? 40 : 25)
+                : theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: isCurrentTeam ? Colors.amber : Colors.transparent,
+              color: isCurrentTeam ? AppTheme.draftActionPrimary : Colors.transparent,
               width: isCurrentTeam ? 2 : 0,
             ),
           ),
@@ -330,8 +374,11 @@ class DraftBoardGridView extends ConsumerWidget {
                     child: Text(
                       entry.username,
                       style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: isCurrentTeam ? FontWeight.bold : FontWeight.w500,
+                        fontSize: 11,
+                        fontWeight: isCurrentTeam ? FontWeight.w600 : FontWeight.w500,
+                        color: isCurrentTeam
+                            ? AppTheme.draftActionPrimary
+                            : theme.colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -344,16 +391,17 @@ class DraftBoardGridView extends ConsumerWidget {
                       child: Icon(
                         Icons.flash_auto,
                         size: 14,
-                        color: Colors.orange.shade700,
+                        color: AppTheme.draftWarning,
                       ),
                     ),
                 ],
               ),
+              const SizedBox(height: 2),
               Text(
                 'Pick ${entry.draftPosition}',
                 style: TextStyle(
-                  fontSize: 9,
-                  color: Colors.grey.shade600,
+                  fontSize: 10,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

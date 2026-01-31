@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+
+/// Returns the industry-standard color for a given position.
+/// These colors are optimized for visual distinction and accessibility.
 Color getPositionColor(String position) {
   switch (position.toUpperCase()) {
     case 'QB':
-      return Colors.red;
+      return AppTheme.positionQB;   // Pink/Magenta
     case 'RB':
-      return Colors.green;
+      return AppTheme.positionRB;   // Teal
     case 'WR':
-      return Colors.blue;
+      return AppTheme.positionWR;   // Blue
     case 'TE':
-      return Colors.orange;
+      return AppTheme.positionTE;   // Orange
     case 'K':
-      return Colors.purple;
+      return AppTheme.positionK;    // Purple
     case 'DEF':
-      return Colors.brown;
+    case 'DST':
+      return AppTheme.positionDEF;  // Brown
+    case 'FLEX':
+      return AppTheme.positionFLEX; // Blue-grey
     default:
-      return Colors.grey;
+      return AppTheme.positionFLEX; // Blue-grey for unknown
   }
 }

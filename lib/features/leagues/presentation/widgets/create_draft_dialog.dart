@@ -37,11 +37,18 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
   late TextEditingController _roundsController;
   late TextEditingController _timerController;
 
-  // Auction settings
+  // Auction settings - shared
   int _auctionBudget = 200;
   int _minBid = 1;
-  int _nominationTimeSeconds = 30;
   String _auctionMode = 'slow'; // 'slow' or 'fast'
+
+  // Slow auction specific
+  int _bidWindowHours = 12;
+  int _maxActivePerTeam = 2;
+
+  // Fast auction specific
+  int _nominationTimeSeconds = 30;
+  int _resetOnBidSeconds = 10;
 
   @override
   void initState() {
@@ -478,6 +485,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                   title: 'Auction Settings',
                   icon: Icons.attach_money,
                   children: [
+                    // Mode - always shown
                     _buildOptionSelector(
                       label: 'Mode',
                       options: [
@@ -487,6 +495,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                       selectedValue: _auctionMode,
                       onSelected: (v) => setState(() => _auctionMode = v),
                     ),
+                    // Budget - always shown
                     _buildOptionSelector(
                       label: 'Budget',
                       options: [
@@ -498,6 +507,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                       selectedValue: _auctionBudget,
                       onSelected: (v) => setState(() => _auctionBudget = v),
                     ),
+                    // Min Bid - always shown
                     _buildOptionSelector(
                       label: 'Min Bid',
                       options: [
@@ -508,16 +518,55 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                       selectedValue: _minBid,
                       onSelected: (v) => setState(() => _minBid = v),
                     ),
-                    _buildOptionSelector(
-                      label: 'Nom. Time',
-                      options: [
-                        (label: '15s', value: 15),
-                        (label: '30s', value: 30),
-                        (label: '45s', value: 45),
-                      ],
-                      selectedValue: _nominationTimeSeconds,
-                      onSelected: (v) => setState(() => _nominationTimeSeconds = v),
-                    ),
+                    // SLOW MODE ONLY
+                    if (_auctionMode == 'slow') ...[
+                      _buildOptionSelector(
+                        label: 'Bid Window',
+                        options: [
+                          (label: '1hr', value: 1),
+                          (label: '4hr', value: 4),
+                          (label: '12hr', value: 12),
+                          (label: '24hr', value: 24),
+                        ],
+                        selectedValue: _bidWindowHours,
+                        onSelected: (v) => setState(() => _bidWindowHours = v),
+                      ),
+                      _buildOptionSelector(
+                        label: 'Max Active',
+                        options: [
+                          (label: '1', value: 1),
+                          (label: '2', value: 2),
+                          (label: '3', value: 3),
+                          (label: '5', value: 5),
+                        ],
+                        selectedValue: _maxActivePerTeam,
+                        onSelected: (v) => setState(() => _maxActivePerTeam = v),
+                      ),
+                    ],
+                    // FAST MODE ONLY
+                    if (_auctionMode == 'fast') ...[
+                      _buildOptionSelector(
+                        label: 'Nom. Time',
+                        options: [
+                          (label: '15s', value: 15),
+                          (label: '30s', value: 30),
+                          (label: '45s', value: 45),
+                        ],
+                        selectedValue: _nominationTimeSeconds,
+                        onSelected: (v) => setState(() => _nominationTimeSeconds = v),
+                      ),
+                      _buildOptionSelector(
+                        label: 'Bid Reset',
+                        options: [
+                          (label: '5s', value: 5),
+                          (label: '10s', value: 10),
+                          (label: '15s', value: 15),
+                          (label: '20s', value: 20),
+                        ],
+                        selectedValue: _resetOnBidSeconds,
+                        onSelected: (v) => setState(() => _resetOnBidSeconds = v),
+                      ),
+                    ],
                   ],
                 ),
             ],
@@ -557,10 +606,19 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
               pickTimeSeconds: timer,
               auctionSettings: _selectedDraftType == DraftType.auction
                   ? {
+                      'auction_mode': _auctionMode,
                       'budget': _auctionBudget,
                       'min_bid': _minBid,
-                      'nomination_time_seconds': _nominationTimeSeconds,
-                      'auction_mode': _auctionMode,
+                      // Slow mode fields
+                      if (_auctionMode == 'slow') ...{
+                        'bid_window_seconds': _bidWindowHours * 3600,
+                        'max_active_nominations_per_team': _maxActivePerTeam,
+                      },
+                      // Fast mode fields
+                      if (_auctionMode == 'fast') ...{
+                        'nomination_seconds': _nominationTimeSeconds,
+                        'reset_on_bid_seconds': _resetOnBidSeconds,
+                      },
                     }
                   : null,
             );

@@ -168,7 +168,10 @@ class SlowAuctionScreen extends ConsumerWidget {
                             player: player,
                             highBidderName: highBidder?.username ?? 'Unknown',
                             isWinning: isWinning,
-                            onTap: () => _showBidDialog(
+                            leagueId: leagueId,
+                            draftId: draftId,
+                            draftOrder: draftOrder,
+                            onBidTap: () => _showBidDialog(
                               context,
                               lot,
                               players,

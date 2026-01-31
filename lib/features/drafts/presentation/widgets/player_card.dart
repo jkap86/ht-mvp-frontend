@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
 import '../../../players/domain/player.dart';
 import '../utils/position_colors.dart';
 
@@ -29,6 +30,8 @@ class PlayerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final positionColor = getPositionColor(player.primaryPosition);
 
     return Opacity(
@@ -46,6 +49,7 @@ class PlayerCard extends StatelessWidget {
                 _PositionBadge(
                   position: player.primaryPosition,
                   color: positionColor,
+                  isDark: isDark,
                 ),
                 const SizedBox(width: 12),
 
@@ -59,9 +63,10 @@ class PlayerCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               player.fullName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
                                 fontSize: 15,
+                                color: theme.colorScheme.onSurface,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -88,27 +93,32 @@ class PlayerCard extends StatelessWidget {
                             ),
                         ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
                           Text(
                             player.team ?? 'FA',
                             style: TextStyle(
-                              color: Colors.grey.shade600,
+                              color: theme.colorScheme.onSurfaceVariant,
                               fontSize: 13,
                             ),
                           ),
                           if (player.team != null) ...[
-                            Text(
-                              ' • ',
-                              style: TextStyle(color: Colors.grey.shade400),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              child: Text(
+                                '•',
+                                style: TextStyle(
+                                  color: theme.colorScheme.outlineVariant,
+                                ),
+                              ),
                             ),
                             Text(
                               player.primaryPosition,
                               style: TextStyle(
                                 color: positionColor,
                                 fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -120,7 +130,7 @@ class PlayerCard extends StatelessWidget {
 
                 // Projection Points
                 if (player.remainingProjectedPts != null || player.priorSeasonPts != null) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisSize: MainAxisSize.min,
@@ -129,15 +139,17 @@ class PlayerCard extends StatelessWidget {
                         (player.remainingProjectedPts ?? player.priorSeasonPts ?? 0).toStringAsFixed(1),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: Theme.of(context).primaryColor,
+                          fontSize: 16,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
                         player.remainingProjectedPts != null ? 'PROJ' : 'LAST YR',
                         style: TextStyle(
                           fontSize: 9,
-                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -155,6 +167,8 @@ class PlayerCard extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -163,7 +177,7 @@ class PlayerCard extends StatelessWidget {
           IconButton(
             icon: Icon(
               isQueued ? Icons.playlist_add_check : Icons.playlist_add,
-              color: isQueued ? Colors.green : Colors.grey,
+              color: isQueued ? AppTheme.draftActionPrimary : theme.colorScheme.onSurfaceVariant,
             ),
             onPressed: isQueued ? onRemoveFromQueue : onAddToQueue,
             tooltip: isQueued ? 'Remove from queue' : 'Add to queue',
@@ -173,16 +187,17 @@ class PlayerCard extends StatelessWidget {
         // Draft Button
         if (showDraftButton && canDraft && onDraft != null)
           Padding(
-            padding: const EdgeInsets.only(left: 4),
+            padding: const EdgeInsets.only(left: 8),
             child: ElevatedButton(
               onPressed: onDraft,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: AppTheme.draftActionPrimary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
+                elevation: 0,
               ),
               child: const Text(
                 'DRAFT',
@@ -197,19 +212,19 @@ class PlayerCard extends StatelessWidget {
   Color _getInjuryColor(String? status) {
     switch (status?.toUpperCase()) {
       case 'OUT':
-        return Colors.red;
+        return AppTheme.injuryOut;
       case 'DOUBTFUL':
-        return Colors.red.shade300;
+        return AppTheme.injuryDoubtful.withAlpha(200);
       case 'QUESTIONABLE':
-        return Colors.orange;
+        return AppTheme.injuryQuestionable;
       case 'PROBABLE':
-        return Colors.yellow.shade700;
+        return AppTheme.injuryProbable.withAlpha(180);
       case 'IR':
-        return Colors.red.shade900;
+        return AppTheme.injuryOut;
       case 'PUP':
-        return Colors.grey;
+        return const Color(0xFF6E7681);
       default:
-        return Colors.grey;
+        return const Color(0xFF6E7681);
     }
   }
 }
@@ -217,10 +232,12 @@ class PlayerCard extends StatelessWidget {
 class _PositionBadge extends StatelessWidget {
   final String position;
   final Color color;
+  final bool isDark;
 
   const _PositionBadge({
     required this.position,
     required this.color,
+    required this.isDark,
   });
 
   @override
@@ -229,9 +246,12 @@ class _PositionBadge extends StatelessWidget {
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: color.withAlpha(isDark ? 50 : 35),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+        border: Border.all(
+          color: color.withAlpha(isDark ? 100 : 70),
+          width: 1.5,
+        ),
       ),
       child: Center(
         child: Text(

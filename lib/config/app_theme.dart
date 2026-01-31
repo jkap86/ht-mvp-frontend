@@ -17,6 +17,28 @@ class AppTheme {
   static const Color darkTextPrimary = Color(0xFFE0E0E0);
   static const Color darkTextSecondary = Color(0xFF9E9E9E);
 
+  // Draft-specific semantic colors
+  static const Color draftActionPrimary = Color(0xFF238636);  // Draft button, your turn
+  static const Color draftUrgent = Color(0xFFDA3633);         // Timer urgent (<10s)
+  static const Color draftWarning = Color(0xFFD29922);        // Timer warning (10-30s)
+  static const Color draftNormal = Color(0xFF1F6FEB);         // Timer normal, in-progress
+  static const Color draftSuccess = Color(0xFF238636);        // Timer plenty of time (>60s)
+
+  // Position colors (industry standard)
+  static const Color positionQB = Color(0xFFE91E63);   // Pink/Magenta
+  static const Color positionRB = Color(0xFF00BFA5);   // Teal
+  static const Color positionWR = Color(0xFF2196F3);   // Blue
+  static const Color positionTE = Color(0xFFFF9800);   // Orange
+  static const Color positionK = Color(0xFF9C27B0);    // Purple
+  static const Color positionDEF = Color(0xFF795548);  // Brown
+  static const Color positionFLEX = Color(0xFF607D8B); // Blue-grey
+
+  // Injury status colors
+  static const Color injuryOut = Color(0xFFDA3633);
+  static const Color injuryDoubtful = Color(0xFFDA3633);
+  static const Color injuryQuestionable = Color(0xFFD29922);
+  static const Color injuryProbable = Color(0xFFD29922);
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
