@@ -49,7 +49,8 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         );
       }
     } finally {
-      if (context.mounted) setState(() => _isPickSubmitting = false);
+      _isPickSubmitting = false; // Always reset flag
+      if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
     }
   }
 
@@ -65,7 +66,8 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         );
       }
     } finally {
-      if (context.mounted) setState(() => _isQueueSubmitting = false);
+      _isQueueSubmitting = false; // Always reset flag
+      if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
     }
   }
 
@@ -81,7 +83,8 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         );
       }
     } finally {
-      if (context.mounted) setState(() => _isNominateSubmitting = false);
+      _isNominateSubmitting = false; // Always reset flag
+      if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
     }
   }
 
@@ -97,7 +100,8 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         );
       }
     } finally {
-      if (context.mounted) setState(() => _isMaxBidSubmitting = false);
+      _isMaxBidSubmitting = false; // Always reset flag
+      if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
     }
   }
 
@@ -113,7 +117,8 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         );
       }
     } finally {
-      if (context.mounted) setState(() => _isStartingDraft = false);
+      _isStartingDraft = false; // Always reset flag
+      if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
     }
   }
 
