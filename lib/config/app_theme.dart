@@ -25,13 +25,21 @@ class AppTheme {
   static const Color draftSuccess = Color(0xFF238636);        // Timer plenty of time (>60s)
 
   // Position colors (industry standard)
-  static const Color positionQB = Color(0xFFE91E63);   // Pink/Magenta
-  static const Color positionRB = Color(0xFF00BFA5);   // Teal
-  static const Color positionWR = Color(0xFF2196F3);   // Blue
-  static const Color positionTE = Color(0xFFFF9800);   // Orange
-  static const Color positionK = Color(0xFF9C27B0);    // Purple
-  static const Color positionDEF = Color(0xFF795548);  // Brown
-  static const Color positionFLEX = Color(0xFF607D8B); // Blue-grey
+  static const Color positionQB = Color(0xFFE91E63);        // Pink/Magenta
+  static const Color positionRB = Color(0xFF00BFA5);        // Teal
+  static const Color positionWR = Color(0xFF2196F3);        // Blue
+  static const Color positionTE = Color(0xFFFF9800);        // Orange
+  static const Color positionK = Color(0xFF9C27B0);         // Purple
+  static const Color positionDEF = Color(0xFF795548);       // Brown
+  static const Color positionFLEX = Color(0xFF607D8B);      // Blue-grey
+  static const Color positionSuperFlex = Color(0xFF7C4DFF); // Deep Purple
+  static const Color positionRecFlex = Color(0xFF00ACC1);   // Cyan
+  static const Color positionDL = Color(0xFF5D4037);        // Brown (dark)
+  static const Color positionLB = Color(0xFF6D4C41);        // Brown (medium)
+  static const Color positionDB = Color(0xFF8D6E63);        // Brown (light)
+  static const Color positionIdpFlex = Color(0xFF795548);   // Brown
+  static const Color positionIR = Color(0xFF9E9E9E);        // Grey
+  static const Color positionTaxi = Color(0xFFFFB300);      // Amber/Gold
 
   // Injury status colors
   static const Color injuryOut = Color(0xFFDA3633);

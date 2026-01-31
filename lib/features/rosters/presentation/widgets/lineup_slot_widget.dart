@@ -205,12 +205,28 @@ class LineupSlotWidget extends StatelessWidget {
         return Colors.orange;
       case LineupSlot.flex:
         return Colors.purple;
+      case LineupSlot.superFlex:
+        return Colors.deepPurple;
+      case LineupSlot.recFlex:
+        return Colors.cyan;
       case LineupSlot.k:
         return Colors.teal;
       case LineupSlot.def:
         return Colors.brown;
+      case LineupSlot.dl:
+        return Colors.brown.shade800;
+      case LineupSlot.lb:
+        return Colors.brown.shade600;
+      case LineupSlot.db:
+        return Colors.brown.shade400;
+      case LineupSlot.idpFlex:
+        return Colors.brown;
       case LineupSlot.bn:
         return Colors.grey;
+      case LineupSlot.ir:
+        return Colors.grey.shade600;
+      case LineupSlot.taxi:
+        return Colors.amber;
     }
   }
 

@@ -95,12 +95,28 @@ class _MovePlayerSheetContent extends StatelessWidget {
         return Icons.person;
       case LineupSlot.flex:
         return Icons.swap_horiz;
+      case LineupSlot.superFlex:
+        return Icons.swap_vert;
+      case LineupSlot.recFlex:
+        return Icons.swap_horizontal_circle;
       case LineupSlot.k:
         return Icons.sports_soccer;
       case LineupSlot.def:
         return Icons.shield;
+      case LineupSlot.dl:
+        return Icons.security;
+      case LineupSlot.lb:
+        return Icons.sports_martial_arts;
+      case LineupSlot.db:
+        return Icons.gpp_good;
+      case LineupSlot.idpFlex:
+        return Icons.local_police;
       case LineupSlot.bn:
         return Icons.chair;
+      case LineupSlot.ir:
+        return Icons.healing;
+      case LineupSlot.taxi:
+        return Icons.local_taxi;
     }
   }
 }

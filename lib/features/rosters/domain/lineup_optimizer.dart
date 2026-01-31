@@ -134,11 +134,22 @@ class LineupOptimizer {
         return 1;
       case LineupSlot.flex:
         return 1;
+      case LineupSlot.superFlex:
+        return 0;
+      case LineupSlot.recFlex:
+        return 0;
       case LineupSlot.k:
         return 1;
       case LineupSlot.def:
         return 1;
+      case LineupSlot.dl:
+      case LineupSlot.lb:
+      case LineupSlot.db:
+      case LineupSlot.idpFlex:
+        return 0;
       case LineupSlot.bn:
+      case LineupSlot.ir:
+      case LineupSlot.taxi:
         return 99; // unlimited
     }
   }

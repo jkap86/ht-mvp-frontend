@@ -5,9 +5,17 @@ enum LineupSlot {
   wr('WR'),
   te('TE'),
   flex('FLEX'),
+  superFlex('SUPER_FLEX'),
+  recFlex('REC_FLEX'),
   k('K'),
   def('DEF'),
-  bn('BN');
+  dl('DL'),
+  lb('LB'),
+  db('DB'),
+  idpFlex('IDP_FLEX'),
+  bn('BN'),
+  ir('IR'),
+  taxi('TAXI');
 
   final String code;
   const LineupSlot(this.code);
@@ -29,12 +37,28 @@ enum LineupSlot {
         return 'Tight End';
       case LineupSlot.flex:
         return 'Flex';
+      case LineupSlot.superFlex:
+        return 'Super Flex';
+      case LineupSlot.recFlex:
+        return 'Rec Flex';
       case LineupSlot.k:
         return 'Kicker';
       case LineupSlot.def:
         return 'Defense/ST';
+      case LineupSlot.dl:
+        return 'Defensive Line';
+      case LineupSlot.lb:
+        return 'Linebacker';
+      case LineupSlot.db:
+        return 'Defensive Back';
+      case LineupSlot.idpFlex:
+        return 'IDP Flex';
       case LineupSlot.bn:
         return 'Bench';
+      case LineupSlot.ir:
+        return 'Injured Reserve';
+      case LineupSlot.taxi:
+        return 'Taxi Squad';
     }
   }
 
@@ -53,12 +77,26 @@ enum LineupSlot {
         return pos == 'TE';
       case LineupSlot.flex:
         return ['RB', 'WR', 'TE'].contains(pos);
+      case LineupSlot.superFlex:
+        return ['QB', 'RB', 'WR', 'TE'].contains(pos);
+      case LineupSlot.recFlex:
+        return ['WR', 'TE'].contains(pos);
       case LineupSlot.k:
         return pos == 'K';
       case LineupSlot.def:
         return pos == 'DEF';
+      case LineupSlot.dl:
+        return pos == 'DL';
+      case LineupSlot.lb:
+        return pos == 'LB';
+      case LineupSlot.db:
+        return pos == 'DB';
+      case LineupSlot.idpFlex:
+        return ['DL', 'LB', 'DB'].contains(pos);
       case LineupSlot.bn:
-        return true; // Bench can hold anyone
+      case LineupSlot.ir:
+      case LineupSlot.taxi:
+        return true; // Can hold any player
     }
   }
 }
@@ -70,9 +108,17 @@ class LineupSlots {
   final List<int> wr;
   final List<int> te;
   final List<int> flex;
+  final List<int> superFlex;
+  final List<int> recFlex;
   final List<int> k;
   final List<int> def;
+  final List<int> dl;
+  final List<int> lb;
+  final List<int> db;
+  final List<int> idpFlex;
   final List<int> bn;
+  final List<int> ir;
+  final List<int> taxi;
 
   LineupSlots({
     this.qb = const [],
@@ -80,22 +126,41 @@ class LineupSlots {
     this.wr = const [],
     this.te = const [],
     this.flex = const [],
+    this.superFlex = const [],
+    this.recFlex = const [],
     this.k = const [],
     this.def = const [],
+    this.dl = const [],
+    this.lb = const [],
+    this.db = const [],
+    this.idpFlex = const [],
     this.bn = const [],
+    this.ir = const [],
+    this.taxi = const [],
   });
 
-  /// Get all starter player IDs (non-bench)
-  List<int> get starters => [...qb, ...rb, ...wr, ...te, ...flex, ...k, ...def];
+  /// Get all starter player IDs (non-bench, non-reserve)
+  List<int> get starters => [
+    ...qb, ...rb, ...wr, ...te,
+    ...flex, ...superFlex, ...recFlex,
+    ...k, ...def,
+    ...dl, ...lb, ...db, ...idpFlex,
+  ];
 
   /// Get all player IDs
-  List<int> get allPlayers => [...starters, ...bn];
+  List<int> get allPlayers => [...starters, ...bn, ...ir, ...taxi];
 
   /// Check if a player is in the starting lineup
   bool isStarter(int playerId) => starters.contains(playerId);
 
   /// Check if a player is on the bench
   bool isBenched(int playerId) => bn.contains(playerId);
+
+  /// Check if a player is on IR
+  bool isOnIR(int playerId) => ir.contains(playerId);
+
+  /// Check if a player is on taxi squad
+  bool isOnTaxi(int playerId) => taxi.contains(playerId);
 
   /// Get the slot a player is in (null if not in lineup)
   LineupSlot? getPlayerSlot(int playerId) {
@@ -104,9 +169,17 @@ class LineupSlots {
     if (wr.contains(playerId)) return LineupSlot.wr;
     if (te.contains(playerId)) return LineupSlot.te;
     if (flex.contains(playerId)) return LineupSlot.flex;
+    if (superFlex.contains(playerId)) return LineupSlot.superFlex;
+    if (recFlex.contains(playerId)) return LineupSlot.recFlex;
     if (k.contains(playerId)) return LineupSlot.k;
     if (def.contains(playerId)) return LineupSlot.def;
+    if (dl.contains(playerId)) return LineupSlot.dl;
+    if (lb.contains(playerId)) return LineupSlot.lb;
+    if (db.contains(playerId)) return LineupSlot.db;
+    if (idpFlex.contains(playerId)) return LineupSlot.idpFlex;
     if (bn.contains(playerId)) return LineupSlot.bn;
+    if (ir.contains(playerId)) return LineupSlot.ir;
+    if (taxi.contains(playerId)) return LineupSlot.taxi;
     return null;
   }
 
@@ -117,9 +190,17 @@ class LineupSlots {
       wr: (json['WR'] as List?)?.cast<int>() ?? [],
       te: (json['TE'] as List?)?.cast<int>() ?? [],
       flex: (json['FLEX'] as List?)?.cast<int>() ?? [],
+      superFlex: (json['SUPER_FLEX'] as List?)?.cast<int>() ?? [],
+      recFlex: (json['REC_FLEX'] as List?)?.cast<int>() ?? [],
       k: (json['K'] as List?)?.cast<int>() ?? [],
       def: (json['DEF'] as List?)?.cast<int>() ?? [],
+      dl: (json['DL'] as List?)?.cast<int>() ?? [],
+      lb: (json['LB'] as List?)?.cast<int>() ?? [],
+      db: (json['DB'] as List?)?.cast<int>() ?? [],
+      idpFlex: (json['IDP_FLEX'] as List?)?.cast<int>() ?? [],
       bn: (json['BN'] as List?)?.cast<int>() ?? [],
+      ir: (json['IR'] as List?)?.cast<int>() ?? [],
+      taxi: (json['TAXI'] as List?)?.cast<int>() ?? [],
     );
   }
 
@@ -130,9 +211,17 @@ class LineupSlots {
       'WR': wr,
       'TE': te,
       'FLEX': flex,
+      'SUPER_FLEX': superFlex,
+      'REC_FLEX': recFlex,
       'K': k,
       'DEF': def,
+      'DL': dl,
+      'LB': lb,
+      'DB': db,
+      'IDP_FLEX': idpFlex,
       'BN': bn,
+      'IR': ir,
+      'TAXI': taxi,
     };
   }
 
@@ -142,9 +231,17 @@ class LineupSlots {
     List<int>? wr,
     List<int>? te,
     List<int>? flex,
+    List<int>? superFlex,
+    List<int>? recFlex,
     List<int>? k,
     List<int>? def,
+    List<int>? dl,
+    List<int>? lb,
+    List<int>? db,
+    List<int>? idpFlex,
     List<int>? bn,
+    List<int>? ir,
+    List<int>? taxi,
   }) {
     return LineupSlots(
       qb: qb ?? this.qb,
@@ -152,9 +249,17 @@ class LineupSlots {
       wr: wr ?? this.wr,
       te: te ?? this.te,
       flex: flex ?? this.flex,
+      superFlex: superFlex ?? this.superFlex,
+      recFlex: recFlex ?? this.recFlex,
       k: k ?? this.k,
       def: def ?? this.def,
+      dl: dl ?? this.dl,
+      lb: lb ?? this.lb,
+      db: db ?? this.db,
+      idpFlex: idpFlex ?? this.idpFlex,
       bn: bn ?? this.bn,
+      ir: ir ?? this.ir,
+      taxi: taxi ?? this.taxi,
     );
   }
 }
@@ -229,9 +334,17 @@ class RosterConfig {
   final int wr;
   final int te;
   final int flex;
+  final int superFlex;
+  final int recFlex;
   final int k;
   final int def;
+  final int dl;
+  final int lb;
+  final int db;
+  final int idpFlex;
   final int bn;
+  final int ir;
+  final int taxi;
 
   const RosterConfig({
     this.qb = 1,
@@ -239,13 +352,21 @@ class RosterConfig {
     this.wr = 2,
     this.te = 1,
     this.flex = 1,
+    this.superFlex = 0,
+    this.recFlex = 0,
     this.k = 1,
     this.def = 1,
+    this.dl = 0,
+    this.lb = 0,
+    this.db = 0,
+    this.idpFlex = 0,
     this.bn = 6,
+    this.ir = 0,
+    this.taxi = 0,
   });
 
-  int get totalStarters => qb + rb + wr + te + flex + k + def;
-  int get totalRosterSize => totalStarters + bn;
+  int get totalStarters => qb + rb + wr + te + flex + superFlex + recFlex + k + def + dl + lb + db + idpFlex;
+  int get totalRosterSize => totalStarters + bn + ir + taxi;
 
   factory RosterConfig.fromJson(Map<String, dynamic> json) {
     return RosterConfig(
@@ -254,9 +375,17 @@ class RosterConfig {
       wr: json['WR'] as int? ?? 2,
       te: json['TE'] as int? ?? 1,
       flex: json['FLEX'] as int? ?? 1,
+      superFlex: json['SUPER_FLEX'] as int? ?? 0,
+      recFlex: json['REC_FLEX'] as int? ?? 0,
       k: json['K'] as int? ?? 1,
       def: json['DEF'] as int? ?? 1,
+      dl: json['DL'] as int? ?? 0,
+      lb: json['LB'] as int? ?? 0,
+      db: json['DB'] as int? ?? 0,
+      idpFlex: json['IDP_FLEX'] as int? ?? 0,
       bn: json['BN'] as int? ?? 6,
+      ir: json['IR'] as int? ?? 0,
+      taxi: json['TAXI'] as int? ?? 0,
     );
   }
 }

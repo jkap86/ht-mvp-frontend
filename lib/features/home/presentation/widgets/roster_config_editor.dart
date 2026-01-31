@@ -2,14 +2,27 @@ import 'package:flutter/material.dart';
 
 /// Model class to hold roster configuration
 class RosterConfig {
+  // Offense
   int qbSlots;
   int rbSlots;
   int wrSlots;
   int teSlots;
+  // Flex
   int flexSlots;
+  int superFlexSlots;
+  int recFlexSlots;
+  // Special Teams
   int kSlots;
   int defSlots;
+  // IDP
+  int dlSlots;
+  int lbSlots;
+  int dbSlots;
+  int idpFlexSlots;
+  // Reserve
   int bnSlots;
+  int irSlots;
+  int taxiSlots;
 
   RosterConfig({
     this.qbSlots = 1,
@@ -17,16 +30,42 @@ class RosterConfig {
     this.wrSlots = 2,
     this.teSlots = 1,
     this.flexSlots = 1,
+    this.superFlexSlots = 0,
+    this.recFlexSlots = 0,
     this.kSlots = 1,
     this.defSlots = 1,
+    this.dlSlots = 0,
+    this.lbSlots = 0,
+    this.dbSlots = 0,
+    this.idpFlexSlots = 0,
     this.bnSlots = 6,
+    this.irSlots = 0,
+    this.taxiSlots = 0,
   });
 
   int get totalSlots =>
-      qbSlots + rbSlots + wrSlots + teSlots + flexSlots + kSlots + defSlots + bnSlots;
+      qbSlots + rbSlots + wrSlots + teSlots +
+      flexSlots + superFlexSlots + recFlexSlots +
+      kSlots + defSlots +
+      dlSlots + lbSlots + dbSlots + idpFlexSlots +
+      bnSlots + irSlots + taxiSlots;
 
-  String get summary =>
-      'QB:$qbSlots  RB:$rbSlots  WR:$wrSlots  TE:$teSlots  FLEX:$flexSlots';
+  int get starterSlots =>
+      qbSlots + rbSlots + wrSlots + teSlots +
+      flexSlots + superFlexSlots + recFlexSlots +
+      kSlots + defSlots +
+      dlSlots + lbSlots + dbSlots + idpFlexSlots;
+
+  String get summary {
+    final parts = <String>[];
+    if (qbSlots > 0) parts.add('QB:$qbSlots');
+    if (rbSlots > 0) parts.add('RB:$rbSlots');
+    if (wrSlots > 0) parts.add('WR:$wrSlots');
+    if (teSlots > 0) parts.add('TE:$teSlots');
+    if (flexSlots > 0) parts.add('FLX:$flexSlots');
+    if (superFlexSlots > 0) parts.add('SF:$superFlexSlots');
+    return parts.join('  ');
+  }
 
   Map<String, int> toJson() {
     return {
@@ -35,19 +74,28 @@ class RosterConfig {
       'WR': wrSlots,
       'TE': teSlots,
       'FLEX': flexSlots,
+      'SUPER_FLEX': superFlexSlots,
+      'REC_FLEX': recFlexSlots,
       'K': kSlots,
       'DEF': defSlots,
+      'DL': dlSlots,
+      'LB': lbSlots,
+      'DB': dbSlots,
+      'IDP_FLEX': idpFlexSlots,
       'BN': bnSlots,
+      'IR': irSlots,
+      'TAXI': taxiSlots,
     };
   }
 }
 
 /// Collapsible editor for roster position configuration
-class RosterConfigEditor extends StatelessWidget {
+class RosterConfigEditor extends StatefulWidget {
   final RosterConfig config;
   final bool isExpanded;
   final ValueChanged<bool> onExpansionChanged;
   final VoidCallback onConfigChanged;
+  final String leagueMode; // 'redraft' or 'dynasty'
 
   const RosterConfigEditor({
     super.key,
@@ -55,11 +103,32 @@ class RosterConfigEditor extends StatelessWidget {
     required this.isExpanded,
     required this.onExpansionChanged,
     required this.onConfigChanged,
+    this.leagueMode = 'redraft',
   });
+
+  @override
+  State<RosterConfigEditor> createState() => _RosterConfigEditorState();
+}
+
+class _RosterConfigEditorState extends State<RosterConfigEditor> {
+  bool _showIDP = false;
+  bool _showReserve = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-expand sections if they have values
+    _showIDP = widget.config.dlSlots > 0 ||
+        widget.config.lbSlots > 0 ||
+        widget.config.dbSlots > 0 ||
+        widget.config.idpFlexSlots > 0;
+    _showReserve = widget.config.irSlots > 0 || widget.config.taxiSlots > 0;
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDynasty = widget.leagueMode == 'dynasty';
 
     return Container(
       decoration: BoxDecoration(
@@ -74,98 +143,224 @@ class RosterConfigEditor extends StatelessWidget {
           title: const Text('Roster Positions',
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
           subtitle: Text(
-            config.summary,
+            widget.config.summary,
             style: TextStyle(
                 fontSize: 11, color: colorScheme.onSurface.withAlpha(153)),
           ),
-          initiallyExpanded: isExpanded,
-          onExpansionChanged: onExpansionChanged,
+          initiallyExpanded: widget.isExpanded,
+          onExpansionChanged: widget.onExpansionChanged,
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // OFFENSE SECTION
+                  _SectionHeader(label: 'Offense'),
                   _PositionSlotRow(
                     label: 'QB',
-                    value: config.qbSlots,
+                    value: widget.config.qbSlots,
                     min: 0,
                     max: 3,
                     onChanged: (v) {
-                      config.qbSlots = v;
-                      onConfigChanged();
+                      widget.config.qbSlots = v;
+                      widget.onConfigChanged();
                     },
                   ),
                   _PositionSlotRow(
                     label: 'RB',
-                    value: config.rbSlots,
+                    value: widget.config.rbSlots,
                     min: 0,
                     max: 4,
                     onChanged: (v) {
-                      config.rbSlots = v;
-                      onConfigChanged();
+                      widget.config.rbSlots = v;
+                      widget.onConfigChanged();
                     },
                   ),
                   _PositionSlotRow(
                     label: 'WR',
-                    value: config.wrSlots,
+                    value: widget.config.wrSlots,
                     min: 0,
                     max: 4,
                     onChanged: (v) {
-                      config.wrSlots = v;
-                      onConfigChanged();
+                      widget.config.wrSlots = v;
+                      widget.onConfigChanged();
                     },
                   ),
                   _PositionSlotRow(
                     label: 'TE',
-                    value: config.teSlots,
+                    value: widget.config.teSlots,
                     min: 0,
                     max: 3,
                     onChanged: (v) {
-                      config.teSlots = v;
-                      onConfigChanged();
+                      widget.config.teSlots = v;
+                      widget.onConfigChanged();
                     },
                   ),
+
+                  const SizedBox(height: 8),
+
+                  // FLEX SECTION
+                  _SectionHeader(label: 'Flex'),
                   _PositionSlotRow(
                     label: 'FLEX',
-                    value: config.flexSlots,
+                    subtitle: 'RB/WR/TE',
+                    value: widget.config.flexSlots,
                     min: 0,
                     max: 4,
                     onChanged: (v) {
-                      config.flexSlots = v;
-                      onConfigChanged();
+                      widget.config.flexSlots = v;
+                      widget.onConfigChanged();
                     },
                   ),
                   _PositionSlotRow(
-                    label: 'K',
-                    value: config.kSlots,
+                    label: 'SUPER_FLEX',
+                    subtitle: 'QB/RB/WR/TE',
+                    value: widget.config.superFlexSlots,
                     min: 0,
                     max: 2,
                     onChanged: (v) {
-                      config.kSlots = v;
-                      onConfigChanged();
+                      widget.config.superFlexSlots = v;
+                      widget.onConfigChanged();
+                    },
+                  ),
+                  _PositionSlotRow(
+                    label: 'REC_FLEX',
+                    subtitle: 'WR/TE',
+                    value: widget.config.recFlexSlots,
+                    min: 0,
+                    max: 2,
+                    onChanged: (v) {
+                      widget.config.recFlexSlots = v;
+                      widget.onConfigChanged();
+                    },
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // SPECIAL TEAMS SECTION
+                  _SectionHeader(label: 'Special Teams'),
+                  _PositionSlotRow(
+                    label: 'K',
+                    value: widget.config.kSlots,
+                    min: 0,
+                    max: 2,
+                    onChanged: (v) {
+                      widget.config.kSlots = v;
+                      widget.onConfigChanged();
                     },
                   ),
                   _PositionSlotRow(
                     label: 'DEF',
-                    value: config.defSlots,
+                    value: widget.config.defSlots,
                     min: 0,
                     max: 2,
                     onChanged: (v) {
-                      config.defSlots = v;
-                      onConfigChanged();
+                      widget.config.defSlots = v;
+                      widget.onConfigChanged();
                     },
                   ),
-                  _PositionSlotRow(
-                    label: 'Bench',
-                    value: config.bnSlots,
-                    min: 0,
-                    max: 15,
-                    onChanged: (v) {
-                      config.bnSlots = v;
-                      onConfigChanged();
-                    },
-                  ),
+
                   const SizedBox(height: 8),
+
+                  // IDP SECTION (collapsible)
+                  _CollapsibleSection(
+                    label: 'IDP (Individual Defensive Players)',
+                    isExpanded: _showIDP,
+                    onToggle: () => setState(() => _showIDP = !_showIDP),
+                    children: [
+                      _PositionSlotRow(
+                        label: 'DL',
+                        subtitle: 'Defensive Line',
+                        value: widget.config.dlSlots,
+                        min: 0,
+                        max: 4,
+                        onChanged: (v) {
+                          widget.config.dlSlots = v;
+                          widget.onConfigChanged();
+                        },
+                      ),
+                      _PositionSlotRow(
+                        label: 'LB',
+                        subtitle: 'Linebacker',
+                        value: widget.config.lbSlots,
+                        min: 0,
+                        max: 4,
+                        onChanged: (v) {
+                          widget.config.lbSlots = v;
+                          widget.onConfigChanged();
+                        },
+                      ),
+                      _PositionSlotRow(
+                        label: 'DB',
+                        subtitle: 'Defensive Back',
+                        value: widget.config.dbSlots,
+                        min: 0,
+                        max: 4,
+                        onChanged: (v) {
+                          widget.config.dbSlots = v;
+                          widget.onConfigChanged();
+                        },
+                      ),
+                      _PositionSlotRow(
+                        label: 'IDP_FLEX',
+                        subtitle: 'DL/LB/DB',
+                        value: widget.config.idpFlexSlots,
+                        min: 0,
+                        max: 4,
+                        onChanged: (v) {
+                          widget.config.idpFlexSlots = v;
+                          widget.onConfigChanged();
+                        },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // RESERVE SECTION (collapsible)
+                  _CollapsibleSection(
+                    label: 'Reserve',
+                    isExpanded: _showReserve,
+                    onToggle: () => setState(() => _showReserve = !_showReserve),
+                    children: [
+                      _PositionSlotRow(
+                        label: 'Bench',
+                        value: widget.config.bnSlots,
+                        min: 0,
+                        max: 15,
+                        onChanged: (v) {
+                          widget.config.bnSlots = v;
+                          widget.onConfigChanged();
+                        },
+                      ),
+                      _PositionSlotRow(
+                        label: 'IR',
+                        subtitle: 'Injured Reserve',
+                        value: widget.config.irSlots,
+                        min: 0,
+                        max: 4,
+                        onChanged: (v) {
+                          widget.config.irSlots = v;
+                          widget.onConfigChanged();
+                        },
+                      ),
+                      if (isDynasty)
+                        _PositionSlotRow(
+                          label: 'TAXI',
+                          subtitle: 'Taxi Squad',
+                          value: widget.config.taxiSlots,
+                          min: 0,
+                          max: 6,
+                          onChanged: (v) {
+                            widget.config.taxiSlots = v;
+                            widget.onConfigChanged();
+                          },
+                        ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -174,7 +369,7 @@ class RosterConfigEditor extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'Total: ${config.totalSlots} roster spots',
+                      'Total: ${widget.config.totalSlots} roster spots (${widget.config.starterSlots} starters)',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
@@ -192,8 +387,81 @@ class RosterConfigEditor extends StatelessWidget {
   }
 }
 
+class _SectionHeader extends StatelessWidget {
+  final String label;
+
+  const _SectionHeader({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+    );
+  }
+}
+
+class _CollapsibleSection extends StatelessWidget {
+  final String label;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+  final List<Widget> children;
+
+  const _CollapsibleSection({
+    required this.label,
+    required this.isExpanded,
+    required this.onToggle,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Icon(
+                  isExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (isExpanded) ...children,
+      ],
+    );
+  }
+}
+
 class _PositionSlotRow extends StatelessWidget {
   final String label;
+  final String? subtitle;
   final int value;
   final int min;
   final int max;
@@ -201,6 +469,7 @@ class _PositionSlotRow extends StatelessWidget {
 
   const _PositionSlotRow({
     required this.label,
+    this.subtitle,
     required this.value,
     required this.min,
     required this.max,
@@ -210,13 +479,24 @@ class _PositionSlotRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          SizedBox(
-            width: 60,
-            child:
-                Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                if (subtitle != null)
+                  Text(
+                    subtitle!,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.remove_circle_outline, size: 20),

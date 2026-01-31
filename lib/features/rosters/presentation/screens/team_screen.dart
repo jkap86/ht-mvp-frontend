@@ -525,25 +525,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
   /// Check if a player can fit in a given lineup slot based on position
   bool _canPlayerFitInSlot(RosterPlayer player, LineupSlot slot) {
-    final position = player.position?.toUpperCase();
-    switch (slot) {
-      case LineupSlot.qb:
-        return position == 'QB';
-      case LineupSlot.rb:
-        return position == 'RB';
-      case LineupSlot.wr:
-        return position == 'WR';
-      case LineupSlot.te:
-        return position == 'TE';
-      case LineupSlot.flex:
-        return position == 'RB' || position == 'WR' || position == 'TE';
-      case LineupSlot.k:
-        return position == 'K';
-      case LineupSlot.def:
-        return position == 'DEF';
-      case LineupSlot.bn:
-        return true; // Any player can go on bench
-    }
+    // Use the canFill method from LineupSlot enum
+    return slot.canFill(player.position);
   }
 
   /// Handle tap on a starter slot
