@@ -29,8 +29,8 @@ class LeagueCard extends StatelessWidget {
         ),
         subtitle: Text('${league.status} - Season ${league.season}'),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () async {
-          await context.push('/leagues/${league.id}');
+        onTap: () {
+          context.go('/leagues/${league.id}');
           onNavigate?.call();
         },
       ),

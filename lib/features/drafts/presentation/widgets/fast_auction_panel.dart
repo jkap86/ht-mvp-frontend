@@ -64,6 +64,7 @@ class FastAuctionPanel extends StatelessWidget {
             FastAuctionWaitingState(
               isMyNomination: isMyNomination,
               onNominateTap: onNominateTap,
+              nominationDeadline: state.nominationDeadline,
             ),
         ],
       ),

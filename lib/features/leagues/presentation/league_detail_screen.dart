@@ -49,8 +49,8 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     if (context.canPop()) {
       context.pop();
     } else {
-      // At root of League tab, go to leagues list
-      context.go('/leagues');
+      // At root of League tab, go to home
+      context.go('/');
     }
   }
 

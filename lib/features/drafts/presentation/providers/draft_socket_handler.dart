@@ -34,7 +34,7 @@ abstract class DraftSocketCallbacks {
   void onLotWonReceived(int lotId);
   void onLotPassedReceived(int lotId);
   void onOutbidReceived(OutbidNotification notification);
-  void onNominatorChangedReceived(int? rosterId, int? nominationNumber);
+  void onNominatorChangedReceived(int? rosterId, int? nominationNumber, DateTime? nominationDeadline);
   void onAuctionErrorReceived(String message);
   // Autodraft callback
   void onAutodraftToggledReceived(int rosterId, bool enabled, bool forced);
@@ -171,9 +171,13 @@ class DraftSocketHandler {
     }));
 
     _addDisposer(_socketService.onAuctionNominatorChanged((data) {
+      // Parse nomination deadline from socket event
+      final deadlineStr = data['nominationDeadline'] as String?;
+      final nominationDeadline = deadlineStr != null ? DateTime.tryParse(deadlineStr) : null;
       _callbacks.onNominatorChangedReceived(
         data['nominatorRosterId'] as int?,
         data['nominationNumber'] as int?,
+        nominationDeadline,
       );
     }));
 

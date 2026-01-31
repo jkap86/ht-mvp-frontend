@@ -67,8 +67,10 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard> {
   }
 
   void _updateTimeRemaining() {
-    final now = DateTime.now();
-    final remaining = widget.lot.bidDeadline.difference(now);
+    // Use UTC for both to ensure correct countdown regardless of user's timezone
+    final now = DateTime.now().toUtc();
+    final deadline = widget.lot.bidDeadline.toUtc();
+    final remaining = deadline.difference(now);
     if (mounted) {
       setState(() {
         _timeRemaining = remaining.isNegative ? Duration.zero : remaining;
@@ -141,8 +143,10 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard> {
   }
 
   String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final diff = now.difference(dateTime);
+    // Use UTC for both to ensure consistent time differences
+    final now = DateTime.now().toUtc();
+    final utcDateTime = dateTime.toUtc();
+    final diff = now.difference(utcDateTime);
     if (diff.inDays > 0) return '${diff.inDays}d ago';
     if (diff.inHours > 0) return '${diff.inHours}h ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';

@@ -20,6 +20,8 @@ class SlowAuctionScreen extends ConsumerWidget {
   final int draftId;
   final Future<void> Function(int) onNominate;
   final Future<void> Function(int, int) onSetMaxBid;
+  final Future<void> Function() onStartDraft;
+  final bool isStartingDraft;
 
   const SlowAuctionScreen({
     super.key,
@@ -28,6 +30,8 @@ class SlowAuctionScreen extends ConsumerWidget {
     required this.draftId,
     required this.onNominate,
     required this.onSetMaxBid,
+    required this.onStartDraft,
+    required this.isStartingDraft,
   });
 
   @override
@@ -62,6 +66,13 @@ class SlowAuctionScreen extends ConsumerWidget {
     final auctionSettings = ref.watch(
       draftRoomProvider(providerKey).select((s) => s.auctionSettings),
     );
+    final isCommissioner = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.isCommissioner),
+    );
+
+    // Check if draft can be started (slow auctions don't require order confirmation)
+    final isDraftNotStarted = draft?.status.canStart ?? false;
+    final canStartDraft = isDraftNotStarted && isCommissioner;
 
     // Find lots where user has bid but is outbid (not currently winning)
     final outbidLots = activeLots.where((lot) {
@@ -77,6 +88,37 @@ class SlowAuctionScreen extends ConsumerWidget {
 
     return Column(
       children: [
+        // Start Draft banner for commissioners
+        if (canStartDraft)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: Theme.of(context).colorScheme.primaryContainer,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Ready to start the auction!',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: isStartingDraft ? null : onStartDraft,
+                  icon: isStartingDraft
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.play_arrow),
+                  label: Text(isStartingDraft ? 'Starting...' : 'Start Auction'),
+                ),
+              ],
+            ),
+          ),
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {

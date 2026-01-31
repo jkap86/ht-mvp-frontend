@@ -32,6 +32,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
   bool _isQueueSubmitting = false;
   bool _isNominateSubmitting = false;
   bool _isMaxBidSubmitting = false;
+  bool _isStartingDraft = false;
 
   DraftRoomKey get _providerKey => (leagueId: widget.leagueId, draftId: widget.draftId);
   DraftQueueKey get _queueKey => (leagueId: widget.leagueId, draftId: widget.draftId);
@@ -97,6 +98,22 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       }
     } finally {
       if (context.mounted) setState(() => _isMaxBidSubmitting = false);
+    }
+  }
+
+  Future<void> _startDraft() async {
+    if (_isStartingDraft) return; // Prevent double-tap
+    setState(() => _isStartingDraft = true);
+    try {
+      final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+      final error = await notifier.startDraft();
+      if (error != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
+        );
+      }
+    } finally {
+      if (context.mounted) setState(() => _isStartingDraft = false);
     }
   }
 
@@ -257,6 +274,8 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         onAddToQueue: _addToQueue,
         onNominate: _handleNominate,
         onSetMaxBid: _handleSetMaxBid,
+        onStartDraft: _startDraft,
+        isStartingDraft: _isStartingDraft,
       ),
     );
   }
@@ -273,6 +292,8 @@ class _DraftRoomBody extends ConsumerWidget {
   final Future<void> Function(int) onAddToQueue;
   final Future<void> Function(int) onNominate;
   final Future<void> Function(int, int) onSetMaxBid;
+  final Future<void> Function() onStartDraft;
+  final bool isStartingDraft;
 
   const _DraftRoomBody({
     required this.providerKey,
@@ -284,6 +305,8 @@ class _DraftRoomBody extends ConsumerWidget {
     required this.onAddToQueue,
     required this.onNominate,
     required this.onSetMaxBid,
+    required this.onStartDraft,
+    required this.isStartingDraft,
   });
 
   @override
@@ -303,6 +326,16 @@ class _DraftRoomBody extends ConsumerWidget {
     final isFastAuction = ref.watch(
       draftRoomProvider(providerKey).select((s) => s.isFastAuction),
     );
+    final isCommissioner = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.isCommissioner),
+    );
+
+    // Check if draft can be started
+    final isDraftNotStarted = draft?.status.canStart ?? false;
+    // Auctions don't require explicit order confirmation (initial order is created automatically)
+    final canStartDraft = isDraftNotStarted &&
+        isCommissioner &&
+        (draft?.orderConfirmed == true || isAuction);
 
     // Slow auction uses completely different UI (no grid)
     if (isAuction && !isFastAuction) {
@@ -312,6 +345,8 @@ class _DraftRoomBody extends ConsumerWidget {
         draftId: draftId,
         onNominate: onNominate,
         onSetMaxBid: onSetMaxBid,
+        onStartDraft: onStartDraft,
+        isStartingDraft: isStartingDraft,
       );
     }
 
@@ -321,6 +356,37 @@ class _DraftRoomBody extends ConsumerWidget {
         // Main content: status bar + grid view
         Column(
           children: [
+            // Start Draft banner for commissioners
+            if (canStartDraft)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Ready to start the draft!',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: isStartingDraft ? null : onStartDraft,
+                      icon: isStartingDraft
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.play_arrow),
+                      label: Text(isStartingDraft ? 'Starting...' : 'Start Draft'),
+                    ),
+                  ],
+                ),
+              ),
             DraftStatusBar(
               draft: draft,
               currentPickerName: currentPickerName,

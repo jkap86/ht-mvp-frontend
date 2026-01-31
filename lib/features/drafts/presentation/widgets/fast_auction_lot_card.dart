@@ -51,8 +51,9 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
   }
 
   void _updateRemaining() {
-    final now = DateTime.now();
-    final deadline = widget.lot.bidDeadline;
+    // Use UTC for both to ensure correct countdown regardless of user's timezone
+    final now = DateTime.now().toUtc();
+    final deadline = widget.lot.bidDeadline.toUtc();
     setState(() {
       _remaining = deadline.difference(now);
       if (_remaining.isNegative) {

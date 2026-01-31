@@ -459,10 +459,8 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
   }
 
   Widget _buildStartButton(BuildContext context) {
-    // Slow auctions don't require order confirmation since nominations are open
-    final isSlowAuction = widget.draft.isAuction &&
-        widget.draft.settings?.isFastAuction != true;
-    final canStart = widget.draft.orderConfirmed || isSlowAuction;
+    // Auctions don't require order confirmation (initial order is created automatically)
+    final canStart = widget.draft.orderConfirmed || widget.draft.isAuction;
     return Tooltip(
       message: canStart ? '' : 'Randomize draft order first',
       child: ElevatedButton(

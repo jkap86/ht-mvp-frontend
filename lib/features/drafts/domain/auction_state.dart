@@ -19,6 +19,9 @@ class AuctionState {
   /// Current nomination number (fast auction only)
   final int? nominationNumber;
 
+  /// Nomination deadline (fast auction only)
+  final DateTime? nominationDeadline;
+
   /// Auction settings
   final AuctionSettings? settings;
 
@@ -36,6 +39,7 @@ class AuctionState {
     required this.activeLots,
     this.currentNominatorRosterId,
     this.nominationNumber,
+    this.nominationDeadline,
     this.settings,
     required this.budgets,
     this.dailyNominationsRemaining,
@@ -55,6 +59,12 @@ class AuctionState {
     final nominationStatsJson =
         json['nomination_stats'] as Map<String, dynamic>?;
 
+    // Parse nomination deadline from API response
+    final nominationDeadlineStr = json['nomination_deadline'] as String?;
+    final nominationDeadline = nominationDeadlineStr != null
+        ? DateTime.tryParse(nominationDeadlineStr)
+        : null;
+
     return AuctionState(
       auctionMode: json['auction_mode'] as String? ?? 'slow',
       activeLot:
@@ -64,6 +74,7 @@ class AuctionState {
           .toList(),
       currentNominatorRosterId: json['current_nominator_roster_id'] as int?,
       nominationNumber: json['nomination_number'] as int?,
+      nominationDeadline: nominationDeadline,
       settings:
           settingsJson != null ? AuctionSettings.fromJson(settingsJson) : null,
       budgets: budgetsJson
@@ -84,6 +95,7 @@ class AuctionState {
     List<AuctionLot>? activeLots,
     int? currentNominatorRosterId,
     int? nominationNumber,
+    DateTime? nominationDeadline,
     AuctionSettings? settings,
     List<AuctionBudget>? budgets,
     int? dailyNominationsRemaining,
@@ -97,6 +109,7 @@ class AuctionState {
       currentNominatorRosterId:
           currentNominatorRosterId ?? this.currentNominatorRosterId,
       nominationNumber: nominationNumber ?? this.nominationNumber,
+      nominationDeadline: nominationDeadline ?? this.nominationDeadline,
       settings: settings ?? this.settings,
       budgets: budgets ?? this.budgets,
       dailyNominationsRemaining:

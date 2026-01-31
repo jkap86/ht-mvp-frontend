@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/providers/league_context_provider.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../auth/presentation/auth_provider.dart';
 import '../../../leagues/domain/league.dart';
@@ -37,6 +38,7 @@ class DraftRoomState {
   final String auctionMode;
   final int? currentNominatorRosterId;
   final int? nominationNumber;
+  final DateTime? nominationDeadline;
   // Slow auction nomination stats
   final int? dailyNominationsRemaining;
   final int? dailyNominationLimit;
@@ -47,6 +49,8 @@ class DraftRoomState {
   final List<DraftPickAsset> pickAssets;
   // Grid display preference: true = teams on X-axis (columns), false = teams on Y-axis (rows)
   final bool teamsOnXAxis;
+  // Commissioner status for start draft button
+  final bool isCommissioner;
 
   DraftRoomState({
     this.draft,
@@ -62,12 +66,14 @@ class DraftRoomState {
     this.auctionMode = 'slow',
     this.currentNominatorRosterId,
     this.nominationNumber,
+    this.nominationDeadline,
     this.dailyNominationsRemaining,
     this.dailyNominationLimit,
     this.globalCapReached = false,
     this.auctionSettings,
     this.pickAssets = const [],
     this.teamsOnXAxis = true,
+    this.isCommissioner = false,
   });
 
   bool get isAuction => draft?.draftType == DraftType.auction;
@@ -161,12 +167,14 @@ class DraftRoomState {
     String? auctionMode,
     int? currentNominatorRosterId,
     int? nominationNumber,
+    DateTime? nominationDeadline,
     int? dailyNominationsRemaining,
     int? dailyNominationLimit,
     bool? globalCapReached,
     AuctionSettings? auctionSettings,
     List<DraftPickAsset>? pickAssets,
     bool? teamsOnXAxis,
+    bool? isCommissioner,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -185,6 +193,7 @@ class DraftRoomState {
       currentNominatorRosterId:
           currentNominatorRosterId ?? this.currentNominatorRosterId,
       nominationNumber: nominationNumber ?? this.nominationNumber,
+      nominationDeadline: nominationDeadline ?? this.nominationDeadline,
       dailyNominationsRemaining:
           dailyNominationsRemaining ?? this.dailyNominationsRemaining,
       dailyNominationLimit: dailyNominationLimit ?? this.dailyNominationLimit,
@@ -192,6 +201,7 @@ class DraftRoomState {
       auctionSettings: auctionSettings ?? this.auctionSettings,
       pickAssets: pickAssets ?? this.pickAssets,
       teamsOnXAxis: teamsOnXAxis ?? this.teamsOnXAxis,
+      isCommissioner: isCommissioner ?? this.isCommissioner,
     );
   }
 }
@@ -378,11 +388,12 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   }
 
   @override
-  void onNominatorChangedReceived(int? rosterId, int? nominationNumber) {
+  void onNominatorChangedReceived(int? rosterId, int? nominationNumber, DateTime? nominationDeadline) {
     if (!mounted) return;
     state = state.copyWith(
       currentNominatorRosterId: rosterId,
       nominationNumber: nominationNumber,
+      nominationDeadline: nominationDeadline,
     );
   }
 
@@ -445,6 +456,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         auctionMode: auctionState.auctionMode,
         currentNominatorRosterId: auctionState.currentNominatorRosterId,
         nominationNumber: auctionState.nominationNumber,
+        nominationDeadline: auctionState.nominationDeadline,
         dailyNominationsRemaining: auctionState.dailyNominationsRemaining,
         dailyNominationLimit: auctionState.dailyNominationLimit,
         globalCapReached: auctionState.globalCapReached,
@@ -530,6 +542,24 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     }
   }
 
+  /// Start the draft (commissioner only)
+  Future<String?> startDraft() async {
+    try {
+      final updatedDraft = await _draftRepo.startDraft(leagueId, draftId);
+      if (mounted) {
+        state = state.copyWith(draft: updatedDraft);
+      }
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  /// Set commissioner status
+  void setCommissioner(bool isCommissioner) {
+    state = state.copyWith(isCommissioner: isCommissioner);
+  }
+
   @override
   void onAutodraftToggledReceived(int rosterId, bool enabled, bool forced) {
     if (!mounted) return;
@@ -603,7 +633,7 @@ final draftRoomProvider =
     final authState = ref.watch(authStateProvider);
     final currentUserId = authState.user?.id;
 
-    return DraftRoomNotifier(
+    final notifier = DraftRoomNotifier(
       ref.watch(draftRepositoryProvider),
       ref.watch(playerRepositoryProvider),
       ref.watch(draftPickAssetRepositoryProvider),
@@ -612,5 +642,13 @@ final draftRoomProvider =
       key.leagueId,
       key.draftId,
     );
+
+    // Fetch commissioner status from league context
+    final leagueContext = ref.watch(leagueContextProvider(key.leagueId));
+    leagueContext.whenData((context) {
+      notifier.setCommissioner(context.isCommissioner);
+    });
+
+    return notifier;
   },
 );

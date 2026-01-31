@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 /// AppBar back button that properly handles navigation within the league shell.
-/// When at a root tab screen, navigates back to leagues list.
+/// When at a root tab screen, navigates back to home.
 /// When nested deeper, pops to the previous screen.
 class LeagueBackButton extends StatelessWidget {
   final int leagueId;
@@ -20,8 +20,8 @@ class LeagueBackButton extends StatelessWidget {
         if (context.canPop()) {
           context.pop();
         } else {
-          // At root of tab, go to leagues list
-          context.go('/leagues');
+          // At root of tab, go to home
+          context.go('/');
         }
       },
     );
