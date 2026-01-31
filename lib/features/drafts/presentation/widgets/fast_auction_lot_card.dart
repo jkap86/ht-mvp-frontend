@@ -29,13 +29,23 @@ class FastAuctionLotCard extends StatefulWidget {
   State<FastAuctionLotCard> createState() => _FastAuctionLotCardState();
 }
 
-class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
+class _FastAuctionLotCardState extends State<FastAuctionLotCard>
+    with SingleTickerProviderStateMixin {
   Timer? _timer;
   Duration _remaining = Duration.zero;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
     _updateRemaining();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       _updateRemaining();
@@ -60,11 +70,21 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
         _remaining = Duration.zero;
       }
     });
+
+    // Start pulse animation when under 5 seconds
+    final isCritical = _remaining.inSeconds > 0 && _remaining.inSeconds <= 5;
+    if (isCritical && !_pulseController.isAnimating) {
+      _pulseController.repeat(reverse: true);
+    } else if (!isCritical && _pulseController.isAnimating) {
+      _pulseController.stop();
+      _pulseController.reset();
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -114,6 +134,7 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
 
   Widget _buildTimerDisplay(ThemeData theme, bool isExpired, bool isUrgent) {
     final isDark = theme.brightness == Brightness.dark;
+    final isCritical = _remaining.inSeconds > 0 && _remaining.inSeconds <= 5;
 
     final Color timerColor;
     final Color backgroundColor;
@@ -132,7 +153,7 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
       backgroundColor = AppTheme.draftNormal.withAlpha(isDark ? 40 : 25);
     }
 
-    return Container(
+    final timerWidget = Container(
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -161,6 +182,22 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard> {
         ],
       ),
     );
+
+    // Apply pulse animation when under 5 seconds
+    if (isCritical) {
+      return AnimatedBuilder(
+        animation: _pulseAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _pulseAnimation.value,
+            child: child,
+          );
+        },
+        child: timerWidget,
+      );
+    }
+
+    return timerWidget;
   }
 
   Widget _buildPlayerInfoRow(ThemeData theme, String playerName, String position, String team) {

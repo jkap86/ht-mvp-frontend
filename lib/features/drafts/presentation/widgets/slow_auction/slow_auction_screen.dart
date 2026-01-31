@@ -312,8 +312,9 @@ class _NominatePlayerSheet extends ConsumerStatefulWidget {
 class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
   String _searchQuery = '';
   String _positionFilter = 'All';
-  String _sortBy = 'Name'; // Name, Projected, Prior Season
+  String _sortBy = 'Projected'; // Default to Projected for better browsing
   bool _isSubmitting = false;
+  static const int _browseLimit = 50; // Limit when not searching
 
   @override
   Widget build(BuildContext context) {
@@ -365,6 +366,12 @@ class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
           return a.fullName.compareTo(b.fullName);
       }
     });
+
+    // Limit results when browsing (no search query) for better performance
+    final isSearching = _searchQuery.isNotEmpty;
+    if (!isSearching && availablePlayers.length > _browseLimit) {
+      availablePlayers = availablePlayers.take(_browseLimit).toList();
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -466,6 +473,18 @@ class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
             ),
           ),
 
+          // Browse hint when not searching
+          if (!isSearching)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Text(
+                'Showing top $_browseLimit by $_sortBy. Search to find specific players.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+              ),
+            ),
+
           // Players list
           Expanded(
             child: ListView.builder(
@@ -473,6 +492,7 @@ class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
               itemCount: availablePlayers.length,
               itemBuilder: (context, index) {
                 final player = availablePlayers[index];
+                final projPts = player.remainingProjectedPts?.toStringAsFixed(1);
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundColor: _getPositionColor(player.primaryPosition),
@@ -486,7 +506,9 @@ class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
                     ),
                   ),
                   title: Text(player.fullName),
-                  subtitle: Text(player.team ?? ''),
+                  subtitle: Text(
+                    '${player.team ?? 'FA'}${projPts != null ? ' • $projPts pts proj' : ''}',
+                  ),
                   trailing: _isSubmitting
                       ? const SizedBox(
                           width: 24,

@@ -297,11 +297,35 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
                 const SizedBox(height: 16),
               ],
 
-              // Bid input
+              // Bid input with proxy bidding explanation
+              Row(
+                children: [
+                  Text(
+                    'Your Max Bid',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Tooltip(
+                    message:
+                        'Set your maximum bid. The system will automatically '
+                        'bid the minimum needed to keep you winning, up to your max. '
+                        'You only pay what\'s needed to beat other bidders.',
+                    triggerMode: TooltipTriggerMode.tap,
+                    showDuration: const Duration(seconds: 5),
+                    child: Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _bidController,
                 decoration: InputDecoration(
-                  labelText: 'Your Max Bid',
                   hintText: 'Enter your maximum bid',
                   prefixText: '\$ ',
                   helperText: _isCurrentLeader
