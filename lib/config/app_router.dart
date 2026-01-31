@@ -26,6 +26,8 @@ import '../features/commissioner/presentation/screens/commissioner_screen.dart';
 import '../features/playoffs/presentation/screens/playoff_bracket_screen.dart';
 import '../features/notifications/presentation/screens/notifications_screen.dart';
 import '../features/transactions/presentation/transactions_screen.dart';
+import '../features/dm/presentation/dm_inbox_screen.dart';
+import '../features/dm/presentation/dm_conversation_screen.dart';
 import '../core/providers/league_context_provider.dart';
 
 // Listenable that notifies when auth state changes
@@ -186,6 +188,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/drafts',
         builder: (context, state) => const DraftsListScreen(),
+      ),
+      GoRoute(
+        path: '/messages',
+        builder: (context, state) => const DmInboxScreen(),
+      ),
+      GoRoute(
+        path: '/messages/:conversationId',
+        redirect: (context, state) => _validateParams(state.pathParameters, ['conversationId']),
+        builder: (context, state) {
+          final conversationId = _parseIntParam(state.pathParameters['conversationId'])!;
+          return DmConversationScreen(conversationId: conversationId);
+        },
       ),
       GoRoute(
         path: '/leagues',

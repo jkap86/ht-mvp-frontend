@@ -308,6 +308,16 @@ class SocketService {
     return on(SocketEvents.chatMessage, callback);
   }
 
+  /// Listen for direct messages
+  VoidCallback onDmMessage(void Function(dynamic) callback) {
+    return on(SocketEvents.dmMessage, callback);
+  }
+
+  /// Listen for DM read events (when other user marks messages as read)
+  VoidCallback onDmRead(void Function(dynamic) callback) {
+    return on(SocketEvents.dmRead, callback);
+  }
+
   /// Listen for queue updates (player removed from queue when drafted)
   VoidCallback onQueueUpdated(void Function(dynamic) callback) {
     return on(SocketEvents.draftQueueUpdated, callback);

@@ -42,6 +42,10 @@ class SocketEvents {
   // Chat events
   static const chatMessage = 'chat:message';
 
+  // Direct message events
+  static const dmMessage = 'dm:message';
+  static const dmRead = 'dm:read';
+
   // Trade events
   static const tradeProposed = 'trade:proposed';
   static const tradeAccepted = 'trade:accepted';
