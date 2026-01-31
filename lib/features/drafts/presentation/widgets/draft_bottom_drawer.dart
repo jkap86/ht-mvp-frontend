@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/draft_room_provider.dart';
 import '../providers/draft_queue_provider.dart';
+import '../../domain/auction_lot.dart';
 import 'auction_drawer_content.dart';
 import 'drawer_drag_handle.dart';
+import 'fast_auction_panel.dart';
 import 'snake_linear_drawer_content.dart';
 
 /// Unified bottom drawer for the draft room.
@@ -64,12 +66,51 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
     );
   }
 
+  void _showBidDialog(BuildContext context, AuctionLot lot) {
+    final controller = TextEditingController(text: '${lot.currentBid + 1}');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Place Bid'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'Max Bid',
+            hintText: 'Min: \$${lot.currentBid + 1}',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final bid = int.tryParse(controller.text);
+              if (bid != null && bid > lot.currentBid) {
+                widget.onSetMaxBid?.call(lot.id, bid);
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Bid'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Get draftedPlayerIds to pass to queue widget
     final draftedPlayerIds = ref.watch(
       draftRoomProvider(widget.providerKey).select((s) => s.draftedPlayerIds),
     );
+
+    // For fast auction, we need the full state
+    final draftState = ref.watch(draftRoomProvider(widget.providerKey));
+    final isFastAuction = draftState.isFastAuction;
 
     return SizedBox.expand(
       child: DraggableScrollableSheet(
@@ -100,18 +141,31 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
                 // ALL content inside one scrollable for proper drag gestures
                 Expanded(
                   child: widget.isAuction
-                      ? AuctionDrawerContent(
-                          providerKey: widget.providerKey,
-                          scrollController: scrollController,
-                          searchQuery: _searchQuery,
-                          selectedPosition: _selectedPosition,
-                          onSearchChanged: (value) =>
-                              setState(() => _searchQuery = value),
-                          onPositionChanged: (pos) =>
-                              setState(() => _selectedPosition = pos),
-                          onNominate: widget.onNominate,
-                          onSetMaxBid: widget.onSetMaxBid,
-                        )
+                      ? (isFastAuction
+                          ? FastAuctionPanel(
+                              state: draftState,
+                              onBidTap: (lot) => _showBidDialog(context, lot),
+                              onNominateTap: () {
+                                // Expand drawer to show player search
+                                _sheetController.animateTo(
+                                  _expandedSize,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              },
+                            )
+                          : AuctionDrawerContent(
+                              providerKey: widget.providerKey,
+                              scrollController: scrollController,
+                              searchQuery: _searchQuery,
+                              selectedPosition: _selectedPosition,
+                              onSearchChanged: (value) =>
+                                  setState(() => _searchQuery = value),
+                              onPositionChanged: (pos) =>
+                                  setState(() => _selectedPosition = pos),
+                              onNominate: widget.onNominate,
+                              onSetMaxBid: widget.onSetMaxBid,
+                            ))
                       : SnakeLinearDrawerContent(
                           providerKey: widget.providerKey,
                           queueKey: widget.queueKey,

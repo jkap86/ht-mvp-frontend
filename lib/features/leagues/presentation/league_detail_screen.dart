@@ -224,7 +224,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             children: [
           LeagueHeaderWidget(
             league: state.league!,
-            memberCount: state.members.length,
+            memberCount: state.members.where((m) => m.userId != null).length,
             isCommissioner: state.isCommissioner,
             onSettingsTap: () {
               context.push('/leagues/${widget.leagueId}/commissioner');
@@ -244,7 +244,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           ],
           LeagueSettingsSummary(
             league: state.league!,
-            memberCount: state.members.length,
+            memberCount: state.members.where((m) => m.userId != null).length,
             draftType: state.draftTypeLabel,
           ),
           const SizedBox(height: 16),

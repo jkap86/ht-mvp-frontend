@@ -61,13 +61,20 @@ class LeagueMembersSection extends StatelessWidget {
               separatorBuilder: (context, index) => const Divider(height: 1),
               itemBuilder: (context, index) {
                 if (index < members.length) {
-                  return _MemberTile(
-                    member: members[index],
-                    isCommissioner:
-                        members[index].rosterId == league.commissionerRosterId,
-                    isCurrentUser:
-                        members[index].rosterId == league.userRosterId,
-                  );
+                  final member = members[index];
+                  if (member.userId != null) {
+                    // Real member with user
+                    return _MemberTile(
+                      member: member,
+                      isCommissioner:
+                          member.rosterId == league.commissionerRosterId,
+                      isCurrentUser: member.rosterId == league.userRosterId,
+                    );
+                  } else {
+                    // Empty roster placeholder (created for draft order)
+                    return _EmptyRosterTile(
+                        rosterId: member.rosterId ?? (index + 1));
+                  }
                 }
                 return _EmptySlotTile(slotNumber: index + 1);
               },
@@ -176,6 +183,43 @@ class _EmptySlotTile extends StatelessWidget {
         ),
         child: Text(
           '#$slotNumber',
+          style: TextStyle(
+            color: Colors.grey[400],
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Empty roster tile for placeholder rosters created during draft order setup.
+/// Shows "Team X" where X is the league-specific roster_id.
+class _EmptyRosterTile extends StatelessWidget {
+  final int rosterId;
+
+  const _EmptyRosterTile({required this.rosterId});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: CircleAvatar(
+        backgroundColor: Colors.grey[200],
+        child: Icon(Icons.people, color: Colors.grey[400], size: 20),
+      ),
+      title: Text(
+        'Team $rosterId',
+        style: TextStyle(color: Colors.grey[600]),
+      ),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          '#$rosterId',
           style: TextStyle(
             color: Colors.grey[400],
             fontSize: 12,
