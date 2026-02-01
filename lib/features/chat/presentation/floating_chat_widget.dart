@@ -66,6 +66,7 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
   }
 
   void _initTabController() {
+    _tabController?.removeListener(_onTabChanged); // Remove listener BEFORE dispose
     _tabController?.dispose();
     if (widget.leagueId != null) {
       _tabController = TabController(length: 2, vsync: this);
@@ -305,42 +306,47 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
             ),
             // Tab bar (only if league context and not in DM conversation)
             if (hasLeagueChat && !isInDmSubView)
-              Container(
-                color: colorScheme.surface,
-                child: TabBar(
-                  controller: _tabController,
-                  labelColor: colorScheme.primary,
-                  unselectedLabelColor: colorScheme.onSurfaceVariant,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  tabs: [
-                    Tab(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('DM'),
-                          if (ref.watch(dmUnreadCountProvider) > 0)
-                            Container(
-                              margin: const EdgeInsets.only(left: 6),
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primary,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '${ref.watch(dmUnreadCountProvider)}',
-                                style: TextStyle(
-                                  color: colorScheme.onPrimary,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+              Builder(
+                builder: (context) {
+                  final dmUnreadCount = ref.watch(dmUnreadCountProvider);
+                  return Container(
+                    color: colorScheme.surface,
+                    child: TabBar(
+                      controller: _tabController,
+                      labelColor: colorScheme.primary,
+                      unselectedLabelColor: colorScheme.onSurfaceVariant,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      tabs: [
+                        Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('DM'),
+                              if (dmUnreadCount > 0)
+                                Container(
+                                  margin: const EdgeInsets.only(left: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    '$dmUnreadCount',
+                                    style: TextStyle(
+                                      color: colorScheme.onPrimary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                        ],
-                      ),
+                            ],
+                          ),
+                        ),
+                        const Tab(text: 'League'),
+                      ],
                     ),
-                    const Tab(text: 'League'),
-                  ],
-                ),
+                  );
+                },
               ),
           ],
         ),

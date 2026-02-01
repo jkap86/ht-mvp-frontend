@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -29,9 +31,22 @@ class _DmUserSearchSheetState extends ConsumerState<DmUserSearchSheet> {
   bool _isSearching = false;
   bool _isCreatingConversation = false;
   String? _error;
+  Timer? _searchDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    setState(() {}); // Trigger rebuild for suffixIcon visibility
+  }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_onTextChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -96,10 +111,11 @@ class _DmUserSearchSheetState extends ConsumerState<DmUserSearchSheet> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _error = 'Error starting conversation';
-          _isCreatingConversation = false;
-        });
+        setState(() => _error = 'Error starting conversation');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCreatingConversation = false);
       }
     }
   }
@@ -160,7 +176,10 @@ class _DmUserSearchSheetState extends ConsumerState<DmUserSearchSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onChanged: _search,
+              onChanged: (query) {
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(const Duration(milliseconds: 300), () => _search(query));
+              },
             ),
           ),
 

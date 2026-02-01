@@ -110,7 +110,6 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
             icon: const Icon(Icons.arrow_back, size: 20),
             padding: const EdgeInsets.all(8),
             constraints: const BoxConstraints(),
-            tooltip: 'Back to inbox',
           ),
           const SizedBox(width: 8),
           UserAvatar(

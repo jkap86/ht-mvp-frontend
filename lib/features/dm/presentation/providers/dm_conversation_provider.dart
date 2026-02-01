@@ -199,10 +199,12 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
       try {
         await _dmRepo.markAsRead(conversationId);
 
-        // Update inbox provider to reflect read status
-        _ref.read(dmInboxProvider.notifier).markConversationReadLocally(conversationId);
+        // Only update local state AFTER successful API call to prevent desync
+        if (mounted) {
+          _ref.read(dmInboxProvider.notifier).markConversationReadLocally(conversationId);
+        }
       } catch (e) {
-        // Silent fail - not critical
+        // Silent fail - not critical, but don't update local state
       }
     });
   }

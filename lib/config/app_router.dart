@@ -156,6 +156,10 @@ class _LeaguePlayersRedirect extends ConsumerWidget {
   }
 }
 
+/// Provider that tracks the current leagueId from the route.
+/// Returns null when not in a league context.
+final currentLeagueIdProvider = StateProvider<int?>((ref) => null);
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authChangeNotifier = ref.watch(_authChangeNotifierProvider);
 
@@ -169,6 +173,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoading = authState.isLoading;
       final isAuthRoute = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
+
+      // Update current league ID based on route
+      final leagueMatch = RegExp(r'/leagues/(\d+)').firstMatch(state.matchedLocation);
+      final leagueId = leagueMatch != null ? int.tryParse(leagueMatch.group(1) ?? '') : null;
+      Future.microtask(() {
+        ref.read(currentLeagueIdProvider.notifier).state = leagueId;
+      });
 
       // Don't redirect while loading
       if (isLoading) return null;
