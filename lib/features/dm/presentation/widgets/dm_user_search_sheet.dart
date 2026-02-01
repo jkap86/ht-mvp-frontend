@@ -9,7 +9,15 @@ import '../providers/dm_inbox_provider.dart';
 
 /// A bottom sheet for searching users and starting a new DM conversation.
 class DmUserSearchSheet extends ConsumerStatefulWidget {
-  const DmUserSearchSheet({super.key});
+  /// Optional callback when a conversation is created.
+  /// If provided, this is called instead of navigating to the conversation screen.
+  /// Parameters: (conversationId, otherUsername)
+  final void Function(int conversationId, String username)? onConversationCreated;
+
+  const DmUserSearchSheet({
+    super.key,
+    this.onConversationCreated,
+  });
 
   @override
   ConsumerState<DmUserSearchSheet> createState() => _DmUserSearchSheetState();
@@ -76,9 +84,15 @@ class _DmUserSearchSheetState extends ConsumerState<DmUserSearchSheet> {
         // Add conversation to inbox so it appears when user navigates back
         ref.read(dmInboxProvider.notifier).addConversationToTop(conversation);
 
-        // Close the sheet and navigate to the conversation
+        // Close the sheet
         Navigator.of(context).pop();
-        context.push('/messages/${conversation.id}');
+
+        // Use callback if provided, otherwise navigate
+        if (widget.onConversationCreated != null) {
+          widget.onConversationCreated!(conversation.id, conversation.otherUsername);
+        } else {
+          context.push('/messages/${conversation.id}');
+        }
       }
     } catch (e) {
       if (mounted) {

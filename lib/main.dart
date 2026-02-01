@@ -7,6 +7,7 @@ import 'config/app_router.dart';
 import 'config/theme_provider.dart';
 import 'core/services/snack_bar_service.dart';
 import 'core/services/app_lifecycle_service.dart';
+import 'core/widgets/global_floating_chat.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +33,20 @@ class HypeTrainApp extends ConsumerWidget {
       routerConfig: router,
       scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child ?? const SizedBox.shrink(),
+            // Wrap in Navigator to provide Overlay for TextField selection handles
+            Navigator(
+              onGenerateRoute: (_) => PageRouteBuilder(
+                opaque: false,
+                pageBuilder: (_, __, ___) => const GlobalFloatingChat(),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

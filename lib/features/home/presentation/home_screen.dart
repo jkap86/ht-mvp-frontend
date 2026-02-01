@@ -15,11 +15,9 @@ import '../../leagues/presentation/providers/league_detail_provider.dart';
 import '../../notifications/presentation/providers/notifications_provider.dart';
 import '../../notifications/presentation/widgets/notification_bell.dart';
 import 'providers/home_dashboard_provider.dart';
-import '../../dm/presentation/providers/dm_inbox_provider.dart';
 import 'widgets/home_drafts_card.dart';
 import 'widgets/home_leagues_card.dart';
 import 'widgets/home_matchups_card.dart';
-import 'widgets/home_messages_card.dart';
 import 'widgets/home_transactions_card.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -124,26 +122,17 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
 
-              // 2. MESSAGES (direct messages)
-              Consumer(
-                builder: (context, ref, child) {
-                  final unreadCount = ref.watch(dmUnreadCountProvider);
-                  return HomeMessagesCard(unreadCount: unreadCount);
-                },
-              ),
-              const SizedBox(height: 12),
-
-              // 3. MATCHUPS (what users want to see)
+              // 2. MATCHUPS (what users want to see)
               if (state.matchups.isNotEmpty) ...[
                 HomeMatchupsCard(matchups: state.matchups),
                 const SizedBox(height: 12),
               ],
 
-              // 4. TRANSACTIONS (actionable items)
+              // 3. TRANSACTIONS (actionable items)
               HomeTransactionsCard(tradeCount: state.pendingTrades.length),
               const SizedBox(height: 12),
 
-              // 5. LEAGUES (navigation)
+              // 4. LEAGUES (navigation)
               HomeLeaguesCard(leagueCount: state.leagues.length),
             ],
           ),

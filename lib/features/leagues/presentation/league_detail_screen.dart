@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/widgets/dev_console.dart';
 import '../../../core/widgets/states/states.dart';
 import '../domain/league.dart';
-import '../../chat/presentation/floating_chat_widget.dart';
 import '../../drafts/domain/draft_order_entry.dart';
 import '../../drafts/domain/draft_type.dart';
 import '../../notifications/presentation/widgets/notification_bell.dart';
@@ -206,7 +205,6 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
               _buildSeasonTab(state),
             ],
           ),
-          FloatingChatWidget(leagueId: widget.leagueId),
           if (!kReleaseMode) DevConsole(leagueId: widget.leagueId),
         ],
       ),

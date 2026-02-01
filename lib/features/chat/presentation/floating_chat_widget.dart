@@ -2,24 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../core/widgets/states/states.dart';
-import '../../../core/widgets/user_avatar.dart';
-import '../domain/chat_message.dart';
-import 'providers/chat_provider.dart';
+import '../../dm/presentation/providers/dm_inbox_provider.dart';
+import 'providers/unified_chat_provider.dart';
+import 'widgets/dm_conversation_list.dart';
+import 'widgets/dm_conversation_view.dart';
+import 'widgets/dm_new_conversation_view.dart';
+import 'widgets/league_chat_view.dart';
 
 /// Floating chat widget that can be collapsed to a FAB or expanded to a
-/// draggable, resizable panel. Persists position and size across sessions.
+/// draggable, resizable panel. Supports both DM and League Chat with tabs.
+/// When leagueId is null, shows DM only. When leagueId is provided, shows both.
 class FloatingChatWidget extends ConsumerStatefulWidget {
-  final int leagueId;
+  final int? leagueId;
 
-  const FloatingChatWidget({super.key, required this.leagueId});
+  const FloatingChatWidget({super.key, this.leagueId});
 
   @override
   ConsumerState<FloatingChatWidget> createState() => _FloatingChatWidgetState();
 }
 
 class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // Persistence keys
   static const _keyPositionX = 'floating_chat_position_x';
   static const _keyPositionY = 'floating_chat_position_y';
@@ -33,18 +36,17 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
 
   // State
   bool _isExpanded = false;
-  Offset? _position; // null until we know screen size
+  Offset? _position;
   Size _size = _defaultSize;
   bool _isLoaded = false;
-
-  // Controllers for chat
-  final _messageController = TextEditingController();
-  final _scrollController = ScrollController();
 
   // Animation
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
+
+  // Tab controller (only used when leagueId is provided)
+  TabController? _tabController;
 
   @override
   void initState() {
@@ -59,14 +61,43 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
+    _initTabController();
     _loadSavedState();
+  }
+
+  void _initTabController() {
+    _tabController?.dispose();
+    if (widget.leagueId != null) {
+      _tabController = TabController(length: 2, vsync: this);
+      _tabController!.addListener(_onTabChanged);
+    } else {
+      _tabController = null;
+    }
+  }
+
+  void _onTabChanged() {
+    if (_tabController == null) return;
+    final chatNotifier = ref.read(unifiedChatProvider.notifier);
+    if (_tabController!.index == 0) {
+      chatNotifier.setTab(ChatTab.dm);
+    } else {
+      chatNotifier.setTab(ChatTab.league);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant FloatingChatWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.leagueId != oldWidget.leagueId) {
+      _initTabController();
+    }
   }
 
   @override
   void dispose() {
+    _tabController?.removeListener(_onTabChanged);
+    _tabController?.dispose();
     _animationController.dispose();
-    _messageController.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -128,40 +159,18 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
     );
   }
 
-  Future<void> _sendMessage() async {
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-
-    final notifier = ref.read(chatProvider(widget.leagueId).notifier);
-    final success = await notifier.sendMessage(text);
-    if (success) {
-      _messageController.clear();
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error sending message')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (!_isLoaded) return const SizedBox.shrink();
 
-    // Positioned.fill ensures this widget fills the parent Stack
-    // Then we use our own internal Stack for positioning children
     return Positioned.fill(
       child: LayoutBuilder(
         builder: (context, constraints) {
           final availableSize = Size(constraints.maxWidth, constraints.maxHeight);
 
-          // Initialize position if not set
           _position ??= _getDefaultPosition(availableSize);
-
-          // Ensure position is within bounds
           _clampPosition(availableSize);
 
-          // Internal Stack allows Positioned children to work correctly
-          // Show both during animation for smooth transition
           return Stack(
             children: [
               if (!_isExpanded || _animationController.isAnimating)
@@ -176,20 +185,26 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
   }
 
   Widget _buildCollapsedButton() {
+    final dmUnread = ref.watch(dmUnreadCountProvider);
+    final totalUnread = dmUnread;
+
     return Positioned(
       right: 16,
       bottom: 16,
-      child: FloatingActionButton(
-        heroTag: 'floating_chat_fab',
-        onPressed: _expand,
-        child: const Icon(Icons.chat),
+      child: Badge(
+        isLabelVisible: totalUnread > 0,
+        label: Text('$totalUnread'),
+        child: FloatingActionButton(
+          heroTag: 'floating_chat_fab',
+          onPressed: _expand,
+          child: const Icon(Icons.chat),
+        ),
       ),
     );
   }
 
   Widget _buildExpandedPanel(Size availableSize) {
     final colorScheme = Theme.of(context).colorScheme;
-    final state = ref.watch(chatProvider(widget.leagueId));
 
     return Positioned(
       left: _position!.dx,
@@ -214,8 +229,7 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
               child: Column(
                 children: [
                   _buildHeader(colorScheme, availableSize),
-                  Expanded(child: _buildMessageList(state)),
-                  _buildMessageInput(state, colorScheme),
+                  Expanded(child: _buildContent()),
                   _buildResizeHandle(availableSize, colorScheme),
                 ],
               ),
@@ -227,6 +241,10 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
   }
 
   Widget _buildHeader(ColorScheme colorScheme, Size availableSize) {
+    final hasLeagueChat = widget.leagueId != null;
+    final unifiedState = ref.watch(unifiedChatProvider);
+    final isInDmSubView = unifiedState.dmViewMode != DmViewMode.inbox;
+
     return GestureDetector(
       onPanUpdate: (details) {
         setState(() {
@@ -240,120 +258,148 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
       },
       onPanEnd: (_) => _saveState(),
       child: Container(
-        height: 44,
         decoration: BoxDecoration(
           color: colorScheme.primaryContainer,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(width: 8),
-            Icon(
-              Icons.drag_indicator,
-              color: colorScheme.onPrimaryContainer.withValues(alpha: 0.6),
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'League Chat',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onPrimaryContainer,
-                ),
+            // Drag handle row
+            SizedBox(
+              height: 44,
+              child: Row(
+                children: [
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.drag_indicator,
+                    color: colorScheme.onPrimaryContainer.withValues(alpha: 0.6),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  if (!hasLeagueChat || isInDmSubView)
+                    Expanded(
+                      child: Text(
+                        'Messages',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.close, color: colorScheme.onPrimaryContainer),
+                    onPressed: _collapse,
+                    iconSize: 20,
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 8),
+                ],
               ),
             ),
-            IconButton(
-              icon: Icon(Icons.close, color: colorScheme.onPrimaryContainer),
-              onPressed: _collapse,
-              iconSize: 20,
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(),
-            ),
-            const SizedBox(width: 8),
+            // Tab bar (only if league context and not in DM conversation)
+            if (hasLeagueChat && !isInDmSubView)
+              Container(
+                color: colorScheme.surface,
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: colorScheme.primary,
+                  unselectedLabelColor: colorScheme.onSurfaceVariant,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  tabs: [
+                    Tab(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('DM'),
+                          if (ref.watch(dmUnreadCountProvider) > 0)
+                            Container(
+                              margin: const EdgeInsets.only(left: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '${ref.watch(dmUnreadCountProvider)}',
+                                style: TextStyle(
+                                  color: colorScheme.onPrimary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const Tab(text: 'League'),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMessageList(ChatState state) {
-    if (state.isLoading) {
-      return const AppLoadingView();
-    }
+  Widget _buildContent() {
+    final unifiedState = ref.watch(unifiedChatProvider);
 
-    if (state.messages.isEmpty) {
-      return const AppEmptyView(
-        icon: Icons.chat_bubble_outline,
-        title: 'No messages yet',
-        subtitle: 'Start the conversation!',
+    // If we have league context and tabs, use TabBarView (only when in inbox mode)
+    if (widget.leagueId != null && unifiedState.dmViewMode == DmViewMode.inbox) {
+      return TabBarView(
+        controller: _tabController,
+        children: [
+          _buildDmView(),
+          LeagueChatView(leagueId: widget.leagueId!),
+        ],
       );
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      reverse: true,
-      padding: const EdgeInsets.all(8),
-      itemCount: state.messages.length,
-      itemBuilder: (context, index) {
-        final message = state.messages[index];
-        return _MessageBubble(message: message);
-      },
-    );
+    // Otherwise, just show DM view (inbox, conversation, or newConversation)
+    return _buildDmView();
   }
 
-  Widget _buildMessageInput(ChatState state, ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          top: BorderSide(color: colorScheme.outlineVariant),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: 'Type a message...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                isDense: true,
-              ),
-              maxLines: null,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _sendMessage(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton.filled(
-            onPressed: state.isSending ? null : _sendMessage,
-            icon: state.isSending
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.send, size: 18),
-            iconSize: 18,
-          ),
-        ],
-      ),
-    );
+  Widget _buildDmView() {
+    final unifiedState = ref.watch(unifiedChatProvider);
+
+    switch (unifiedState.dmViewMode) {
+      case DmViewMode.inbox:
+        return DmConversationList(
+          onSelect: (conversationId, username) {
+            ref.read(unifiedChatProvider.notifier).selectConversation(conversationId, username);
+          },
+          onNewConversation: () {
+            ref.read(unifiedChatProvider.notifier).startNewConversation();
+          },
+        );
+      case DmViewMode.conversation:
+        return DmConversationView(
+          conversationId: unifiedState.selectedConversationId!,
+          otherUsername: unifiedState.selectedConversationUsername ?? 'Unknown',
+          onBack: () {
+            ref.read(unifiedChatProvider.notifier).backToInbox();
+          },
+        );
+      case DmViewMode.newConversation:
+        return DmNewConversationView(
+          onBack: () {
+            ref.read(unifiedChatProvider.notifier).backToInbox();
+          },
+          onConversationCreated: (conversationId, username) {
+            ref.read(unifiedChatProvider.notifier).selectConversation(conversationId, username);
+          },
+        );
+    }
   }
 
   Widget _buildResizeHandle(Size availableSize, ColorScheme colorScheme) {
     return GestureDetector(
       onPanUpdate: (details) {
         setState(() {
-          // Dynamic max: can't exceed available space from current position
           final maxWidth = (availableSize.width - _position!.dx - 8)
               .clamp(_minSize.width, _maxSize.width);
           final maxHeight = (availableSize.height - _position!.dy - 8)
@@ -384,76 +430,5 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
         ),
       ),
     );
-  }
-}
-
-class _MessageBubble extends StatelessWidget {
-  final ChatMessage message;
-
-  const _MessageBubble({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          UserAvatar(
-            name: message.username,
-            size: 28,
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            textColor: Colors.white,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      message.username,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _formatTime(message.createdAt),
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  message.message,
-                  style: const TextStyle(fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final diff = now.difference(dateTime);
-
-    if (diff.inMinutes < 1) {
-      return 'Just now';
-    } else if (diff.inHours < 1) {
-      return '${diff.inMinutes}m ago';
-    } else if (diff.inDays < 1) {
-      return '${diff.inHours}h ago';
-    } else {
-      return '${dateTime.month}/${dateTime.day}';
-    }
   }
 }
