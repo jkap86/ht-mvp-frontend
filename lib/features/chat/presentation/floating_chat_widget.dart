@@ -163,24 +163,27 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
   Widget build(BuildContext context) {
     if (!_isLoaded) return const SizedBox.shrink();
 
-    return Positioned.fill(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final availableSize = Size(constraints.maxWidth, constraints.maxHeight);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableSize = Size(constraints.maxWidth, constraints.maxHeight);
 
-          _position ??= _getDefaultPosition(availableSize);
-          _clampPosition(availableSize);
+        _position ??= _getDefaultPosition(availableSize);
+        _clampPosition(availableSize);
 
-          return Stack(
-            children: [
-              if (!_isExpanded || _animationController.isAnimating)
-                _buildCollapsedButton(),
-              if (_isExpanded || _animationController.isAnimating)
-                _buildExpandedPanel(availableSize),
-            ],
-          );
-        },
-      ),
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            // Transparent layer that ignores pointer events
+            const IgnorePointer(
+              child: SizedBox.expand(),
+            ),
+            if (!_isExpanded || _animationController.isAnimating)
+              _buildCollapsedButton(),
+            if (_isExpanded || _animationController.isAnimating)
+              _buildExpandedPanel(availableSize),
+          ],
+        );
+      },
     );
   }
 
