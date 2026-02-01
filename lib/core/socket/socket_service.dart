@@ -35,11 +35,15 @@ class SocketService {
   /// Track active subscriptions for proper disposer handling
   final Map<String, List<void Function(dynamic)>> _activeSubscriptions = {};
 
-  /// Track active league rooms for automatic rejoin on reconnect
-  final Set<int> _activeLeagueRooms = {};
+  /// Track active league rooms with reference counting.
+  /// Key: leagueId, Value: number of active listeners.
+  /// Only emits join/leave when count transitions to/from 0.
+  final Map<int, int> _leagueRoomRefCount = {};
 
-  /// Track active draft rooms for automatic rejoin on reconnect
-  final Set<int> _activeDraftRooms = {};
+  /// Track active draft rooms with reference counting.
+  /// Key: draftId, Value: number of active listeners.
+  /// Only emits join/leave when count transitions to/from 0.
+  final Map<int, int> _draftRoomRefCount = {};
 
   /// Temporarily store listeners during reconnect for re-registration
   Map<String, List<void Function(dynamic)>>? _listenersToRestore;
@@ -53,13 +57,16 @@ class SocketService {
   /// Duration threshold for determining if full data refresh is needed after reconnect
   static const reconnectRefreshThreshold = Duration(seconds: 30);
 
+  /// Timeout for initial socket connection attempt
+  static const connectionTimeout = Duration(seconds: 10);
+
   bool get isConnected => _socket?.connected ?? false;
 
-  /// Get the active league room IDs
-  Set<int> get activeLeagueRooms => Set.unmodifiable(_activeLeagueRooms);
+  /// Get the active league room IDs (rooms with ref count > 0)
+  Set<int> get activeLeagueRooms => Set.unmodifiable(_leagueRoomRefCount.keys.toSet());
 
-  /// Get the active draft room IDs
-  Set<int> get activeDraftRooms => Set.unmodifiable(_activeDraftRooms);
+  /// Get the active draft room IDs (rooms with ref count > 0)
+  Set<int> get activeDraftRooms => Set.unmodifiable(_draftRoomRefCount.keys.toSet());
 
   /// Check if we were disconnected long enough to need a full refresh
   bool get needsFullRefresh {
@@ -89,6 +96,9 @@ class SocketService {
           .setAuth({'token': token})
           .enableAutoConnect()
           .enableReconnection()
+          .setReconnectionDelay(1000) // 1 second between reconnection attempts
+          .setReconnectionDelayMax(5000) // Max 5 seconds between attempts
+          .setTimeout(connectionTimeout.inMilliseconds) // Connection timeout
           .build(),
     );
 
@@ -147,10 +157,10 @@ class SocketService {
 
   /// Rejoin all active rooms and restore listeners after reconnection
   void _rejoinActiveRooms() {
-    for (final leagueId in _activeLeagueRooms) {
+    for (final leagueId in _leagueRoomRefCount.keys) {
       _socket?.emit(SocketEvents.leagueJoin, leagueId);
     }
-    for (final draftId in _activeDraftRooms) {
+    for (final draftId in _draftRoomRefCount.keys) {
       _socket?.emit(SocketEvents.draftJoin, draftId);
     }
 
@@ -172,8 +182,8 @@ class SocketService {
     _pendingSubscriptions.clear();
     _pendingEmits.clear();
     _activeSubscriptions.clear();
-    _activeLeagueRooms.clear();
-    _activeDraftRooms.clear();
+    _leagueRoomRefCount.clear();
+    _draftRoomRefCount.clear();
     _socket?.disconnect();
     _socket = null;
   }
@@ -207,31 +217,55 @@ class SocketService {
     }
   }
 
-  // League room management
+  // League room management with reference counting.
+  // Multiple providers can join the same room; only the first join emits
+  // the server event, and only the last leave emits the leave event.
   void joinLeague(int leagueId) {
-    _activeLeagueRooms.add(leagueId);
-    _emit(SocketEvents.leagueJoin, leagueId);
-  }
-
-  void leaveLeague(int leagueId) {
-    _activeLeagueRooms.remove(leagueId);
-    // Leave events should only fire if connected (no point queueing leave)
-    if (_socket?.connected == true) {
-      _socket?.emit(SocketEvents.leagueLeave, leagueId);
+    final currentCount = _leagueRoomRefCount[leagueId] ?? 0;
+    _leagueRoomRefCount[leagueId] = currentCount + 1;
+    // Only emit join on first reference (0 → 1)
+    if (currentCount == 0) {
+      _emit(SocketEvents.leagueJoin, leagueId);
     }
   }
 
-  // Draft room management
+  void leaveLeague(int leagueId) {
+    final currentCount = _leagueRoomRefCount[leagueId] ?? 0;
+    if (currentCount <= 1) {
+      // Last reference, remove from map and emit leave
+      _leagueRoomRefCount.remove(leagueId);
+      if (_socket?.connected == true) {
+        _socket?.emit(SocketEvents.leagueLeave, leagueId);
+      }
+    } else {
+      // Other listeners still active, just decrement
+      _leagueRoomRefCount[leagueId] = currentCount - 1;
+    }
+  }
+
+  // Draft room management with reference counting.
+  // Multiple providers can join the same room; only the first join emits
+  // the server event, and only the last leave emits the leave event.
   void joinDraft(int draftId) {
-    _activeDraftRooms.add(draftId);
-    _emit(SocketEvents.draftJoin, draftId);
+    final currentCount = _draftRoomRefCount[draftId] ?? 0;
+    _draftRoomRefCount[draftId] = currentCount + 1;
+    // Only emit join on first reference (0 → 1)
+    if (currentCount == 0) {
+      _emit(SocketEvents.draftJoin, draftId);
+    }
   }
 
   void leaveDraft(int draftId) {
-    _activeDraftRooms.remove(draftId);
-    // Leave events should only fire if connected (no point queueing leave)
-    if (_socket?.connected == true) {
-      _socket?.emit(SocketEvents.draftLeave, draftId);
+    final currentCount = _draftRoomRefCount[draftId] ?? 0;
+    if (currentCount <= 1) {
+      // Last reference, remove from map and emit leave
+      _draftRoomRefCount.remove(draftId);
+      if (_socket?.connected == true) {
+        _socket?.emit(SocketEvents.draftLeave, draftId);
+      }
+    } else {
+      // Other listeners still active, just decrement
+      _draftRoomRefCount[draftId] = currentCount - 1;
     }
   }
 
@@ -258,6 +292,8 @@ class SocketService {
       _pendingSubscriptions.removeWhere(
         (p) => p.event == event && p.callback == callback,
       );
+      // Also remove from listeners to restore (prevents restoring disposed callbacks during reconnect)
+      _listenersToRestore?[event]?.remove(callback);
     };
   }
 

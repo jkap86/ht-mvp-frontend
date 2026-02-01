@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/league_context_provider.dart';
@@ -243,7 +244,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     if (!mounted) return;
     // Dedupe: prevent duplicate picks from socket replays or reconnection
     if (state.picks.any((p) => p.id == pick.id)) return;
-    state = state.copyWith(picks: [...state.picks, pick]);
+    // Add pick and sort by pickNumber to handle out-of-order socket events
+    final updatedPicks = [...state.picks, pick]
+      ..sort((a, b) => a.pickNumber.compareTo(b.pickNumber));
+    state = state.copyWith(picks: updatedPicks);
   }
 
   @override
@@ -423,7 +427,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       final pickAssets = results[3] as List<DraftPickAsset>;
 
       final draftOrder = orderData.map((e) => DraftOrderEntry.fromJson(e)).toList();
-      final picks = picksData.map((e) => DraftPick.fromJson(e)).toList();
+      final picks = picksData.map((e) => DraftPick.fromJson(e)).toList()
+        ..sort((a, b) => a.pickNumber.compareTo(b.pickNumber));
 
       if (!mounted) return;
 
@@ -464,8 +469,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       );
     } catch (e) {
       // Auction data is supplemental - log for debugging but don't block UI
-      // ignore: avoid_print
-      print('Failed to load auction data: $e');
+      debugPrint('Failed to load auction data: $e');
       // Still update state with error for potential UI feedback
       if (mounted) {
         state = state.copyWith(error: 'Failed to load auction data');
@@ -483,7 +487,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
       final draft = results[0] as Draft;
       final picksData = results[1] as List<Map<String, dynamic>>;
-      final picks = picksData.map((e) => DraftPick.fromJson(e)).toList();
+      final picks = picksData.map((e) => DraftPick.fromJson(e)).toList()
+        ..sort((a, b) => a.pickNumber.compareTo(b.pickNumber));
 
       if (!mounted) return;
       state = state.copyWith(draft: draft, picks: picks);

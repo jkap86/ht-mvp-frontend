@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:flutter/foundation.dart';
 
 import '../../../../core/socket/socket_service.dart';
 import '../../domain/auction_lot.dart';
@@ -73,8 +73,7 @@ class DraftSocketHandler {
         _callbacks.onPickReceived(pick);
       } catch (e) {
         // Log parsing error but don't crash - malformed socket data shouldn't break UI
-        // ignore: avoid_print
-        print('Failed to parse draft pick: $e');
+        debugPrint('Failed to parse draft pick: $e');
       }
     }));
 
@@ -85,8 +84,7 @@ class DraftSocketHandler {
         _callbacks.onNextPickReceived(Map<String, dynamic>.from(data));
       } catch (e) {
         // Log parsing error but don't crash - malformed socket data shouldn't break UI
-        // ignore: avoid_print
-        print('Failed to parse next pick: $e');
+        debugPrint('Failed to parse next pick: $e');
       }
     }));
 
@@ -96,8 +94,7 @@ class DraftSocketHandler {
       try {
         _callbacks.onDraftCompletedReceived(Map<String, dynamic>.from(data));
       } catch (e) {
-        // ignore: avoid_print
-        print('Failed to parse draft completed: $e');
+        debugPrint('Failed to parse draft completed: $e');
       }
     }));
 
@@ -107,8 +104,7 @@ class DraftSocketHandler {
       try {
         _callbacks.onPickUndoneReceived(Map<String, dynamic>.from(data));
       } catch (e) {
-        // ignore: avoid_print
-        print('Failed to parse pick undone: $e');
+        debugPrint('Failed to parse pick undone: $e');
       }
     }));
 
@@ -129,8 +125,7 @@ class DraftSocketHandler {
         final lot = AuctionLot.fromJson(Map<String, dynamic>.from(lotData));
         _callbacks.onLotCreatedReceived(lot);
       } catch (e) {
-        // ignore: avoid_print
-        print('Failed to parse auction lot created: $e');
+        debugPrint('Failed to parse auction lot created: $e');
       }
     }));
 
@@ -142,8 +137,7 @@ class DraftSocketHandler {
         final lot = AuctionLot.fromJson(Map<String, dynamic>.from(lotData));
         _callbacks.onLotUpdatedReceived(lot);
       } catch (e) {
-        // ignore: avoid_print
-        print('Failed to parse auction lot updated: $e');
+        debugPrint('Failed to parse auction lot updated: $e');
       }
     }));
 
@@ -205,8 +199,7 @@ class DraftSocketHandler {
         );
         _callbacks.onPickTradedReceived(pickAsset);
       } catch (e) {
-        // ignore: avoid_print
-        print('Failed to parse pick traded: $e');
+        debugPrint('Failed to parse pick traded: $e');
       }
     }));
 
@@ -219,8 +212,7 @@ class DraftSocketHandler {
           Map<String, dynamic>.from(data),
         );
       } catch (e) {
-        // ignore: avoid_print
-        print('Failed to parse draft settings: $e');
+        debugPrint('Failed to parse draft settings: $e');
       }
     }));
   }
