@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
+import '../../../chat/presentation/providers/unified_chat_provider.dart';
 import '../../data/dm_repository.dart';
 import '../../domain/conversation.dart';
 import '../../domain/direct_message.dart';
@@ -39,12 +40,13 @@ class DmInboxState {
 class DmInboxNotifier extends StateNotifier<DmInboxState> {
   final DmRepository _dmRepo;
   final SocketService _socketService;
+  final Ref _ref;
 
   VoidCallback? _dmMessageDisposer;
   VoidCallback? _dmReadDisposer;
   VoidCallback? _reconnectDisposer;
 
-  DmInboxNotifier(this._dmRepo, this._socketService) : super(DmInboxState()) {
+  DmInboxNotifier(this._dmRepo, this._socketService, this._ref) : super(DmInboxState()) {
     _setupSocketListeners();
     loadConversations();
   }
@@ -66,6 +68,12 @@ class DmInboxNotifier extends StateNotifier<DmInboxState> {
 
       final message = DirectMessage.fromJson(messageData);
 
+      // Check if user is currently viewing this conversation
+      final unifiedState = _ref.read(unifiedChatProvider);
+      final isViewingThisConversation =
+          unifiedState.dmViewMode == DmViewMode.conversation &&
+          unifiedState.selectedConversationId == conversationId;
+
       // Update the conversation in the list
       final conversations = [...state.conversations];
       final index = conversations.indexWhere((c) => c.id == conversationId);
@@ -74,13 +82,19 @@ class DmInboxNotifier extends StateNotifier<DmInboxState> {
         // Update existing conversation
         final updated = conversations[index].copyWith(
           lastMessage: message,
-          unreadCount: conversations[index].unreadCount + 1,
+          // Don't increment unread if user is viewing this conversation
+          unreadCount: isViewingThisConversation
+              ? conversations[index].unreadCount
+              : conversations[index].unreadCount + 1,
           updatedAt: message.createdAt,
         );
         conversations.removeAt(index);
         conversations.insert(0, updated); // Move to top
+      } else {
+        // Conversation not in list - fetch from API to add it
+        loadConversations();
+        return; // Let loadConversations handle the state update
       }
-      // Note: If conversation not in list, user should refresh
 
       // Update total unread count
       final totalUnread = conversations.fold<int>(
@@ -177,6 +191,7 @@ final dmInboxProvider = StateNotifierProvider<DmInboxNotifier, DmInboxState>(
   (ref) => DmInboxNotifier(
     ref.watch(dmRepositoryProvider),
     ref.watch(socketServiceProvider),
+    ref,
   ),
 );
 
