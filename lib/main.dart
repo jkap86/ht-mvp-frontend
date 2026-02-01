@@ -8,6 +8,7 @@ import 'config/theme_provider.dart';
 import 'core/services/snack_bar_service.dart';
 import 'core/services/app_lifecycle_service.dart';
 import 'core/widgets/global_floating_chat.dart';
+import 'features/auth/presentation/auth_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,17 +35,24 @@ class HypeTrainApp extends ConsumerWidget {
       scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
-        return Stack(
-          children: [
-            child ?? const SizedBox.shrink(),
-            // Wrap in Navigator to provide Overlay for TextField selection handles
-            Navigator(
-              onGenerateRoute: (_) => PageRouteBuilder(
-                opaque: false,
-                pageBuilder: (_, __, ___) => const GlobalFloatingChat(),
-              ),
-            ),
-          ],
+        return Consumer(
+          builder: (context, ref, _) {
+            final authState = ref.watch(authStateProvider);
+
+            return Stack(
+              children: [
+                child ?? const SizedBox.shrink(),
+                // Only render Navigator when authenticated to avoid blocking login inputs
+                if (authState.isAuthenticated)
+                  Navigator(
+                    onGenerateRoute: (_) => PageRouteBuilder(
+                      opaque: false,
+                      pageBuilder: (_, __, ___) => const GlobalFloatingChat(),
+                    ),
+                  ),
+              ],
+            );
+          },
         );
       },
     );
