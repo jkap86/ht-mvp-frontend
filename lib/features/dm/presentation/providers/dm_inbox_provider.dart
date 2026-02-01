@@ -52,10 +52,14 @@ class DmInboxNotifier extends StateNotifier<DmInboxState> {
   }
 
   void _setupSocketListeners() {
-    // Refresh conversations on socket reconnection to sync state
-    _reconnectDisposer = _socketService.onReconnected(() {
+    // Refresh conversations on socket reconnection only if disconnected long enough
+    _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
       if (!mounted) return;
-      loadConversations();
+      // Only do full refresh if disconnected for more than 30 seconds
+      // For brief disconnects, socket events should have kept us in sync
+      if (needsFullRefresh) {
+        loadConversations();
+      }
     });
 
     // Listen for new DM messages to update inbox
@@ -108,15 +112,19 @@ class DmInboxNotifier extends StateNotifier<DmInboxState> {
       );
     });
 
-    // Listen for DM read events (when we read messages elsewhere or other user reads)
+    // Listen for DM read events (when the OTHER user reads our messages)
+    // Note: When WE read, we update locally via markConversationReadLocally
+    // This event is when the other person reads our messages - doesn't affect OUR unread count
     _dmReadDisposer = _socketService.onDmRead((data) {
       if (!mounted) return;
 
       final conversationId = data['conversationId'] as int?;
       if (conversationId == null) return;
 
-      // Refresh to get updated unread counts
-      loadConversations();
+      // The read event doesn't affect OUR unread count - it's when THEY read OUR messages
+      // No need to refresh all conversations. In the future, if we want to show
+      // read receipts (e.g., "seen" indicator), we'd update that specific conversation here.
+      // For now, we just acknowledge the event - no action needed.
     });
   }
 

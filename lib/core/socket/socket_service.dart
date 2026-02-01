@@ -44,8 +44,8 @@ class SocketService {
   /// Temporarily store listeners during reconnect for re-registration
   Map<String, List<void Function(dynamic)>>? _listenersToRestore;
 
-  /// Callbacks to notify when socket reconnects
-  final List<VoidCallback> _reconnectCallbacks = [];
+  /// Callbacks to notify when socket reconnects (receives needsFullRefresh flag)
+  final List<void Function(bool needsFullRefresh)> _reconnectCallbacks = [];
 
   /// Track when the socket was disconnected to determine refresh scope
   DateTime? _disconnectedAt;
@@ -68,8 +68,10 @@ class SocketService {
   }
 
   /// Register a callback to be called when socket reconnects.
+  /// The callback receives a [needsFullRefresh] flag indicating whether the
+  /// disconnection was long enough (>30s) to warrant a full data refresh.
   /// Returns a function to unregister the callback.
-  VoidCallback onReconnected(VoidCallback callback) {
+  VoidCallback onReconnected(void Function(bool needsFullRefresh) callback) {
     _reconnectCallbacks.add(callback);
     return () => _reconnectCallbacks.remove(callback);
   }
@@ -104,7 +106,7 @@ class SocketService {
         _disconnectedAt = null;
         for (final callback in _reconnectCallbacks) {
           try {
-            callback();
+            callback(shouldRefresh);
           } catch (e) {
             debugPrint('Error in reconnect callback: $e');
           }

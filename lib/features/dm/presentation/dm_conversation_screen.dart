@@ -25,7 +25,26 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
   final _scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    // Since list is reversed, "top" (oldest messages) is at maxScrollExtent
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 100) {
+      final state = ref.read(dmConversationProvider(widget.conversationId));
+      if (state.hasMore && !state.isLoadingMore) {
+        ref.read(dmConversationProvider(widget.conversationId).notifier)
+            .loadMoreMessages();
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -96,8 +115,17 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
       controller: _scrollController,
       reverse: true,
       padding: const EdgeInsets.all(12),
-      itemCount: state.messages.length,
+      itemCount: state.messages.length + (state.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
+        // Show loading indicator at the end (oldest messages)
+        if (state.isLoadingMore && index == state.messages.length) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
         final message = state.messages[index];
         final isMe = message.senderId == currentUserId;
         return _MessageBubble(

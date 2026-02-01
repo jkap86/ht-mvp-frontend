@@ -47,10 +47,7 @@ class _DmNewConversationViewState extends ConsumerState<DmNewConversationView> {
   }
 
   Future<void> _search(String query) async {
-    debugPrint('_search called: "$query"');
-
     if (query.trim().length < 2) {
-      debugPrint('Query too short, returning');
       setState(() {
         _results = [];
         _error = null;
@@ -58,22 +55,17 @@ class _DmNewConversationViewState extends ConsumerState<DmNewConversationView> {
       return;
     }
 
-    debugPrint('Setting isSearching=true');
     setState(() {
       _isSearching = true;
       _error = null;
     });
 
     try {
-      debugPrint('Getting apiClient...');
       final apiClient = ref.read(apiClientProvider);
-      debugPrint('Calling API: /auth/users/search?q=${Uri.encodeComponent(query)}');
       final response = await apiClient.get('/auth/users/search?q=${Uri.encodeComponent(query)}');
-      debugPrint('Got response: $response');
       final users = (response as List)
           .map((json) => _UserSearchResult.fromJson(json as Map<String, dynamic>))
           .toList();
-      debugPrint('Parsed ${users.length} users');
 
       if (mounted) {
         setState(() {
@@ -82,7 +74,6 @@ class _DmNewConversationViewState extends ConsumerState<DmNewConversationView> {
         });
       }
     } catch (e) {
-      debugPrint('Search error: $e');
       if (mounted) {
         setState(() {
           _error = 'Error searching users';
