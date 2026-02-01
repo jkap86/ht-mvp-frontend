@@ -119,29 +119,37 @@ class LineupPlayerRow extends StatelessWidget {
                       ),
               ),
 
-              // Projected points
+              // Projected points - larger and more prominent
               if (player != null && player!.projectedPoints != null) ...[
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      player!.projectedPoints!.toStringAsFixed(1),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Theme.of(context).primaryColor,
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        player!.projectedPoints!.toStringAsFixed(1),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: Theme.of(context).primaryColor,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'PROJ',
-                      style: TextStyle(
-                        fontSize: 9,
-                        color: Colors.grey.shade500,
+                      Text(
+                        'PROJ',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).primaryColor.withValues(alpha: 0.7),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
 

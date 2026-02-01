@@ -177,8 +177,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
   }
 
   void _navigateBack(BuildContext context) {
-    // Team tab is the entry point to a league - go back to home
-    context.go('/');
+    // Use pop to go back properly instead of navigating to home
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/');
+    }
   }
 
   Widget _buildLineupTab(TeamState state) {

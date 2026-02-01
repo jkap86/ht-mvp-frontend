@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../rosters/data/roster_repository.dart';
 import '../../../rosters/domain/roster_player.dart';
-import 'position_badge.dart';
+import '../../../rosters/presentation/widgets/position_badge.dart';
 
 /// Provider for roster players used in trade player selection
 final tradeRosterPlayersProvider =
@@ -91,7 +91,7 @@ class PlayerSelectorWidget extends ConsumerWidget {
                   : null,
               child: ListTile(
                 leading:
-                    PositionBadge(position: player.position ?? '?', size: 28),
+                    PositionBadge(position: player.position, size: 28),
                 title: Text(
                   player.fullName ?? 'Unknown Player',
                   overflow: TextOverflow.ellipsis,

@@ -42,14 +42,9 @@ class HypeTrainApp extends ConsumerWidget {
             return Stack(
               children: [
                 child ?? const SizedBox.shrink(),
-                // Only render Navigator when authenticated to avoid blocking login inputs
+                // Floating chat overlay - IgnorePointer inside allows touches to pass through
                 if (authState.isAuthenticated)
-                  Navigator(
-                    onGenerateRoute: (_) => PageRouteBuilder(
-                      opaque: false,
-                      pageBuilder: (_, __, ___) => const GlobalFloatingChat(),
-                    ),
-                  ),
+                  const GlobalFloatingChat(),
               ],
             );
           },

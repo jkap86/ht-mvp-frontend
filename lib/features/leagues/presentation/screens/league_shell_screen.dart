@@ -63,6 +63,11 @@ class _LeagueShellScreenState extends ConsumerState<LeagueShellScreen> {
             ),
             label: 'Trades',
           ),
+          const NavigationDestination(
+            icon: Icon(Icons.person_search_outlined),
+            selectedIcon: Icon(Icons.person_search),
+            label: 'Players',
+          ),
           NavigationDestination(
             icon: Badge(
               isLabelVisible: unreadMessagesCount > 0,

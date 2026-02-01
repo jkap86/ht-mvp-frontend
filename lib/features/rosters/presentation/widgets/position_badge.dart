@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hypetrain_mvp/config/app_theme.dart';
 
 /// A badge displaying a player position with color coding
 class PositionBadge extends StatelessWidget {
@@ -35,26 +36,45 @@ class PositionBadge extends StatelessWidget {
     );
   }
 
-  Color _getPositionColor(String? position) {
+  static Color _getPositionColor(String? position) {
     switch (position?.toUpperCase()) {
       case 'QB':
-        return Colors.red;
+        return AppTheme.positionQB;
       case 'RB':
-        return Colors.green;
+        return AppTheme.positionRB;
       case 'WR':
-        return Colors.blue;
+        return AppTheme.positionWR;
       case 'TE':
-        return Colors.orange;
+        return AppTheme.positionTE;
       case 'K':
-        return Colors.purple;
+        return AppTheme.positionK;
       case 'DEF':
-        return Colors.brown;
+        return AppTheme.positionDEF;
       case 'FLEX':
-        return Colors.teal;
+        return AppTheme.positionFLEX;
+      case 'SUPERFLEX':
+      case 'SF':
+        return AppTheme.positionSuperFlex;
+      case 'REC_FLEX':
+        return AppTheme.positionRecFlex;
+      case 'DL':
+        return AppTheme.positionDL;
+      case 'LB':
+        return AppTheme.positionLB;
+      case 'DB':
+        return AppTheme.positionDB;
+      case 'IDP_FLEX':
+        return AppTheme.positionIdpFlex;
+      case 'IR':
+        return AppTheme.positionIR;
+      case 'TAXI':
+        return AppTheme.positionTaxi;
       case 'BN':
-        return Colors.grey;
       default:
         return Colors.grey;
     }
   }
+
+  /// Get the position color for use in other widgets
+  static Color getColor(String? position) => _getPositionColor(position);
 }

@@ -108,6 +108,10 @@ class HomeScreen extends ConsumerWidget {
       );
     }
 
+    // Get active drafts and pending trades for urgency banners
+    final activeDrafts = state.upcomingDrafts.where((d) => d.isInProgress).toList();
+    final pendingTrades = state.pendingTrades;
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -116,9 +120,35 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // URGENCY BANNERS (time-sensitive actions first)
+              if (activeDrafts.isNotEmpty)
+                _buildUrgencyBanner(
+                  context,
+                  icon: Icons.timer,
+                  color: Colors.red,
+                  title: 'Draft in Progress',
+                  subtitle: '${activeDrafts.first.leagueName} - It\'s your turn!',
+                  onTap: () => context.push(
+                    '/leagues/${activeDrafts.first.leagueId}/drafts/${activeDrafts.first.draft.id}',
+                  ),
+                ),
+              if (pendingTrades.isNotEmpty)
+                _buildUrgencyBanner(
+                  context,
+                  icon: Icons.swap_horiz,
+                  color: Colors.orange,
+                  title: 'Trade Pending',
+                  subtitle: '${pendingTrades.length} trade${pendingTrades.length > 1 ? 's' : ''} awaiting response',
+                  onTap: () => context.push(
+                    '/leagues/${pendingTrades.first.leagueId}/trades/${pendingTrades.first.trade.id}',
+                  ),
+                ),
+              if (activeDrafts.isNotEmpty || pendingTrades.isNotEmpty)
+                const SizedBox(height: 12),
+
               // 1. DRAFTS (always shown, highlights active drafts)
               HomeDraftsCard(
-                activeCount: state.upcomingDrafts.where((d) => d.isInProgress).length,
+                activeCount: activeDrafts.length,
               ),
               const SizedBox(height: 12),
 
@@ -186,4 +216,53 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildUrgencyBanner(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon, color: color, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: color),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

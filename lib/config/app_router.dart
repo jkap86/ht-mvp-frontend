@@ -130,6 +130,32 @@ class _LeagueTeamRedirect extends ConsumerWidget {
   }
 }
 
+/// Widget that redirects to players screen with user's roster ID
+class _LeaguePlayersRedirect extends ConsumerWidget {
+  final int leagueId;
+
+  const _LeaguePlayersRedirect({required this.leagueId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final contextAsync = ref.watch(leagueContextProvider(leagueId));
+
+    return contextAsync.when(
+      data: (leagueContext) {
+        final rosterId = leagueContext.userRosterId;
+        if (rosterId != null) {
+          return FreeAgentsScreen(leagueId: leagueId, rosterId: rosterId);
+        }
+        return const _ErrorScreen(message: 'No roster found');
+      },
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => _ErrorScreen(message: 'Failed to load players: $error'),
+    );
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authChangeNotifier = ref.watch(_authChangeNotifierProvider);
 
@@ -337,7 +363,26 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                 ],
               ),
-              // League/Overview tab (index 3)
+              // Players tab (index 3)
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: 'players',
+                    builder: (context, state) {
+                      final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+                      // Get rosterId from query params or redirect to fetch it
+                      final rosterIdParam = state.uri.queryParameters['rosterId'];
+                      final rosterId = _parseIntParam(rosterIdParam);
+                      if (rosterId != null) {
+                        return FreeAgentsScreen(leagueId: leagueId, rosterId: rosterId);
+                      }
+                      // Use redirect to fetch user's roster
+                      return _LeaguePlayersRedirect(leagueId: leagueId);
+                    },
+                  ),
+                ],
+              ),
+              // League/Overview tab (index 4)
               StatefulShellBranch(
                 routes: [
                   GoRoute(
