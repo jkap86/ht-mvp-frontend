@@ -671,7 +671,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 }
 
 final draftRoomProvider =
-    StateNotifierProvider.family<DraftRoomNotifier, DraftRoomState, DraftRoomKey>(
+    StateNotifierProvider.autoDispose.family<DraftRoomNotifier, DraftRoomState, DraftRoomKey>(
   (ref, key) {
     final authState = ref.watch(authStateProvider);
     final currentUserId = authState.user?.id;

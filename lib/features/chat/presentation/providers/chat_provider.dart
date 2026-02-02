@@ -106,7 +106,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 }
 
-final chatProvider = StateNotifierProvider.family<ChatNotifier, ChatState, int>(
+final chatProvider = StateNotifierProvider.autoDispose.family<ChatNotifier, ChatState, int>(
   (ref, leagueId) => ChatNotifier(
     ref.watch(chatRepositoryProvider),
     ref.watch(socketServiceProvider),

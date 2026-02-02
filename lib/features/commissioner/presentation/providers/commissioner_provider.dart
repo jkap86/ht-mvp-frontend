@@ -290,7 +290,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
 }
 
 /// Provider for commissioner screen
-final commissionerProvider = StateNotifierProvider.family<CommissionerNotifier, CommissionerState, int>(
+final commissionerProvider = StateNotifierProvider.autoDispose.family<CommissionerNotifier, CommissionerState, int>(
   (ref, leagueId) => CommissionerNotifier(
     ref.watch(commissionerRepositoryProvider),
     leagueId,

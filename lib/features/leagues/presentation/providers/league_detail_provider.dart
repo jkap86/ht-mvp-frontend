@@ -237,7 +237,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
 }
 
 final leagueDetailProvider =
-    StateNotifierProvider.family<LeagueDetailNotifier, LeagueDetailState, int>(
+    StateNotifierProvider.autoDispose.family<LeagueDetailNotifier, LeagueDetailState, int>(
   (ref, leagueId) => LeagueDetailNotifier(
     ref.watch(leagueRepositoryProvider),
     ref.watch(draftRepositoryProvider),

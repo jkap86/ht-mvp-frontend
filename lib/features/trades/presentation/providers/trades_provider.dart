@@ -357,7 +357,7 @@ class TradesNotifier extends StateNotifier<TradesState> {
 
 /// Provider for trades in a specific league
 final tradesProvider =
-    StateNotifierProvider.family<TradesNotifier, TradesState, int>(
+    StateNotifierProvider.autoDispose.family<TradesNotifier, TradesState, int>(
   (ref, leagueId) => TradesNotifier(
     ref.watch(tradeRepositoryProvider),
     ref.watch(socketServiceProvider),

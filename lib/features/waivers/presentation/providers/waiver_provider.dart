@@ -371,7 +371,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
 
 /// Provider for waivers in a specific league
 final waiversProvider =
-    StateNotifierProvider.family<WaiversNotifier, WaiversState, ({int leagueId, int? userRosterId})>(
+    StateNotifierProvider.autoDispose.family<WaiversNotifier, WaiversState, ({int leagueId, int? userRosterId})>(
   (ref, params) => WaiversNotifier(
     ref.watch(waiverRepositoryProvider),
     ref.watch(socketServiceProvider),

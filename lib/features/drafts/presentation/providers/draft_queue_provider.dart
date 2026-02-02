@@ -171,7 +171,7 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
 }
 
 final draftQueueProvider =
-    StateNotifierProvider.family<DraftQueueNotifier, DraftQueueState, DraftQueueKey>(
+    StateNotifierProvider.autoDispose.family<DraftQueueNotifier, DraftQueueState, DraftQueueKey>(
   (ref, key) => DraftQueueNotifier(
     ref.watch(draftRepositoryProvider),
     ref.watch(socketServiceProvider),

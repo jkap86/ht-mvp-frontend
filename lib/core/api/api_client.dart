@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +16,12 @@ class ApiClient {
 
   /// Request timeout duration
   static const Duration requestTimeout = Duration(seconds: 30);
+
+  /// Maximum number of retry attempts for transient failures
+  static const int maxRetries = 3;
+
+  /// Base delay for exponential backoff (in milliseconds)
+  static const int baseDelayMs = 500;
 
   /// Callback for token refresh. Set this after login to enable automatic
   /// token refresh on 401 responses. Returns true if refresh succeeded.
@@ -84,29 +92,76 @@ class ApiClient {
     return headers;
   }
 
-  /// Executes an HTTP request with automatic token refresh on 401.
+  /// Checks if an error is a transient failure that should be retried
+  bool _isRetryableError(Object error) {
+    // Network-related errors
+    if (error is SocketException ||
+        error is TimeoutException ||
+        error is NetworkException) {
+      return true;
+    }
+
+    // Server errors (5xx) are often transient
+    if (error is ServerException) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Calculates the delay for exponential backoff with jitter
+  Duration _getRetryDelay(int attempt) {
+    // Exponential backoff: baseDelay * 2^attempt
+    final exponentialDelay = baseDelayMs * (1 << attempt);
+    // Add jitter (0-50% of the delay) to prevent thundering herd
+    final jitter = (exponentialDelay * 0.5 * (DateTime.now().millisecond / 1000)).toInt();
+    return Duration(milliseconds: exponentialDelay + jitter);
+  }
+
+  /// Executes an HTTP request with automatic token refresh on 401
+  /// and exponential backoff retry for transient failures.
   /// [executeRequest] is a function that performs the actual HTTP call.
   /// [auth] indicates whether to attempt token refresh on 401.
   Future<dynamic> _executeWithRetry({
     required Future<http.Response> Function(Map<String, String> headers) executeRequest,
     required bool auth,
   }) async {
-    try {
-      final headers = await _getHeaders(auth: auth);
-      final response = await executeRequest(headers).timeout(requestTimeout);
-      return _handleResponse(response);
-    } on UnauthorizedException {
-      // Attempt token refresh and retry once
-      if (auth && await _attemptTokenRefresh()) {
+    Object? lastError;
+
+    for (int attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
         final headers = await _getHeaders(auth: auth);
         final response = await executeRequest(headers).timeout(requestTimeout);
         return _handleResponse(response);
+      } on UnauthorizedException {
+        // Attempt token refresh and retry once (not part of exponential backoff)
+        if (auth && await _attemptTokenRefresh()) {
+          final headers = await _getHeaders(auth: auth);
+          final response = await executeRequest(headers).timeout(requestTimeout);
+          return _handleResponse(response);
+        }
+        rethrow;
+      } catch (e) {
+        // Convert raw network errors to our exception type
+        final error = e is ApiException ? e : NetworkException('Failed to connect to server');
+        lastError = error;
+
+        // Check if we should retry
+        if (attempt < maxRetries && _isRetryableError(error)) {
+          await Future.delayed(_getRetryDelay(attempt));
+          continue;
+        }
+
+        // No more retries - throw the error
+        if (error is ApiException) {
+          throw error;
+        }
+        throw NetworkException('Failed to connect to server');
       }
-      rethrow;
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw NetworkException('Failed to connect to server');
     }
+
+    // Should not reach here, but throw last error just in case
+    throw lastError ?? NetworkException('Failed to connect to server');
   }
 
   Future<dynamic> get(String endpoint, {bool auth = true}) async {

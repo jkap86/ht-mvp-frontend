@@ -218,7 +218,7 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
   }
 }
 
-final dmConversationProvider = StateNotifierProvider.family<
+final dmConversationProvider = StateNotifierProvider.autoDispose.family<
     DmConversationNotifier, DmConversationState, int>(
   (ref, conversationId) => DmConversationNotifier(
     ref.watch(dmRepositoryProvider),

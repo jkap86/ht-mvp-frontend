@@ -384,7 +384,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
   }
 }
 
-final teamProvider = StateNotifierProvider.family<TeamNotifier, TeamState, TeamKey>(
+final teamProvider = StateNotifierProvider.autoDispose.family<TeamNotifier, TeamState, TeamKey>(
   (ref, key) => TeamNotifier(
     ref.watch(rosterRepositoryProvider),
     ref.watch(leagueRepositoryProvider),

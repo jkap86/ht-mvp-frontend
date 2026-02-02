@@ -118,7 +118,7 @@ class PlayoffBracketNotifier extends StateNotifier<PlayoffBracketState> {
   }
 }
 
-final playoffBracketProvider = StateNotifierProvider.family<
+final playoffBracketProvider = StateNotifierProvider.autoDispose.family<
     PlayoffBracketNotifier, PlayoffBracketState, int>(
   (ref, leagueId) => PlayoffBracketNotifier(
     ref.watch(playoffRepositoryProvider),
