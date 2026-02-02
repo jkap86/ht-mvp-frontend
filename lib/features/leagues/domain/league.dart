@@ -147,6 +147,7 @@ class Roster {
   final int? rosterId;
   final String? teamName;
   final String username;
+  final bool isBenched;
 
   Roster({
     required this.id,
@@ -155,6 +156,7 @@ class Roster {
     this.rosterId,
     this.teamName,
     required this.username,
+    this.isBenched = false,
   });
 
   factory Roster.fromJson(Map<String, dynamic> json) {
@@ -165,6 +167,7 @@ class Roster {
       rosterId: json['roster_id'] as int?,
       teamName: json['team_name'] as String?,
       username: json['username'] as String? ?? 'Unknown',
+      isBenched: json['is_benched'] as bool? ?? false,
     );
   }
 }

@@ -155,6 +155,32 @@ class LeagueRepository {
     return League.fromJson(response);
   }
 
+  /// Update league settings (commissioner only)
+  Future<League> updateLeague(
+    int leagueId, {
+    String? name,
+    String? mode,
+    bool? isPublic,
+    Map<String, dynamic>? settings,
+    Map<String, dynamic>? scoringSettings,
+    int? totalRosters,
+  }) async {
+    final response = await _apiClient.put('/leagues/$leagueId', body: {
+      if (name != null) 'name': name,
+      if (mode != null) 'mode': mode,
+      if (isPublic != null) 'is_public': isPublic,
+      if (settings != null) 'settings': settings,
+      if (scoringSettings != null) 'scoring_settings': scoringSettings,
+      if (totalRosters != null) 'total_rosters': totalRosters,
+    });
+    return League.fromJson(response);
+  }
+
+  /// Reinstate a benched member (commissioner only)
+  Future<void> reinstateMember(int leagueId, int rosterId) async {
+    await _apiClient.post('/leagues/$leagueId/members/$rosterId/reinstate');
+  }
+
   // ============= Invitation Methods =============
 
   /// Get pending invitations for the current user

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/invalidation_service.dart';
 import '../../data/commissioner_repository.dart';
 import '../../../leagues/domain/league.dart';
 import '../../../playoffs/domain/playoff.dart';
@@ -57,10 +58,12 @@ class CommissionerState {
 /// Commissioner dashboard notifier
 class CommissionerNotifier extends StateNotifier<CommissionerState> {
   final CommissionerRepository _repo;
+  final InvalidationService _invalidationService;
   final int leagueId;
 
   CommissionerNotifier(
     this._repo,
+    this._invalidationService,
     this.leagueId,
   ) : super(CommissionerState()) {
     loadData();
@@ -216,6 +219,68 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     state = state.copyWith(clearError: true, clearSuccess: true);
   }
 
+  Future<bool> updateLeague({
+    String? name,
+    String? mode,
+    bool? isPublic,
+    Map<String, dynamic>? settings,
+    Map<String, dynamic>? scoringSettings,
+    int? totalRosters,
+  }) async {
+    state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
+
+    try {
+      final updatedLeague = await _repo.updateLeague(
+        leagueId,
+        name: name,
+        mode: mode,
+        isPublic: isPublic,
+        settings: settings,
+        scoringSettings: scoringSettings,
+        totalRosters: totalRosters,
+      );
+      // Reload members to reflect benching changes
+      final members = await _repo.getMembers(leagueId);
+      state = state.copyWith(
+        league: updatedLeague,
+        members: members,
+        isProcessing: false,
+        successMessage: 'League settings updated successfully',
+      );
+      // Notify other providers that league data changed
+      await _invalidationService.invalidateType(InvalidationType.leagueDetail, leagueId);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isProcessing: false,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> reinstateMember(int rosterId, String teamName) async {
+    state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
+
+    try {
+      await _repo.reinstateMember(leagueId, rosterId);
+      // Reload members
+      final members = await _repo.getMembers(leagueId);
+      state = state.copyWith(
+        members: members,
+        isProcessing: false,
+        successMessage: '$teamName has been reinstated',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isProcessing: false,
+      );
+      return false;
+    }
+  }
+
   Future<bool> resetLeague({
     required String newSeason,
     required String confirmationName,
@@ -293,6 +358,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
 final commissionerProvider = StateNotifierProvider.autoDispose.family<CommissionerNotifier, CommissionerState, int>(
   (ref, leagueId) => CommissionerNotifier(
     ref.watch(commissionerRepositoryProvider),
+    ref.watch(invalidationServiceProvider),
     leagueId,
   ),
 );

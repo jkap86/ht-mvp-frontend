@@ -36,11 +36,19 @@ class _LeaguesScreenState extends ConsumerState<LeaguesScreen> {
           NotificationBell(),
         ],
       ),
-      body: _buildBody(leaguesState),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'add-league',
-        onPressed: () => context.push('/leagues/add'),
-        child: const Icon(Icons.add),
+      body: Stack(
+        children: [
+          _buildBody(leaguesState),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: FloatingActionButton(
+              heroTag: 'add-league',
+              onPressed: () => context.push('/leagues/add'),
+              child: const Icon(Icons.add),
+            ),
+          ),
+        ],
       ),
     );
   }

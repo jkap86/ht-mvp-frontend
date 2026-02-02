@@ -104,6 +104,32 @@ class CommissionerRepository {
     );
   }
 
+  /// Update league settings
+  Future<League> updateLeague(
+    int leagueId, {
+    String? name,
+    String? mode,
+    bool? isPublic,
+    Map<String, dynamic>? settings,
+    Map<String, dynamic>? scoringSettings,
+    int? totalRosters,
+  }) {
+    return _leagueRepo.updateLeague(
+      leagueId,
+      name: name,
+      mode: mode,
+      isPublic: isPublic,
+      settings: settings,
+      scoringSettings: scoringSettings,
+      totalRosters: totalRosters,
+    );
+  }
+
+  /// Reinstate a benched member
+  Future<void> reinstateMember(int leagueId, int rosterId) {
+    return _leagueRepo.reinstateMember(leagueId, rosterId);
+  }
+
   // ============================================================
   // Schedule Management
   // ============================================================
