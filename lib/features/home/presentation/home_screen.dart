@@ -121,17 +121,6 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // URGENCY BANNERS (time-sensitive actions first)
-              if (activeDrafts.isNotEmpty)
-                _buildUrgencyBanner(
-                  context,
-                  icon: Icons.timer,
-                  color: Colors.red,
-                  title: 'Draft in Progress',
-                  subtitle: '${activeDrafts.first.leagueName} - It\'s your turn!',
-                  onTap: () => context.push(
-                    '/leagues/${activeDrafts.first.leagueId}/drafts/${activeDrafts.first.draft.id}',
-                  ),
-                ),
               if (pendingTrades.isNotEmpty)
                 _buildUrgencyBanner(
                   context,
@@ -143,26 +132,24 @@ class HomeScreen extends ConsumerWidget {
                     '/leagues/${pendingTrades.first.leagueId}/trades/${pendingTrades.first.trade.id}',
                   ),
                 ),
-              if (activeDrafts.isNotEmpty || pendingTrades.isNotEmpty)
+              if (pendingTrades.isNotEmpty)
                 const SizedBox(height: 12),
 
-              // 1. DRAFTS (always shown, highlights active drafts)
-              HomeDraftsCard(
-                activeCount: activeDrafts.length,
-              ),
+              // 1. DRAFTS
+              HomeDraftsCard(activeCount: activeDrafts.length),
               const SizedBox(height: 12),
 
-              // 2. MATCHUPS (what users want to see)
+              // 3. MATCHUPS (what users want to see)
               if (state.matchups.isNotEmpty) ...[
                 HomeMatchupsCard(matchups: state.matchups),
                 const SizedBox(height: 12),
               ],
 
-              // 3. TRANSACTIONS (actionable items)
+              // 4. TRANSACTIONS (actionable items)
               HomeTransactionsCard(tradeCount: state.pendingTrades.length),
               const SizedBox(height: 12),
 
-              // 4. LEAGUES (navigation)
+              // 5. LEAGUES (navigation)
               HomeLeaguesCard(leagueCount: state.leagues.length),
             ],
           ),

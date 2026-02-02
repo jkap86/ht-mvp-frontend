@@ -163,6 +163,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     int rounds = 15,
     int pickTimeSeconds = 90,
     Map<String, dynamic>? settings,
+    List<String>? playerPool,
   }) async {
     try {
       final draft = await _leagueRepo.createDraft(
@@ -171,6 +172,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
         rounds: rounds,
         pickTimeSeconds: pickTimeSeconds,
         settings: settings,
+        playerPool: playerPool,
       );
       state = state.copyWith(drafts: [...state.drafts, draft]);
       return true;

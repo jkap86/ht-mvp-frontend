@@ -82,6 +82,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         required int rounds,
         required int pickTimeSeconds,
         Map<String, dynamic>? auctionSettings,
+        List<String>? playerPool,
       }) async {
         final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
         final success = await notifier.createDraft(
@@ -89,6 +90,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           rounds: rounds,
           pickTimeSeconds: pickTimeSeconds,
           settings: auctionSettings,
+          playerPool: playerPool,
         );
         if (!success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

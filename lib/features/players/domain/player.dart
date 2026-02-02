@@ -7,10 +7,10 @@ part 'player.g.dart';
 class Player with _$Player {
   const factory Player({
     required int id,
-    @JsonKey(name: 'sleeper_id') required String sleeperId,
+    @JsonKey(name: 'sleeper_id') String? sleeperId,
     @JsonKey(name: 'first_name') String? firstName,
     @JsonKey(name: 'last_name') String? lastName,
-    @JsonKey(name: 'fantasy_positions') required List<String> fantasyPositions,
+    @JsonKey(name: 'fantasy_positions') @Default([]) List<String> fantasyPositions,
     @JsonKey(name: 'years_exp') int? yearsExp,
     int? age,
     String? team,
@@ -23,6 +23,14 @@ class Player with _$Player {
     @JsonKey(name: 'prior_season_pts') double? priorSeasonPts,
     @JsonKey(name: 'season_to_date_pts') double? seasonToDatePts,
     @JsonKey(name: 'remaining_projected_pts') double? remainingProjectedPts,
+    // College player fields
+    @JsonKey(name: 'cfbd_id') int? cfbdId,
+    String? college,
+    String? height,
+    int? weight,
+    @JsonKey(name: 'home_city') String? homeCity,
+    @JsonKey(name: 'home_state') String? homeState,
+    @JsonKey(name: 'player_type') @Default('nfl') String playerType,
   }) = _Player;
 
   factory Player.fromJson(Map<String, dynamic> json) => _$PlayerFromJson(json);

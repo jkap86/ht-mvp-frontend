@@ -22,7 +22,7 @@ Player _$PlayerFromJson(Map<String, dynamic> json) {
 mixin _$Player {
   int get id => throw _privateConstructorUsedError;
   @JsonKey(name: 'sleeper_id')
-  String get sleeperId => throw _privateConstructorUsedError;
+  String? get sleeperId => throw _privateConstructorUsedError;
   @JsonKey(name: 'first_name')
   String? get firstName => throw _privateConstructorUsedError;
   @JsonKey(name: 'last_name')
@@ -45,7 +45,19 @@ mixin _$Player {
   @JsonKey(name: 'season_to_date_pts')
   double? get seasonToDatePts => throw _privateConstructorUsedError;
   @JsonKey(name: 'remaining_projected_pts')
-  double? get remainingProjectedPts => throw _privateConstructorUsedError;
+  double? get remainingProjectedPts =>
+      throw _privateConstructorUsedError; // College player fields
+  @JsonKey(name: 'cfbd_id')
+  int? get cfbdId => throw _privateConstructorUsedError;
+  String? get college => throw _privateConstructorUsedError;
+  String? get height => throw _privateConstructorUsedError;
+  int? get weight => throw _privateConstructorUsedError;
+  @JsonKey(name: 'home_city')
+  String? get homeCity => throw _privateConstructorUsedError;
+  @JsonKey(name: 'home_state')
+  String? get homeState => throw _privateConstructorUsedError;
+  @JsonKey(name: 'player_type')
+  String get playerType => throw _privateConstructorUsedError;
 
   /// Serializes this Player to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -63,7 +75,7 @@ abstract class $PlayerCopyWith<$Res> {
   @useResult
   $Res call(
       {int id,
-      @JsonKey(name: 'sleeper_id') String sleeperId,
+      @JsonKey(name: 'sleeper_id') String? sleeperId,
       @JsonKey(name: 'first_name') String? firstName,
       @JsonKey(name: 'last_name') String? lastName,
       @JsonKey(name: 'fantasy_positions') List<String> fantasyPositions,
@@ -77,7 +89,14 @@ abstract class $PlayerCopyWith<$Res> {
       bool? active,
       @JsonKey(name: 'prior_season_pts') double? priorSeasonPts,
       @JsonKey(name: 'season_to_date_pts') double? seasonToDatePts,
-      @JsonKey(name: 'remaining_projected_pts') double? remainingProjectedPts});
+      @JsonKey(name: 'remaining_projected_pts') double? remainingProjectedPts,
+      @JsonKey(name: 'cfbd_id') int? cfbdId,
+      String? college,
+      String? height,
+      int? weight,
+      @JsonKey(name: 'home_city') String? homeCity,
+      @JsonKey(name: 'home_state') String? homeState,
+      @JsonKey(name: 'player_type') String playerType});
 }
 
 /// @nodoc
@@ -96,7 +115,7 @@ class _$PlayerCopyWithImpl<$Res, $Val extends Player>
   @override
   $Res call({
     Object? id = null,
-    Object? sleeperId = null,
+    Object? sleeperId = freezed,
     Object? firstName = freezed,
     Object? lastName = freezed,
     Object? fantasyPositions = null,
@@ -111,16 +130,23 @@ class _$PlayerCopyWithImpl<$Res, $Val extends Player>
     Object? priorSeasonPts = freezed,
     Object? seasonToDatePts = freezed,
     Object? remainingProjectedPts = freezed,
+    Object? cfbdId = freezed,
+    Object? college = freezed,
+    Object? height = freezed,
+    Object? weight = freezed,
+    Object? homeCity = freezed,
+    Object? homeState = freezed,
+    Object? playerType = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
-      sleeperId: null == sleeperId
+      sleeperId: freezed == sleeperId
           ? _value.sleeperId
           : sleeperId // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       firstName: freezed == firstName
           ? _value.firstName
           : firstName // ignore: cast_nullable_to_non_nullable
@@ -177,6 +203,34 @@ class _$PlayerCopyWithImpl<$Res, $Val extends Player>
           ? _value.remainingProjectedPts
           : remainingProjectedPts // ignore: cast_nullable_to_non_nullable
               as double?,
+      cfbdId: freezed == cfbdId
+          ? _value.cfbdId
+          : cfbdId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      college: freezed == college
+          ? _value.college
+          : college // ignore: cast_nullable_to_non_nullable
+              as String?,
+      height: freezed == height
+          ? _value.height
+          : height // ignore: cast_nullable_to_non_nullable
+              as String?,
+      weight: freezed == weight
+          ? _value.weight
+          : weight // ignore: cast_nullable_to_non_nullable
+              as int?,
+      homeCity: freezed == homeCity
+          ? _value.homeCity
+          : homeCity // ignore: cast_nullable_to_non_nullable
+              as String?,
+      homeState: freezed == homeState
+          ? _value.homeState
+          : homeState // ignore: cast_nullable_to_non_nullable
+              as String?,
+      playerType: null == playerType
+          ? _value.playerType
+          : playerType // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -190,7 +244,7 @@ abstract class _$$PlayerImplCopyWith<$Res> implements $PlayerCopyWith<$Res> {
   @useResult
   $Res call(
       {int id,
-      @JsonKey(name: 'sleeper_id') String sleeperId,
+      @JsonKey(name: 'sleeper_id') String? sleeperId,
       @JsonKey(name: 'first_name') String? firstName,
       @JsonKey(name: 'last_name') String? lastName,
       @JsonKey(name: 'fantasy_positions') List<String> fantasyPositions,
@@ -204,7 +258,14 @@ abstract class _$$PlayerImplCopyWith<$Res> implements $PlayerCopyWith<$Res> {
       bool? active,
       @JsonKey(name: 'prior_season_pts') double? priorSeasonPts,
       @JsonKey(name: 'season_to_date_pts') double? seasonToDatePts,
-      @JsonKey(name: 'remaining_projected_pts') double? remainingProjectedPts});
+      @JsonKey(name: 'remaining_projected_pts') double? remainingProjectedPts,
+      @JsonKey(name: 'cfbd_id') int? cfbdId,
+      String? college,
+      String? height,
+      int? weight,
+      @JsonKey(name: 'home_city') String? homeCity,
+      @JsonKey(name: 'home_state') String? homeState,
+      @JsonKey(name: 'player_type') String playerType});
 }
 
 /// @nodoc
@@ -221,7 +282,7 @@ class __$$PlayerImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? sleeperId = null,
+    Object? sleeperId = freezed,
     Object? firstName = freezed,
     Object? lastName = freezed,
     Object? fantasyPositions = null,
@@ -236,16 +297,23 @@ class __$$PlayerImplCopyWithImpl<$Res>
     Object? priorSeasonPts = freezed,
     Object? seasonToDatePts = freezed,
     Object? remainingProjectedPts = freezed,
+    Object? cfbdId = freezed,
+    Object? college = freezed,
+    Object? height = freezed,
+    Object? weight = freezed,
+    Object? homeCity = freezed,
+    Object? homeState = freezed,
+    Object? playerType = null,
   }) {
     return _then(_$PlayerImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
-      sleeperId: null == sleeperId
+      sleeperId: freezed == sleeperId
           ? _value.sleeperId
           : sleeperId // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       firstName: freezed == firstName
           ? _value.firstName
           : firstName // ignore: cast_nullable_to_non_nullable
@@ -302,6 +370,34 @@ class __$$PlayerImplCopyWithImpl<$Res>
           ? _value.remainingProjectedPts
           : remainingProjectedPts // ignore: cast_nullable_to_non_nullable
               as double?,
+      cfbdId: freezed == cfbdId
+          ? _value.cfbdId
+          : cfbdId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      college: freezed == college
+          ? _value.college
+          : college // ignore: cast_nullable_to_non_nullable
+              as String?,
+      height: freezed == height
+          ? _value.height
+          : height // ignore: cast_nullable_to_non_nullable
+              as String?,
+      weight: freezed == weight
+          ? _value.weight
+          : weight // ignore: cast_nullable_to_non_nullable
+              as int?,
+      homeCity: freezed == homeCity
+          ? _value.homeCity
+          : homeCity // ignore: cast_nullable_to_non_nullable
+              as String?,
+      homeState: freezed == homeState
+          ? _value.homeState
+          : homeState // ignore: cast_nullable_to_non_nullable
+              as String?,
+      playerType: null == playerType
+          ? _value.playerType
+          : playerType // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -311,11 +407,11 @@ class __$$PlayerImplCopyWithImpl<$Res>
 class _$PlayerImpl implements _Player {
   const _$PlayerImpl(
       {required this.id,
-      @JsonKey(name: 'sleeper_id') required this.sleeperId,
+      @JsonKey(name: 'sleeper_id') this.sleeperId,
       @JsonKey(name: 'first_name') this.firstName,
       @JsonKey(name: 'last_name') this.lastName,
       @JsonKey(name: 'fantasy_positions')
-      required final List<String> fantasyPositions,
+      final List<String> fantasyPositions = const [],
       @JsonKey(name: 'years_exp') this.yearsExp,
       this.age,
       this.team,
@@ -326,7 +422,14 @@ class _$PlayerImpl implements _Player {
       this.active,
       @JsonKey(name: 'prior_season_pts') this.priorSeasonPts,
       @JsonKey(name: 'season_to_date_pts') this.seasonToDatePts,
-      @JsonKey(name: 'remaining_projected_pts') this.remainingProjectedPts})
+      @JsonKey(name: 'remaining_projected_pts') this.remainingProjectedPts,
+      @JsonKey(name: 'cfbd_id') this.cfbdId,
+      this.college,
+      this.height,
+      this.weight,
+      @JsonKey(name: 'home_city') this.homeCity,
+      @JsonKey(name: 'home_state') this.homeState,
+      @JsonKey(name: 'player_type') this.playerType = 'nfl'})
       : _fantasyPositions = fantasyPositions;
 
   factory _$PlayerImpl.fromJson(Map<String, dynamic> json) =>
@@ -336,7 +439,7 @@ class _$PlayerImpl implements _Player {
   final int id;
   @override
   @JsonKey(name: 'sleeper_id')
-  final String sleeperId;
+  final String? sleeperId;
   @override
   @JsonKey(name: 'first_name')
   final String? firstName;
@@ -382,10 +485,29 @@ class _$PlayerImpl implements _Player {
   @override
   @JsonKey(name: 'remaining_projected_pts')
   final double? remainingProjectedPts;
+// College player fields
+  @override
+  @JsonKey(name: 'cfbd_id')
+  final int? cfbdId;
+  @override
+  final String? college;
+  @override
+  final String? height;
+  @override
+  final int? weight;
+  @override
+  @JsonKey(name: 'home_city')
+  final String? homeCity;
+  @override
+  @JsonKey(name: 'home_state')
+  final String? homeState;
+  @override
+  @JsonKey(name: 'player_type')
+  final String playerType;
 
   @override
   String toString() {
-    return 'Player(id: $id, sleeperId: $sleeperId, firstName: $firstName, lastName: $lastName, fantasyPositions: $fantasyPositions, yearsExp: $yearsExp, age: $age, team: $team, position: $position, number: $number, status: $status, injuryStatus: $injuryStatus, active: $active, priorSeasonPts: $priorSeasonPts, seasonToDatePts: $seasonToDatePts, remainingProjectedPts: $remainingProjectedPts)';
+    return 'Player(id: $id, sleeperId: $sleeperId, firstName: $firstName, lastName: $lastName, fantasyPositions: $fantasyPositions, yearsExp: $yearsExp, age: $age, team: $team, position: $position, number: $number, status: $status, injuryStatus: $injuryStatus, active: $active, priorSeasonPts: $priorSeasonPts, seasonToDatePts: $seasonToDatePts, remainingProjectedPts: $remainingProjectedPts, cfbdId: $cfbdId, college: $college, height: $height, weight: $weight, homeCity: $homeCity, homeState: $homeState, playerType: $playerType)';
   }
 
   @override
@@ -418,29 +540,47 @@ class _$PlayerImpl implements _Player {
             (identical(other.seasonToDatePts, seasonToDatePts) ||
                 other.seasonToDatePts == seasonToDatePts) &&
             (identical(other.remainingProjectedPts, remainingProjectedPts) ||
-                other.remainingProjectedPts == remainingProjectedPts));
+                other.remainingProjectedPts == remainingProjectedPts) &&
+            (identical(other.cfbdId, cfbdId) || other.cfbdId == cfbdId) &&
+            (identical(other.college, college) || other.college == college) &&
+            (identical(other.height, height) || other.height == height) &&
+            (identical(other.weight, weight) || other.weight == weight) &&
+            (identical(other.homeCity, homeCity) ||
+                other.homeCity == homeCity) &&
+            (identical(other.homeState, homeState) ||
+                other.homeState == homeState) &&
+            (identical(other.playerType, playerType) ||
+                other.playerType == playerType));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      sleeperId,
-      firstName,
-      lastName,
-      const DeepCollectionEquality().hash(_fantasyPositions),
-      yearsExp,
-      age,
-      team,
-      position,
-      number,
-      status,
-      injuryStatus,
-      active,
-      priorSeasonPts,
-      seasonToDatePts,
-      remainingProjectedPts);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        sleeperId,
+        firstName,
+        lastName,
+        const DeepCollectionEquality().hash(_fantasyPositions),
+        yearsExp,
+        age,
+        team,
+        position,
+        number,
+        status,
+        injuryStatus,
+        active,
+        priorSeasonPts,
+        seasonToDatePts,
+        remainingProjectedPts,
+        cfbdId,
+        college,
+        height,
+        weight,
+        homeCity,
+        homeState,
+        playerType
+      ]);
 
   /// Create a copy of Player
   /// with the given fields replaced by the non-null parameter values.
@@ -461,11 +601,10 @@ class _$PlayerImpl implements _Player {
 abstract class _Player implements Player {
   const factory _Player(
       {required final int id,
-      @JsonKey(name: 'sleeper_id') required final String sleeperId,
+      @JsonKey(name: 'sleeper_id') final String? sleeperId,
       @JsonKey(name: 'first_name') final String? firstName,
       @JsonKey(name: 'last_name') final String? lastName,
-      @JsonKey(name: 'fantasy_positions')
-      required final List<String> fantasyPositions,
+      @JsonKey(name: 'fantasy_positions') final List<String> fantasyPositions,
       @JsonKey(name: 'years_exp') final int? yearsExp,
       final int? age,
       final String? team,
@@ -477,7 +616,14 @@ abstract class _Player implements Player {
       @JsonKey(name: 'prior_season_pts') final double? priorSeasonPts,
       @JsonKey(name: 'season_to_date_pts') final double? seasonToDatePts,
       @JsonKey(name: 'remaining_projected_pts')
-      final double? remainingProjectedPts}) = _$PlayerImpl;
+      final double? remainingProjectedPts,
+      @JsonKey(name: 'cfbd_id') final int? cfbdId,
+      final String? college,
+      final String? height,
+      final int? weight,
+      @JsonKey(name: 'home_city') final String? homeCity,
+      @JsonKey(name: 'home_state') final String? homeState,
+      @JsonKey(name: 'player_type') final String playerType}) = _$PlayerImpl;
 
   factory _Player.fromJson(Map<String, dynamic> json) = _$PlayerImpl.fromJson;
 
@@ -485,7 +631,7 @@ abstract class _Player implements Player {
   int get id;
   @override
   @JsonKey(name: 'sleeper_id')
-  String get sleeperId;
+  String? get sleeperId;
   @override
   @JsonKey(name: 'first_name')
   String? get firstName;
@@ -522,7 +668,25 @@ abstract class _Player implements Player {
   double? get seasonToDatePts;
   @override
   @JsonKey(name: 'remaining_projected_pts')
-  double? get remainingProjectedPts;
+  double? get remainingProjectedPts; // College player fields
+  @override
+  @JsonKey(name: 'cfbd_id')
+  int? get cfbdId;
+  @override
+  String? get college;
+  @override
+  String? get height;
+  @override
+  int? get weight;
+  @override
+  @JsonKey(name: 'home_city')
+  String? get homeCity;
+  @override
+  @JsonKey(name: 'home_state')
+  String? get homeState;
+  @override
+  @JsonKey(name: 'player_type')
+  String get playerType;
 
   /// Create a copy of Player
   /// with the given fields replaced by the non-null parameter values.

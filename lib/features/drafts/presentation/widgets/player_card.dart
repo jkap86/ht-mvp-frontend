@@ -97,13 +97,15 @@ class PlayerCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            player.team ?? 'FA',
+                            player.playerType == 'college' && player.college != null
+                                ? player.college!
+                                : player.team ?? 'FA',
                             style: TextStyle(
                               color: theme.colorScheme.onSurfaceVariant,
                               fontSize: 13,
                             ),
                           ),
-                          if (player.team != null) ...[
+                          if (player.team != null || player.college != null) ...[
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 6),
                               child: Text(

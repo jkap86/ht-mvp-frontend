@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Card showing drafts summary with navigation to drafts list page
+/// Card showing drafts summary with navigation to drafts page
 class HomeDraftsCard extends StatelessWidget {
   final int activeCount;
 
@@ -34,7 +34,7 @@ class HomeDraftsCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  hasActive ? Icons.timer : Icons.assignment,
+                  Icons.assignment,
                   size: 24,
                   color: hasActive
                       ? colorScheme.onError
@@ -58,7 +58,6 @@ class HomeDraftsCard extends StatelessWidget {
                           ? '$activeCount draft${activeCount == 1 ? '' : 's'} in progress'
                           : 'View all your drafts',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: hasActive ? FontWeight.w600 : null,
                             color: hasActive
                                 ? colorScheme.onErrorContainer
                                 : colorScheme.onSurfaceVariant,
@@ -67,26 +66,12 @@ class HomeDraftsCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (hasActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: colorScheme.error,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '$activeCount',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: colorScheme.onError,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                )
-              else
-                Icon(
-                  Icons.chevron_right,
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              Icon(
+                Icons.chevron_right,
+                color: hasActive
+                    ? colorScheme.onErrorContainer
+                    : colorScheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),

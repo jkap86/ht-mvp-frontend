@@ -8,12 +8,13 @@ part of 'player.dart';
 
 _$PlayerImpl _$$PlayerImplFromJson(Map<String, dynamic> json) => _$PlayerImpl(
       id: (json['id'] as num).toInt(),
-      sleeperId: json['sleeper_id'] as String,
+      sleeperId: json['sleeper_id'] as String?,
       firstName: json['first_name'] as String?,
       lastName: json['last_name'] as String?,
-      fantasyPositions: (json['fantasy_positions'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
+      fantasyPositions: (json['fantasy_positions'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
       yearsExp: (json['years_exp'] as num?)?.toInt(),
       age: (json['age'] as num?)?.toInt(),
       team: json['team'] as String?,
@@ -26,6 +27,13 @@ _$PlayerImpl _$$PlayerImplFromJson(Map<String, dynamic> json) => _$PlayerImpl(
       seasonToDatePts: (json['season_to_date_pts'] as num?)?.toDouble(),
       remainingProjectedPts:
           (json['remaining_projected_pts'] as num?)?.toDouble(),
+      cfbdId: (json['cfbd_id'] as num?)?.toInt(),
+      college: json['college'] as String?,
+      height: json['height'] as String?,
+      weight: (json['weight'] as num?)?.toInt(),
+      homeCity: json['home_city'] as String?,
+      homeState: json['home_state'] as String?,
+      playerType: json['player_type'] as String? ?? 'nfl',
     );
 
 Map<String, dynamic> _$$PlayerImplToJson(_$PlayerImpl instance) =>
@@ -46,4 +54,11 @@ Map<String, dynamic> _$$PlayerImplToJson(_$PlayerImpl instance) =>
       'prior_season_pts': instance.priorSeasonPts,
       'season_to_date_pts': instance.seasonToDatePts,
       'remaining_projected_pts': instance.remainingProjectedPts,
+      'cfbd_id': instance.cfbdId,
+      'college': instance.college,
+      'height': instance.height,
+      'weight': instance.weight,
+      'home_city': instance.homeCity,
+      'home_state': instance.homeState,
+      'player_type': instance.playerType,
     };

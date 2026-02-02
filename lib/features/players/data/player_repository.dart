@@ -13,11 +13,19 @@ class PlayerRepository {
 
   PlayerRepository(this._apiClient);
 
-  Future<List<Player>> getPlayers({String? search, String? position, String? team}) async {
+  Future<List<Player>> getPlayers({
+    String? search,
+    String? position,
+    String? team,
+    String? playerType,
+    List<String>? playerPool,
+  }) async {
     final queryParams = <String, String>{};
     if (search != null && search.isNotEmpty) queryParams['q'] = search;
     if (position != null && position.isNotEmpty) queryParams['position'] = position;
     if (team != null && team.isNotEmpty) queryParams['team'] = team;
+    if (playerType != null && playerType.isNotEmpty) queryParams['playerType'] = playerType;
+    if (playerPool != null && playerPool.isNotEmpty) queryParams['playerPool'] = playerPool.join(',');
 
     final queryString = queryParams.isNotEmpty
         ? '?${queryParams.entries.map((e) => '${e.key}=${e.value}').join('&')}'

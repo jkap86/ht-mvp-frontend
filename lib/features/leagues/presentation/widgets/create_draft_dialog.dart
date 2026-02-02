@@ -9,6 +9,7 @@ class CreateDraftDialog extends StatefulWidget {
     required int rounds,
     required int pickTimeSeconds,
     Map<String, dynamic>? auctionSettings,
+    List<String>? playerPool,
   }) onCreateDraft;
 
   final String leagueMode;
@@ -32,6 +33,9 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
   late int _rounds;
   late int _pickTimeSeconds;
   String _draftSubtype = 'startup'; // For dynasty leagues: 'startup' or 'rookie'
+
+  // Player pool settings (default: veterans + rookies for standard redraft behavior)
+  final Set<String> _selectedPlayerPool = {'veteran', 'rookie'};
 
   // Controllers for text inputs
   late TextEditingController _roundsController;
@@ -361,6 +365,44 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
     );
   }
 
+  Widget _buildPlayerPoolCheckboxes() {
+    return Column(
+      children: [
+        _buildPoolCheckbox('veteran', 'Veterans', 'NFL players with 1+ years experience'),
+        _buildPoolCheckbox('rookie', 'Rookies', 'First-year NFL players'),
+        _buildPoolCheckbox('college', 'College', 'College players (for dynasty/rookie drafts)'),
+      ],
+    );
+  }
+
+  Widget _buildPoolCheckbox(String value, String label, String description) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isSelected = _selectedPlayerPool.contains(value);
+
+    return CheckboxListTile(
+      value: isSelected,
+      onChanged: (checked) {
+        setState(() {
+          if (checked == true) {
+            _selectedPlayerPool.add(value);
+          } else if (_selectedPlayerPool.length > 1) {
+            // Prevent unchecking all - at least one must remain
+            _selectedPlayerPool.remove(value);
+          }
+        });
+      },
+      title: Text(label, style: const TextStyle(fontSize: 13)),
+      subtitle: Text(
+        description,
+        style: TextStyle(fontSize: 11, color: colorScheme.onSurface.withAlpha(153)),
+      ),
+      dense: true,
+      controlAffinity: ListTileControlAffinity.leading,
+      contentPadding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -476,6 +518,15 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                     onChanged: (v) => setState(() => _pickTimeSeconds = v),
                     helperText: '30-600 seconds',
                   ),
+                ],
+              ),
+
+              // Player Pool Section (shown for ALL draft types)
+              _buildSection(
+                title: 'Player Pool',
+                icon: Icons.people,
+                children: [
+                  _buildPlayerPoolCheckboxes(),
                 ],
               ),
 
@@ -621,6 +672,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                       },
                     }
                   : null,
+              playerPool: _selectedPlayerPool.toList(),
             );
           },
           icon: const Icon(Icons.add, size: 18),
@@ -641,6 +693,7 @@ void showCreateDraftDialog(
     required int rounds,
     required int pickTimeSeconds,
     Map<String, dynamic>? auctionSettings,
+    List<String>? playerPool,
   }) onCreateDraft,
 }) {
   showDialog(

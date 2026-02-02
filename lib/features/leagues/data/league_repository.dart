@@ -91,12 +91,14 @@ class LeagueRepository {
     int rounds = 15,
     int pickTimeSeconds = 90,
     Map<String, dynamic>? settings,
+    List<String>? playerPool,
   }) async {
     final response = await _apiClient.post('/leagues/$leagueId/drafts', body: {
       'draft_type': draftType,
       'rounds': rounds,
       'pick_time_seconds': pickTimeSeconds,
-      if (settings != null) 'settings': settings,
+      if (settings != null) 'auction_settings': settings,
+      if (playerPool != null) 'player_pool': playerPool,
     });
     return Draft.fromJson(response);
   }

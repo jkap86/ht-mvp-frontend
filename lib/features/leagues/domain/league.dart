@@ -183,6 +183,7 @@ class Draft {
   final DateTime? startedAt;
   final DateTime? completedAt;
   final AuctionSettings? settings;
+  final Map<String, dynamic>? rawSettings; // Preserves full settings including playerPool
   final bool orderConfirmed;
 
   Draft({
@@ -199,6 +200,7 @@ class Draft {
     this.startedAt,
     this.completedAt,
     this.settings,
+    this.rawSettings,
     this.orderConfirmed = false,
   });
 
@@ -229,6 +231,7 @@ class Draft {
       settings: settingsJson != null && settingsJson.isNotEmpty
           ? AuctionSettings.fromJson(settingsJson)
           : null,
+      rawSettings: settingsJson,
       orderConfirmed: json['order_confirmed'] as bool? ?? false,
     );
   }
@@ -247,6 +250,7 @@ class Draft {
     DateTime? startedAt,
     DateTime? completedAt,
     AuctionSettings? settings,
+    Map<String, dynamic>? rawSettings,
     bool? orderConfirmed,
     bool clearCurrentPick = false,
     bool clearCurrentRound = false,
@@ -268,6 +272,7 @@ class Draft {
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
       settings: clearSettings ? null : (settings ?? this.settings),
+      rawSettings: clearSettings ? null : (rawSettings ?? this.rawSettings),
       orderConfirmed: orderConfirmed ?? this.orderConfirmed,
     );
   }

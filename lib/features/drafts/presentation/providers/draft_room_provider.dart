@@ -220,6 +220,16 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   late final DraftSocketHandler _socketHandler;
   Timer? _budgetRefreshTimer;
 
+  /// Extract playerPool from draft settings, defaulting to veteran + rookie
+  List<String>? _extractPlayerPool(Map<String, dynamic>? settings) {
+    if (settings == null) return null;
+    final pool = settings['playerPool'];
+    if (pool is List) {
+      return pool.map((e) => e.toString()).toList();
+    }
+    return null; // Use default on backend if not specified
+  }
+
   DraftRoomNotifier(
     this._draftRepo,
     this._playerRepo,
@@ -414,8 +424,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     try {
       final draft = await _draftRepo.getDraft(leagueId, draftId);
 
+      // Extract playerPool from draft settings for filtering players
+      final playerPool = _extractPlayerPool(draft.rawSettings);
+
       final results = await Future.wait<dynamic>([
-        _playerRepo.getPlayers().catchError((e) => <Player>[]),
+        _playerRepo.getPlayers(playerPool: playerPool).catchError((e) => <Player>[]),
         _draftRepo.getDraftOrder(leagueId, draftId).catchError((e) => <Map<String, dynamic>>[]),
         _draftRepo.getDraftPicks(leagueId, draftId).catchError((e) => <Map<String, dynamic>>[]),
         _pickAssetRepo.getLeaguePickAssets(leagueId).catchError((e) => <DraftPickAsset>[]),
