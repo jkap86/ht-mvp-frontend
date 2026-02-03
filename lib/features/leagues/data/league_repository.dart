@@ -36,6 +36,7 @@ class LeagueRepository {
     String? mode,
     Map<String, dynamic>? settings,
     bool isPublic = false,
+    String? draftStructure,
   }) async {
     final response = await _apiClient.post('/leagues', body: {
       'name': name,
@@ -45,6 +46,7 @@ class LeagueRepository {
       if (scoringSettings != null) 'scoring_settings': scoringSettings,
       if (mode != null) 'mode': mode,
       if (settings != null) 'settings': settings,
+      if (draftStructure != null) 'draft_structure': draftStructure,
     });
     return League.fromJson(response);
   }
@@ -295,6 +297,7 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
     String? mode,
     Map<String, dynamic>? settings,
     bool isPublic = false,
+    String? draftStructure,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -306,6 +309,7 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
         mode: mode,
         settings: settings,
         isPublic: isPublic,
+        draftStructure: draftStructure,
       );
       state = state.copyWith(
         leagues: [...state.leagues, league],

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../home/presentation/widgets/scoring_settings_editor.dart';
 import '../../../home/presentation/widgets/roster_config_editor.dart';
 import '../../data/league_repository.dart';
+import 'draft_structure_selector.dart';
 
 class CreateLeagueTab extends ConsumerStatefulWidget {
   const CreateLeagueTab({super.key});
@@ -28,6 +29,7 @@ class _CreateLeagueTabState extends ConsumerState<CreateLeagueTab>
   String _selectedLeagueMode = 'redraft';
   bool _isPublic = false;
   int _rookieDraftRounds = 5;
+  String _draftStructure = 'combined';
 
   // Extracted settings models
   final _scoringSettings = ScoringSettings();
@@ -94,6 +96,14 @@ class _CreateLeagueTabState extends ConsumerState<CreateLeagueTab>
                 _buildTeamCountDropdown(),
                 const SizedBox(height: 16),
                 _buildLeagueModeDropdown(),
+                const SizedBox(height: 16),
+                DraftStructureSelector(
+                  leagueMode: _selectedLeagueMode,
+                  selectedStructure: _draftStructure,
+                  onChanged: (value) {
+                    setState(() => _draftStructure = value);
+                  },
+                ),
                 if (_selectedLeagueMode == 'dynasty' || _selectedLeagueMode == 'devy') ...[
                   const SizedBox(height: 16),
                   _buildRookieDraftRoundsInput(),
@@ -218,7 +228,11 @@ class _CreateLeagueTabState extends ConsumerState<CreateLeagueTab>
       ],
       onChanged: (value) {
         if (value != null) {
-          setState(() => _selectedLeagueMode = value);
+          setState(() {
+            _selectedLeagueMode = value;
+            // Reset draft structure to 'combined' when mode changes
+            _draftStructure = 'combined';
+          });
         }
       },
     );
@@ -360,6 +374,7 @@ class _CreateLeagueTabState extends ConsumerState<CreateLeagueTab>
                 'rookie_draft_rounds': _rookieDraftRounds,
             },
             isPublic: _isPublic,
+            draftStructure: _draftStructure,
           );
 
       if (!mounted) return;

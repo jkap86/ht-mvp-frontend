@@ -208,7 +208,7 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Draft #${widget.draft.id}',
+                      widget.draft.displayName,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),

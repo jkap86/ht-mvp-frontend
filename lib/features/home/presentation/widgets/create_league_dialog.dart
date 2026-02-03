@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'scoring_settings_editor.dart';
 import 'roster_config_editor.dart';
+import '../../../leagues/presentation/widgets/draft_structure_selector.dart';
 
 class CreateLeagueDialog extends StatefulWidget {
   final Future<void> Function({
@@ -12,6 +13,7 @@ class CreateLeagueDialog extends StatefulWidget {
     required String mode,
     required Map<String, dynamic> settings,
     required bool isPublic,
+    String? draftStructure,
   }) onCreateLeague;
 
   const CreateLeagueDialog({super.key, required this.onCreateLeague});
@@ -30,6 +32,7 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
   String _selectedLeagueMode = 'redraft';
   bool _isPublic = false;
   int _rookieDraftRounds = 5;
+  String _draftStructure = 'combined';
 
   // Extracted settings models
   final _scoringSettings = ScoringSettings();
@@ -74,6 +77,14 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
                 _buildTeamCountDropdown(),
                 const SizedBox(height: 16),
                 _buildLeagueModeDropdown(),
+                const SizedBox(height: 16),
+                DraftStructureSelector(
+                  leagueMode: _selectedLeagueMode,
+                  selectedStructure: _draftStructure,
+                  onChanged: (value) {
+                    setState(() => _draftStructure = value);
+                  },
+                ),
                 if (_selectedLeagueMode == 'dynasty' || _selectedLeagueMode == 'devy') ...[
                   const SizedBox(height: 16),
                   _buildRookieDraftRoundsInput(),
@@ -184,7 +195,11 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
       ],
       onChanged: (value) {
         if (value != null) {
-          setState(() => _selectedLeagueMode = value);
+          setState(() {
+            _selectedLeagueMode = value;
+            // Reset draft structure to 'combined' when mode changes
+            _draftStructure = 'combined';
+          });
         }
       },
     );
@@ -322,6 +337,7 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
             'rookie_draft_rounds': _rookieDraftRounds,
         },
         isPublic: _isPublic,
+        draftStructure: _draftStructure,
       );
     }
   }
@@ -337,6 +353,7 @@ void showCreateLeagueDialog(
     required String mode,
     required Map<String, dynamic> settings,
     required bool isPublic,
+    String? draftStructure,
   }) onCreateLeague,
 }) {
   showDialog(

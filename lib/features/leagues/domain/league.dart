@@ -191,6 +191,7 @@ class Draft {
   final AuctionSettings? settings;
   final Map<String, dynamic>? rawSettings; // Preserves full settings including playerPool
   final bool orderConfirmed;
+  final String? label; // Computed label like "Veteran Draft", "Rookie Draft"
 
   Draft({
     required this.id,
@@ -208,7 +209,11 @@ class Draft {
     this.settings,
     this.rawSettings,
     this.orderConfirmed = false,
+    this.label,
   });
+
+  /// Display name - uses label if available, falls back to "Draft #id"
+  String get displayName => label ?? 'Draft #$id';
 
   /// Check if this is an auction draft
   bool get isAuction => draftType.isAuction;
@@ -239,6 +244,7 @@ class Draft {
           : null,
       rawSettings: settingsJson,
       orderConfirmed: json['order_confirmed'] as bool? ?? false,
+      label: json['label'] as String?,
     );
   }
 
@@ -258,6 +264,7 @@ class Draft {
     AuctionSettings? settings,
     Map<String, dynamic>? rawSettings,
     bool? orderConfirmed,
+    String? label,
     bool clearCurrentPick = false,
     bool clearCurrentRound = false,
     bool clearCurrentRosterId = false,
@@ -280,6 +287,7 @@ class Draft {
       settings: clearSettings ? null : (settings ?? this.settings),
       rawSettings: clearSettings ? null : (rawSettings ?? this.rawSettings),
       orderConfirmed: orderConfirmed ?? this.orderConfirmed,
+      label: label ?? this.label,
     );
   }
 }
