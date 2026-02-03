@@ -131,7 +131,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
     // Build settings map, preserving existing settings
     final updatedSettings = Map<String, dynamic>.from(league.settings);
     updatedSettings['roster_config'] = _rosterConfig.toJson();
-    if (_selectedMode == 'dynasty') {
+    if (_selectedMode == 'dynasty' || _selectedMode == 'devy') {
       updatedSettings['rookie_draft_rounds'] = _rookieDraftRounds;
     }
 
@@ -208,22 +208,34 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
               // League Mode
               DropdownButtonFormField<String>(
                 value: _selectedMode,
-                decoration: const InputDecoration(labelText: 'League Mode'),
+                decoration: InputDecoration(
+                  labelText: 'League Mode',
+                  helperText: !league.canChangeMode
+                      ? 'Mode locked after draft starts or players added'
+                      : null,
+                  helperStyle: TextStyle(
+                    color: colorScheme.error.withAlpha(179),
+                    fontSize: 11,
+                  ),
+                ),
                 items: const [
                   DropdownMenuItem(value: 'redraft', child: Text('Redraft')),
                   DropdownMenuItem(value: 'keeper', child: Text('Keeper')),
                   DropdownMenuItem(value: 'dynasty', child: Text('Dynasty')),
+                  DropdownMenuItem(value: 'devy', child: Text('Devy')),
                 ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedMode = value);
-                    _markChanged();
-                  }
-                },
+                onChanged: league.canChangeMode
+                    ? (value) {
+                        if (value != null) {
+                          setState(() => _selectedMode = value);
+                          _markChanged();
+                        }
+                      }
+                    : null,
               ),
 
-              // Rookie Draft Rounds (only for dynasty)
-              if (_selectedMode == 'dynasty') ...[
+              // Rookie Draft Rounds (for dynasty and devy)
+              if (_selectedMode == 'dynasty' || _selectedMode == 'devy') ...[
                 const SizedBox(height: 16),
                 _buildRookieDraftRoundsInput(colorScheme),
               ],

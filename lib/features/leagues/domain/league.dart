@@ -49,6 +49,7 @@ class League {
   final SeasonStatus seasonStatus;
   final bool isPublic;
   final String mode;
+  final bool canChangeMode;
 
   League({
     required this.id,
@@ -64,6 +65,7 @@ class League {
     this.seasonStatus = SeasonStatus.preSeason,
     this.isPublic = false,
     this.mode = 'redraft',
+    this.canChangeMode = true,
   });
 
   String get scoringType {
@@ -97,6 +99,7 @@ class League {
       seasonStatus: SeasonStatus.fromString(json['season_status'] as String?),
       isPublic: json['is_public'] as bool? ?? false,
       mode: json['mode'] as String? ?? 'redraft',
+      canChangeMode: json['can_change_mode'] as bool? ?? true,
     );
   }
 }
