@@ -6,6 +6,7 @@ import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/chat_message.dart';
 import '../providers/chat_provider.dart';
 import 'chat_message_input.dart';
+import 'system_message_bubble.dart';
 
 /// League chat view for the floating chat widget.
 /// Shows league chat messages and input field.
@@ -68,6 +69,13 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
       return const AppLoadingView();
     }
 
+    if (state.error != null) {
+      return AppErrorView(
+        message: 'Failed to load messages: ${state.error}',
+        onRetry: () => ref.read(chatProvider(widget.leagueId).notifier).loadMessages(),
+      );
+    }
+
     if (state.messages.isEmpty) {
       return const AppEmptyView(
         icon: Icons.chat_bubble_outline,
@@ -83,6 +91,10 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
       itemCount: state.messages.length,
       itemBuilder: (context, index) {
         final message = state.messages[index];
+        // Render system messages differently
+        if (message.isSystemMessage) {
+          return SystemMessageBubble(message: message);
+        }
         return _LeagueChatBubble(message: message);
       },
     );
@@ -98,6 +110,7 @@ class _LeagueChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final username = message.username ?? 'Unknown';
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -105,7 +118,7 @@ class _LeagueChatBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserAvatar(
-            name: message.username,
+            name: username,
             size: 28,
             backgroundColor: theme.colorScheme.primary,
             textColor: Colors.white,
@@ -118,7 +131,7 @@ class _LeagueChatBubble extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      message.username,
+                      username,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,

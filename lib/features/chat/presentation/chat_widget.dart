@@ -131,13 +131,14 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final username = message.username ?? 'Unknown';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserAvatar(
-            name: message.username,
+            name: username,
             size: 32,
             backgroundColor: Theme.of(context).colorScheme.primary,
             textColor: Colors.white,
@@ -150,7 +151,7 @@ class _MessageBubble extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      message.username,
+                      username,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(width: 8),

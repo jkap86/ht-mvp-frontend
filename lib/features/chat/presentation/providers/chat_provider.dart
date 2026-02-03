@@ -53,8 +53,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     _chatMessageDisposer = _socketService.onChatMessage((data) {
       if (!mounted) return;
-      final message = ChatMessage.fromJson(Map<String, dynamic>.from(data));
-      state = state.copyWith(messages: [message, ...state.messages]);
+      try {
+        final message = ChatMessage.fromJson(Map<String, dynamic>.from(data));
+        state = state.copyWith(messages: [message, ...state.messages]);
+      } catch (e) {
+        // Log error but don't crash - malformed socket data should not break chat
+        // ignore: avoid_print
+        print('Failed to parse chat message from socket: $e');
+      }
     });
   }
 
