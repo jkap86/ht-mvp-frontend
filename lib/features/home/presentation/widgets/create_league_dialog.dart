@@ -74,7 +74,7 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
                 _buildTeamCountDropdown(),
                 const SizedBox(height: 16),
                 _buildLeagueModeDropdown(),
-                if (_selectedLeagueMode == 'dynasty') ...[
+                if (_selectedLeagueMode == 'dynasty' || _selectedLeagueMode == 'devy') ...[
                   const SizedBox(height: 16),
                   _buildRookieDraftRoundsInput(),
                 ],
@@ -180,6 +180,7 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
         DropdownMenuItem(value: 'redraft', child: Text('Redraft')),
         DropdownMenuItem(value: 'keeper', child: Text('Keeper')),
         DropdownMenuItem(value: 'dynasty', child: Text('Dynasty')),
+        DropdownMenuItem(value: 'devy', child: Text('Devy')),
       ],
       onChanged: (value) {
         if (value != null) {
@@ -317,7 +318,7 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
         mode: _selectedLeagueMode,
         settings: {
           'roster_config': _rosterConfig.toJson(),
-          if (_selectedLeagueMode == 'dynasty')
+          if (_selectedLeagueMode == 'dynasty' || _selectedLeagueMode == 'devy')
             'rookie_draft_rounds': _rookieDraftRounds,
         },
         isPublic: _isPublic,

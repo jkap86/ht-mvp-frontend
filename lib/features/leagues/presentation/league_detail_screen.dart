@@ -126,14 +126,19 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
   }
 
   Future<void> _editDraftSettings(Draft draft) async {
+    final league = ref.read(leagueDetailProvider(widget.leagueId)).league;
+    if (league == null) return;
+
     await EditDraftSettingsDialog.show(
       context,
       draft: draft,
+      leagueMode: league.mode,
       onSave: ({
         String? draftType,
         int? rounds,
         int? pickTimeSeconds,
         Map<String, dynamic>? auctionSettings,
+        List<String>? playerPool,
       }) async {
         final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
         await notifier.updateDraftSettings(
@@ -142,6 +147,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           rounds: rounds,
           pickTimeSeconds: pickTimeSeconds,
           auctionSettings: auctionSettings,
+          playerPool: playerPool,
         );
       },
     );

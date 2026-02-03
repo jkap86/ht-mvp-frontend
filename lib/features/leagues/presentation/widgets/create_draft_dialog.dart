@@ -35,7 +35,11 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
   String _draftSubtype = 'startup'; // For dynasty leagues: 'startup' or 'rookie'
 
   // Player pool settings (default: veterans + rookies for standard redraft behavior)
-  final Set<String> _selectedPlayerPool = {'veteran', 'rookie'};
+  late Set<String> _selectedPlayerPool;
+
+  bool get _isDevyLeague => widget.leagueMode == 'devy';
+  bool get _isAuction => _selectedDraftType == DraftType.auction;
+  bool get _isSlowAuction => _isAuction && _auctionMode == 'slow';
 
   // Controllers for text inputs
   late TextEditingController _roundsController;
@@ -61,6 +65,10 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
     _rounds = _calculateDefaultRounds();
     _roundsController = TextEditingController(text: _rounds.toString());
     _timerController = TextEditingController(text: _pickTimeSeconds.toString());
+    // Initialize player pool - include college only for devy leagues
+    _selectedPlayerPool = _isDevyLeague
+        ? {'veteran', 'rookie', 'college'}
+        : {'veteran', 'rookie'};
   }
 
   @override
@@ -71,7 +79,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
   }
 
   int _calculateDefaultRounds() {
-    if (widget.leagueMode == 'dynasty' && _draftSubtype == 'rookie') {
+    if ((widget.leagueMode == 'dynasty' || widget.leagueMode == 'devy') && _draftSubtype == 'rookie') {
       return widget.rookieDraftRounds ?? 5;
     }
     return widget.rosterSlotsCount;
@@ -379,22 +387,41 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
     final colorScheme = Theme.of(context).colorScheme;
     final isSelected = _selectedPlayerPool.contains(value);
 
+    // College players are only available in devy leagues
+    final isCollegeDisabled = value == 'college' && !_isDevyLeague;
+    final effectiveDescription = isCollegeDisabled
+        ? 'Only available in Devy leagues'
+        : description;
+
     return CheckboxListTile(
-      value: isSelected,
-      onChanged: (checked) {
-        setState(() {
-          if (checked == true) {
-            _selectedPlayerPool.add(value);
-          } else if (_selectedPlayerPool.length > 1) {
-            // Prevent unchecking all - at least one must remain
-            _selectedPlayerPool.remove(value);
-          }
-        });
-      },
-      title: Text(label, style: const TextStyle(fontSize: 13)),
+      value: isCollegeDisabled ? false : isSelected,
+      onChanged: isCollegeDisabled
+          ? null
+          : (checked) {
+              setState(() {
+                if (checked == true) {
+                  _selectedPlayerPool.add(value);
+                } else if (_selectedPlayerPool.length > 1) {
+                  // Prevent unchecking all - at least one must remain
+                  _selectedPlayerPool.remove(value);
+                }
+              });
+            },
+      title: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13,
+          color: isCollegeDisabled ? colorScheme.onSurface.withAlpha(102) : null,
+        ),
+      ),
       subtitle: Text(
-        description,
-        style: TextStyle(fontSize: 11, color: colorScheme.onSurface.withAlpha(153)),
+        effectiveDescription,
+        style: TextStyle(
+          fontSize: 11,
+          color: isCollegeDisabled
+              ? colorScheme.onSurface.withAlpha(102)
+              : colorScheme.onSurface.withAlpha(153),
+        ),
       ),
       dense: true,
       controlAffinity: ListTileControlAffinity.leading,
@@ -406,7 +433,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isDynasty = widget.leagueMode == 'dynasty';
+    final isDynastyOrDevy = widget.leagueMode == 'dynasty' || widget.leagueMode == 'devy';
 
     return AlertDialog(
       title: Row(
@@ -501,23 +528,26 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                 title: 'Settings',
                 icon: Icons.settings,
                 children: [
-                  if (isDynasty) _buildDynastySubtypeSelector(),
+                  if (isDynastyOrDevy) _buildDynastySubtypeSelector(),
                   _buildNumericInput(
-                    label: 'Rounds',
+                    label: _isSlowAuction ? 'Max Nominations' : 'Rounds',
                     controller: _roundsController,
                     min: 1,
                     max: 30,
                     onChanged: (v) => setState(() => _rounds = v),
-                    helperText: '1-30 rounds',
+                    helperText: _isSlowAuction
+                        ? 'Max nominations per team'
+                        : '1-30 rounds',
                   ),
-                  _buildNumericInput(
-                    label: 'Pick Timer',
-                    controller: _timerController,
-                    min: 30,
-                    max: 600,
-                    onChanged: (v) => setState(() => _pickTimeSeconds = v),
-                    helperText: '30-600 seconds',
-                  ),
+                  if (!_isAuction)
+                    _buildNumericInput(
+                      label: 'Pick Timer',
+                      controller: _timerController,
+                      min: 30,
+                      max: 600,
+                      onChanged: (v) => setState(() => _pickTimeSeconds = v),
+                      helperText: '30-600 seconds',
+                    ),
                 ],
               ),
 

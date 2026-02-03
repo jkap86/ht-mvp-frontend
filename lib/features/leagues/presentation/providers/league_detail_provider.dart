@@ -219,6 +219,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     int? rounds,
     int? pickTimeSeconds,
     Map<String, dynamic>? auctionSettings,
+    List<String>? playerPool,
   }) async {
     final updatedDraft = await _draftRepo.updateDraftSettings(
       leagueId,
@@ -227,6 +228,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
       rounds: rounds,
       pickTimeSeconds: pickTimeSeconds,
       auctionSettings: auctionSettings,
+      playerPool: playerPool,
     );
     // Update the draft in state
     final index = state.drafts.indexWhere((d) => d.id == draftId);

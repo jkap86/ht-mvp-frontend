@@ -192,12 +192,14 @@ class DraftRepository {
     int? rounds,
     int? pickTimeSeconds,
     Map<String, dynamic>? auctionSettings,
+    List<String>? playerPool,
   }) async {
     final body = <String, dynamic>{};
     if (draftType != null) body['draft_type'] = draftType;
     if (rounds != null) body['rounds'] = rounds;
     if (pickTimeSeconds != null) body['pick_time_seconds'] = pickTimeSeconds;
     if (auctionSettings != null) body['auction_settings'] = auctionSettings;
+    if (playerPool != null) body['player_pool'] = playerPool;
 
     final response = await _apiClient.patch(
       '/leagues/$leagueId/drafts/$draftId/settings',

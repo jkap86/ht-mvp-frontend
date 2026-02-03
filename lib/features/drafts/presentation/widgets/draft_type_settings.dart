@@ -9,6 +9,7 @@ class DraftTypeSettings extends StatelessWidget {
   final bool enabled;
   final ValueChanged<String?> onDraftTypeChanged;
   final String? Function(String?)? roundsValidator;
+  final bool isSlowAuction;
 
   const DraftTypeSettings({
     super.key,
@@ -17,6 +18,7 @@ class DraftTypeSettings extends StatelessWidget {
     required this.enabled,
     required this.onDraftTypeChanged,
     this.roundsValidator,
+    this.isSlowAuction = false,
   });
 
   @override
@@ -45,15 +47,22 @@ class DraftTypeSettings extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // Rounds
-        Text('Rounds', style: theme.textTheme.titleSmall),
+        // Rounds / Max Nominations
+        Text(
+          isSlowAuction ? 'Max Nominations' : 'Rounds',
+          style: theme.textTheme.titleSmall,
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: roundsController,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: 'Number of rounds',
-            helperText: '1-30 rounds',
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            hintText: isSlowAuction
+                ? 'Max nominations per team'
+                : 'Number of rounds',
+            helperText: isSlowAuction
+                ? 'Max nominations per team'
+                : '1-30 rounds',
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],

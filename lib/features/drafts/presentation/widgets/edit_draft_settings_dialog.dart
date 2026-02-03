@@ -13,16 +13,19 @@ import 'draft_type_settings.dart';
 /// - in_progress/completed: None (dialog won't show)
 class EditDraftSettingsDialog extends StatefulWidget {
   final Draft draft;
+  final String leagueMode;
   final Future<void> Function({
     String? draftType,
     int? rounds,
     int? pickTimeSeconds,
     Map<String, dynamic>? auctionSettings,
+    List<String>? playerPool,
   }) onSave;
 
   const EditDraftSettingsDialog({
     super.key,
     required this.draft,
+    required this.leagueMode,
     required this.onSave,
   });
 
@@ -30,17 +33,20 @@ class EditDraftSettingsDialog extends StatefulWidget {
   static Future<void> show(
     BuildContext context, {
     required Draft draft,
+    required String leagueMode,
     required Future<void> Function({
       String? draftType,
       int? rounds,
       int? pickTimeSeconds,
       Map<String, dynamic>? auctionSettings,
+      List<String>? playerPool,
     }) onSave,
   }) {
     return showDialog(
       context: context,
       builder: (context) => EditDraftSettingsDialog(
         draft: draft,
+        leagueMode: leagueMode,
         onSave: onSave,
       ),
     );
@@ -72,11 +78,16 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
   late TextEditingController _maxActiveGlobalController;
   late TextEditingController _dailyNominationLimitController;
 
+  // Player pool
+  late Set<String> _selectedPlayerPool;
+
   bool get _isNotStarted => widget.draft.status == DraftStatus.notStarted;
   bool get _isPaused => widget.draft.status == DraftStatus.paused;
   bool get _canEditStructural => _isNotStarted;
   bool get _canEditTimers => _isNotStarted || _isPaused;
   bool get _isAuction => _draftType == 'auction';
+  bool get _isSlowAuction => _isAuction && _auctionMode == 'slow';
+  bool get _isDevyLeague => widget.leagueMode == 'devy';
 
   @override
   void initState() {
@@ -114,6 +125,12 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
     _dailyNominationLimitController = TextEditingController(
       text: '', // Default - not stored in AuctionSettings
     );
+
+    // Player pool - read from rawSettings, default to veteran + rookie if not set
+    final rawPlayerPool = widget.draft.rawSettings?['playerPool'];
+    _selectedPlayerPool = Set<String>.from(
+      rawPlayerPool is List ? rawPlayerPool.cast<String>() : ['veteran', 'rookie'],
+    );
   }
 
   @override
@@ -128,6 +145,14 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
     _maxActiveGlobalController.dispose();
     _dailyNominationLimitController.dispose();
     super.dispose();
+  }
+
+  bool _setEquals<T>(Set<T> a, Set<T> b) {
+    if (a.length != b.length) return false;
+    for (final element in a) {
+      if (!b.contains(element)) return false;
+    }
+    return true;
   }
 
   String? _validatePositiveInt(String? value,
@@ -162,6 +187,7 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
       int? rounds;
       int? pickTimeSeconds;
       Map<String, dynamic>? auctionSettings;
+      List<String>? playerPool;
 
       if (_canEditStructural) {
         if (_draftType != widget.draft.draftType.name) {
@@ -229,16 +255,29 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
         }
       }
 
+      // Check for player pool changes
+      if (_canEditStructural) {
+        final rawPlayerPool = widget.draft.rawSettings?['playerPool'];
+        final originalPool = Set<String>.from(
+          rawPlayerPool is List ? rawPlayerPool.cast<String>() : ['veteran', 'rookie'],
+        );
+        if (!_setEquals(_selectedPlayerPool, originalPool)) {
+          playerPool = _selectedPlayerPool.toList();
+        }
+      }
+
       // Only call onSave if there are changes
       if (draftType != null ||
           rounds != null ||
           pickTimeSeconds != null ||
-          auctionSettings != null) {
+          auctionSettings != null ||
+          playerPool != null) {
         await widget.onSave(
           draftType: draftType,
           rounds: rounds,
           pickTimeSeconds: pickTimeSeconds,
           auctionSettings: auctionSettings,
+          playerPool: playerPool,
         );
       }
 
@@ -291,7 +330,8 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
                 onDraftTypeChanged: (value) =>
                     setState(() => _draftType = value!),
                 roundsValidator: (v) =>
-                    _validatePositiveInt(v, min: 1, max: 30, fieldName: 'Rounds'),
+                    _validatePositiveInt(v, min: 1, max: 30, fieldName: _isSlowAuction ? 'Max nominations' : 'Rounds'),
+                isSlowAuction: _isSlowAuction,
               ),
 
               const SizedBox(height: 16),
@@ -322,6 +362,12 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
                   enabled: _canEditTimers,
                   validator: _validatePositiveInt,
                 ),
+
+              // Player Pool (only when structural edits are allowed)
+              if (_canEditStructural) ...[
+                const SizedBox(height: 16),
+                _buildPlayerPoolSection(theme),
+              ],
             ],
           ),
         ),
@@ -342,6 +388,82 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
               : const Text('Save'),
         ),
       ],
+    );
+  }
+
+  Widget _buildPlayerPoolSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Player Pool', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 8),
+        _buildPoolCheckbox(
+          theme,
+          'veteran',
+          'Veterans',
+          'NFL players with 1+ years experience',
+        ),
+        _buildPoolCheckbox(
+          theme,
+          'rookie',
+          'Rookies',
+          'First-year NFL players',
+        ),
+        _buildPoolCheckbox(
+          theme,
+          'college',
+          'College',
+          _isDevyLeague ? 'College players' : 'Only available in Devy leagues',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPoolCheckbox(
+    ThemeData theme,
+    String value,
+    String label,
+    String description,
+  ) {
+    final isSelected = _selectedPlayerPool.contains(value);
+    final isCollegeDisabled = value == 'college' && !_isDevyLeague;
+
+    return CheckboxListTile(
+      value: isCollegeDisabled ? false : isSelected,
+      onChanged: isCollegeDisabled
+          ? null
+          : (checked) {
+              setState(() {
+                if (checked == true) {
+                  _selectedPlayerPool.add(value);
+                } else if (_selectedPlayerPool.length > 1) {
+                  // Prevent unchecking all - at least one must remain
+                  _selectedPlayerPool.remove(value);
+                }
+              });
+            },
+      title: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13,
+          color: isCollegeDisabled
+              ? theme.colorScheme.onSurface.withAlpha(102)
+              : null,
+        ),
+      ),
+      subtitle: Text(
+        description,
+        style: TextStyle(
+          fontSize: 11,
+          color: isCollegeDisabled
+              ? theme.colorScheme.onSurface.withAlpha(102)
+              : theme.colorScheme.onSurface.withAlpha(153),
+        ),
+      ),
+      dense: true,
+      controlAffinity: ListTileControlAffinity.leading,
+      contentPadding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
     );
   }
 

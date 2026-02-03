@@ -94,7 +94,7 @@ class _CreateLeagueTabState extends ConsumerState<CreateLeagueTab>
                 _buildTeamCountDropdown(),
                 const SizedBox(height: 16),
                 _buildLeagueModeDropdown(),
-                if (_selectedLeagueMode == 'dynasty') ...[
+                if (_selectedLeagueMode == 'dynasty' || _selectedLeagueMode == 'devy') ...[
                   const SizedBox(height: 16),
                   _buildRookieDraftRoundsInput(),
                 ],
@@ -214,6 +214,7 @@ class _CreateLeagueTabState extends ConsumerState<CreateLeagueTab>
         DropdownMenuItem(value: 'redraft', child: Text('Redraft')),
         DropdownMenuItem(value: 'keeper', child: Text('Keeper')),
         DropdownMenuItem(value: 'dynasty', child: Text('Dynasty')),
+        DropdownMenuItem(value: 'devy', child: Text('Devy')),
       ],
       onChanged: (value) {
         if (value != null) {
@@ -355,7 +356,7 @@ class _CreateLeagueTabState extends ConsumerState<CreateLeagueTab>
             mode: _selectedLeagueMode,
             settings: {
               'roster_config': _rosterConfig.toJson(),
-              if (_selectedLeagueMode == 'dynasty')
+              if (_selectedLeagueMode == 'dynasty' || _selectedLeagueMode == 'devy')
                 'rookie_draft_rounds': _rookieDraftRounds,
             },
             isPublic: _isPublic,
