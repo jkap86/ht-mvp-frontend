@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:hypetrain_mvp/features/dm/domain/direct_message.dart';
 import 'package:hypetrain_mvp/features/dm/presentation/providers/dm_conversation_provider.dart';
 import 'package:hypetrain_mvp/features/dm/data/dm_repository.dart';
 import 'package:hypetrain_mvp/core/socket/socket_service.dart';
@@ -85,8 +88,8 @@ void main() {
       container = createContainer(1);
       final notifier = container!.read(dmConversationProvider(1).notifier);
 
-      // Wait for initial load
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Await load directly instead of using Future.delayed
+      await notifier.loadMessages();
 
       final state = container!.read(dmConversationProvider(1));
       expect(state.messages.length, 2);
@@ -147,25 +150,27 @@ void main() {
       when(() => mockDmRepo.getMessages(1, limit: any(named: 'limit')))
           .thenAnswer((_) async => []);
       when(() => mockDmRepo.markAsRead(1)).thenAnswer((_) async {});
+
+      // Use a Completer to control when sendMessage completes
+      final sendCompleter = Completer<DirectMessage>();
       when(() => mockDmRepo.sendMessage(1, any()))
-          .thenAnswer((_) async {
-        await Future.delayed(const Duration(milliseconds: 50));
-        return createMockDirectMessage();
-      });
+          .thenAnswer((_) => sendCompleter.future);
 
       container = createContainer(1);
-      await Future.delayed(const Duration(milliseconds: 100));
-
       final notifier = container!.read(dmConversationProvider(1).notifier);
 
-      // Start sending
+      // Await load directly instead of using Future.delayed
+      await notifier.loadMessages();
+
+      // Start sending (don't await yet)
       final future = notifier.sendMessage('Test');
 
-      // Check isSending is true during send
-      await Future.delayed(const Duration(milliseconds: 10));
+      // Allow microtask to process so isSending is set to true
+      await Future.microtask(() {});
       expect(container!.read(dmConversationProvider(1)).isSending, true);
 
-      // Wait for completion
+      // Complete the send operation
+      sendCompleter.complete(createMockDirectMessage());
       await future;
       expect(container!.read(dmConversationProvider(1)).isSending, false);
     });
@@ -184,7 +189,10 @@ void main() {
       when(() => mockDmRepo.markAsRead(1)).thenAnswer((_) async {});
 
       container = createContainer(1);
-      await Future.delayed(const Duration(milliseconds: 100));
+      final notifier = container!.read(dmConversationProvider(1).notifier);
+
+      // Await load directly instead of using Future.delayed
+      await notifier.loadMessages();
 
       final state = container!.read(dmConversationProvider(1));
       // Should only have 2 unique messages

@@ -16,6 +16,7 @@ PublicLeague createMockPublicLeague({
   String mode = 'redraft',
   int totalRosters = 12,
   int memberCount = 5,
+  FillStatus fillStatus = FillStatus.open,
 }) {
   return PublicLeague(
     id: id,
@@ -24,6 +25,7 @@ PublicLeague createMockPublicLeague({
     mode: mode,
     totalRosters: totalRosters,
     memberCount: memberCount,
+    fillStatus: fillStatus,
   );
 }
 
@@ -100,7 +102,11 @@ void main() {
 
   group('PublicLeague model', () {
     test('isFull should return true when memberCount >= totalRosters', () {
-      final fullLeague = createMockPublicLeague(memberCount: 12, totalRosters: 12);
+      final fullLeague = createMockPublicLeague(
+        memberCount: 12,
+        totalRosters: 12,
+        fillStatus: FillStatus.filled,
+      );
       expect(fullLeague.isFull, true);
     });
 

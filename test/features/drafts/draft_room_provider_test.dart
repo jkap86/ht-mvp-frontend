@@ -192,11 +192,9 @@ void main() {
       container = createContainer();
       final key = (leagueId: 1, draftId: 1);
 
-      // Trigger provider creation (which starts loadData)
-      container!.read(draftRoomProvider(key));
-
-      // Wait for loading to complete
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Trigger provider creation and call loadData directly
+      final notifier = container!.read(draftRoomProvider(key).notifier);
+      await notifier.loadData();
 
       // Assert
       final state = container!.read(draftRoomProvider(key));
@@ -221,11 +219,9 @@ void main() {
       container = createContainer();
       final key = (leagueId: 1, draftId: 1);
 
-      // Trigger provider creation (which starts loadData)
-      container!.read(draftRoomProvider(key));
-
-      // Wait for loading to complete
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Trigger provider creation and call loadData directly
+      final notifier = container!.read(draftRoomProvider(key).notifier);
+      await notifier.loadData();
 
       // Assert
       final state = container!.read(draftRoomProvider(key));
@@ -235,7 +231,7 @@ void main() {
   });
 
   group('DraftRoomNotifier - makePick', () {
-    test('makePick success should return true', () async {
+    test('makePick success should return null', () async {
       // Arrange
       final mockDraft = createMockDraft();
       final mockPlayers = [createMockPlayer()];
@@ -257,14 +253,14 @@ void main() {
 
       // Act
       final notifier = container!.read(draftRoomProvider(key).notifier);
-      final success = await notifier.makePick(100);
+      final result = await notifier.makePick(100);
 
-      // Assert
-      expect(success, true);
+      // Assert - null means success
+      expect(result, isNull);
       verify(() => mockDraftRepo.makePick(1, 1, 100)).called(1);
     });
 
-    test('makePick failure should return false', () async {
+    test('makePick failure should return error message', () async {
       // Arrange
       final mockDraft = createMockDraft();
 
@@ -285,10 +281,11 @@ void main() {
 
       // Act
       final notifier = container!.read(draftRoomProvider(key).notifier);
-      final success = await notifier.makePick(100);
+      final result = await notifier.makePick(100);
 
-      // Assert
-      expect(success, false);
+      // Assert - non-null means error
+      expect(result, isNotNull);
+      expect(result, contains('Not your turn'));
     });
   });
 

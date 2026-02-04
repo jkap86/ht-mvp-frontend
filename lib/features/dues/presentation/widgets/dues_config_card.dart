@@ -56,6 +56,7 @@ class _DuesConfigCardState extends ConsumerState<DuesConfigCard> {
 
   bool _isEnabled = false;
   bool _isInitialized = false;
+  DateTime? _lastConfigUpdatedAt;
 
   @override
   void initState() {
@@ -76,8 +77,11 @@ class _DuesConfigCardState extends ConsumerState<DuesConfigCard> {
   }
 
   void _initializeFromState(DuesState state) {
-    if (_isInitialized) return;
+    final configUpdatedAt = state.config?.updatedAt;
+    // Allow re-init if config was updated externally (e.g., from another device)
+    if (_isInitialized && _lastConfigUpdatedAt == configUpdatedAt) return;
     _isInitialized = true;
+    _lastConfigUpdatedAt = configUpdatedAt;
 
     if (state.config != null) {
       _isEnabled = true;
@@ -251,9 +255,10 @@ class _DuesConfigCardState extends ConsumerState<DuesConfigCard> {
       _initializeFromState(state);
     }
 
-    // Calculate totals for display
+    // Calculate totals for display - use backend's totalCount which excludes benched teams
     final buyIn = double.tryParse(_buyInController.text) ?? 0;
-    final totalPot = buyIn * widget.totalRosters;
+    final activeRosterCount = state.summary?.totalCount ?? widget.totalRosters;
+    final totalPot = buyIn * activeRosterCount;
 
     return Card(
       child: Padding(
@@ -423,7 +428,7 @@ class _DuesConfigCardState extends ConsumerState<DuesConfigCard> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Total Pot: \$${totalPot.toStringAsFixed(2)} (${widget.totalRosters} teams)',
+                                'Total Pot: \$${totalPot.toStringAsFixed(2)} ($activeRosterCount teams)',
                                 style: const TextStyle(fontWeight: FontWeight.w600),
                               ),
                               const SizedBox(height: 4),

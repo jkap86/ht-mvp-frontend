@@ -99,6 +99,7 @@ class SystemMessageMetadata {
   final String? toTeam;
   final int? fromRosterId;
   final int? toRosterId;
+  final String? reason; // e.g., for trade_invalidated
   final String? teamName;
   final String? playerName;
   final int? playerId;
@@ -111,6 +112,7 @@ class SystemMessageMetadata {
     this.toTeam,
     this.fromRosterId,
     this.toRosterId,
+    this.reason,
     this.teamName,
     this.playerName,
     this.playerId,
@@ -126,6 +128,7 @@ class SystemMessageMetadata {
       toTeam: json['toTeam'] as String?,
       fromRosterId: json['fromRosterId'] as int?,
       toRosterId: json['toRosterId'] as int?,
+      reason: json['reason'] as String?,
       teamName: json['teamName'] as String?,
       playerName: json['playerName'] as String?,
       playerId: json['playerId'] as int?,
@@ -141,6 +144,7 @@ class SystemMessageMetadata {
       if (toTeam != null) 'toTeam': toTeam,
       if (fromRosterId != null) 'fromRosterId': fromRosterId,
       if (toRosterId != null) 'toRosterId': toRosterId,
+      if (reason != null) 'reason': reason,
       if (teamName != null) 'teamName': teamName,
       if (playerName != null) 'playerName': playerName,
       if (playerId != null) 'playerId': playerId,

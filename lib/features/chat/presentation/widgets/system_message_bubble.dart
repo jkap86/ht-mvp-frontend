@@ -162,7 +162,7 @@ class SystemMessageBubble extends StatelessWidget {
       case MessageType.duesUnpaid:
         return 'Dues unmarked';
       case MessageType.chat:
-        return 'System message';
+        return 'Chat message';
     }
   }
 }

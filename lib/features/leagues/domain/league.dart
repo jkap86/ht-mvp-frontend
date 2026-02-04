@@ -104,6 +104,37 @@ class League {
   }
 }
 
+/// Fill status for a public league
+enum FillStatus {
+  open,
+  waitingPayment,
+  filled;
+
+  static FillStatus fromString(String? value) {
+    switch (value) {
+      case 'open':
+        return FillStatus.open;
+      case 'waiting_payment':
+        return FillStatus.waitingPayment;
+      case 'filled':
+        return FillStatus.filled;
+      default:
+        return FillStatus.open;
+    }
+  }
+
+  String get displayName {
+    switch (this) {
+      case FillStatus.open:
+        return 'Open';
+      case FillStatus.waitingPayment:
+        return 'Waiting for Payment';
+      case FillStatus.filled:
+        return 'Full';
+    }
+  }
+}
+
 /// Represents a public league available for discovery
 class PublicLeague {
   final int id;
@@ -113,6 +144,11 @@ class PublicLeague {
   final int totalRosters;
   final int memberCount;
   final bool isPublic;
+  final bool hasDues;
+  final double? buyInAmount;
+  final String? currency;
+  final int paidCount;
+  final FillStatus fillStatus;
 
   PublicLeague({
     required this.id,
@@ -122,6 +158,11 @@ class PublicLeague {
     required this.totalRosters,
     required this.memberCount,
     this.isPublic = true,
+    this.hasDues = false,
+    this.buyInAmount,
+    this.currency,
+    this.paidCount = 0,
+    this.fillStatus = FillStatus.open,
   });
 
   factory PublicLeague.fromJson(Map<String, dynamic> json) {
@@ -133,14 +174,41 @@ class PublicLeague {
       totalRosters: json['total_rosters'] as int? ?? 12,
       memberCount: json['member_count'] as int? ?? 0,
       isPublic: json['is_public'] as bool? ?? true,
+      hasDues: json['has_dues'] as bool? ?? false,
+      buyInAmount: (json['buy_in_amount'] as num?)?.toDouble(),
+      currency: json['currency'] as String?,
+      paidCount: json['paid_count'] as int? ?? 0,
+      fillStatus: FillStatus.fromString(json['fill_status'] as String?),
     );
   }
 
-  /// Check if the league is full
-  bool get isFull => memberCount >= totalRosters;
+  /// Check if the league is completely full (no joining possible)
+  bool get isFull => fillStatus == FillStatus.filled;
+
+  /// Check if user can join as bench (paid league at capacity but not all paid)
+  bool get canJoinAsBench => fillStatus == FillStatus.waitingPayment;
 
   /// Get formatted member count string
   String get memberCountDisplay => '$memberCount/$totalRosters';
+
+  /// Get formatted buy-in display
+  String get buyInDisplay {
+    if (!hasDues || buyInAmount == null) return 'Free';
+    final currencySymbol = currency == 'USD' ? '\$' : currency ?? '';
+    return '$currencySymbol${buyInAmount!.toStringAsFixed(buyInAmount! == buyInAmount!.truncate() ? 0 : 2)}';
+  }
+
+  /// Get status display text
+  String get statusDisplay {
+    switch (fillStatus) {
+      case FillStatus.open:
+        return 'Open';
+      case FillStatus.waitingPayment:
+        return 'Waiting for Payment';
+      case FillStatus.filled:
+        return 'Full';
+    }
+  }
 }
 
 class Roster {

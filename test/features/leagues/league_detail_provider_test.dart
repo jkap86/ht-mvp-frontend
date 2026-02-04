@@ -7,8 +7,18 @@ import 'package:hypetrain_mvp/features/leagues/data/league_repository.dart';
 import 'package:hypetrain_mvp/features/leagues/domain/league.dart';
 import 'package:hypetrain_mvp/features/drafts/domain/draft_status.dart';
 import 'package:hypetrain_mvp/features/drafts/domain/draft_type.dart';
+import 'package:hypetrain_mvp/features/drafts/data/draft_repository.dart';
+import 'package:hypetrain_mvp/features/matchups/data/matchup_repository.dart';
+import 'package:hypetrain_mvp/features/rosters/data/roster_repository.dart';
+import 'package:hypetrain_mvp/core/socket/socket_service.dart';
+import 'package:hypetrain_mvp/core/services/invalidation_service.dart';
 
 import '../../mocks/mock_repositories.dart';
+import '../../mocks/mock_socket_service.dart';
+
+class MockMatchupRepository extends Mock implements MatchupRepository {}
+class MockRosterRepository extends Mock implements RosterRepository {}
+class MockInvalidationService extends Mock implements InvalidationService {}
 
 // Test data helpers
 League createMockLeague({
@@ -59,10 +69,34 @@ Draft createMockDraft({
 
 void main() {
   late MockLeagueRepository mockLeagueRepo;
+  late MockDraftRepository mockDraftRepo;
+  late MockMatchupRepository mockMatchupRepo;
+  late MockRosterRepository mockRosterRepo;
+  late MockSocketService mockSocketService;
+  late MockInvalidationService mockInvalidationService;
   ProviderContainer? container;
+
+  setUpAll(() {
+    registerFallbackValue(InvalidationType.leagueDetail);
+  });
 
   setUp(() {
     mockLeagueRepo = MockLeagueRepository();
+    mockDraftRepo = MockDraftRepository();
+    mockMatchupRepo = MockMatchupRepository();
+    mockRosterRepo = MockRosterRepository();
+    mockSocketService = MockSocketService();
+    mockInvalidationService = MockInvalidationService();
+
+    // Setup default socket service mocks
+    when(() => mockSocketService.joinLeague(any())).thenReturn(null);
+    when(() => mockSocketService.leaveLeague(any())).thenReturn(null);
+    when(() => mockSocketService.onMemberJoined(any())).thenReturn(() {});
+    when(() => mockSocketService.onMemberKicked(any())).thenReturn(() {});
+    when(() => mockSocketService.onDraftCreated(any())).thenReturn(() {});
+
+    // Setup default invalidation service mock
+    when(() => mockInvalidationService.register(any(), any(), any())).thenReturn(() {});
   });
 
   tearDown(() {
@@ -74,6 +108,11 @@ void main() {
     return ProviderContainer(
       overrides: [
         leagueRepositoryProvider.overrideWithValue(mockLeagueRepo),
+        draftRepositoryProvider.overrideWithValue(mockDraftRepo),
+        matchupRepositoryProvider.overrideWithValue(mockMatchupRepo),
+        rosterRepositoryProvider.overrideWithValue(mockRosterRepo),
+        socketServiceProvider.overrideWithValue(mockSocketService),
+        invalidationServiceProvider.overrideWithValue(mockInvalidationService),
       ],
     );
   }
@@ -140,10 +179,10 @@ void main() {
       container = createContainer();
 
       // Trigger provider creation (which starts loadData)
-      container!.read(leagueDetailProvider(1));
+      final notifier = container!.read(leagueDetailProvider(1).notifier);
 
-      // Wait for loading to complete
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Call loadData directly and await it
+      await notifier.loadData();
 
       // Assert
       final state = container!.read(leagueDetailProvider(1));
@@ -165,11 +204,9 @@ void main() {
 
       container = createContainer();
 
-      // Trigger provider creation (which starts loadData)
-      container!.read(leagueDetailProvider(1));
-
-      // Wait for loading to complete
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Trigger provider creation and call loadData directly
+      final notifier = container!.read(leagueDetailProvider(1).notifier);
+      await notifier.loadData();
 
       // Assert
       final state = container!.read(leagueDetailProvider(1));
@@ -194,10 +231,10 @@ void main() {
           .thenAnswer((_) async => mockDraft);
 
       container = createContainer();
-      await Future.delayed(const Duration(milliseconds: 300));
+      final notifier = container!.read(leagueDetailProvider(1).notifier);
+      await notifier.loadData();
 
       // Act
-      final notifier = container!.read(leagueDetailProvider(1).notifier);
       final success = await notifier.createDraft();
 
       // Assert
@@ -224,10 +261,10 @@ void main() {
           .thenAnswer((_) async => startedDraft);
 
       container = createContainer();
-      await Future.delayed(const Duration(milliseconds: 300));
+      final notifier = container!.read(leagueDetailProvider(1).notifier);
+      await notifier.loadData();
 
       // Act
-      final notifier = container!.read(leagueDetailProvider(1).notifier);
       final success = await notifier.startDraft(1);
 
       // Assert

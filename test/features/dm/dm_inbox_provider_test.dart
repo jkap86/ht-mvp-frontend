@@ -81,9 +81,10 @@ void main() {
           .thenAnswer((_) async => mockConversations);
 
       container = createContainer();
+      final notifier = container!.read(dmInboxProvider.notifier);
 
-      // Wait for initial load
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Await load directly instead of using Future.delayed
+      await notifier.loadConversations();
 
       final state = container!.read(dmInboxProvider);
       expect(state.conversations.length, 2);
@@ -117,9 +118,11 @@ void main() {
           .thenAnswer((_) async => mockConversations);
 
       container = createContainer();
-      await Future.delayed(const Duration(milliseconds: 100));
-
       final notifier = container!.read(dmInboxProvider.notifier);
+
+      // Await load directly instead of using Future.delayed
+      await notifier.loadConversations();
+
       notifier.markConversationReadLocally(1);
 
       final state = container!.read(dmInboxProvider);
@@ -138,12 +141,14 @@ void main() {
           .thenAnswer((_) async => mockConversations);
 
       container = createContainer();
-      await Future.delayed(const Duration(milliseconds: 100));
+      final notifier = container!.read(dmInboxProvider.notifier);
+
+      // Await load directly instead of using Future.delayed
+      await notifier.loadConversations();
 
       // Initial total should be 8
       expect(container!.read(dmInboxProvider).totalUnreadCount, 8);
 
-      final notifier = container!.read(dmInboxProvider.notifier);
       notifier.markConversationReadLocally(1);
 
       // After marking conversation 1 as read, should be 3
