@@ -13,6 +13,8 @@ import '../widgets/schedule_management_card.dart';
 import '../widgets/scoring_card.dart';
 import '../widgets/season_reset_card.dart';
 import '../widgets/waiver_management_card.dart';
+import '../../../dues/presentation/widgets/dues_config_card.dart';
+import '../../../dues/presentation/widgets/dues_tracker_card.dart';
 
 class CommissionerScreen extends ConsumerWidget {
   final int leagueId;
@@ -123,6 +125,17 @@ class CommissionerScreen extends ConsumerWidget {
                           ref.read(commissionerProvider(leagueId).notifier).processWaivers();
                         },
                       ),
+                      const SizedBox(height: 16),
+
+                      // Dues Config Card
+                      DuesConfigCard(
+                        leagueId: leagueId,
+                        totalRosters: state.league?.totalRosters ?? 12,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Dues Tracker Card
+                      DuesTrackerCard(leagueId: leagueId),
                       const SizedBox(height: 16),
 
                       // Playoff Management Card

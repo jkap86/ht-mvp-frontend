@@ -92,6 +92,10 @@ class SystemMessageBubble extends StatelessWidget {
         return Icons.group_add_outlined;
       case MessageType.memberKicked:
         return Icons.person_remove_outlined;
+      case MessageType.duesPaid:
+        return Icons.attach_money;
+      case MessageType.duesUnpaid:
+        return Icons.money_off;
       case MessageType.chat:
         return Icons.info_outline;
     }
@@ -102,6 +106,7 @@ class SystemMessageBubble extends StatelessWidget {
       case MessageType.tradeCompleted:
       case MessageType.waiverSuccessful:
       case MessageType.memberJoined:
+      case MessageType.duesPaid:
         // Use theme-appropriate success color
         return colorScheme.primary;
       case MessageType.tradeRejected:
@@ -109,6 +114,7 @@ class SystemMessageBubble extends StatelessWidget {
       case MessageType.tradeVetoed:
       case MessageType.tradeInvalidated:
       case MessageType.memberKicked:
+      case MessageType.duesUnpaid:
         // Use theme-appropriate error color
         return colorScheme.error;
       case MessageType.tradeProposed:
@@ -151,6 +157,10 @@ class SystemMessageBubble extends StatelessWidget {
         return 'Member joined';
       case MessageType.memberKicked:
         return 'Member removed';
+      case MessageType.duesPaid:
+        return 'Dues paid';
+      case MessageType.duesUnpaid:
+        return 'Dues unmarked';
       case MessageType.chat:
         return 'System message';
     }

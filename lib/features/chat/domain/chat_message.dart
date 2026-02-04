@@ -13,7 +13,9 @@ enum MessageType {
   waiverProcessed,
   settingsUpdated,
   memberJoined,
-  memberKicked;
+  memberKicked,
+  duesPaid,
+  duesUnpaid;
 
   static MessageType fromString(String? value) {
     switch (value) {
@@ -43,6 +45,10 @@ enum MessageType {
         return MessageType.memberJoined;
       case 'member_kicked':
         return MessageType.memberKicked;
+      case 'dues_paid':
+        return MessageType.duesPaid;
+      case 'dues_unpaid':
+        return MessageType.duesUnpaid;
       default:
         return MessageType.chat;
     }
@@ -78,6 +84,10 @@ enum MessageType {
         return 'member_joined';
       case MessageType.memberKicked:
         return 'member_kicked';
+      case MessageType.duesPaid:
+        return 'dues_paid';
+      case MessageType.duesUnpaid:
+        return 'dues_unpaid';
     }
   }
 }

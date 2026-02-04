@@ -20,6 +20,7 @@ import 'widgets/invite_member_sheet.dart';
 import 'widgets/matchup_preview_card.dart';
 import 'widgets/action_alerts_banner.dart';
 import '../../drafts/presentation/widgets/edit_draft_settings_dialog.dart';
+import '../../dues/presentation/widgets/dues_summary_card.dart';
 
 class LeagueDetailScreen extends ConsumerStatefulWidget {
   final int leagueId;
@@ -278,6 +279,12 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
                 league: state.league!,
                 memberCount: state.members.where((m) => m.userId != null).length,
                 draftType: state.draftTypeLabel,
+              ),
+              const SizedBox(height: 16),
+              // Dues Summary Card (visible to all members)
+              DuesSummaryCard(
+                leagueId: widget.leagueId,
+                currentRosterId: state.league?.userRosterId,
               ),
               const SizedBox(height: 16),
               LeagueMembersSection(
