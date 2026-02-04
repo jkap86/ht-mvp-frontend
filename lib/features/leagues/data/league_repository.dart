@@ -94,6 +94,7 @@ class LeagueRepository {
     int pickTimeSeconds = 90,
     Map<String, dynamic>? settings,
     List<String>? playerPool,
+    DateTime? scheduledStart,
   }) async {
     final response = await _apiClient.post('/leagues/$leagueId/drafts', body: {
       'draft_type': draftType,
@@ -101,6 +102,7 @@ class LeagueRepository {
       'pick_time_seconds': pickTimeSeconds,
       if (settings != null) 'auction_settings': settings,
       if (playerPool != null) 'player_pool': playerPool,
+      if (scheduledStart != null) 'scheduled_start': scheduledStart.toUtc().toIso8601String(),
     });
     return Draft.fromJson(response);
   }

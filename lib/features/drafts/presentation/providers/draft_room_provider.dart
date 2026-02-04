@@ -611,6 +611,24 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     }
   }
 
+  /// Update scheduled start time (commissioner only)
+  Future<String?> updateScheduledStart(DateTime? scheduledStart) async {
+    try {
+      final updatedDraft = await _draftRepo.updateDraftSettings(
+        leagueId,
+        draftId,
+        scheduledStart: scheduledStart,
+        clearScheduledStart: scheduledStart == null,
+      );
+      if (mounted) {
+        state = state.copyWith(draft: updatedDraft);
+      }
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
   /// Set commissioner status
   void setCommissioner(bool isCommissioner) {
     state = state.copyWith(isCommissioner: isCommissioner);

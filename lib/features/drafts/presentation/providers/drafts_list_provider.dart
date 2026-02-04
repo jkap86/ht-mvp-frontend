@@ -65,8 +65,30 @@ class DraftsListState {
   List<DraftsListItem> get inProgressDrafts =>
       drafts.where((d) => d.isInProgress || d.isPaused).toList();
 
-  List<DraftsListItem> get upcomingDrafts =>
-      drafts.where((d) => d.isNotStarted).toList();
+  /// Upcoming drafts sorted by scheduledStart (soonest first), with unscheduled drafts last
+  List<DraftsListItem> get upcomingDrafts {
+    final upcoming = drafts.where((d) => d.isNotStarted).toList();
+    upcoming.sort((a, b) {
+      final aScheduled = a.draft.scheduledStart;
+      final bScheduled = b.draft.scheduledStart;
+
+      // Both have scheduled times - sort by date ascending (soonest first)
+      if (aScheduled != null && bScheduled != null) {
+        return aScheduled.compareTo(bScheduled);
+      }
+      // Only a has scheduled time - a comes first
+      if (aScheduled != null && bScheduled == null) {
+        return -1;
+      }
+      // Only b has scheduled time - b comes first
+      if (aScheduled == null && bScheduled != null) {
+        return 1;
+      }
+      // Neither has scheduled time - sort by draft ID (newer first)
+      return b.draft.id.compareTo(a.draft.id);
+    });
+    return upcoming;
+  }
 
   List<DraftsListItem> get completedDrafts =>
       drafts.where((d) => d.isCompleted).toList();

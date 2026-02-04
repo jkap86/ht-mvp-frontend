@@ -233,6 +233,27 @@ class _DraftCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    // Show scheduled start time for upcoming drafts
+                    if (draft.isNotStarted && draft.draft.scheduledStart != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.schedule,
+                            size: 14,
+                            color: colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Starts: ${_formatScheduledTime(draft.draft.scheduledStart!.toLocal())}',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -290,5 +311,16 @@ class _DraftCard extends StatelessWidget {
       default:
         return '';
     }
+  }
+
+  String _formatScheduledTime(DateTime dt) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final hour = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
+    final amPm = dt.hour < 12 ? 'AM' : 'PM';
+    final minute = dt.minute.toString().padLeft(2, '0');
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year} $hour:$minute $amPm';
   }
 }

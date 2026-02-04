@@ -1,74 +1,89 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/league.dart';
+import '../../../dues/presentation/providers/dues_provider.dart';
 
-class LeagueMembersSection extends StatelessWidget {
+class LeagueMembersSection extends ConsumerStatefulWidget {
   final League league;
   final List<Roster> members;
   final int totalSlots;
-  final VoidCallback? onInviteTap;
 
   const LeagueMembersSection({
     super.key,
     required this.league,
     required this.members,
     required this.totalSlots,
-    this.onInviteTap,
   });
 
-  void _copyInviteCode(BuildContext context) {
-    if (league.inviteCode != null) {
-      Clipboard.setData(ClipboardData(text: league.inviteCode!));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invite code copied to clipboard'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+  @override
+  ConsumerState<LeagueMembersSection> createState() =>
+      _LeagueMembersSectionState();
+}
+
+class _LeagueMembersSectionState extends ConsumerState<LeagueMembersSection> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+      () => ref.read(duesProvider(widget.league.id).notifier).loadDues(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final duesState = ref.watch(duesProvider(widget.league.id));
+    final colorScheme = Theme.of(context).colorScheme;
+    final hasDues = duesState.isEnabled && duesState.config != null;
+
+    // Build a map of rosterId -> payment status for quick lookup
+    final paymentMap = <int, bool>{};
+    if (hasDues) {
+      for (final payment in duesState.payments) {
+        paymentMap[payment.rosterId] = payment.isPaid;
+      }
+    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Teams',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                if (league.inviteCode != null)
-                  TextButton.icon(
-                    onPressed: onInviteTap ?? () => _copyInviteCode(context),
-                    icon: const Icon(Icons.share, size: 18),
-                    label: const Text('Invite'),
-                  ),
-              ],
+            Text(
+              hasDues ? 'Dues' : 'Teams',
+              style: Theme.of(context).textTheme.titleLarge,
             ),
+            // Dues summary header (for paid leagues only)
+            if (hasDues) ...[
+              const SizedBox(height: 12),
+              _DuesSummaryHeader(
+                config: duesState.config!,
+                summary: duesState.summary,
+                payouts: duesState.payouts,
+                colorScheme: colorScheme,
+              ),
+            ],
             const SizedBox(height: 12),
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: totalSlots,
+              itemCount: widget.totalSlots,
               separatorBuilder: (context, index) => const Divider(height: 1),
               itemBuilder: (context, index) {
-                if (index < members.length) {
-                  final member = members[index];
+                if (index < widget.members.length) {
+                  final member = widget.members[index];
                   if (member.userId != null) {
                     // Real member with user
+                    final isPaid = hasDues ? paymentMap[member.rosterId] : null;
                     return _MemberTile(
                       member: member,
                       isCommissioner:
-                          member.rosterId == league.commissionerRosterId,
-                      isCurrentUser: member.rosterId == league.userRosterId,
+                          member.rosterId == widget.league.commissionerRosterId,
+                      isCurrentUser:
+                          member.rosterId == widget.league.userRosterId,
+                      isPaid: isPaid,
                     );
                   } else {
                     // Empty roster placeholder (created for draft order)
@@ -86,70 +101,119 @@ class LeagueMembersSection extends StatelessWidget {
   }
 }
 
+/// Header showing dues summary for paid leagues
+class _DuesSummaryHeader extends StatelessWidget {
+  final dynamic config;
+  final dynamic summary;
+  final List<dynamic> payouts;
+  final ColorScheme colorScheme;
+
+  const _DuesSummaryHeader({
+    required this.config,
+    required this.summary,
+    required this.payouts,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Buy-in and Total Pot row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Text(
+                'Buy-in: \$${config.buyInAmount.toStringAsFixed(2)} ${config.currency}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              if (summary != null)
+                Text(
+                  'Total Pot: \$${summary.totalPot.toStringAsFixed(0)}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+            ],
+          ),
+          // Payouts
+          if (payouts.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: payouts.map((p) {
+                return Chip(
+                  label: Text('${p.place}: \$${p.amount.toStringAsFixed(0)}'),
+                  backgroundColor: colorScheme.surface,
+                  labelStyle: const TextStyle(fontSize: 12),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _MemberTile extends StatelessWidget {
   final Roster member;
   final bool isCommissioner;
   final bool isCurrentUser;
+  final bool? isPaid;
 
   const _MemberTile({
     required this.member,
     required this.isCommissioner,
     required this.isCurrentUser,
+    this.isPaid,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: UserAvatar(
-        name: member.username,
-        isHighlighted: isCurrentUser,
-        showCommissionerBadge: isCommissioner,
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              member.teamName ?? member.username,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-          if (isCurrentUser)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.indigo.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text(
-                'You',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.indigo,
-                  fontWeight: FontWeight.bold,
+    return Container(
+      color: isCurrentUser ? Colors.indigo.withValues(alpha: 0.12) : null,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: UserAvatar(
+          name: member.username,
+          isHighlighted: isCurrentUser,
+          showCommissionerBadge: isCommissioner,
+        ),
+        title: Text(
+          member.teamName ?? member.username,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        subtitle: Text(
+          member.username,
+          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+        ),
+        trailing: isPaid != null
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isPaid!
+                      ? Colors.green.withValues(alpha: 0.1)
+                      : Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-              ),
-            ),
-        ],
-      ),
-      subtitle: Text(
-        member.username,
-        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-      ),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          '#${member.rosterId}',
-          style: TextStyle(
-            color: Colors.grey[700],
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+                child: Text(
+                  isPaid! ? 'PAID' : 'UNPAID',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isPaid! ? Colors.green : Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              )
+            : null,
       ),
     );
   }

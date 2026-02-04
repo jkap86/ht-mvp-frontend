@@ -10,6 +10,7 @@ class CreateDraftDialog extends StatefulWidget {
     required int pickTimeSeconds,
     Map<String, dynamic>? auctionSettings,
     List<String>? playerPool,
+    DateTime? scheduledStart,
   }) onCreateDraft;
 
   final String leagueMode;
@@ -57,6 +58,9 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
   // Fast auction specific
   int _nominationTimeSeconds = 30;
   int _resetOnBidSeconds = 10;
+
+  // Scheduled start time (optional)
+  DateTime? _scheduledStart;
 
   @override
   void initState() {
@@ -430,6 +434,133 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
     );
   }
 
+  Widget _buildScheduledStartPicker() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    String formatDateTime(DateTime dt) {
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final hour = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
+      final amPm = dt.hour < 12 ? 'AM' : 'PM';
+      final minute = dt.minute.toString().padLeft(2, '0');
+      return '${months[dt.month - 1]} ${dt.day}, ${dt.year} $hour:$minute $amPm';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Start Time',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurface.withAlpha(204),
+                  ),
+                ),
+                Text(
+                  'Optional',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: colorScheme.onSurface.withAlpha(128),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final initialDate = _scheduledStart ?? now.add(const Duration(days: 1));
+
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: initialDate,
+                        firstDate: now,
+                        lastDate: now.add(const Duration(days: 365)),
+                      );
+
+                      if (date != null && mounted) {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.fromDateTime(_scheduledStart ?? initialDate),
+                        );
+
+                        if (time != null && mounted) {
+                          setState(() {
+                            _scheduledStart = DateTime(
+                              date.year,
+                              date.month,
+                              date.day,
+                              time.hour,
+                              time.minute,
+                            );
+                          });
+                        }
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: colorScheme.outline),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.schedule,
+                            size: 16,
+                            color: colorScheme.onSurface.withAlpha(153),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _scheduledStart != null
+                                  ? formatDateTime(_scheduledStart!)
+                                  : 'Not scheduled',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _scheduledStart != null
+                                    ? colorScheme.onSurface
+                                    : colorScheme.onSurface.withAlpha(128),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (_scheduledStart != null)
+                  IconButton(
+                    icon: Icon(
+                      Icons.clear,
+                      size: 18,
+                      color: colorScheme.onSurface.withAlpha(153),
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    onPressed: () => setState(() => _scheduledStart = null),
+                    tooltip: 'Clear scheduled time',
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -548,6 +679,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                       onChanged: (v) => setState(() => _pickTimeSeconds = v),
                       helperText: '30-600 seconds',
                     ),
+                  _buildScheduledStartPicker(),
                 ],
               ),
 
@@ -703,6 +835,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                     }
                   : null,
               playerPool: _selectedPlayerPool.toList(),
+              scheduledStart: _scheduledStart,
             );
           },
           icon: const Icon(Icons.add, size: 18),
@@ -724,6 +857,7 @@ void showCreateDraftDialog(
     required int pickTimeSeconds,
     Map<String, dynamic>? auctionSettings,
     List<String>? playerPool,
+    DateTime? scheduledStart,
   }) onCreateDraft,
 }) {
   showDialog(

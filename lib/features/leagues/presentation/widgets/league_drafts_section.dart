@@ -16,6 +16,7 @@ class LeagueDraftsSection extends StatelessWidget {
   final Future<void> Function(Draft draft) onStartDraft;
   final Future<List<DraftOrderEntry>?> Function(Draft draft) onRandomizeDraftOrder;
   final Future<void> Function(Draft draft) onEditSettings;
+  final Future<void> Function(Draft draft, DateTime? scheduledStart)? onEditSchedule;
 
   const LeagueDraftsSection({
     super.key,
@@ -26,6 +27,7 @@ class LeagueDraftsSection extends StatelessWidget {
     required this.onStartDraft,
     required this.onRandomizeDraftOrder,
     required this.onEditSettings,
+    this.onEditSchedule,
   });
 
   @override
@@ -65,6 +67,7 @@ class LeagueDraftsSection extends StatelessWidget {
                     onStartDraft: onStartDraft,
                     onRandomizeDraftOrder: onRandomizeDraftOrder,
                     onEditSettings: onEditSettings,
+                    onEditSchedule: onEditSchedule,
                   )),
           ],
         ),
@@ -100,6 +103,7 @@ class _DraftItem extends StatefulWidget {
   final Future<void> Function(Draft draft) onStartDraft;
   final Future<List<DraftOrderEntry>?> Function(Draft draft) onRandomizeDraftOrder;
   final Future<void> Function(Draft draft) onEditSettings;
+  final Future<void> Function(Draft draft, DateTime? scheduledStart)? onEditSchedule;
 
   const _DraftItem({
     super.key,
@@ -109,6 +113,7 @@ class _DraftItem extends StatefulWidget {
     required this.onStartDraft,
     required this.onRandomizeDraftOrder,
     required this.onEditSettings,
+    this.onEditSchedule,
   });
 
   @override
@@ -216,6 +221,11 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
                       '${widget.draft.draftType.label} • ${widget.draft.rounds} rounds',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                    if (widget.draft.scheduledStart != null ||
+                        (widget.isCommissioner && widget.draft.status == DraftStatus.notStarted)) ...[
+                      const SizedBox(height: 4),
+                      _buildScheduledTimeRow(context),
+                    ],
                   ],
                 ),
               ),
@@ -411,6 +421,88 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
         ],
       ),
     );
+  }
+
+  String _formatScheduledTime(DateTime dt) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final hour = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
+    final amPm = dt.hour < 12 ? 'AM' : 'PM';
+    final minute = dt.minute.toString().padLeft(2, '0');
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year} $hour:$minute $amPm';
+  }
+
+  Widget _buildScheduledTimeRow(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheduled = widget.draft.scheduledStart;
+    final canEdit = widget.isCommissioner &&
+        widget.draft.status == DraftStatus.notStarted &&
+        widget.onEditSchedule != null;
+
+    return Row(
+      children: [
+        Icon(
+          Icons.schedule,
+          size: 14,
+          color: scheduled != null ? theme.colorScheme.primary : Colors.grey[500],
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            scheduled != null
+                ? 'Starts: ${_formatScheduledTime(scheduled.toLocal())}'
+                : 'Not scheduled',
+            style: TextStyle(
+              fontSize: 12,
+              color: scheduled != null
+                  ? theme.colorScheme.primary
+                  : Colors.grey[500],
+            ),
+          ),
+        ),
+        if (canEdit)
+          GestureDetector(
+            onTap: () => _showScheduleDialog(context),
+            child: Icon(
+              Icons.edit,
+              size: 14,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _showScheduleDialog(BuildContext context) async {
+    final now = DateTime.now();
+    final initialDate = widget.draft.scheduledStart ?? now.add(const Duration(days: 1));
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+
+    if (date != null && context.mounted) {
+      final time = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(widget.draft.scheduledStart ?? initialDate),
+      );
+
+      if (time != null && context.mounted) {
+        final scheduledStart = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
+        );
+        await widget.onEditSchedule?.call(widget.draft, scheduledStart);
+      }
+    }
   }
 
   Widget _buildStatusBadge(BuildContext context) {

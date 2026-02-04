@@ -9,6 +9,7 @@ import 'providers/draft_queue_provider.dart';
 import 'widgets/draft_status_bar.dart';
 import 'widgets/draft_board_grid_view.dart';
 import 'widgets/draft_bottom_drawer.dart';
+import 'widgets/edit_draft_time_dialog.dart';
 import 'widgets/slow_auction/slow_auction_roster_drawer.dart';
 import 'widgets/slow_auction/slow_auction_screen.dart';
 
@@ -213,6 +214,15 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     final myBudget = ref.watch(
       draftRoomProvider(_providerKey).select((s) => s.myBudget),
     );
+    final isCommissioner = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.isCommissioner),
+    );
+    final isDraftNotStarted = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.draft?.status.canStart ?? false),
+    );
+    final draft = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.draft),
+    );
 
     // Listen for outbid notifications
     ref.listen<OutbidNotification?>(
@@ -252,6 +262,20 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         ),
         title: Text(isSlowAuction ? 'Slow Auction' : 'Draft - Round $currentRound'),
         actions: [
+          // Edit schedule button for commissioner (draft not started)
+          if (isCommissioner && isDraftNotStarted && draft != null)
+            IconButton(
+              icon: const Icon(Icons.schedule),
+              tooltip: 'Edit Schedule',
+              onPressed: () => EditDraftTimeDialog.show(
+                context,
+                draft: draft,
+                onSave: (scheduledStart) async {
+                  final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+                  await notifier.updateScheduledStart(scheduledStart);
+                },
+              ),
+            ),
           // Budget chip for auction drafts
           if (isAuction && myBudget != null)
             Padding(

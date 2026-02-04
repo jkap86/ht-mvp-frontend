@@ -193,6 +193,8 @@ class DraftRepository {
     int? pickTimeSeconds,
     Map<String, dynamic>? auctionSettings,
     List<String>? playerPool,
+    DateTime? scheduledStart,
+    bool clearScheduledStart = false,
   }) async {
     final body = <String, dynamic>{};
     if (draftType != null) body['draft_type'] = draftType;
@@ -200,6 +202,11 @@ class DraftRepository {
     if (pickTimeSeconds != null) body['pick_time_seconds'] = pickTimeSeconds;
     if (auctionSettings != null) body['auction_settings'] = auctionSettings;
     if (playerPool != null) body['player_pool'] = playerPool;
+    if (clearScheduledStart) {
+      body['scheduled_start'] = null;
+    } else if (scheduledStart != null) {
+      body['scheduled_start'] = scheduledStart.toUtc().toIso8601String();
+    }
 
     final response = await _apiClient.patch(
       '/leagues/$leagueId/drafts/$draftId/settings',

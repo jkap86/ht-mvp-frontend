@@ -11,8 +11,6 @@ import '../../drafts/domain/draft_type.dart';
 import '../../notifications/presentation/widgets/notification_bell.dart';
 import 'providers/league_detail_provider.dart';
 import 'widgets/league_header_widget.dart';
-import 'widgets/draft_status_banner.dart';
-import 'widgets/league_settings_summary.dart';
 import 'widgets/league_members_section.dart';
 import 'widgets/league_drafts_section.dart';
 import 'widgets/create_draft_dialog.dart';
@@ -20,7 +18,6 @@ import 'widgets/invite_member_sheet.dart';
 import 'widgets/matchup_preview_card.dart';
 import 'widgets/action_alerts_banner.dart';
 import '../../drafts/presentation/widgets/edit_draft_settings_dialog.dart';
-import '../../dues/presentation/widgets/dues_summary_card.dart';
 
 class LeagueDetailScreen extends ConsumerStatefulWidget {
   final int leagueId;
@@ -86,6 +83,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         required int pickTimeSeconds,
         Map<String, dynamic>? auctionSettings,
         List<String>? playerPool,
+        DateTime? scheduledStart,
       }) async {
         final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
         final success = await notifier.createDraft(
@@ -94,6 +92,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           pickTimeSeconds: pickTimeSeconds,
           settings: auctionSettings,
           playerPool: playerPool,
+          scheduledStart: scheduledStart,
         );
         if (!success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -154,6 +153,19 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         );
       },
     );
+  }
+
+  Future<void> _editDraftSchedule(Draft draft, DateTime? scheduledStart) async {
+    final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
+    final success = await notifier.updateDraftSettings(
+      draft.id,
+      scheduledStart: scheduledStart,
+    );
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error updating draft schedule')),
+      );
+    }
   }
 
   @override
@@ -263,30 +275,6 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
               if (state.isInSeason) ...[
                 _buildActionAlertsBanner(state),
               ],
-              // Draft Status Banner (pre-draft)
-              if (state.activeDraft != null) ...[
-                DraftStatusBanner(
-                  draft: state.activeDraft!,
-                  isCommissioner: state.isCommissioner,
-                  onJoinDraft: () {
-                    context.push('/leagues/${widget.leagueId}/drafts/${state.activeDraft!.id}');
-                  },
-                  onStartDraft: () => _startDraft(state.activeDraft!),
-                ),
-                const SizedBox(height: 16),
-              ],
-              LeagueSettingsSummary(
-                league: state.league!,
-                memberCount: state.members.where((m) => m.userId != null).length,
-                draftType: state.draftTypeLabel,
-              ),
-              const SizedBox(height: 16),
-              // Dues Summary Card (visible to all members)
-              DuesSummaryCard(
-                leagueId: widget.leagueId,
-                currentRosterId: state.league?.userRosterId,
-              ),
-              const SizedBox(height: 16),
               LeagueMembersSection(
                 league: state.league!,
                 members: state.members,
@@ -294,6 +282,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
               ),
               const SizedBox(height: 16),
               LeagueDraftsSection(
+                key: ValueKey(state.drafts.map((d) => d.id).join(',')),
                 leagueId: widget.leagueId,
                 drafts: state.drafts,
                 isCommissioner: state.isCommissioner,
@@ -301,6 +290,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
                 onStartDraft: _startDraft,
                 onRandomizeDraftOrder: _randomizeDraftOrder,
                 onEditSettings: _editDraftSettings,
+                onEditSchedule: _editDraftSchedule,
               ),
             ],
           ),

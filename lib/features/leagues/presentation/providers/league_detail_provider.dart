@@ -263,6 +263,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     int pickTimeSeconds = 90,
     Map<String, dynamic>? settings,
     List<String>? playerPool,
+    DateTime? scheduledStart,
   }) async {
     try {
       final draft = await _leagueRepo.createDraft(
@@ -272,6 +273,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
         pickTimeSeconds: pickTimeSeconds,
         settings: settings,
         playerPool: playerPool,
+        scheduledStart: scheduledStart,
       );
       state = state.copyWith(drafts: [...state.drafts, draft]);
       return true;
@@ -312,29 +314,49 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
   }
 
   /// Update draft settings (commissioner only)
-  Future<void> updateDraftSettings(
+  Future<bool> updateDraftSettings(
     int draftId, {
     String? draftType,
     int? rounds,
     int? pickTimeSeconds,
     Map<String, dynamic>? auctionSettings,
     List<String>? playerPool,
+    DateTime? scheduledStart,
   }) async {
-    final updatedDraft = await _draftRepo.updateDraftSettings(
-      leagueId,
-      draftId,
-      draftType: draftType,
-      rounds: rounds,
-      pickTimeSeconds: pickTimeSeconds,
-      auctionSettings: auctionSettings,
-      playerPool: playerPool,
-    );
-    // Update the draft in state
-    final index = state.drafts.indexWhere((d) => d.id == draftId);
-    if (index != -1) {
-      final updatedDrafts = [...state.drafts];
-      updatedDrafts[index] = updatedDraft;
-      state = state.copyWith(drafts: updatedDrafts);
+    try {
+      final updatedDraft = await _draftRepo.updateDraftSettings(
+        leagueId,
+        draftId,
+        draftType: draftType,
+        rounds: rounds,
+        pickTimeSeconds: pickTimeSeconds,
+        auctionSettings: auctionSettings,
+        playerPool: playerPool,
+        scheduledStart: scheduledStart,
+        clearScheduledStart: scheduledStart == null && draftType == null && rounds == null && pickTimeSeconds == null && auctionSettings == null && playerPool == null,
+      );
+      // Update the draft in state
+      final index = state.drafts.indexWhere((d) => d.id == draftId);
+      if (index != -1) {
+        final updatedDrafts = [...state.drafts];
+        updatedDrafts[index] = updatedDraft;
+        // Re-sort drafts: scheduled first (by date), then unscheduled
+        updatedDrafts.sort((a, b) {
+          final aScheduled = a.scheduledStart;
+          final bScheduled = b.scheduledStart;
+          if (aScheduled != null && bScheduled != null) {
+            return aScheduled.compareTo(bScheduled);
+          }
+          if (aScheduled != null) return -1;
+          if (bScheduled != null) return 1;
+          return b.id.compareTo(a.id);
+        });
+        // Create a new list reference to ensure state change is detected
+        state = state.copyWith(drafts: List<Draft>.from(updatedDrafts));
+      }
+      return true;
+    } catch (e) {
+      return false;
     }
   }
 }

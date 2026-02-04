@@ -45,6 +45,7 @@ class League {
   final int? commissionerRosterId;
   final int? userRosterId;
   final Map<String, dynamic> settings;
+  final Map<String, dynamic> leagueSettings;
   final int currentWeek;
   final SeasonStatus seasonStatus;
   final bool isPublic;
@@ -61,6 +62,7 @@ class League {
     this.commissionerRosterId,
     this.userRosterId,
     required this.settings,
+    this.leagueSettings = const {},
     this.currentWeek = 1,
     this.seasonStatus = SeasonStatus.preSeason,
     this.isPublic = false,
@@ -74,6 +76,33 @@ class League {
     if (rec == 0.0) return 'Standard';
     if (rec == 0.5) return 'Half-PPR';
     return 'PPR';
+  }
+
+  /// Get the roster type (lineup or bestball)
+  String get rosterType {
+    final type = leagueSettings['rosterType'];
+    return type ?? 'lineup';
+  }
+
+  /// Display name for roster type
+  String get rosterTypeDisplay {
+    return rosterType == 'bestball' ? 'Bestball' : 'Lineup';
+  }
+
+  /// Display name for league mode
+  String get modeDisplay {
+    switch (mode) {
+      case 'redraft':
+        return 'Redraft';
+      case 'dynasty':
+        return 'Dynasty';
+      case 'keeper':
+        return 'Keeper';
+      case 'devy':
+        return 'Devy';
+      default:
+        return mode;
+    }
   }
 
   /// Total weeks in the season (regular season + playoffs)
@@ -95,6 +124,7 @@ class League {
       commissionerRosterId: json['commissioner_roster_id'] as int?,
       userRosterId: json['user_roster_id'] as int?,
       settings: (json['settings'] as Map<String, dynamic>?) ?? {},
+      leagueSettings: (json['league_settings'] as Map<String, dynamic>?) ?? {},
       currentWeek: json['current_week'] as int? ?? 1,
       seasonStatus: SeasonStatus.fromString(json['season_status'] as String?),
       isPublic: json['is_public'] as bool? ?? false,
@@ -254,6 +284,7 @@ class Draft {
   final int? currentRound;
   final int? currentRosterId;
   final DateTime? pickDeadline;
+  final DateTime? scheduledStart;
   final DateTime? startedAt;
   final DateTime? completedAt;
   final AuctionSettings? settings;
@@ -272,6 +303,7 @@ class Draft {
     this.currentRound,
     this.currentRosterId,
     this.pickDeadline,
+    this.scheduledStart,
     this.startedAt,
     this.completedAt,
     this.settings,
@@ -301,6 +333,9 @@ class Draft {
       pickDeadline: json['pick_deadline'] != null
           ? DateTime.tryParse(json['pick_deadline'].toString())
           : null,
+      scheduledStart: json['scheduled_start'] != null
+          ? DateTime.tryParse(json['scheduled_start'].toString())
+          : null,
       startedAt: json['started_at'] != null
           ? DateTime.tryParse(json['started_at'].toString())
           : null,
@@ -327,6 +362,7 @@ class Draft {
     int? currentRound,
     int? currentRosterId,
     DateTime? pickDeadline,
+    DateTime? scheduledStart,
     DateTime? startedAt,
     DateTime? completedAt,
     AuctionSettings? settings,
@@ -337,6 +373,7 @@ class Draft {
     bool clearCurrentRound = false,
     bool clearCurrentRosterId = false,
     bool clearPickDeadline = false,
+    bool clearScheduledStart = false,
     bool clearSettings = false,
   }) {
     return Draft(
@@ -350,6 +387,7 @@ class Draft {
       currentRound: clearCurrentRound ? null : (currentRound ?? this.currentRound),
       currentRosterId: clearCurrentRosterId ? null : (currentRosterId ?? this.currentRosterId),
       pickDeadline: clearPickDeadline ? null : (pickDeadline ?? this.pickDeadline),
+      scheduledStart: clearScheduledStart ? null : (scheduledStart ?? this.scheduledStart),
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
       settings: clearSettings ? null : (settings ?? this.settings),

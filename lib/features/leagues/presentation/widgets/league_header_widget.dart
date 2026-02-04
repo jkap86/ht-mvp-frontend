@@ -29,13 +29,14 @@ class LeagueHeaderWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Row(
             children: [
               Expanded(
                 child: Text(
                   league.name,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -52,14 +53,15 @@ class LeagueHeaderWidget extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Wrap(
+            alignment: WrapAlignment.center,
             spacing: 8,
             runSpacing: 8,
             children: [
               _HeaderChip(icon: Icons.calendar_today, label: '${league.season}'),
-              _HeaderChip(icon: Icons.scoreboard, label: league.scoringType),
+              _HeaderChip(icon: Icons.sports_football, label: league.modeDisplay),
               _HeaderChip(
-                icon: Icons.group,
-                label: '$memberCount/${league.totalRosters} teams',
+                icon: league.rosterType == 'bestball' ? Icons.auto_awesome : Icons.view_list,
+                label: league.rosterTypeDisplay,
               ),
             ],
           ),
