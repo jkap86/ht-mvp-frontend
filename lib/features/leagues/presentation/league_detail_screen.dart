@@ -17,6 +17,8 @@ import 'widgets/league_members_section.dart';
 import 'widgets/league_drafts_section.dart';
 import 'widgets/create_draft_dialog.dart';
 import 'widgets/invite_member_sheet.dart';
+import 'widgets/matchup_preview_card.dart';
+import 'widgets/action_alerts_banner.dart';
 import '../../drafts/presentation/widgets/edit_draft_settings_dialog.dart';
 
 class LeagueDetailScreen extends ConsumerStatefulWidget {
@@ -228,52 +230,133 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-          LeagueHeaderWidget(
-            league: state.league!,
-            memberCount: state.members.where((m) => m.userId != null).length,
-            isCommissioner: state.isCommissioner,
-            onSettingsTap: () {
-              context.push('/leagues/${widget.leagueId}/commissioner');
-            },
-          ),
-          const SizedBox(height: 16),
-          if (state.activeDraft != null) ...[
-            DraftStatusBanner(
-              draft: state.activeDraft!,
-              isCommissioner: state.isCommissioner,
-              onJoinDraft: () {
-                context.push('/leagues/${widget.leagueId}/drafts/${state.activeDraft!.id}');
-              },
-              onStartDraft: () => _startDraft(state.activeDraft!),
-            ),
-            const SizedBox(height: 16),
-          ],
-          LeagueSettingsSummary(
-            league: state.league!,
-            memberCount: state.members.where((m) => m.userId != null).length,
-            draftType: state.draftTypeLabel,
-          ),
-          const SizedBox(height: 16),
-          LeagueMembersSection(
-            league: state.league!,
-            members: state.members,
-            totalSlots: state.league!.totalRosters,
-          ),
-          const SizedBox(height: 16),
-          LeagueDraftsSection(
-            leagueId: widget.leagueId,
-            drafts: state.drafts,
-            isCommissioner: state.isCommissioner,
-            onCreateDraft: _createDraft,
-            onStartDraft: _startDraft,
-            onRandomizeDraftOrder: _randomizeDraftOrder,
-            onEditSettings: _editDraftSettings,
-          ),
-        ],
+              LeagueHeaderWidget(
+                league: state.league!,
+                memberCount: state.members.where((m) => m.userId != null).length,
+                isCommissioner: state.isCommissioner,
+                onSettingsTap: () {
+                  context.push('/leagues/${widget.leagueId}/commissioner');
+                },
+              ),
+              const SizedBox(height: 16),
+              // Matchup Preview Card (in-season only)
+              if (state.isInSeason && state.currentMatchup != null) ...[
+                MatchupPreviewCard(
+                  currentWeek: state.league!.currentWeek,
+                  matchup: state.currentMatchup!,
+                  userStanding: state.userStanding,
+                  opponentStanding: state.opponentStanding,
+                  userProjectedPoints: _calculateProjectedPoints(state, isUser: true),
+                  opponentProjectedPoints: _calculateProjectedPoints(state, isUser: false),
+                  lineupLockTime: _getLineupLockTime(state),
+                  onViewMatchup: () {
+                    context.push('/leagues/${widget.leagueId}/matchups/${state.currentMatchup!.id}');
+                  },
+                  onSetLineup: state.league!.userRosterId != null
+                      ? () => context.go('/leagues/${widget.leagueId}/team/${state.league!.userRosterId}')
+                      : null,
+                ),
+                const SizedBox(height: 16),
+              ],
+              // Action Alerts Banner (in-season only, when alerts exist)
+              if (state.isInSeason) ...[
+                _buildActionAlertsBanner(state),
+              ],
+              // Draft Status Banner (pre-draft)
+              if (state.activeDraft != null) ...[
+                DraftStatusBanner(
+                  draft: state.activeDraft!,
+                  isCommissioner: state.isCommissioner,
+                  onJoinDraft: () {
+                    context.push('/leagues/${widget.leagueId}/drafts/${state.activeDraft!.id}');
+                  },
+                  onStartDraft: () => _startDraft(state.activeDraft!),
+                ),
+                const SizedBox(height: 16),
+              ],
+              LeagueSettingsSummary(
+                league: state.league!,
+                memberCount: state.members.where((m) => m.userId != null).length,
+                draftType: state.draftTypeLabel,
+              ),
+              const SizedBox(height: 16),
+              LeagueMembersSection(
+                league: state.league!,
+                members: state.members,
+                totalSlots: state.league!.totalRosters,
+              ),
+              const SizedBox(height: 16),
+              LeagueDraftsSection(
+                leagueId: widget.leagueId,
+                drafts: state.drafts,
+                isCommissioner: state.isCommissioner,
+                onCreateDraft: _createDraft,
+                onStartDraft: _startDraft,
+                onRandomizeDraftOrder: _randomizeDraftOrder,
+                onEditSettings: _editDraftSettings,
+              ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildActionAlertsBanner(LeagueDetailState state) {
+    final alerts = ActionAlertsBuilder.buildAlerts(
+      starters: state.starters,
+      currentWeek: state.league!.currentWeek,
+      pendingTradeCount: state.pendingTradesCount,
+      lineupSet: state.currentLineup != null,
+      lineupLockingSoon: _isLineupLockingSoon(state),
+      onInjuredPlayerTap: state.league!.userRosterId != null
+          ? () => context.go('/leagues/${widget.leagueId}/team/${state.league!.userRosterId}')
+          : null,
+      onByePlayerTap: state.league!.userRosterId != null
+          ? () => context.go('/leagues/${widget.leagueId}/team/${state.league!.userRosterId}')
+          : null,
+      onPendingTradeTap: () => context.go('/leagues/${widget.leagueId}/trades'),
+      onSetLineupTap: state.league!.userRosterId != null
+          ? () => context.go('/leagues/${widget.leagueId}/team/${state.league!.userRosterId}')
+          : null,
+    );
+
+    if (alerts.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: ActionAlertsBanner(
+        alerts: alerts,
+        onViewAll: state.league!.userRosterId != null
+            ? () => context.go('/leagues/${widget.leagueId}/team/${state.league!.userRosterId}')
+            : null,
+      ),
+    );
+  }
+
+  double? _calculateProjectedPoints(LeagueDetailState state, {required bool isUser}) {
+    // For now, return null as we don't have projection data readily available
+    // This would need to be enhanced with actual projection data from the API
+    return null;
+  }
+
+  DateTime? _getLineupLockTime(LeagueDetailState state) {
+    // Default to Sunday 1pm ET for NFL games
+    // This would ideally come from league settings or game schedule
+    final now = DateTime.now();
+    // Find next Sunday at 1pm ET (approximate - would need proper timezone handling)
+    var lockTime = DateTime(now.year, now.month, now.day, 13, 0);
+    while (lockTime.weekday != DateTime.sunday || lockTime.isBefore(now)) {
+      lockTime = lockTime.add(const Duration(days: 1));
+    }
+    return lockTime;
+  }
+
+  bool _isLineupLockingSoon(LeagueDetailState state) {
+    final lockTime = _getLineupLockTime(state);
+    if (lockTime == null) return false;
+    final hoursUntilLock = lockTime.difference(DateTime.now()).inHours;
+    return hoursUntilLock < 24;
   }
 
   Widget _buildSeasonTab(LeagueDetailState state) {

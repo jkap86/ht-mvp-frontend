@@ -107,6 +107,15 @@ class _LeagueTeamRedirect extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Don't redirect if we're already navigating to a specific team
+    final currentPath = GoRouterState.of(context).uri.path;
+    if (RegExp(r'/leagues/\d+/team/\d+').hasMatch(currentPath)) {
+      // Already on a specific team route - just show loading while the real route renders
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final contextAsync = ref.watch(leagueContextProvider(leagueId));
 
     return contextAsync.when(
@@ -300,7 +309,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                         builder: (context, state) {
                           final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
                           final rosterId = _parseIntParam(state.pathParameters['rosterId'])!;
-                          return TeamScreen(leagueId: leagueId, rosterId: rosterId);
+                          return TeamScreen(
+                            key: ValueKey('team-$leagueId-$rosterId'),
+                            leagueId: leagueId,
+                            rosterId: rosterId,
+                          );
                         },
                       ),
                     ],

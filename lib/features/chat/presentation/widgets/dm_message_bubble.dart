@@ -63,7 +63,7 @@ class DmMessageBubble extends StatelessWidget {
                 crossAxisAlignment:
                     isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  SelectableText(
                     message,
                     style: (compact
                             ? theme.textTheme.bodySmall

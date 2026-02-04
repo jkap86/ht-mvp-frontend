@@ -9,6 +9,8 @@ import '../../domain/roster_player.dart';
 import '../../domain/roster_lineup.dart';
 import '../../domain/lineup_optimizer.dart';
 
+export '../../../leagues/domain/league.dart' show Roster;
+
 /// Key for team provider - needs leagueId to identify the context
 typedef TeamKey = ({int leagueId, int rosterId});
 
@@ -36,6 +38,7 @@ class TeamState {
   final String? error;
   final bool isSaving;
   final DateTime? lastUpdated;
+  final List<Roster> leagueMembers;
 
   TeamState({
     this.league,
@@ -46,6 +49,7 @@ class TeamState {
     this.error,
     this.isSaving = false,
     this.lastUpdated,
+    this.leagueMembers = const [],
   });
 
   /// Check if data is stale (older than 5 minutes)
@@ -150,6 +154,7 @@ class TeamState {
     bool clearError = false,
     bool? isSaving,
     DateTime? lastUpdated,
+    List<Roster>? leagueMembers,
   }) {
     return TeamState(
       league: league ?? this.league,
@@ -160,6 +165,7 @@ class TeamState {
       error: clearError ? null : (error ?? this.error),
       isSaving: isSaving ?? this.isSaving,
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      leagueMembers: leagueMembers ?? this.leagueMembers,
     );
   }
 }
@@ -206,8 +212,13 @@ class TeamNotifier extends StateNotifier<TeamState> {
       final league = await _leagueRepo.getLeague(leagueId);
       final currentWeek = league.currentWeek;
 
-      // Load roster players
-      final players = await _rosterRepo.getRosterPlayers(leagueId, rosterId);
+      // Load roster players and league members in parallel
+      final results = await Future.wait([
+        _rosterRepo.getRosterPlayers(leagueId, rosterId),
+        _leagueRepo.getLeagueMembers(leagueId),
+      ]);
+      final players = results[0] as List<RosterPlayer>;
+      final members = results[1] as List<Roster>;
 
       // Try to load lineup (may not exist yet)
       RosterLineup? lineup;
@@ -224,6 +235,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
         currentWeek: currentWeek,
         isLoading: false,
         lastUpdated: DateTime.now(),
+        leagueMembers: members,
       );
     } catch (e) {
       state = state.copyWith(

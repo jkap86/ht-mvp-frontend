@@ -6,6 +6,11 @@ import '../../../../core/services/invalidation_service.dart';
 import '../../../drafts/domain/draft_order_entry.dart';
 import '../../../drafts/domain/draft_status.dart';
 import '../../../drafts/data/draft_repository.dart';
+import '../../../matchups/domain/matchup.dart';
+import '../../../matchups/data/matchup_repository.dart';
+import '../../../rosters/domain/roster_player.dart';
+import '../../../rosters/domain/roster_lineup.dart';
+import '../../../rosters/data/roster_repository.dart';
 import '../../data/league_repository.dart';
 import '../../domain/league.dart';
 
@@ -13,6 +18,10 @@ class LeagueDetailState {
   final League? league;
   final List<Roster> members;
   final List<Draft> drafts;
+  final Matchup? currentMatchup;
+  final List<Standing> standings;
+  final List<RosterPlayer> rosterPlayers;
+  final RosterLineup? currentLineup;
   final bool isLoading;
   final String? error;
 
@@ -20,6 +29,10 @@ class LeagueDetailState {
     this.league,
     this.members = const [],
     this.drafts = const [],
+    this.currentMatchup,
+    this.standings = const [],
+    this.rosterPlayers = const [],
+    this.currentLineup,
     this.isLoading = true,
     this.error,
   });
@@ -51,18 +64,54 @@ class LeagueDetailState {
   /// Count of unread messages (for badge)
   int get unreadMessagesCount => 0; // TODO: Implement when chat data is added to state
 
+  /// Get the user's standing from the standings list
+  Standing? get userStanding {
+    if (league?.userRosterId == null || standings.isEmpty) return null;
+    return standings.where((s) => s.rosterId == league!.userRosterId).firstOrNull;
+  }
+
+  /// Get the opponent's standing from current matchup
+  Standing? get opponentStanding {
+    if (league?.userRosterId == null || currentMatchup == null || standings.isEmpty) return null;
+    final opponentId = currentMatchup!.opponentId(league!.userRosterId!);
+    if (opponentId == null) return null;
+    return standings.where((s) => s.rosterId == opponentId).firstOrNull;
+  }
+
+  /// Get starters from roster players based on current lineup
+  List<RosterPlayer> get starters {
+    if (currentLineup == null) return [];
+    return rosterPlayers.where((p) => currentLineup!.lineup.isStarter(p.playerId)).toList();
+  }
+
+  /// Check if the league is in season (has matchups)
+  bool get isInSeason {
+    final status = league?.seasonStatus;
+    return status == SeasonStatus.regularSeason || status == SeasonStatus.playoffs;
+  }
+
   LeagueDetailState copyWith({
     League? league,
     List<Roster>? members,
     List<Draft>? drafts,
+    Matchup? currentMatchup,
+    List<Standing>? standings,
+    List<RosterPlayer>? rosterPlayers,
+    RosterLineup? currentLineup,
     bool? isLoading,
     String? error,
     bool clearError = false,
+    bool clearMatchup = false,
+    bool clearLineup = false,
   }) {
     return LeagueDetailState(
       league: league ?? this.league,
       members: members ?? this.members,
       drafts: drafts ?? this.drafts,
+      currentMatchup: clearMatchup ? null : (currentMatchup ?? this.currentMatchup),
+      standings: standings ?? this.standings,
+      rosterPlayers: rosterPlayers ?? this.rosterPlayers,
+      currentLineup: clearLineup ? null : (currentLineup ?? this.currentLineup),
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
     );
@@ -72,6 +121,8 @@ class LeagueDetailState {
 class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
   final LeagueRepository _leagueRepo;
   final DraftRepository _draftRepo;
+  final MatchupRepository _matchupRepo;
+  final RosterRepository _rosterRepo;
   final SocketService _socketService;
   final InvalidationService _invalidationService;
   final int leagueId;
@@ -80,7 +131,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
   VoidCallback? _draftCreatedDisposer;
   VoidCallback? _invalidationDisposer;
 
-  LeagueDetailNotifier(this._leagueRepo, this._draftRepo, this._socketService, this._invalidationService, this.leagueId) : super(LeagueDetailState()) {
+  LeagueDetailNotifier(this._leagueRepo, this._draftRepo, this._matchupRepo, this._rosterRepo, this._socketService, this._invalidationService, this.leagueId) : super(LeagueDetailState()) {
     _setupSocketListeners();
     _registerInvalidationCallback();
     loadData();
@@ -138,23 +189,71 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
+      // First load basic league data
       final results = await Future.wait([
         _leagueRepo.getLeague(leagueId),
         _leagueRepo.getLeagueMembers(leagueId),
         _leagueRepo.getLeagueDrafts(leagueId),
       ]);
 
+      final league = results[0] as League;
+      final members = results[1] as List<Roster>;
+      final drafts = results[2] as List<Draft>;
+
+      // Load in-season data if applicable
+      Matchup? currentMatchup;
+      List<Standing> standings = [];
+      List<RosterPlayer> rosterPlayers = [];
+      RosterLineup? currentLineup;
+
+      final isInSeason = league.seasonStatus == SeasonStatus.regularSeason ||
+          league.seasonStatus == SeasonStatus.playoffs;
+
+      if (isInSeason && league.userRosterId != null) {
+        // Load matchup and standings in parallel
+        final inSeasonResults = await Future.wait([
+          _matchupRepo.getMatchups(leagueId, week: league.currentWeek),
+          _matchupRepo.getStandings(leagueId),
+          _rosterRepo.getRosterPlayers(leagueId, league.userRosterId!),
+          _loadLineupSafe(leagueId, league.userRosterId!, league.currentWeek),
+        ]);
+
+        final matchups = inSeasonResults[0] as List<Matchup>;
+        standings = inSeasonResults[1] as List<Standing>;
+        rosterPlayers = inSeasonResults[2] as List<RosterPlayer>;
+        currentLineup = inSeasonResults[3] as RosterLineup?;
+
+        // Find user's matchup
+        currentMatchup = matchups.where((m) =>
+            m.roster1Id == league.userRosterId ||
+            m.roster2Id == league.userRosterId).firstOrNull;
+      }
+
       state = state.copyWith(
-        league: results[0] as League,
-        members: results[1] as List<Roster>,
-        drafts: results[2] as List<Draft>,
+        league: league,
+        members: members,
+        drafts: drafts,
+        currentMatchup: currentMatchup,
+        standings: standings,
+        rosterPlayers: rosterPlayers,
+        currentLineup: currentLineup,
         isLoading: false,
+        clearMatchup: currentMatchup == null,
+        clearLineup: currentLineup == null,
       );
     } catch (e) {
       state = state.copyWith(
         error: e.toString(),
         isLoading: false,
       );
+    }
+  }
+
+  Future<RosterLineup?> _loadLineupSafe(int leagueId, int rosterId, int week) async {
+    try {
+      return await _rosterRepo.getLineup(leagueId, rosterId, week);
+    } catch (_) {
+      return null;
     }
   }
 
@@ -245,6 +344,8 @@ final leagueDetailProvider =
   (ref, leagueId) => LeagueDetailNotifier(
     ref.watch(leagueRepositoryProvider),
     ref.watch(draftRepositoryProvider),
+    ref.watch(matchupRepositoryProvider),
+    ref.watch(rosterRepositoryProvider),
     ref.watch(socketServiceProvider),
     ref.watch(invalidationServiceProvider),
     leagueId,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,6 +85,7 @@ class ApiClient {
 
     if (auth) {
       final token = await _getAccessToken();
+      debugPrint('API: Token present: ${token != null}, length: ${token?.length ?? 0}');
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       }

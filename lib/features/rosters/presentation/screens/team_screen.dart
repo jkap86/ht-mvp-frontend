@@ -27,8 +27,8 @@ class TeamScreen extends ConsumerStatefulWidget {
 }
 
 class _TeamScreenState extends ConsumerState<TeamScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+    with TickerProviderStateMixin {
+  TabController? _tabController;
 
   // Selection state for swap interaction
   int? _selectedPlayerId;
@@ -36,18 +36,45 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
   TeamKey get _key => (leagueId: widget.leagueId, rosterId: widget.rosterId);
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(_onTabChanged);
+  /// Check if viewing own team
+  bool _isOwnTeam(TeamState state) {
+    return state.league?.userRosterId == widget.rosterId;
+  }
+
+  /// Get display name for the team being viewed
+  String _getTeamDisplayName(TeamState state) {
+    final member = state.leagueMembers
+        .where((m) => m.rosterId == widget.rosterId)
+        .firstOrNull;
+    return member?.teamName ?? member?.username ?? 'Team';
+  }
+
+  void _initTabController(bool isOwnTeam) {
+    final tabCount = isOwnTeam ? 2 : 1;
+    if (_tabController?.length != tabCount) {
+      _tabController?.removeListener(_onTabChanged);
+      _tabController?.dispose();
+      _tabController = TabController(length: tabCount, vsync: this);
+      _tabController!.addListener(_onTabChanged);
+    }
   }
 
   @override
   void dispose() {
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
+    _tabController?.removeListener(_onTabChanged);
+    _tabController?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(TeamScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.rosterId != widget.rosterId || oldWidget.leagueId != widget.leagueId) {
+      // Clear selection state when switching teams
+      _selectedPlayerId = null;
+      _selectedSlot = null;
+      // Tab controller will be updated in build() via _initTabController
+    }
   }
 
   void _onTabChanged() {
@@ -58,6 +85,10 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(teamProvider(_key));
+    final isOwnTeam = _isOwnTeam(state);
+
+    // Initialize or update tab controller based on own team status
+    _initTabController(isOwnTeam);
 
     // Show error snackbar when error occurs
     ref.listen<TeamState>(teamProvider(_key), (previous, next) {
@@ -111,27 +142,73 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _navigateBack(context),
         ),
-        title: Text(state.league?.name ?? 'My Team'),
+        title: _buildTeamSelector(state),
         actions: [
           _buildWeekSelector(state),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Lineup'),
-            Tab(text: 'Roster'),
-          ],
-        ),
+        bottom: _tabController == null
+            ? null
+            : TabBar(
+                controller: _tabController,
+                tabs: isOwnTeam
+                    ? const [
+                        Tab(text: 'Lineup'),
+                        Tab(text: 'Roster'),
+                      ]
+                    : const [
+                        Tab(text: 'Lineup'),
+                      ],
+              ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildLineupTab(state),
-          _buildRosterTab(state),
-        ],
-      ),
-      // Only show FAB on Roster tab (index 1), not on Lineup tab
-      floatingActionButton: _tabController.index == 1 && state.lineup?.isLocked != true
+      body: _tabController == null
+          ? const AppLoadingView()
+          : Column(
+              children: [
+                // Show viewing banner when not own team
+                if (!isOwnTeam)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.visibility,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Viewing ${_getTeamDisplayName(state)}'s lineup",
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: isOwnTeam
+                        ? [
+                            _buildLineupTab(state),
+                            _buildRosterTab(state),
+                          ]
+                        : [
+                            _buildLineupTab(state, readOnly: true),
+                          ],
+                  ),
+                ),
+              ],
+            ),
+      // Only show FAB on Roster tab (index 1), not on Lineup tab, and only for own team
+      floatingActionButton: isOwnTeam &&
+              _tabController?.index == 1 &&
+              state.lineup?.isLocked != true
           ? FloatingActionButton.extended(
               onPressed: () {
                 context.push('/leagues/${widget.leagueId}/free-agents',
@@ -141,6 +218,67 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
               label: const Text('Add Player'),
             )
           : null,
+    );
+  }
+
+  Widget _buildTeamSelector(TeamState state) {
+    if (state.leagueMembers.isEmpty) {
+      return Text(state.league?.name ?? 'My Team');
+    }
+
+    final currentMember = state.leagueMembers
+        .where((m) => m.rosterId == widget.rosterId)
+        .firstOrNull;
+    final displayName = currentMember?.teamName ?? currentMember?.username ?? 'Team';
+
+    return PopupMenuButton<int>(
+      initialValue: widget.rosterId,
+      onSelected: (rosterId) {
+        if (rosterId != widget.rosterId) {
+          context.go('/leagues/${widget.leagueId}/team/$rosterId');
+        }
+      },
+      itemBuilder: (context) {
+        return state.leagueMembers.map((member) {
+          final name = member.teamName ?? member.username;
+          final isCurrentUser = member.rosterId == state.league?.userRosterId;
+          return PopupMenuItem(
+            value: member.rosterId,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    name,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (isCurrentUser)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Icon(
+                      Icons.person,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }).toList();
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              displayName,
+              style: const TextStyle(fontSize: 18),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const Icon(Icons.arrow_drop_down),
+        ],
+      ),
     );
   }
 
@@ -185,8 +323,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
     }
   }
 
-  Widget _buildLineupTab(TeamState state) {
-    if (state.lineup?.isLocked == true) {
+  Widget _buildLineupTab(TeamState state, {bool readOnly = false}) {
+    if (state.lineup?.isLocked == true || readOnly) {
       return _buildLockedLineup(state);
     }
 

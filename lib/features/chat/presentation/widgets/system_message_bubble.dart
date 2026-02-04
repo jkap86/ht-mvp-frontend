@@ -49,7 +49,7 @@ class SystemMessageBubble extends StatelessWidget {
           Icon(icon, size: 14, color: iconColor, semanticLabel: semanticLabel),
           const SizedBox(width: 6),
           Flexible(
-            child: Text(
+            child: SelectableText(
               message.message,
               style: TextStyle(
                 fontSize: 11,
