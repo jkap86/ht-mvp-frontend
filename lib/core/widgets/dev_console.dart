@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/leagues/data/league_repository.dart';
+import '../../features/leagues/presentation/providers/league_detail_provider.dart';
 import '../socket/socket_service.dart';
 
 /// Developer console widget for quick user switching and adding users to league.
@@ -69,6 +70,11 @@ class _DevConsoleState extends ConsumerState<DevConsole> {
 
       final successes = results.where((r) => r['success'] == true).length;
       final failures = results.where((r) => r['success'] == false).length;
+
+      // Force refresh of league detail if any users were added
+      if (successes > 0) {
+        ref.invalidate(leagueDetailProvider(widget.leagueId!));
+      }
 
       if (mounted) {
         setState(() {

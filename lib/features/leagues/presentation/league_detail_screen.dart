@@ -161,9 +161,22 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
 
   Future<void> _editDraftSchedule(Draft draft, DateTime? scheduledStart) async {
     final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
+
+    // Extract existing player pool settings to preserve them
+    final rawSettings = draft.rawSettings;
+    final playerPoolRaw = rawSettings?['playerPool'];
+    final playerPool = playerPoolRaw is List
+        ? playerPoolRaw.map((e) => e.toString()).toList()
+        : null;
+    final includeRookiePicks = rawSettings?['includeRookiePicks'] as bool?;
+    final rookiePicksSeason = rawSettings?['rookiePicksSeason'] as int?;
+
     final success = await notifier.updateDraftSettings(
       draft.id,
       scheduledStart: scheduledStart,
+      playerPool: playerPool,
+      includeRookiePicks: includeRookiePicks,
+      rookiePicksSeason: rookiePicksSeason,
     );
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -289,6 +302,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
                 key: ValueKey(state.drafts.map((d) => d.id).join(',')),
                 leagueId: widget.leagueId,
                 drafts: state.drafts,
+                members: state.members,
                 isCommissioner: state.isCommissioner,
                 onCreateDraft: _createDraft,
                 onStartDraft: _startDraft,
