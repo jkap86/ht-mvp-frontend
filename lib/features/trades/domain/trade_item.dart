@@ -179,12 +179,12 @@ class TradeItem {
     return fullName.isNotEmpty ? fullName : playerName;
   }
 
-  /// Display name for draft picks (e.g., "2025 Rd 1" or "2025 Rd 1 (Team A's)")
+  /// Display name for draft picks (e.g., "2025 1" or "2025 1 (Team A's)")
   String get pickDisplayName {
     if (!isDraftPick) return '';
     final season = pickSeason ?? DateTime.now().year;
     final round = pickRound ?? 1;
-    final base = '$season Rd $round';
+    final base = '$season $round';
 
     // If original team differs from the from_roster, show the original owner
     if (pickOriginalTeam != null && pickOriginalTeam!.isNotEmpty) {

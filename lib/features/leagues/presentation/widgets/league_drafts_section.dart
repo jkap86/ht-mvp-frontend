@@ -24,6 +24,7 @@ class LeagueDraftsSection extends StatelessWidget {
   final VoidCallback onCreateDraft;
   final Future<void> Function(Draft draft) onStartDraft;
   final Future<List<DraftOrderEntry>?> Function(Draft draft) onRandomizeDraftOrder;
+  final Future<List<DraftOrderEntry>?> Function(Draft draft)? onSetOrderFromVetDraft;
   final Future<void> Function(Draft draft) onEditSettings;
   final Future<void> Function(Draft draft, DateTime? scheduledStart)? onEditSchedule;
 
@@ -36,6 +37,7 @@ class LeagueDraftsSection extends StatelessWidget {
     required this.onCreateDraft,
     required this.onStartDraft,
     required this.onRandomizeDraftOrder,
+    this.onSetOrderFromVetDraft,
     required this.onEditSettings,
     this.onEditSchedule,
   });
@@ -77,6 +79,7 @@ class LeagueDraftsSection extends StatelessWidget {
                     isCommissioner: isCommissioner,
                     onStartDraft: onStartDraft,
                     onRandomizeDraftOrder: onRandomizeDraftOrder,
+                    onSetOrderFromVetDraft: onSetOrderFromVetDraft,
                     onEditSettings: onEditSettings,
                     onEditSchedule: onEditSchedule,
                   )),
@@ -114,6 +117,7 @@ class _DraftItem extends StatefulWidget {
   final bool isCommissioner;
   final Future<void> Function(Draft draft) onStartDraft;
   final Future<List<DraftOrderEntry>?> Function(Draft draft) onRandomizeDraftOrder;
+  final Future<List<DraftOrderEntry>?> Function(Draft draft)? onSetOrderFromVetDraft;
   final Future<void> Function(Draft draft) onEditSettings;
   final Future<void> Function(Draft draft, DateTime? scheduledStart)? onEditSchedule;
 
@@ -125,6 +129,7 @@ class _DraftItem extends StatefulWidget {
     required this.isCommissioner,
     required this.onStartDraft,
     required this.onRandomizeDraftOrder,
+    this.onSetOrderFromVetDraft,
     required this.onEditSettings,
     this.onEditSchedule,
   });
@@ -157,6 +162,37 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
     // Run API call and minimum 5 second timer in parallel
     final results = await Future.wait([
       widget.onRandomizeDraftOrder(widget.draft),
+      Future.delayed(const Duration(seconds: 5)),
+    ]);
+
+    final order = results[0] as List<DraftOrderEntry>?;
+
+    // Stop the animation
+    _shuffleTimer?.cancel();
+
+    if (mounted) {
+      setState(() {
+        _isShuffling = false;
+        _draftOrder = order;
+        _shuffleTeams = [];
+      });
+    }
+  }
+
+  Future<void> _handleSetFromVetDraft() async {
+    if (widget.onSetOrderFromVetDraft == null) return;
+
+    setState(() {
+      _isShuffling = true;
+      _draftOrder = null;
+    });
+
+    // Start the shuffle animation
+    _startShuffleAnimation();
+
+    // Run API call and minimum 5 second timer in parallel
+    final results = await Future.wait([
+      widget.onSetOrderFromVetDraft!(widget.draft),
       Future.delayed(const Duration(seconds: 5)),
     ]);
 
@@ -304,6 +340,18 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
                 label: Text(_isShuffling ? 'Shuffling...' : 'Randomize Order'),
               ),
             ),
+            // "Use Vet Draft Results" button for rookie drafts
+            if (widget.draft.isRookieDraft && widget.onSetOrderFromVetDraft != null) ...[
+              const SizedBox(height: 4),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: _isShuffling ? null : () => _showVetDraftOrderConfirmation(context),
+                  icon: const Icon(Icons.format_list_numbered, size: 18),
+                  label: const Text('Use Vet Draft Results'),
+                ),
+              ),
+            ],
           ],
           // Shuffle animation display
           if (_isShuffling && _shuffleTeams.isNotEmpty) ...[
@@ -678,6 +726,33 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
             },
             icon: const Icon(Icons.shuffle),
             label: const Text('Randomize'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showVetDraftOrderConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Use Vet Draft Results?'),
+        content: const Text(
+          'Set draft order based on Round 1 pick ownership from the vet draft? '
+          'Teams will draft in the order they acquired their Round 1 picks.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _handleSetFromVetDraft();
+            },
+            icon: const Icon(Icons.format_list_numbered),
+            label: const Text('Set Order'),
           ),
         ],
       ),

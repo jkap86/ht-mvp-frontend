@@ -255,7 +255,7 @@ class _QueuePickAssetCard extends StatelessWidget {
               ),
             ),
             Text(
-              'Rd ${entry.pickAssetRound ?? '?'}',
+              '${entry.pickAssetRound ?? '?'}',
               style: TextStyle(fontSize: 9, color: Colors.amber[800]),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

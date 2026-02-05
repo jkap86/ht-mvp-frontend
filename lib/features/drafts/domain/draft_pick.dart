@@ -14,6 +14,13 @@ class DraftPick {
   final String? playerTeam;
   final String? username;
 
+  // Pick asset fields (for vet drafts selecting rookie draft picks)
+  final int? draftPickAssetId;
+  final int? pickAssetSeason;
+  final int? pickAssetRound;
+  final String? pickAssetOriginalTeam;
+  final bool isPickAsset;
+
   DraftPick({
     required this.id,
     required this.draftId,
@@ -28,6 +35,11 @@ class DraftPick {
     this.playerPosition,
     this.playerTeam,
     this.username,
+    this.draftPickAssetId,
+    this.pickAssetSeason,
+    this.pickAssetRound,
+    this.pickAssetOriginalTeam,
+    this.isPickAsset = false,
   });
 
   factory DraftPick.fromJson(Map<String, dynamic> json) {
@@ -49,6 +61,11 @@ class DraftPick {
       playerPosition: json['player_position'] as String? ?? json['playerPosition'] as String?,
       playerTeam: json['player_team'] as String? ?? json['playerTeam'] as String?,
       username: json['username'] as String?,
+      draftPickAssetId: json['draft_pick_asset_id'] as int? ?? json['draftPickAssetId'] as int?,
+      pickAssetSeason: json['pick_asset_season'] as int? ?? json['pickAssetSeason'] as int?,
+      pickAssetRound: json['pick_asset_round'] as int? ?? json['pickAssetRound'] as int?,
+      pickAssetOriginalTeam: json['pick_asset_original_team'] as String? ?? json['pickAssetOriginalTeam'] as String?,
+      isPickAsset: json['is_pick_asset'] as bool? ?? json['isPickAsset'] as bool? ?? false,
     );
   }
 
@@ -67,11 +84,19 @@ class DraftPick {
       'player_position': playerPosition,
       'player_team': playerTeam,
       'username': username,
+      'draft_pick_asset_id': draftPickAssetId,
+      'pick_asset_season': pickAssetSeason,
+      'pick_asset_round': pickAssetRound,
+      'pick_asset_original_team': pickAssetOriginalTeam,
+      'is_pick_asset': isPickAsset,
     };
   }
 
   @override
   String toString() {
+    if (isPickAsset) {
+      return 'DraftPick(id: $id, pickNumber: $pickNumber, round: $round, isPickAsset: true, pickAssetSeason: $pickAssetSeason, pickAssetRound: $pickAssetRound)';
+    }
     return 'DraftPick(id: $id, pickNumber: $pickNumber, round: $round, playerId: $playerId, playerName: $playerName)';
   }
 }

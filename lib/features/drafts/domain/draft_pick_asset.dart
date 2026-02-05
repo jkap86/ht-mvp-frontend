@@ -45,7 +45,7 @@ class DraftPickAsset {
   String get displayName {
     // For future picks without known position, show just round
     if (originalPickPosition == null) {
-      final base = '$season Rd $round';
+      final base = '$season $round';
       if (isTraded && originalTeamName != null) {
         return "$base ($originalTeamName's)";
       }
@@ -67,8 +67,8 @@ class DraftPickAsset {
     return base;
   }
 
-  /// Short display name without team info (e.g., "2025 Rd 1")
-  String get shortDisplayName => '$season Rd $round';
+  /// Short display name without team info (e.g., "2025 1")
+  String get shortDisplayName => '$season $round';
 
   /// Description of pick origin for tooltips
   String? get originDescription {

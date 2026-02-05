@@ -57,7 +57,7 @@ class PickAssetTile extends StatelessWidget {
             size: 20,
           ),
           Text(
-            'Rd ${pickAsset.round}',
+            '${pickAsset.round}',
             style: TextStyle(
               color: colorScheme.onSecondary,
               fontSize: 10,

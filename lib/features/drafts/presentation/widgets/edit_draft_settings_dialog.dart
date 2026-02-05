@@ -22,6 +22,7 @@ class EditDraftSettingsDialog extends StatefulWidget {
     List<String>? playerPool,
     bool? includeRookiePicks,
     int? rookiePicksSeason,
+    int? rookiePicksRounds,
   }) onSave;
 
   const EditDraftSettingsDialog({
@@ -44,6 +45,7 @@ class EditDraftSettingsDialog extends StatefulWidget {
       List<String>? playerPool,
       bool? includeRookiePicks,
       int? rookiePicksSeason,
+      int? rookiePicksRounds,
     }) onSave,
   }) {
     return showDialog(
@@ -88,6 +90,7 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
   // Rookie draft picks settings
   late bool _includeRookiePicks;
   late TextEditingController _rookiePicksSeasonController;
+  late int _rookiePicksRounds;
 
   bool get _isNotStarted => widget.draft.status == DraftStatus.notStarted;
   bool get _isPaused => widget.draft.status == DraftStatus.paused;
@@ -146,6 +149,7 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
     final currentYear = DateTime.now().year;
     final rookiePicksSeason = widget.draft.rawSettings?['rookiePicksSeason'] ?? currentYear;
     _rookiePicksSeasonController = TextEditingController(text: rookiePicksSeason.toString());
+    _rookiePicksRounds = widget.draft.rawSettings?['rookiePicksRounds'] ?? 5;
   }
 
   @override
@@ -274,6 +278,7 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
       // Check for player pool changes
       bool? includeRookiePicks;
       int? rookiePicksSeason;
+      int? rookiePicksRounds;
       if (_canEditStructural) {
         final rawPlayerPool = widget.draft.rawSettings?['playerPool'];
         final originalPool = Set<String>.from(
@@ -286,6 +291,7 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
         // Check for rookie picks settings changes (only for vet-only drafts)
         final originalIncludeRookiePicks = widget.draft.rawSettings?['includeRookiePicks'] ?? false;
         final originalRookiePicksSeason = widget.draft.rawSettings?['rookiePicksSeason'];
+        final originalRookiePicksRounds = widget.draft.rawSettings?['rookiePicksRounds'] ?? 5;
 
         if (_includeRookiePicks != originalIncludeRookiePicks) {
           includeRookiePicks = _includeRookiePicks;
@@ -301,6 +307,15 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
             rookiePicksSeason = newSeason;
           }
         }
+
+        // Check for rounds change
+        if (_includeRookiePicks && _rookiePicksRounds != originalRookiePicksRounds) {
+          rookiePicksRounds = _rookiePicksRounds;
+        }
+        // Also set rounds if includeRookiePicks is being enabled for the first time
+        if (includeRookiePicks == true && rookiePicksRounds == null) {
+          rookiePicksRounds = _rookiePicksRounds;
+        }
       }
 
       // Only call onSave if there are changes
@@ -310,7 +325,8 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
           auctionSettings != null ||
           playerPool != null ||
           includeRookiePicks != null ||
-          rookiePicksSeason != null) {
+          rookiePicksSeason != null ||
+          rookiePicksRounds != null) {
         await widget.onSave(
           draftType: draftType,
           rounds: rounds,
@@ -319,6 +335,7 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
           playerPool: playerPool,
           includeRookiePicks: includeRookiePicks,
           rookiePicksSeason: rookiePicksSeason,
+          rookiePicksRounds: rookiePicksRounds,
         );
       }
 
@@ -516,6 +533,28 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
             onChanged: (value) {
               if (value != null) {
                 setState(() => _rookiePicksSeasonController.text = value.toString());
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int>(
+            value: _rookiePicksRounds,
+            decoration: const InputDecoration(
+              labelText: 'Number of Rounds',
+              helperText: 'How many rounds of picks to generate',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: [
+              for (int rounds = 1; rounds <= 5; rounds++)
+                DropdownMenuItem(
+                  value: rounds,
+                  child: Text('$rounds Round${rounds > 1 ? 's' : ''}'),
+                ),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => _rookiePicksRounds = value);
               }
             },
           ),

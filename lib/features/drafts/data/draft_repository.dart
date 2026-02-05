@@ -75,6 +75,14 @@ class DraftRepository {
         .toList();
   }
 
+  Future<List<DraftOrderEntry>> setOrderFromPickOwnership(int leagueId, int draftId) async {
+    final response = await _apiClient.post('/leagues/$leagueId/drafts/$draftId/order/from-pick-ownership');
+    final order = (response as List?) ?? [];
+    return order
+        .map((json) => DraftOrderEntry.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
   // Queue methods
   Future<List<Map<String, dynamic>>> getQueue(int leagueId, int draftId) async {
     final response =
@@ -224,6 +232,7 @@ class DraftRepository {
     bool clearScheduledStart = false,
     bool? includeRookiePicks,
     int? rookiePicksSeason,
+    int? rookiePicksRounds,
   }) async {
     final body = <String, dynamic>{};
     if (draftType != null) body['draft_type'] = draftType;
@@ -238,6 +247,7 @@ class DraftRepository {
     }
     if (includeRookiePicks != null) body['include_rookie_picks'] = includeRookiePicks;
     if (rookiePicksSeason != null) body['rookie_picks_season'] = rookiePicksSeason;
+    if (rookiePicksRounds != null) body['rookie_picks_rounds'] = rookiePicksRounds;
 
     final response = await _apiClient.patch(
       '/leagues/$leagueId/drafts/$draftId/settings',

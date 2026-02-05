@@ -127,6 +127,20 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     return order;
   }
 
+  Future<List<DraftOrderEntry>?> _setOrderFromVetDraft(Draft draft) async {
+    final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
+    final order = await notifier.setOrderFromPickOwnership(draft.id);
+    if (order == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error setting order from vet draft results'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    return order;
+  }
+
   Future<void> _editDraftSettings(Draft draft) async {
     final league = ref.read(leagueDetailProvider(widget.leagueId)).league;
     if (league == null) return;
@@ -143,6 +157,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         List<String>? playerPool,
         bool? includeRookiePicks,
         int? rookiePicksSeason,
+        int? rookiePicksRounds,
       }) async {
         final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
         await notifier.updateDraftSettings(
@@ -154,6 +169,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           playerPool: playerPool,
           includeRookiePicks: includeRookiePicks,
           rookiePicksSeason: rookiePicksSeason,
+          rookiePicksRounds: rookiePicksRounds,
         );
       },
     );
@@ -307,6 +323,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
                 onCreateDraft: _createDraft,
                 onStartDraft: _startDraft,
                 onRandomizeDraftOrder: _randomizeDraftOrder,
+                onSetOrderFromVetDraft: _setOrderFromVetDraft,
                 onEditSettings: _editDraftSettings,
                 onEditSchedule: _editDraftSchedule,
               ),

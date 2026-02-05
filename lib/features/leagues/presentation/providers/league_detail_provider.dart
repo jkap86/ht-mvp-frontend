@@ -313,6 +313,22 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     }
   }
 
+  Future<List<DraftOrderEntry>?> setOrderFromPickOwnership(int draftId) async {
+    try {
+      final order = await _draftRepo.setOrderFromPickOwnership(leagueId, draftId);
+      // Update the draft to mark orderConfirmed as true
+      final index = state.drafts.indexWhere((d) => d.id == draftId);
+      if (index != -1) {
+        final updatedDrafts = [...state.drafts];
+        updatedDrafts[index] = updatedDrafts[index].copyWith(orderConfirmed: true);
+        state = state.copyWith(drafts: updatedDrafts);
+      }
+      return order;
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Update draft settings (commissioner only)
   Future<bool> updateDraftSettings(
     int draftId, {
@@ -324,6 +340,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     DateTime? scheduledStart,
     bool? includeRookiePicks,
     int? rookiePicksSeason,
+    int? rookiePicksRounds,
   }) async {
     try {
       final updatedDraft = await _draftRepo.updateDraftSettings(
@@ -335,9 +352,10 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
         auctionSettings: auctionSettings,
         playerPool: playerPool,
         scheduledStart: scheduledStart,
-        clearScheduledStart: scheduledStart == null && draftType == null && rounds == null && pickTimeSeconds == null && auctionSettings == null && playerPool == null && includeRookiePicks == null && rookiePicksSeason == null,
+        clearScheduledStart: scheduledStart == null && draftType == null && rounds == null && pickTimeSeconds == null && auctionSettings == null && playerPool == null && includeRookiePicks == null && rookiePicksSeason == null && rookiePicksRounds == null,
         includeRookiePicks: includeRookiePicks,
         rookiePicksSeason: rookiePicksSeason,
+        rookiePicksRounds: rookiePicksRounds,
       );
       // Update the draft in state
       final index = state.drafts.indexWhere((d) => d.id == draftId);

@@ -318,6 +318,13 @@ class Draft {
   /// Check if this is an auction draft
   bool get isAuction => draftType.isAuction;
 
+  /// Check if this is a rookie-only draft
+  bool get isRookieDraft {
+    final pool = rawSettings?['playerPool'] as List?;
+    if (pool == null || pool.length != 1) return false;
+    return pool[0] == 'rookie';
+  }
+
   factory Draft.fromJson(Map<String, dynamic> json) {
     final settingsJson = json['settings'] as Map<String, dynamic>?;
     return Draft(
