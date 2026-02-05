@@ -8,9 +8,18 @@ import '../../../drafts/domain/draft_order_entry.dart';
 import '../../../drafts/domain/draft_status.dart';
 import '../../domain/league.dart';
 
+/// Helper class for tracking team positions during shuffle animation
+class _ShuffleTeam {
+  final String name;
+  int currentSlot;
+
+  _ShuffleTeam({required this.name, required this.currentSlot});
+}
+
 class LeagueDraftsSection extends StatelessWidget {
   final int leagueId;
   final List<Draft> drafts;
+  final List<Roster> members;
   final bool isCommissioner;
   final VoidCallback onCreateDraft;
   final Future<void> Function(Draft draft) onStartDraft;
@@ -22,6 +31,7 @@ class LeagueDraftsSection extends StatelessWidget {
     super.key,
     required this.leagueId,
     required this.drafts,
+    required this.members,
     this.isCommissioner = false,
     required this.onCreateDraft,
     required this.onStartDraft,
@@ -63,6 +73,7 @@ class LeagueDraftsSection extends StatelessWidget {
                     key: ValueKey(draft.id),
                     leagueId: leagueId,
                     draft: draft,
+                    members: members,
                     isCommissioner: isCommissioner,
                     onStartDraft: onStartDraft,
                     onRandomizeDraftOrder: onRandomizeDraftOrder,
@@ -99,6 +110,7 @@ class LeagueDraftsSection extends StatelessWidget {
 class _DraftItem extends StatefulWidget {
   final int leagueId;
   final Draft draft;
+  final List<Roster> members;
   final bool isCommissioner;
   final Future<void> Function(Draft draft) onStartDraft;
   final Future<List<DraftOrderEntry>?> Function(Draft draft) onRandomizeDraftOrder;
@@ -109,6 +121,7 @@ class _DraftItem extends StatefulWidget {
     super.key,
     required this.leagueId,
     required this.draft,
+    required this.members,
     required this.isCommissioner,
     required this.onStartDraft,
     required this.onRandomizeDraftOrder,
@@ -123,7 +136,7 @@ class _DraftItem extends StatefulWidget {
 class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMixin {
   List<DraftOrderEntry>? _draftOrder;
   bool _isShuffling = false;
-  List<String> _shuffleDisplay = [];
+  List<_ShuffleTeam> _shuffleTeams = [];
   Timer? _shuffleTimer;
 
   @override
@@ -156,31 +169,52 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
       setState(() {
         _isShuffling = false;
         _draftOrder = order;
-        _shuffleDisplay = [];
+        _shuffleTeams = [];
       });
     }
   }
 
   void _startShuffleAnimation() {
     final random = Random();
-    final names = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6'];
 
-    _shuffleTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+    // Initialize teams from members list with actual usernames
+    final memberNames = widget.members
+        .where((m) => m.userId != null)
+        .map((m) => m.teamName ?? m.username)
+        .toList();
+
+    // Fallback if no members
+    if (memberNames.isEmpty) {
+      memberNames.addAll(['Team 1', 'Team 2', 'Team 3', 'Team 4']);
+    }
+
+    // Initialize each team with their starting slot
+    _shuffleTeams = List.generate(
+      memberNames.length,
+      (index) => _ShuffleTeam(name: memberNames[index], currentSlot: index),
+    );
+
+    _shuffleTimer = Timer.periodic(const Duration(milliseconds: 400), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
 
       setState(() {
-        // Show random shuffled order
-        final shuffled = List<String>.from(names);
-        for (int i = shuffled.length - 1; i > 0; i--) {
-          final j = random.nextInt(i + 1);
-          final temp = shuffled[i];
-          shuffled[i] = shuffled[j];
-          shuffled[j] = temp;
+        // Fisher-Yates shuffle - all teams get new positions simultaneously
+        if (_shuffleTeams.length >= 2) {
+          final slots = List.generate(_shuffleTeams.length, (i) => i);
+          for (int i = slots.length - 1; i > 0; i--) {
+            final j = random.nextInt(i + 1);
+            final temp = slots[i];
+            slots[i] = slots[j];
+            slots[j] = temp;
+          }
+          // Assign new slots to each team
+          for (int i = 0; i < _shuffleTeams.length; i++) {
+            _shuffleTeams[i].currentSlot = slots[i];
+          }
         }
-        _shuffleDisplay = shuffled.take(4).toList();
       });
     });
   }
@@ -272,7 +306,7 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
             ),
           ],
           // Shuffle animation display
-          if (_isShuffling && _shuffleDisplay.isNotEmpty) ...[
+          if (_isShuffling && _shuffleTeams.isNotEmpty) ...[
             const SizedBox(height: 8),
             _buildShuffleAnimation(),
           ],
@@ -305,9 +339,13 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
   }
 
   Widget _buildShuffleAnimation() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 100),
-      padding: const EdgeInsets.all(8),
+    const double rowHeight = 32.0;
+    const double slotLabelWidth = 36.0;
+    final teamCount = _shuffleTeams.length;
+    final containerHeight = rowHeight * teamCount;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
@@ -336,31 +374,88 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: _shuffleDisplay.asMap().entries.map((entry) {
-              return AnimatedOpacity(
-                duration: const Duration(milliseconds: 50),
-                opacity: 1.0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '${entry.key + 1}. ${entry.value}',
-                    style: const TextStyle(fontSize: 11),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: containerHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Slot position labels column
+                SizedBox(
+                  width: slotLabelWidth,
+                  child: Column(
+                    children: List.generate(teamCount, (index) {
+                      return SizedBox(
+                        height: rowHeight,
+                        child: Center(
+                          child: Text(
+                            _getOrdinal(index + 1),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                 ),
-              );
-            }).toList(),
+                // Animated team chips
+                Expanded(
+                  child: Stack(
+                    children: _shuffleTeams.map((team) {
+                      return AnimatedPositioned(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        top: team.currentSlot * rowHeight,
+                        left: 0,
+                        right: 0,
+                        height: rowHeight,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Text(
+                              team.name,
+                              style: const TextStyle(fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
+  }
+
+  String _getOrdinal(int number) {
+    if (number >= 11 && number <= 13) {
+      return '${number}th';
+    }
+    switch (number % 10) {
+      case 1:
+        return '${number}st';
+      case 2:
+        return '${number}nd';
+      case 3:
+        return '${number}rd';
+      default:
+        return '${number}th';
+    }
   }
 
   Widget _buildDraftOrderDisplay() {
