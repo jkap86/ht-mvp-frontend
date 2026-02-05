@@ -230,11 +230,17 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
                 border: Border.all(color: colorScheme.outlineVariant),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
-                children: [
-                  _buildHeader(colorScheme, availableSize),
-                  Expanded(child: _buildContent()),
-                  _buildResizeHandle(availableSize, colorScheme),
+              child: Overlay(
+                initialEntries: [
+                  OverlayEntry(
+                    builder: (_) => Column(
+                      children: [
+                        _buildHeader(colorScheme, availableSize),
+                        Expanded(child: _buildContent()),
+                        _buildResizeHandle(availableSize, colorScheme),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),

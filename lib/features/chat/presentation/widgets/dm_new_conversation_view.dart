@@ -175,7 +175,9 @@ class _DmNewConversationViewState extends ConsumerState<DmNewConversationView> {
             ),
             onChanged: (query) {
               _searchDebounce?.cancel();
-              _searchDebounce = Timer(const Duration(milliseconds: 300), () => _search(query));
+              _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+                _search(query);
+              });
             },
           ),
         ),
