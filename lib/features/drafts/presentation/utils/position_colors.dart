@@ -41,6 +41,8 @@ Color getPositionColor(String position) {
     case 'BN':
     case 'BENCH':
       return AppTheme.positionFLEX;      // Blue-grey
+    case 'PICK':
+      return AppTheme.positionPick;      // Indigo (draft pick asset)
     default:
       return AppTheme.positionFLEX;      // Blue-grey for unknown
   }

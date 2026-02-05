@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 class QueueHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
 
+  static const double _preferredHeight = 120.0;
+  static const double _minHeight = 50.0;
+
   QueueHeaderDelegate({required this.child});
 
   @override
@@ -14,17 +17,14 @@ class QueueHeaderDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return child;
+    return SizedBox.expand(child: child);
   }
 
-  // Queue height: ~120px when populated (header row + card row)
-  // ~50px when empty (compact single row)
-  // Use 120 to accommodate the larger state
   @override
-  double get maxExtent => 120;
+  double get maxExtent => _preferredHeight;
 
   @override
-  double get minExtent => 120;
+  double get minExtent => _minHeight;
 
   @override
   bool shouldRebuild(covariant QueueHeaderDelegate oldDelegate) {

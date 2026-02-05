@@ -1,6 +1,7 @@
 import '../../../players/domain/player.dart';
 
-/// Standard fantasy football positions for filtering.
+/// Standard fantasy football positions for filtering (without PICK).
+/// PICK is added dynamically by PlayerSearchFilterPanel when showPickFilter is true.
 const List<String> standardPositions = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
 
 /// Filters players by drafted status, position, and search query.
@@ -25,8 +26,10 @@ List<Player> filterAvailablePlayers(
     // Exclude already drafted players
     if (draftedIds.contains(p.id)) return false;
 
-    // Filter by position if selected
-    if (selectedPosition != null && p.primaryPosition != selectedPosition) {
+    // Filter by position if selected (ignore 'PLAYERS' as it means all positions)
+    if (selectedPosition != null &&
+        selectedPosition != 'PLAYERS' &&
+        p.primaryPosition != selectedPosition) {
       return false;
     }
 

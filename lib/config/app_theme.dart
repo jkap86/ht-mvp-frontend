@@ -40,6 +40,7 @@ class AppTheme {
   static const Color positionIdpFlex = Color(0xFF795548);   // Brown
   static const Color positionIR = Color(0xFF9E9E9E);        // Grey
   static const Color positionTaxi = Color(0xFFFFB300);      // Amber/Gold
+  static const Color positionPick = Color(0xFF3F51B5);      // Indigo (draft pick asset)
 
   // Injury status colors
   static const Color injuryOut = Color(0xFFDA3633);

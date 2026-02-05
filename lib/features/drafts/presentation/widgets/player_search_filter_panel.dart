@@ -23,6 +23,10 @@ class PlayerSearchFilterPanel extends StatelessWidget {
   /// Hint text to display in the search field.
   final String hintText;
 
+  /// Whether to show the PICK filter chip.
+  /// Only true for vet drafts with includeRookiePicks enabled AND available pick assets.
+  final bool showPickFilter;
+
   const PlayerSearchFilterPanel({
     super.key,
     required this.searchQuery,
@@ -30,10 +34,16 @@ class PlayerSearchFilterPanel extends StatelessWidget {
     required this.onSearchChanged,
     required this.onPositionChanged,
     this.hintText = 'Search players...',
+    this.showPickFilter = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Build positions list - add PICK only when showPickFilter is true
+    final positions = showPickFilter
+        ? [...standardPositions, 'PICK']
+        : standardPositions;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Column(
@@ -60,8 +70,10 @@ class PlayerSearchFilterPanel extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               children: [
                 _buildFilterChip(context, 'All', null),
-                ...standardPositions
-                    .map((pos) => _buildFilterChip(context, pos, pos)),
+                // Show 'Players' filter only when PICK filter is available
+                if (showPickFilter)
+                  _buildFilterChip(context, 'Players', 'PLAYERS'),
+                ...positions.map((pos) => _buildFilterChip(context, pos, pos)),
               ],
             ),
           ),

@@ -41,9 +41,23 @@ class DraftPickAsset {
   /// Whether this pick has been traded away from its original owner
   bool get isTraded => originalRosterId != currentOwnerRosterId;
 
-  /// Display name for UI (e.g., "2025 Rd 1" or "2025 Rd 1 (Team A's)")
+  /// Display name for UI (e.g., "2025 1.03" or "2025 1.03 (Team A's)")
   String get displayName {
-    final base = '$season Rd $round';
+    // For future picks without known position, show just round
+    if (originalPickPosition == null) {
+      final base = '$season Rd $round';
+      if (isTraded && originalTeamName != null) {
+        return "$base ($originalTeamName's)";
+      }
+      if (isTraded && originalUsername != null) {
+        return "$base ($originalUsername's)";
+      }
+      return base;
+    }
+
+    // Format: "2025 1.03" where 1 is round, 03 is pick position
+    final pickNum = originalPickPosition.toString().padLeft(2, '0');
+    final base = '$season $round.$pickNum';
     if (isTraded && originalTeamName != null) {
       return "$base ($originalTeamName's)";
     }
