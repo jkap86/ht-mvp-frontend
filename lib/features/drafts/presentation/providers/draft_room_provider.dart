@@ -48,6 +48,12 @@ class DraftRoomState {
   final AuctionSettings? auctionSettings;
   // Pick asset tracking for traded picks
   final List<DraftPickAsset> pickAssets;
+  // Available pick assets for vet drafts with includeRookiePicks enabled
+  final List<DraftPickAsset> availablePickAssets;
+  // Whether this draft includes rookie picks (vet-only draft setting)
+  final bool includeRookiePicks;
+  // The season for rookie picks
+  final int? rookiePicksSeason;
   // Grid display preference: true = teams on X-axis (columns), false = teams on Y-axis (rows)
   final bool teamsOnXAxis;
   // Commissioner status for start draft button
@@ -73,6 +79,9 @@ class DraftRoomState {
     this.globalCapReached = false,
     this.auctionSettings,
     this.pickAssets = const [],
+    this.availablePickAssets = const [],
+    this.includeRookiePicks = false,
+    this.rookiePicksSeason,
     this.teamsOnXAxis = true,
     this.isCommissioner = false,
   });
@@ -174,6 +183,9 @@ class DraftRoomState {
     bool? globalCapReached,
     AuctionSettings? auctionSettings,
     List<DraftPickAsset>? pickAssets,
+    List<DraftPickAsset>? availablePickAssets,
+    bool? includeRookiePicks,
+    int? rookiePicksSeason,
     bool? teamsOnXAxis,
     bool? isCommissioner,
   }) {
@@ -201,6 +213,9 @@ class DraftRoomState {
       globalCapReached: globalCapReached ?? this.globalCapReached,
       auctionSettings: auctionSettings ?? this.auctionSettings,
       pickAssets: pickAssets ?? this.pickAssets,
+      availablePickAssets: availablePickAssets ?? this.availablePickAssets,
+      includeRookiePicks: includeRookiePicks ?? this.includeRookiePicks,
+      rookiePicksSeason: rookiePicksSeason ?? this.rookiePicksSeason,
       teamsOnXAxis: teamsOnXAxis ?? this.teamsOnXAxis,
       isCommissioner: isCommissioner ?? this.isCommissioner,
     );
@@ -427,6 +442,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       // Extract playerPool from draft settings for filtering players
       final playerPool = _extractPlayerPool(draft.rawSettings);
 
+      // Extract includeRookiePicks settings
+      final includeRookiePicks = draft.rawSettings?['includeRookiePicks'] as bool? ?? false;
+      final rookiePicksSeason = draft.rawSettings?['rookiePicksSeason'] as int?;
+
       final results = await Future.wait<dynamic>([
         _playerRepo.getPlayers(playerPool: playerPool).catchError((e) => <Player>[]),
         _draftRepo.getDraftOrder(leagueId, draftId).catchError((e) => <Map<String, dynamic>>[]),
@@ -451,15 +470,36 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         draftOrder: draftOrder,
         picks: picks,
         pickAssets: pickAssets,
+        includeRookiePicks: includeRookiePicks,
+        rookiePicksSeason: rookiePicksSeason,
         isLoading: false,
       );
 
       if (mounted && draft.draftType == DraftType.auction) {
         loadAuctionData();
       }
+
+      // Load available pick assets for vet drafts with includeRookiePicks enabled
+      if (mounted && includeRookiePicks) {
+        loadAvailablePickAssets();
+      }
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(error: e.toString(), isLoading: false);
+    }
+  }
+
+  /// Load available pick assets for vet drafts with rookie picks enabled
+  Future<void> loadAvailablePickAssets() async {
+    if (!state.includeRookiePicks) return;
+    try {
+      final assets = await _draftRepo.getAvailablePickAssets(leagueId, draftId);
+      if (!mounted) return;
+      // Sort by round (earlier rounds first)
+      assets.sort((a, b) => a.sortKey.compareTo(b.sortKey));
+      state = state.copyWith(availablePickAssets: assets);
+    } catch (e) {
+      debugPrint('Failed to load available pick assets: $e');
     }
   }
 
@@ -516,6 +556,21 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       await _draftRepo.makePick(leagueId, draftId, playerId);
       // Resync to ensure UI is updated even if socket event was missed
       if (mounted) await _refreshDraftState();
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  /// Make a pick using a draft pick asset instead of a player
+  Future<String?> makePickAssetSelection(int pickAssetId) async {
+    try {
+      await _draftRepo.makePickAssetSelection(leagueId, draftId, pickAssetId);
+      // Resync state and reload available pick assets
+      if (mounted) {
+        await _refreshDraftState();
+        await loadAvailablePickAssets();
+      }
       return null;
     } catch (e) {
       return e.toString();

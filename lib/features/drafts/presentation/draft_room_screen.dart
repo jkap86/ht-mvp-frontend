@@ -35,6 +35,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
   bool _isMaxBidSubmitting = false;
   bool _isStartingDraft = false;
   bool _isConfirmingOrder = false;
+  bool _isPickAssetSubmitting = false;
 
   DraftRoomKey get _providerKey => (leagueId: widget.leagueId, draftId: widget.draftId);
   DraftQueueKey get _queueKey => (leagueId: widget.leagueId, draftId: widget.draftId);
@@ -137,6 +138,23 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       }
     } finally {
       _isConfirmingOrder = false; // Always reset flag
+      if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
+    }
+  }
+
+  Future<void> _makePickAssetSelection(int pickAssetId) async {
+    if (_isPickAssetSubmitting) return; // Prevent double-tap
+    setState(() => _isPickAssetSubmitting = true);
+    try {
+      final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+      final error = await notifier.makePickAssetSelection(pickAssetId);
+      if (error != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
+        );
+      }
+    } finally {
+      _isPickAssetSubmitting = false; // Always reset flag
       if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
     }
   }
@@ -325,6 +343,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         isStartingDraft: _isStartingDraft,
         onConfirmOrder: _confirmOrder,
         isConfirmingOrder: _isConfirmingOrder,
+        onMakePickAssetSelection: _makePickAssetSelection,
       ),
     );
   }
@@ -345,6 +364,7 @@ class _DraftRoomBody extends ConsumerWidget {
   final bool isStartingDraft;
   final Future<void> Function() onConfirmOrder;
   final bool isConfirmingOrder;
+  final Future<void> Function(int) onMakePickAssetSelection;
 
   const _DraftRoomBody({
     required this.providerKey,
@@ -360,6 +380,7 @@ class _DraftRoomBody extends ConsumerWidget {
     required this.isStartingDraft,
     required this.onConfirmOrder,
     required this.isConfirmingOrder,
+    required this.onMakePickAssetSelection,
   });
 
   @override
@@ -512,6 +533,7 @@ class _DraftRoomBody extends ConsumerWidget {
           onAddToQueue: onAddToQueue,
           onNominate: onNominate,
           onSetMaxBid: onSetMaxBid,
+          onMakePickAssetSelection: onMakePickAssetSelection,
         ),
       ],
     );

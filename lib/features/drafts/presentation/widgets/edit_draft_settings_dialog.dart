@@ -20,6 +20,8 @@ class EditDraftSettingsDialog extends StatefulWidget {
     int? pickTimeSeconds,
     Map<String, dynamic>? auctionSettings,
     List<String>? playerPool,
+    bool? includeRookiePicks,
+    int? rookiePicksSeason,
   }) onSave;
 
   const EditDraftSettingsDialog({
@@ -40,6 +42,8 @@ class EditDraftSettingsDialog extends StatefulWidget {
       int? pickTimeSeconds,
       Map<String, dynamic>? auctionSettings,
       List<String>? playerPool,
+      bool? includeRookiePicks,
+      int? rookiePicksSeason,
     }) onSave,
   }) {
     return showDialog(
@@ -81,6 +85,10 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
   // Player pool
   late Set<String> _selectedPlayerPool;
 
+  // Rookie draft picks settings
+  late bool _includeRookiePicks;
+  late TextEditingController _rookiePicksSeasonController;
+
   bool get _isNotStarted => widget.draft.status == DraftStatus.notStarted;
   bool get _isPaused => widget.draft.status == DraftStatus.paused;
   bool get _canEditStructural => _isNotStarted;
@@ -88,6 +96,7 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
   bool get _isAuction => _draftType == 'auction';
   bool get _isSlowAuction => _isAuction && _auctionMode == 'slow';
   bool get _isDevyLeague => widget.leagueMode == 'devy';
+  bool get _isVetOnlyDraft => _selectedPlayerPool.length == 1 && _selectedPlayerPool.contains('veteran');
 
   @override
   void initState() {
@@ -131,6 +140,12 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
     _selectedPlayerPool = Set<String>.from(
       rawPlayerPool is List ? rawPlayerPool.cast<String>() : ['veteran', 'rookie'],
     );
+
+    // Rookie draft picks settings - read from rawSettings
+    _includeRookiePicks = widget.draft.rawSettings?['includeRookiePicks'] ?? false;
+    final currentYear = DateTime.now().year;
+    final rookiePicksSeason = widget.draft.rawSettings?['rookiePicksSeason'] ?? currentYear;
+    _rookiePicksSeasonController = TextEditingController(text: rookiePicksSeason.toString());
   }
 
   @override
@@ -144,6 +159,7 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
     _maxActivePerTeamController.dispose();
     _maxActiveGlobalController.dispose();
     _dailyNominationLimitController.dispose();
+    _rookiePicksSeasonController.dispose();
     super.dispose();
   }
 
@@ -256,6 +272,8 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
       }
 
       // Check for player pool changes
+      bool? includeRookiePicks;
+      int? rookiePicksSeason;
       if (_canEditStructural) {
         final rawPlayerPool = widget.draft.rawSettings?['playerPool'];
         final originalPool = Set<String>.from(
@@ -264,6 +282,25 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
         if (!_setEquals(_selectedPlayerPool, originalPool)) {
           playerPool = _selectedPlayerPool.toList();
         }
+
+        // Check for rookie picks settings changes (only for vet-only drafts)
+        final originalIncludeRookiePicks = widget.draft.rawSettings?['includeRookiePicks'] ?? false;
+        final originalRookiePicksSeason = widget.draft.rawSettings?['rookiePicksSeason'];
+
+        if (_includeRookiePicks != originalIncludeRookiePicks) {
+          includeRookiePicks = _includeRookiePicks;
+        }
+
+        if (_includeRookiePicks && _rookiePicksSeasonController.text.isNotEmpty) {
+          final newSeason = int.tryParse(_rookiePicksSeasonController.text);
+          if (newSeason != null && newSeason != originalRookiePicksSeason) {
+            rookiePicksSeason = newSeason;
+          }
+          // Also set season if includeRookiePicks is being enabled for the first time
+          if (includeRookiePicks == true && rookiePicksSeason == null) {
+            rookiePicksSeason = newSeason;
+          }
+        }
       }
 
       // Only call onSave if there are changes
@@ -271,13 +308,17 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
           rounds != null ||
           pickTimeSeconds != null ||
           auctionSettings != null ||
-          playerPool != null) {
+          playerPool != null ||
+          includeRookiePicks != null ||
+          rookiePicksSeason != null) {
         await widget.onSave(
           draftType: draftType,
           rounds: rounds,
           pickTimeSeconds: pickTimeSeconds,
           auctionSettings: auctionSettings,
           playerPool: playerPool,
+          includeRookiePicks: includeRookiePicks,
+          rookiePicksSeason: rookiePicksSeason,
         );
       }
 
@@ -415,6 +456,70 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
           'College',
           _isDevyLeague ? 'College players' : 'Only available in Devy leagues',
         ),
+        // Rookie draft picks option (only for vet-only drafts)
+        if (_isVetOnlyDraft) ...[
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
+          _buildRookiePicksSettings(theme),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildRookiePicksSettings(ThemeData theme) {
+    final currentYear = DateTime.now().year;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Rookie Draft Picks', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Text(
+          'Include rookie draft picks as draftable items',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withAlpha(153),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          value: _includeRookiePicks,
+          onChanged: (value) => setState(() => _includeRookiePicks = value),
+          title: const Text(
+            'Include Rookie Picks',
+            style: TextStyle(fontSize: 13),
+          ),
+          subtitle: const Text(
+            'Draft pick assets alongside veteran players',
+            style: TextStyle(fontSize: 11),
+          ),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+        if (_includeRookiePicks) ...[
+          const SizedBox(height: 8),
+          DropdownButtonFormField<int>(
+            value: int.tryParse(_rookiePicksSeasonController.text) ?? currentYear,
+            decoration: const InputDecoration(
+              labelText: 'Rookie Draft Season',
+              helperText: 'Which year\'s rookie picks to include',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: [
+              for (int year = currentYear; year <= currentYear + 2; year++)
+                DropdownMenuItem(
+                  value: year,
+                  child: Text('$year Rookie Draft'),
+                ),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => _rookiePicksSeasonController.text = value.toString());
+              }
+            },
+          ),
+        ],
       ],
     );
   }

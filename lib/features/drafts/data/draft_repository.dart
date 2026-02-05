@@ -7,6 +7,7 @@ import '../domain/auction_lot.dart';
 import '../domain/auction_state.dart';
 import '../domain/bid_history_entry.dart';
 import '../domain/draft_order_entry.dart';
+import '../domain/draft_pick_asset.dart';
 
 final draftRepositoryProvider = Provider<DraftRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
@@ -195,6 +196,8 @@ class DraftRepository {
     List<String>? playerPool,
     DateTime? scheduledStart,
     bool clearScheduledStart = false,
+    bool? includeRookiePicks,
+    int? rookiePicksSeason,
   }) async {
     final body = <String, dynamic>{};
     if (draftType != null) body['draft_type'] = draftType;
@@ -207,11 +210,45 @@ class DraftRepository {
     } else if (scheduledStart != null) {
       body['scheduled_start'] = scheduledStart.toUtc().toIso8601String();
     }
+    if (includeRookiePicks != null) body['include_rookie_picks'] = includeRookiePicks;
+    if (rookiePicksSeason != null) body['rookie_picks_season'] = rookiePicksSeason;
 
     final response = await _apiClient.patch(
       '/leagues/$leagueId/drafts/$draftId/settings',
       body: body,
     );
     return Draft.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Get available pick assets for a vet draft with rookie picks enabled
+  Future<List<DraftPickAsset>> getAvailablePickAssets(
+    int leagueId,
+    int draftId,
+  ) async {
+    final response = await _apiClient.get(
+      '/leagues/$leagueId/drafts/$draftId/available-pick-assets',
+    );
+    final assets = (response['pick_assets'] as List?) ?? [];
+    return assets
+        .map((json) => DraftPickAsset.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Make a pick using a draft pick asset instead of a player
+  Future<Map<String, dynamic>> makePickAssetSelection(
+    int leagueId,
+    int draftId,
+    int pickAssetId,
+  ) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/drafts/$draftId/actions',
+      body: {
+        'action': 'pick',
+        'draftPickAssetId': pickAssetId,
+      },
+    );
+    final pickData = response['data']?['pick'] as Map<String, dynamic>?;
+    if (pickData == null) throw Exception('Invalid response: missing pick data');
+    return pickData;
   }
 }

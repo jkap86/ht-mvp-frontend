@@ -7,6 +7,7 @@ import '../providers/draft_queue_provider.dart';
 import '../utils/player_filtering.dart';
 import '../utils/position_colors.dart';
 import 'draft_queue_widget.dart';
+import 'pick_asset_tile.dart';
 import 'player_search_filter_panel.dart';
 import 'queue_header_delegate.dart';
 
@@ -25,6 +26,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
   final ValueChanged<String?> onPositionChanged;
   final Future<void> Function(int) onMakePick;
   final Future<void> Function(int) onAddToQueue;
+  final Future<void> Function(int)? onMakePickAssetSelection;
 
   const SnakeLinearDrawerContent({
     super.key,
@@ -40,6 +42,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
     required this.onPositionChanged,
     required this.onMakePick,
     required this.onAddToQueue,
+    this.onMakePickAssetSelection,
   });
 
   @override
@@ -58,6 +61,12 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
     );
     final queuedPlayerIds = ref.watch(
       draftQueueProvider(queueKey).select((s) => s.queuedPlayerIds),
+    );
+    final includeRookiePicks = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.includeRookiePicks),
+    );
+    final availablePickAssets = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.availablePickAssets),
     );
 
     final availablePlayers = filterAvailablePlayers(
@@ -82,6 +91,30 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
             ),
           ),
         ),
+
+        // Rookie Draft Picks section (when enabled and assets available)
+        if (includeRookiePicks && availablePickAssets.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: PickAssetsSectionHeader(count: availablePickAssets.length),
+          ),
+          SliverList.builder(
+            itemCount: availablePickAssets.length,
+            itemBuilder: (context, index) {
+              final pickAsset = availablePickAssets[index];
+              return PickAssetTile(
+                pickAsset: pickAsset,
+                isMyTurn: isMyTurn,
+                isDraftInProgress: isDraftInProgress,
+                onDraft: onMakePickAssetSelection != null
+                    ? () => onMakePickAssetSelection!(pickAsset.id)
+                    : null,
+              );
+            },
+          ),
+          const SliverToBoxAdapter(
+            child: Divider(height: 1),
+          ),
+        ],
 
         // Search bar with position filter
         SliverToBoxAdapter(

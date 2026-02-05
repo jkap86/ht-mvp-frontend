@@ -19,6 +19,9 @@ class DraftPickAsset {
   final String? originalUsername;
   final String? currentOwnerUsername;
 
+  // Indicates if this pick asset has been drafted in a vet draft
+  final bool isDraftedInVetDraft;
+
   DraftPickAsset({
     required this.id,
     required this.leagueId,
@@ -32,6 +35,7 @@ class DraftPickAsset {
     this.currentOwnerTeamName,
     this.originalUsername,
     this.currentOwnerUsername,
+    this.isDraftedInVetDraft = false,
   });
 
   /// Whether this pick has been traded away from its original owner
@@ -64,6 +68,10 @@ class DraftPickAsset {
     return 'Traded pick';
   }
 
+  /// Sort key for ordering pick assets by value (lower is better/earlier)
+  /// Format: season * 100 + round (e.g., 2025 Rd 1 = 202501, 2025 Rd 2 = 202502)
+  int get sortKey => season * 100 + round;
+
   factory DraftPickAsset.fromJson(Map<String, dynamic> json) {
     return DraftPickAsset(
       id: json['id'] as int? ?? 0,
@@ -85,6 +93,8 @@ class DraftPickAsset {
           json['originalUsername'] as String?,
       currentOwnerUsername: json['current_owner_username'] as String? ??
           json['currentOwnerUsername'] as String?,
+      isDraftedInVetDraft: json['is_drafted_in_vet_draft'] as bool? ??
+          json['isDraftedInVetDraft'] as bool? ?? false,
     );
   }
 
@@ -102,6 +112,7 @@ class DraftPickAsset {
       'current_owner_team_name': currentOwnerTeamName,
       'original_username': originalUsername,
       'current_owner_username': currentOwnerUsername,
+      'is_drafted_in_vet_draft': isDraftedInVetDraft,
     };
   }
 
@@ -118,6 +129,7 @@ class DraftPickAsset {
     String? currentOwnerTeamName,
     String? originalUsername,
     String? currentOwnerUsername,
+    bool? isDraftedInVetDraft,
   }) {
     return DraftPickAsset(
       id: id ?? this.id,
@@ -132,6 +144,7 @@ class DraftPickAsset {
       currentOwnerTeamName: currentOwnerTeamName ?? this.currentOwnerTeamName,
       originalUsername: originalUsername ?? this.originalUsername,
       currentOwnerUsername: currentOwnerUsername ?? this.currentOwnerUsername,
+      isDraftedInVetDraft: isDraftedInVetDraft ?? this.isDraftedInVetDraft,
     );
   }
 

@@ -141,6 +141,8 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         int? pickTimeSeconds,
         Map<String, dynamic>? auctionSettings,
         List<String>? playerPool,
+        bool? includeRookiePicks,
+        int? rookiePicksSeason,
       }) async {
         final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
         await notifier.updateDraftSettings(
@@ -150,6 +152,8 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           pickTimeSeconds: pickTimeSeconds,
           auctionSettings: auctionSettings,
           playerPool: playerPool,
+          includeRookiePicks: includeRookiePicks,
+          rookiePicksSeason: rookiePicksSeason,
         );
       },
     );

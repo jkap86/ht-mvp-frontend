@@ -23,6 +23,7 @@ class DraftBottomDrawer extends ConsumerStatefulWidget {
   final Future<void> Function(int playerId) onAddToQueue;
   final Future<void> Function(int playerId)? onNominate;
   final Future<void> Function(int lotId, int maxBid)? onSetMaxBid;
+  final Future<void> Function(int pickAssetId)? onMakePickAssetSelection;
 
   const DraftBottomDrawer({
     super.key,
@@ -35,6 +36,7 @@ class DraftBottomDrawer extends ConsumerStatefulWidget {
     required this.onAddToQueue,
     this.onNominate,
     this.onSetMaxBid,
+    this.onMakePickAssetSelection,
   });
 
   @override
@@ -181,6 +183,7 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
                               setState(() => _selectedPosition = pos),
                           onMakePick: widget.onMakePick,
                           onAddToQueue: widget.onAddToQueue,
+                          onMakePickAssetSelection: widget.onMakePickAssetSelection,
                         ),
                 ),
               ],
