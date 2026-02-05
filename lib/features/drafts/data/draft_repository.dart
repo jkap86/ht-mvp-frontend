@@ -95,8 +95,23 @@ class DraftRepository {
     return queueData;
   }
 
+  Future<Map<String, dynamic>> addPickAssetToQueue(
+      int leagueId, int draftId, int pickAssetId) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/drafts/$draftId/queue',
+      body: {'pick_asset_id': pickAssetId},
+    );
+    final queueData = response as Map<String, dynamic>?;
+    if (queueData == null) throw Exception('Invalid response: missing queue data');
+    return queueData;
+  }
+
   Future<void> removeFromQueue(int leagueId, int draftId, int playerId) async {
     await _apiClient.delete('/leagues/$leagueId/drafts/$draftId/queue/$playerId');
+  }
+
+  Future<void> removePickAssetFromQueue(int leagueId, int draftId, int pickAssetId) async {
+    await _apiClient.delete('/leagues/$leagueId/drafts/$draftId/queue/pick-asset/$pickAssetId');
   }
 
   Future<List<Map<String, dynamic>>> reorderQueue(
@@ -104,6 +119,17 @@ class DraftRepository {
     final response = await _apiClient.put(
       '/leagues/$leagueId/drafts/$draftId/queue',
       body: {'player_ids': playerIds},
+    );
+    final reordered = (response as List?) ?? [];
+    // Safe cast: filter out any non-Map elements to prevent runtime crashes
+    return reordered.whereType<Map<String, dynamic>>().toList();
+  }
+
+  Future<List<Map<String, dynamic>>> reorderQueueByEntryIds(
+      int leagueId, int draftId, List<int> entryIds) async {
+    final response = await _apiClient.put(
+      '/leagues/$leagueId/drafts/$draftId/queue',
+      body: {'queue_entry_ids': entryIds},
     );
     final reordered = (response as List?) ?? [];
     // Safe cast: filter out any non-Map elements to prevent runtime crashes

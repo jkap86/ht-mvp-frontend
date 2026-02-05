@@ -24,6 +24,7 @@ class DraftBottomDrawer extends ConsumerStatefulWidget {
   final Future<void> Function(int playerId)? onNominate;
   final Future<void> Function(int lotId, int maxBid)? onSetMaxBid;
   final Future<void> Function(int pickAssetId)? onMakePickAssetSelection;
+  final Future<void> Function(int pickAssetId)? onAddPickAssetToQueue;
 
   const DraftBottomDrawer({
     super.key,
@@ -37,6 +38,7 @@ class DraftBottomDrawer extends ConsumerStatefulWidget {
     this.onNominate,
     this.onSetMaxBid,
     this.onMakePickAssetSelection,
+    this.onAddPickAssetToQueue,
   });
 
   @override
@@ -109,6 +111,10 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
     final draftedPlayerIds = ref.watch(
       draftRoomProvider(widget.providerKey).select((s) => s.draftedPlayerIds),
     );
+    // Get draftedPickAssetIds to pass to queue widget
+    final draftedPickAssetIds = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.draftedPickAssetIds),
+    );
 
     // For fast auction, we need the full state
     final draftState = ref.watch(draftRoomProvider(widget.providerKey));
@@ -174,6 +180,7 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
                           leagueId: widget.leagueId,
                           draftId: widget.draftId,
                           draftedPlayerIds: draftedPlayerIds,
+                          draftedPickAssetIds: draftedPickAssetIds,
                           scrollController: scrollController,
                           searchQuery: _searchQuery,
                           selectedPosition: _selectedPosition,
@@ -184,6 +191,7 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
                           onMakePick: widget.onMakePick,
                           onAddToQueue: widget.onAddToQueue,
                           onMakePickAssetSelection: widget.onMakePickAssetSelection,
+                          onAddPickAssetToQueue: widget.onAddPickAssetToQueue,
                         ),
                 ),
               ],

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../players/domain/player.dart';
+import '../../domain/draft_pick_asset.dart';
 import '../providers/draft_room_provider.dart';
 import '../providers/draft_queue_provider.dart';
 import '../utils/player_filtering.dart';
 import '../utils/position_colors.dart';
 import 'draft_queue_widget.dart';
-import 'pick_asset_tile.dart';
 import 'player_search_filter_panel.dart';
 import 'queue_header_delegate.dart';
 
@@ -19,6 +19,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
   final int leagueId;
   final int draftId;
   final Set<int> draftedPlayerIds;
+  final Set<int> draftedPickAssetIds;
   final ScrollController scrollController;
   final String searchQuery;
   final String? selectedPosition;
@@ -27,6 +28,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
   final Future<void> Function(int) onMakePick;
   final Future<void> Function(int) onAddToQueue;
   final Future<void> Function(int)? onMakePickAssetSelection;
+  final Future<void> Function(int)? onAddPickAssetToQueue;
 
   const SnakeLinearDrawerContent({
     super.key,
@@ -35,6 +37,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
     required this.leagueId,
     required this.draftId,
     required this.draftedPlayerIds,
+    this.draftedPickAssetIds = const {},
     required this.scrollController,
     required this.searchQuery,
     required this.selectedPosition,
@@ -43,6 +46,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
     required this.onMakePick,
     required this.onAddToQueue,
     this.onMakePickAssetSelection,
+    this.onAddPickAssetToQueue,
   });
 
   @override
@@ -62,6 +66,9 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
     final queuedPlayerIds = ref.watch(
       draftQueueProvider(queueKey).select((s) => s.queuedPlayerIds),
     );
+    final queuedPickAssetIds = ref.watch(
+      draftQueueProvider(queueKey).select((s) => s.queuedPickAssetIds),
+    );
     final includeRookiePicks = ref.watch(
       draftRoomProvider(providerKey).select((s) => s.includeRookiePicks),
     );
@@ -69,13 +76,36 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
       draftRoomProvider(providerKey).select((s) => s.availablePickAssets),
     );
 
-    final availablePlayers = filterAvailablePlayers(
-      players,
-      draftedIds: draftedPlayerIds,
-      selectedPosition: selectedPosition,
-      searchQuery: searchQuery,
-    );
     final isDraftInProgress = draft?.status.isActive ?? false;
+
+    // Build unified list based on filter selection
+    final showPicks = includeRookiePicks &&
+        availablePickAssets.isNotEmpty &&
+        (selectedPosition == null || selectedPosition == 'PICK');
+    final showPlayers = selectedPosition != 'PICK';
+
+    // Filter players (only when not filtering for PICK)
+    final availablePlayers = showPlayers
+        ? filterAvailablePlayers(
+            players,
+            draftedIds: draftedPlayerIds,
+            selectedPosition: selectedPosition,
+            searchQuery: searchQuery,
+          )
+        : <Player>[];
+
+    // Filter picks by search query if applicable
+    final filteredPickAssets = showPicks
+        ? _filterPickAssets(availablePickAssets, searchQuery)
+        : <DraftPickAsset>[];
+
+    // Build unified list items
+    final unifiedItems = <_UnifiedListItem>[
+      // Add picks first (when showing)
+      ...filteredPickAssets.map((p) => _UnifiedListItem.pick(p)),
+      // Add players after picks
+      ...availablePlayers.map((p) => _UnifiedListItem.player(p)),
+    ];
 
     return CustomScrollView(
       controller: scrollController,
@@ -88,33 +118,10 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
               leagueId: leagueId,
               draftId: draftId,
               draftedPlayerIds: draftedPlayerIds,
+              draftedPickAssetIds: draftedPickAssetIds,
             ),
           ),
         ),
-
-        // Rookie Draft Picks section (when enabled and assets available)
-        if (includeRookiePicks && availablePickAssets.isNotEmpty) ...[
-          SliverToBoxAdapter(
-            child: PickAssetsSectionHeader(count: availablePickAssets.length),
-          ),
-          SliverList.builder(
-            itemCount: availablePickAssets.length,
-            itemBuilder: (context, index) {
-              final pickAsset = availablePickAssets[index];
-              return PickAssetTile(
-                pickAsset: pickAsset,
-                isMyTurn: isMyTurn,
-                isDraftInProgress: isDraftInProgress,
-                onDraft: onMakePickAssetSelection != null
-                    ? () => onMakePickAssetSelection!(pickAsset.id)
-                    : null,
-              );
-            },
-          ),
-          const SliverToBoxAdapter(
-            child: Divider(height: 1),
-          ),
-        ],
 
         // Search bar with position filter
         SliverToBoxAdapter(
@@ -123,21 +130,122 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
             selectedPosition: selectedPosition,
             onSearchChanged: onSearchChanged,
             onPositionChanged: onPositionChanged,
+            showPickFilter: includeRookiePicks && availablePickAssets.isNotEmpty,
           ),
         ),
 
-        // Available players list
+        // Unified list of picks and players
         SliverList.builder(
-          itemCount: availablePlayers.length,
+          itemCount: unifiedItems.length,
           itemBuilder: (context, index) {
-            final player = availablePlayers[index];
-            return _buildPlayerTile(
-              player,
-              isDraftInProgress: isDraftInProgress,
-              isMyTurn: isMyTurn,
-              isInQueue: queuedPlayerIds.contains(player.id),
-            );
+            final item = unifiedItems[index];
+            if (item.pickAsset != null) {
+              return _buildPickAssetTile(
+                item.pickAsset!,
+                isDraftInProgress: isDraftInProgress,
+                isMyTurn: isMyTurn,
+                isInQueue: queuedPickAssetIds.contains(item.pickAsset!.id),
+              );
+            } else {
+              return _buildPlayerTile(
+                item.player!,
+                isDraftInProgress: isDraftInProgress,
+                isMyTurn: isMyTurn,
+                isInQueue: queuedPlayerIds.contains(item.player!.id),
+              );
+            }
           },
+        ),
+      ],
+    );
+  }
+
+  /// Filter pick assets by search query
+  List<DraftPickAsset> _filterPickAssets(
+    List<DraftPickAsset> picks,
+    String searchQuery,
+  ) {
+    if (searchQuery.isEmpty) return picks;
+    final query = searchQuery.toLowerCase();
+    return picks.where((p) {
+      // Match against display name, season, round, or team name
+      return p.displayName.toLowerCase().contains(query) ||
+          p.season.toString().contains(query) ||
+          (p.originalTeamName?.toLowerCase().contains(query) ?? false) ||
+          (p.originalUsername?.toLowerCase().contains(query) ?? false) ||
+          'pick'.contains(query);
+    }).toList();
+  }
+
+  Widget _buildPickAssetTile(
+    DraftPickAsset pickAsset, {
+    required bool isDraftInProgress,
+    required bool isMyTurn,
+    required bool isInQueue,
+  }) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: getPositionColor('PICK'),
+        child: const Icon(
+          Icons.how_to_vote_outlined,
+          color: Colors.white,
+          size: 20,
+        ),
+      ),
+      title: Text(pickAsset.displayName),
+      subtitle: Text(
+        pickAsset.isTraded
+            ? pickAsset.originDescription ?? 'Traded pick'
+            : 'Rookie Draft Pick',
+      ),
+      trailing: _buildPickTrailingButtons(
+        pickAsset,
+        isDraftInProgress: isDraftInProgress,
+        isMyTurn: isMyTurn,
+        isInQueue: isInQueue,
+      ),
+    );
+  }
+
+  Widget? _buildPickTrailingButtons(
+    DraftPickAsset pickAsset, {
+    required bool isDraftInProgress,
+    required bool isMyTurn,
+    required bool isInQueue,
+  }) {
+    if (!isDraftInProgress) {
+      // Before draft starts - show queue button
+      return IconButton(
+        icon: Icon(
+          isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
+          color: isInQueue ? Colors.green : null,
+        ),
+        onPressed: isInQueue || onAddPickAssetToQueue == null
+            ? null
+            : () => onAddPickAssetToQueue!(pickAsset.id),
+        tooltip: isInQueue ? 'In queue' : 'Add to queue',
+      );
+    }
+
+    // During draft - show both queue and draft buttons
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(
+            isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
+            color: isInQueue ? Colors.green : null,
+          ),
+          onPressed: isInQueue || onAddPickAssetToQueue == null
+              ? null
+              : () => onAddPickAssetToQueue!(pickAsset.id),
+          tooltip: isInQueue ? 'In queue' : 'Add to queue',
+        ),
+        ElevatedButton(
+          onPressed: isMyTurn && onMakePickAssetSelection != null
+              ? () => onMakePickAssetSelection!(pickAsset.id)
+              : null,
+          child: const Text('Draft'),
         ),
       ],
     );
@@ -209,4 +317,18 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Helper class to represent either a player or a pick asset in the unified list.
+class _UnifiedListItem {
+  final Player? player;
+  final DraftPickAsset? pickAsset;
+
+  _UnifiedListItem._({this.player, this.pickAsset});
+
+  factory _UnifiedListItem.player(Player player) =>
+      _UnifiedListItem._(player: player);
+
+  factory _UnifiedListItem.pick(DraftPickAsset pickAsset) =>
+      _UnifiedListItem._(pickAsset: pickAsset);
 }

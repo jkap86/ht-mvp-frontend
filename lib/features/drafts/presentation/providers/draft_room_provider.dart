@@ -108,6 +108,18 @@ class DraftRoomState {
 
   Set<int> get draftedPlayerIds => picks.map((p) => p.playerId).toSet();
 
+  /// Get the set of drafted pick asset IDs.
+  /// This is computed by comparing all pick assets against available ones.
+  /// Note: The backend handles queue cleanup when a pick asset is drafted.
+  Set<int> get draftedPickAssetIds {
+    // Get the set of available pick asset IDs
+    final availableIds = availablePickAssets.map((p) => p.id).toSet();
+    // Compare against all pick assets we know about to find drafted ones
+    // If pickAssets is empty, we return empty set (queue filtering will still work
+    // because backend removes drafted items from queues)
+    return pickAssets.where((p) => !availableIds.contains(p.id)).map((p) => p.id).toSet();
+  }
+
   DraftOrderEntry? get currentPicker {
     final d = draft;
     if (d?.currentRosterId == null || draftOrder.isEmpty) return null;

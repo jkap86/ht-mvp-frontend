@@ -31,6 +31,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
   // Separate flags per operation to prevent one failed operation from blocking others
   bool _isPickSubmitting = false;
   bool _isQueueSubmitting = false;
+  bool _isPickAssetQueueSubmitting = false;
   bool _isNominateSubmitting = false;
   bool _isMaxBidSubmitting = false;
   bool _isStartingDraft = false;
@@ -70,6 +71,23 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       }
     } finally {
       _isQueueSubmitting = false; // Always reset flag
+      if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
+    }
+  }
+
+  Future<void> _addPickAssetToQueue(int pickAssetId) async {
+    if (_isPickAssetQueueSubmitting) return; // Prevent double-tap
+    setState(() => _isPickAssetQueueSubmitting = true);
+    try {
+      final notifier = ref.read(draftQueueProvider(_queueKey).notifier);
+      final success = await notifier.addPickAssetToQueue(pickAssetId);
+      if (!success && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: const Text('Failed to add pick to queue'), backgroundColor: Theme.of(context).colorScheme.error),
+        );
+      }
+    } finally {
+      _isPickAssetQueueSubmitting = false; // Always reset flag
       if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
     }
   }
@@ -337,6 +355,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         isAuction: isAuction,
         onMakePick: _makePick,
         onAddToQueue: _addToQueue,
+        onAddPickAssetToQueue: _addPickAssetToQueue,
         onNominate: _handleNominate,
         onSetMaxBid: _handleSetMaxBid,
         onStartDraft: _startDraft,
@@ -358,6 +377,7 @@ class _DraftRoomBody extends ConsumerWidget {
   final bool isAuction;
   final Future<void> Function(int) onMakePick;
   final Future<void> Function(int) onAddToQueue;
+  final Future<void> Function(int) onAddPickAssetToQueue;
   final Future<void> Function(int) onNominate;
   final Future<void> Function(int, int) onSetMaxBid;
   final Future<void> Function() onStartDraft;
@@ -374,6 +394,7 @@ class _DraftRoomBody extends ConsumerWidget {
     required this.isAuction,
     required this.onMakePick,
     required this.onAddToQueue,
+    required this.onAddPickAssetToQueue,
     required this.onNominate,
     required this.onSetMaxBid,
     required this.onStartDraft,
@@ -531,6 +552,7 @@ class _DraftRoomBody extends ConsumerWidget {
           isAuction: isAuction,
           onMakePick: onMakePick,
           onAddToQueue: onAddToQueue,
+          onAddPickAssetToQueue: onAddPickAssetToQueue,
           onNominate: onNominate,
           onSetMaxBid: onSetMaxBid,
           onMakePickAssetSelection: onMakePickAssetSelection,
