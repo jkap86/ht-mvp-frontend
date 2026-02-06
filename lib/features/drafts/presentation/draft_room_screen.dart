@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../config/app_theme.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../players/domain/player.dart';
 import 'providers/draft_room_provider.dart';
@@ -47,10 +48,21 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     try {
       final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
       final error = await notifier.makePick(playerId);
-      if (error != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
-        );
+      if (context.mounted) {
+        if (error != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
+          );
+        } else {
+          // Success feedback
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Pick submitted!'),
+              duration: const Duration(seconds: 2),
+              backgroundColor: AppTheme.draftActionPrimary,
+            ),
+          );
+        }
       }
     } finally {
       _isPickSubmitting = false; // Always reset flag

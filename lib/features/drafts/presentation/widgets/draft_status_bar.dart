@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../core/socket/connection_state_provider.dart';
 import '../../../leagues/domain/league.dart';
 import 'autodraft_toggle_widget.dart';
 import 'draft_timer_widget.dart';
 
-class DraftStatusBar extends StatelessWidget {
+class DraftStatusBar extends ConsumerWidget {
   final Draft? draft;
   final String? currentPickerName;
   final bool isMyTurn;
@@ -24,7 +26,7 @@ class DraftStatusBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final isInProgress = draft?.status.isActive ?? false;
@@ -106,6 +108,8 @@ class DraftStatusBar extends StatelessWidget {
               ],
             ),
           ),
+          // Connection status indicator (LIVE/RECONNECTING)
+          if (isInProgress) _buildConnectionIndicator(ref),
           // Timer first (more important, shows countdown)
           if (isInProgress && draft?.pickDeadline != null)
             Padding(
@@ -123,6 +127,49 @@ class DraftStatusBar extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildConnectionIndicator(WidgetRef ref) {
+    final connectionState = ref.watch(socketConnectionProvider);
+
+    return connectionState.when(
+      data: (state) {
+        final isConnected = state == SocketConnectionState.connected;
+        return Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isConnected
+                  ? Colors.green.withAlpha(51) // 0.2 opacity
+                  : Colors.orange.withAlpha(51),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isConnected ? Icons.wifi : Icons.wifi_off,
+                  size: 12,
+                  color: isConnected ? Colors.green : Colors.orange,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  isConnected ? 'LIVE' : 'RECONNECTING...',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: isConnected ? Colors.green : Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

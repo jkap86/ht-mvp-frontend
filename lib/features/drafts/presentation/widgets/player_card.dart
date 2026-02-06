@@ -11,6 +11,7 @@ class PlayerCard extends StatelessWidget {
   final bool isDrafted;
   final bool canDraft;
   final bool showDraftButton;
+  final bool isSubmitting;
   final VoidCallback? onDraft;
   final VoidCallback? onAddToQueue;
   final VoidCallback? onRemoveFromQueue;
@@ -23,6 +24,7 @@ class PlayerCard extends StatelessWidget {
     this.isDrafted = false,
     this.canDraft = false,
     this.showDraftButton = true,
+    this.isSubmitting = false,
     this.onDraft,
     this.onAddToQueue,
     this.onRemoveFromQueue,
@@ -187,20 +189,31 @@ class PlayerCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 8),
             child: ElevatedButton(
-              onPressed: onDraft,
+              onPressed: isSubmitting ? null : onDraft,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.draftActionPrimary,
                 foregroundColor: Colors.white,
+                disabledBackgroundColor: AppTheme.draftActionPrimary.withAlpha(153),
+                disabledForegroundColor: Colors.white70,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
                 elevation: 0,
               ),
-              child: const Text(
-                'DRAFT',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'DRAFT',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
             ),
           ),
       ],

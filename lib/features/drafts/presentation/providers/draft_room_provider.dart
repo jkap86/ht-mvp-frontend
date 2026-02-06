@@ -308,6 +308,18 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     if (!mounted) return;
     // Dedupe: prevent duplicate picks from socket replays or reconnection
     if (state.picks.any((p) => p.id == pick.id)) return;
+
+    // Conflict detection: if we already have a DIFFERENT pick at this pickNumber,
+    // something is wrong (stale state) - trigger full resync
+    final existingAtNumber = state.picks
+        .where((p) => p.pickNumber == pick.pickNumber && p.id != pick.id)
+        .firstOrNull;
+    if (existingAtNumber != null) {
+      debugPrint('DraftRoom: Pick conflict detected at pickNumber ${pick.pickNumber}, triggering resync');
+      _refreshDraftState();
+      return;
+    }
+
     // Add pick and sort by pickNumber to handle out-of-order socket events
     final updatedPicks = [...state.picks, pick]
       ..sort((a, b) => a.pickNumber.compareTo(b.pickNumber));
@@ -413,6 +425,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   @override
   void onLotUpdatedReceived(AuctionLot lot) {
     if (!mounted) return;
+    final myRosterId = state.myRosterId;
+
     state = state.copyWith(
       activeLots: state.activeLots.map((l) {
         if (l.id == lot.id) {
@@ -424,12 +438,17 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       }).toList(),
     );
 
-    // Debounce budget refresh to avoid spamming API during rapid bidding
-    // Using 200ms for faster UI responsiveness in fast auctions
-    _budgetRefreshTimer?.cancel();
-    _budgetRefreshTimer = Timer(const Duration(milliseconds: 200), () {
+    // Instant refresh for own bid updates (user needs immediate budget feedback)
+    // Keep 200ms debounce for other events to avoid spamming API during rapid bidding
+    if (myRosterId != null && lot.currentBidderRosterId == myRosterId) {
+      _budgetRefreshTimer?.cancel();
       if (mounted) loadAuctionData();
-    });
+    } else {
+      _budgetRefreshTimer?.cancel();
+      _budgetRefreshTimer = Timer(const Duration(milliseconds: 200), () {
+        if (mounted) loadAuctionData();
+      });
+    }
   }
 
   @override
@@ -453,6 +472,16 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   void onOutbidReceived(OutbidNotification notification) {
     if (!mounted) return;
     state = state.copyWith(outbidNotification: notification);
+
+    // Auto-dismiss outbid notification after 5 seconds
+    Future.delayed(const Duration(seconds: 5), () {
+      if (!mounted) return;
+      // Only clear if this is still the same notification (prevent clearing newer ones)
+      if (state.outbidNotification?.lotId == notification.lotId &&
+          state.outbidNotification?.playerId == notification.playerId) {
+        clearOutbidNotification();
+      }
+    });
   }
 
   @override
