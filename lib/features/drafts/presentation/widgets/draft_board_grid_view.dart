@@ -78,7 +78,8 @@ class DraftBoardGridView extends ConsumerWidget {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: SingleChildScrollView(
+      child: SizedBox(
+        width: 54 + (92 + 2) * state.draftOrder.length + 16, // Round label + cells + padding
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
@@ -87,17 +88,24 @@ class DraftBoardGridView extends ConsumerWidget {
               // Header row with team names
               _buildTeamHeaderRow(context, state.draftOrder, currentCell),
               const SizedBox(height: 4),
-              // Round rows
-              for (int round = 1; round <= draft.rounds; round++)
-                _buildRoundRow(
-                  context: context,
-                  round: round,
-                  draftOrder: state.draftOrder,
-                  grid: grid,
-                  draft: draft,
-                  currentCell: currentCell,
-                  pickAssets: state.pickAssets,
+              // Round rows - use ListView.builder for lazy rendering
+              Expanded(
+                child: ListView.builder(
+                  itemCount: draft.rounds,
+                  itemBuilder: (context, index) {
+                    final round = index + 1;
+                    return _buildRoundRow(
+                      context: context,
+                      round: round,
+                      draftOrder: state.draftOrder,
+                      grid: grid,
+                      draft: draft,
+                      currentCell: currentCell,
+                      pickAssets: state.pickAssets,
+                    );
+                  },
                 ),
+              ),
             ],
           ),
         ),
@@ -116,7 +124,8 @@ class DraftBoardGridView extends ConsumerWidget {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: SingleChildScrollView(
+      child: SizedBox(
+        width: 100 + (92 + 2) * draft.rounds + 16, // Team label + cells + padding
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
@@ -125,16 +134,24 @@ class DraftBoardGridView extends ConsumerWidget {
               // Header row with round numbers
               _buildRoundHeaderRow(context, draft.rounds),
               const SizedBox(height: 4),
-              // Team rows
-              ...state.draftOrder.map((entry) => _buildTeamRow(
-                context: context,
-                entry: entry,
-                roundPicks: grid[entry.rosterId] ?? {},
-                draft: draft,
-                draftOrder: state.draftOrder,
-                currentCell: currentCell,
-                pickAssets: state.pickAssets,
-              )),
+              // Team rows - use ListView.builder for lazy rendering
+              Expanded(
+                child: ListView.builder(
+                  itemCount: state.draftOrder.length,
+                  itemBuilder: (context, index) {
+                    final entry = state.draftOrder[index];
+                    return _buildTeamRow(
+                      context: context,
+                      entry: entry,
+                      roundPicks: grid[entry.rosterId] ?? {},
+                      draft: draft,
+                      draftOrder: state.draftOrder,
+                      currentCell: currentCell,
+                      pickAssets: state.pickAssets,
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),

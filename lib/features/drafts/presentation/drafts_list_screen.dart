@@ -86,44 +86,54 @@ class DraftsListScreen extends ConsumerWidget {
       );
     }
 
-    return ListView(
+    // Build items list for ListView.builder
+    final items = <Widget>[];
+
+    // In Progress section
+    if (state.inProgressDrafts.isNotEmpty) {
+      items.add(_SectionHeader(
+        title: 'In Progress',
+        icon: Icons.play_circle_filled,
+        color: Theme.of(context).colorScheme.error,
+      ));
+      items.add(const SizedBox(height: 8));
+      for (final d in state.inProgressDrafts) {
+        items.add(_DraftCard(draft: d));
+      }
+      items.add(const SizedBox(height: 24));
+    }
+
+    // Upcoming section
+    if (state.upcomingDrafts.isNotEmpty) {
+      items.add(_SectionHeader(
+        title: 'Upcoming',
+        icon: Icons.schedule,
+        color: Theme.of(context).colorScheme.primary,
+      ));
+      items.add(const SizedBox(height: 8));
+      for (final d in state.upcomingDrafts) {
+        items.add(_DraftCard(draft: d));
+      }
+      items.add(const SizedBox(height: 24));
+    }
+
+    // Completed section
+    if (state.completedDrafts.isNotEmpty) {
+      items.add(_SectionHeader(
+        title: 'Completed',
+        icon: Icons.check_circle,
+        color: Theme.of(context).colorScheme.outline,
+      ));
+      items.add(const SizedBox(height: 8));
+      for (final d in state.completedDrafts) {
+        items.add(_DraftCard(draft: d));
+      }
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      children: [
-        // In Progress section
-        if (state.inProgressDrafts.isNotEmpty) ...[
-          _SectionHeader(
-            title: 'In Progress',
-            icon: Icons.play_circle_filled,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          const SizedBox(height: 8),
-          ...state.inProgressDrafts.map((d) => _DraftCard(draft: d)),
-          const SizedBox(height: 24),
-        ],
-
-        // Upcoming section
-        if (state.upcomingDrafts.isNotEmpty) ...[
-          _SectionHeader(
-            title: 'Upcoming',
-            icon: Icons.schedule,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: 8),
-          ...state.upcomingDrafts.map((d) => _DraftCard(draft: d)),
-          const SizedBox(height: 24),
-        ],
-
-        // Completed section
-        if (state.completedDrafts.isNotEmpty) ...[
-          _SectionHeader(
-            title: 'Completed',
-            icon: Icons.check_circle,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 8),
-          ...state.completedDrafts.map((d) => _DraftCard(draft: d)),
-        ],
-      ],
+      itemCount: items.length,
+      itemBuilder: (context, index) => items[index],
     );
   }
 }

@@ -7,6 +7,7 @@ import 'config/app_router.dart';
 import 'config/theme_provider.dart';
 import 'core/services/snack_bar_service.dart';
 import 'core/services/app_lifecycle_service.dart';
+import 'core/widgets/connection_banner.dart';
 import 'core/widgets/global_floating_chat.dart';
 import 'features/auth/presentation/auth_provider.dart';
 
@@ -42,6 +43,14 @@ class HypeTrainApp extends ConsumerWidget {
             return Stack(
               children: [
                 child ?? const SizedBox.shrink(),
+                // Connection status banner - shows when socket is disconnected
+                if (authState.isAuthenticated)
+                  const Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: ConnectionBanner(),
+                  ),
                 // Floating chat overlay - IgnorePointer inside allows touches to pass through
                 if (authState.isAuthenticated)
                   const GlobalFloatingChat(),

@@ -47,9 +47,23 @@ class MyRosterWidget extends StatelessWidget {
         : <DraftPick>[];
   }
 
+  /// Get position sections data for lazy building
+  List<({String position, int slots, List<DraftPick> picks, List<String>? flexPositions})> get _positionSections => [
+    (position: 'QB', slots: 1, picks: _picksByPosition['QB'] ?? [], flexPositions: null),
+    (position: 'RB', slots: 2, picks: _picksByPosition['RB'] ?? [], flexPositions: null),
+    (position: 'WR', slots: 2, picks: _picksByPosition['WR'] ?? [], flexPositions: null),
+    (position: 'TE', slots: 1, picks: _picksByPosition['TE'] ?? [], flexPositions: null),
+    (position: 'FLEX', slots: 1, picks: _picksByPosition['FLEX'] ?? [], flexPositions: const ['RB', 'WR', 'TE']),
+    (position: 'K', slots: 1, picks: _picksByPosition['K'] ?? [], flexPositions: null),
+    (position: 'DEF', slots: 1, picks: _picksByPosition['DEF'] ?? [], flexPositions: null),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final sections = _positionSections;
+    // +1 for bench section at the end
+    final itemCount = sections.length + 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,52 +71,27 @@ class MyRosterWidget extends StatelessWidget {
         // Header
         _buildHeader(theme),
         const Divider(height: 1),
-        // Roster list
+        // Roster list - use ListView.builder for lazy rendering
         Expanded(
-          child: ListView(
+          child: ListView.builder(
             padding: const EdgeInsets.all(8),
-            children: [
-              RosterPositionSection(
-                position: 'QB',
-                slots: 1,
-                picks: _picksByPosition['QB'] ?? [],
-              ),
-              RosterPositionSection(
-                position: 'RB',
-                slots: 2,
-                picks: _picksByPosition['RB'] ?? [],
-              ),
-              RosterPositionSection(
-                position: 'WR',
-                slots: 2,
-                picks: _picksByPosition['WR'] ?? [],
-              ),
-              RosterPositionSection(
-                position: 'TE',
-                slots: 1,
-                picks: _picksByPosition['TE'] ?? [],
-              ),
-              RosterPositionSection(
-                position: 'FLEX',
-                slots: 1,
-                picks: _picksByPosition['FLEX'] ?? [],
-                flexPositions: const ['RB', 'WR', 'TE'],
-              ),
-              RosterPositionSection(
-                position: 'K',
-                slots: 1,
-                picks: _picksByPosition['K'] ?? [],
-              ),
-              RosterPositionSection(
-                position: 'DEF',
-                slots: 1,
-                picks: _picksByPosition['DEF'] ?? [],
-              ),
-              RosterBenchSection(
+            itemCount: itemCount,
+            itemBuilder: (context, index) {
+              if (index < sections.length) {
+                final section = sections[index];
+                return RosterPositionSection(
+                  position: section.position,
+                  slots: section.slots,
+                  picks: section.picks,
+                  flexPositions: section.flexPositions,
+                );
+              }
+              // Last item is the bench section
+              return RosterBenchSection(
                 benchPicks: _benchPicks,
                 totalPicks: myPicks.length,
-              ),
-            ],
+              );
+            },
           ),
         ),
       ],

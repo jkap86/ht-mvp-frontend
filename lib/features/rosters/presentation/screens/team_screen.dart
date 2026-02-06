@@ -348,38 +348,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
               children: [
                 // Starters column (left)
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      const Text(
-                        'Starters',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ..._buildStarterSlots(state),
-                    ],
-                  ),
+                  child: _buildStartersListView(state),
                 ),
                 const VerticalDivider(width: 1),
                 // Bench column (right)
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      const Text(
-                        'Bench',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ..._buildBenchSlots(state),
-                    ],
-                  ),
+                  child: _buildBenchListView(state),
                 ),
               ],
             ),
@@ -411,44 +385,72 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
               children: [
                 // Starters column (left)
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      const Text(
-                        'Starters',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ..._buildStarterSlots(state),
-                    ],
-                  ),
+                  child: _buildStartersListView(state),
                 ),
                 const VerticalDivider(width: 1),
                 // Bench column (right)
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      const Text(
-                        'Bench',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ..._buildBenchSlots(state),
-                    ],
-                  ),
+                  child: _buildBenchListView(state),
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Builds a lazy ListView for starters with header
+  Widget _buildStartersListView(TeamState state) {
+    final starterWidgets = _buildStarterSlots(state);
+    // +1 for header, +1 for spacing
+    final itemCount = starterWidgets.length + 2;
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return const Text(
+            'Starters',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          );
+        }
+        if (index == 1) {
+          return const SizedBox(height: 8);
+        }
+        return starterWidgets[index - 2];
+      },
+    );
+  }
+
+  /// Builds a lazy ListView for bench with header
+  Widget _buildBenchListView(TeamState state) {
+    final benchWidgets = _buildBenchSlots(state);
+    // +1 for header, +1 for spacing
+    final itemCount = benchWidgets.length + 2;
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return const Text(
+            'Bench',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          );
+        }
+        if (index == 1) {
+          return const SizedBox(height: 8);
+        }
+        return benchWidgets[index - 2];
+      },
     );
   }
 

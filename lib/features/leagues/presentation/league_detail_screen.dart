@@ -268,66 +268,73 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
   }
 
   Widget _buildOverviewTab(LeagueDetailState state) {
+    // Build items list for ListView.builder
+    final items = <Widget>[
+      LeagueHeaderWidget(
+        league: state.league!,
+        memberCount: state.members.where((m) => m.userId != null).length,
+        isCommissioner: state.isCommissioner,
+        onSettingsTap: () {
+          context.push('/leagues/${widget.leagueId}/commissioner');
+        },
+      ),
+      const SizedBox(height: 16),
+    ];
+
+    // Matchup Preview Card (in-season only)
+    if (state.isInSeason && state.currentMatchup != null) {
+      items.add(MatchupPreviewCard(
+        currentWeek: state.league!.currentWeek,
+        matchup: state.currentMatchup!,
+        userStanding: state.userStanding,
+        opponentStanding: state.opponentStanding,
+        userProjectedPoints: _calculateProjectedPoints(state, isUser: true),
+        opponentProjectedPoints: _calculateProjectedPoints(state, isUser: false),
+        lineupLockTime: _getLineupLockTime(state),
+        onViewMatchup: () {
+          context.push('/leagues/${widget.leagueId}/matchups/${state.currentMatchup!.id}');
+        },
+        onSetLineup: state.league!.userRosterId != null
+            ? () => context.go('/leagues/${widget.leagueId}/team/${state.league!.userRosterId}')
+            : null,
+      ));
+      items.add(const SizedBox(height: 16));
+    }
+
+    // Action Alerts Banner (in-season only, when alerts exist)
+    if (state.isInSeason) {
+      items.add(_buildActionAlertsBanner(state));
+    }
+
+    items.add(LeagueMembersSection(
+      league: state.league!,
+      members: state.members,
+      totalSlots: state.league!.totalRosters,
+    ));
+    items.add(const SizedBox(height: 16));
+    items.add(LeagueDraftsSection(
+      key: ValueKey(state.drafts.map((d) => d.id).join(',')),
+      leagueId: widget.leagueId,
+      drafts: state.drafts,
+      members: state.members,
+      isCommissioner: state.isCommissioner,
+      onCreateDraft: _createDraft,
+      onStartDraft: _startDraft,
+      onRandomizeDraftOrder: _randomizeDraftOrder,
+      onSetOrderFromVetDraft: _setOrderFromVetDraft,
+      onEditSettings: _editDraftSettings,
+      onEditSchedule: _editDraftSchedule,
+    ));
+
     return RefreshIndicator(
       onRefresh: () => ref.read(leagueDetailProvider(widget.leagueId).notifier).loadData(),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
-          child: ListView(
+          child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            children: [
-              LeagueHeaderWidget(
-                league: state.league!,
-                memberCount: state.members.where((m) => m.userId != null).length,
-                isCommissioner: state.isCommissioner,
-                onSettingsTap: () {
-                  context.push('/leagues/${widget.leagueId}/commissioner');
-                },
-              ),
-              const SizedBox(height: 16),
-              // Matchup Preview Card (in-season only)
-              if (state.isInSeason && state.currentMatchup != null) ...[
-                MatchupPreviewCard(
-                  currentWeek: state.league!.currentWeek,
-                  matchup: state.currentMatchup!,
-                  userStanding: state.userStanding,
-                  opponentStanding: state.opponentStanding,
-                  userProjectedPoints: _calculateProjectedPoints(state, isUser: true),
-                  opponentProjectedPoints: _calculateProjectedPoints(state, isUser: false),
-                  lineupLockTime: _getLineupLockTime(state),
-                  onViewMatchup: () {
-                    context.push('/leagues/${widget.leagueId}/matchups/${state.currentMatchup!.id}');
-                  },
-                  onSetLineup: state.league!.userRosterId != null
-                      ? () => context.go('/leagues/${widget.leagueId}/team/${state.league!.userRosterId}')
-                      : null,
-                ),
-                const SizedBox(height: 16),
-              ],
-              // Action Alerts Banner (in-season only, when alerts exist)
-              if (state.isInSeason) ...[
-                _buildActionAlertsBanner(state),
-              ],
-              LeagueMembersSection(
-                league: state.league!,
-                members: state.members,
-                totalSlots: state.league!.totalRosters,
-              ),
-              const SizedBox(height: 16),
-              LeagueDraftsSection(
-                key: ValueKey(state.drafts.map((d) => d.id).join(',')),
-                leagueId: widget.leagueId,
-                drafts: state.drafts,
-                members: state.members,
-                isCommissioner: state.isCommissioner,
-                onCreateDraft: _createDraft,
-                onStartDraft: _startDraft,
-                onRandomizeDraftOrder: _randomizeDraftOrder,
-                onSetOrderFromVetDraft: _setOrderFromVetDraft,
-                onEditSettings: _editDraftSettings,
-                onEditSchedule: _editDraftSchedule,
-              ),
-            ],
+            itemCount: items.length,
+            itemBuilder: (context, index) => items[index],
           ),
         ),
       ),
@@ -394,117 +401,123 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
   Widget _buildSeasonTab(LeagueDetailState state) {
     final rosterId = state.league?.userRosterId;
 
+    // Build items list for ListView.builder
+    final items = <Widget>[
+      // My Team card - navigates to Team tab
+      Card(
+        child: ListTile(
+          leading: const Icon(Icons.groups),
+          title: const Text('My Team'),
+          subtitle: const Text('View roster and set lineup'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: rosterId != null
+              ? () => context.go('/leagues/${widget.leagueId}/team/$rosterId')
+              : null,
+        ),
+      ),
+      const SizedBox(height: 8),
+      // Matchups card - navigates to Matchups tab
+      Card(
+        child: ListTile(
+          leading: const Icon(Icons.sports_football),
+          title: const Text('Matchups'),
+          subtitle: const Text('Weekly head-to-head'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.go('/leagues/${widget.leagueId}/matchups'),
+        ),
+      ),
+      const SizedBox(height: 8),
+      // Standings card
+      Card(
+        child: ListTile(
+          leading: const Icon(Icons.leaderboard),
+          title: const Text('Standings'),
+          subtitle: const Text('League rankings'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/leagues/${widget.leagueId}/standings'),
+        ),
+      ),
+      const SizedBox(height: 8),
+      // Free Agents card
+      Card(
+        child: ListTile(
+          leading: const Icon(Icons.person_add),
+          title: const Text('Free Agents'),
+          subtitle: const Text('Add players to your team'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: rosterId != null
+              ? () => context.push('/leagues/${widget.leagueId}/free-agents', extra: rosterId)
+              : null,
+        ),
+      ),
+      const SizedBox(height: 8),
+      // Trades card - navigates to Trades tab
+      Card(
+        child: ListTile(
+          leading: const Icon(Icons.swap_horiz),
+          title: const Text('Trades'),
+          subtitle: const Text('Propose and manage trades'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.go('/leagues/${widget.leagueId}/trades'),
+        ),
+      ),
+    ];
+
+    // Invite Members card - visible to all members when league not full
+    if (state.members.length < state.league!.totalRosters) {
+      items.add(const SizedBox(height: 8));
+      items.add(Card(
+        child: ListTile(
+          leading: const Icon(Icons.person_add_alt),
+          title: const Text('Invite Members'),
+          subtitle: Text('${state.league!.totalRosters - state.members.length} spots available'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => showInviteMemberSheet(context, widget.leagueId),
+        ),
+      ));
+    }
+
+    // Commissioner Tools (only shown to commissioner)
+    if (state.isCommissioner) {
+      items.add(const SizedBox(height: 16));
+      items.add(const Divider());
+      items.add(const SizedBox(height: 8));
+      items.add(Card(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        child: ListTile(
+          leading: Icon(
+            Icons.admin_panel_settings,
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
+          title: Text(
+            'Commissioner Tools',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          subtitle: Text(
+            'Manage league settings and members',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+            ),
+          ),
+          trailing: Icon(
+            Icons.chevron_right,
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
+          onTap: () => context.push('/leagues/${widget.leagueId}/commissioner'),
+        ),
+      ));
+    }
+
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
-        child: ListView(
+        child: ListView.builder(
           padding: const EdgeInsets.all(16),
-          children: [
-        // My Team card - navigates to Team tab
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.groups),
-            title: const Text('My Team'),
-            subtitle: const Text('View roster and set lineup'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: rosterId != null
-                ? () => context.go('/leagues/${widget.leagueId}/team/$rosterId')
-                : null,
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Matchups card - navigates to Matchups tab
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.sports_football),
-            title: const Text('Matchups'),
-            subtitle: const Text('Weekly head-to-head'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.go('/leagues/${widget.leagueId}/matchups'),
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Standings card
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.leaderboard),
-            title: const Text('Standings'),
-            subtitle: const Text('League rankings'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/leagues/${widget.leagueId}/standings'),
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Free Agents card
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.person_add),
-            title: const Text('Free Agents'),
-            subtitle: const Text('Add players to your team'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: rosterId != null
-                ? () => context.push('/leagues/${widget.leagueId}/free-agents', extra: rosterId)
-                : null,
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Trades card - navigates to Trades tab
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.swap_horiz),
-            title: const Text('Trades'),
-            subtitle: const Text('Propose and manage trades'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.go('/leagues/${widget.leagueId}/trades'),
-          ),
-        ),
-        // Invite Members card - visible to all members when league not full
-        if (state.members.length < state.league!.totalRosters) ...[
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.person_add_alt),
-              title: const Text('Invite Members'),
-              subtitle: Text('${state.league!.totalRosters - state.members.length} spots available'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => showInviteMemberSheet(context, widget.leagueId),
-            ),
-          ),
-        ],
-        // Commissioner Tools (only shown to commissioner)
-        if (state.isCommissioner) ...[
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 8),
-          Card(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            child: ListTile(
-              leading: Icon(
-                Icons.admin_panel_settings,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-              title: Text(
-                'Commissioner Tools',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              subtitle: Text(
-                'Manage league settings and members',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
-                ),
-              ),
-              trailing: Icon(
-                Icons.chevron_right,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-              onTap: () => context.push('/leagues/${widget.leagueId}/commissioner'),
-            ),
-          ),
-        ],
-      ],
+          itemCount: items.length,
+          itemBuilder: (context, index) => items[index],
         ),
       ),
     );

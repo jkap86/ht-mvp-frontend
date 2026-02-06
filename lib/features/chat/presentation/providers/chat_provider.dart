@@ -1,5 +1,4 @@
-import 'dart:ui';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
@@ -58,8 +57,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
         state = state.copyWith(messages: [message, ...state.messages]);
       } catch (e) {
         // Log error but don't crash - malformed socket data should not break chat
-        // ignore: avoid_print
-        print('Failed to parse chat message from socket: $e');
+        if (kDebugMode) {
+          debugPrint('Failed to parse chat message from socket: $e');
+        }
       }
     });
   }

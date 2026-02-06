@@ -51,6 +51,9 @@ class SocketService {
   /// Callbacks to notify when socket reconnects (receives needsFullRefresh flag)
   final List<void Function(bool needsFullRefresh)> _reconnectCallbacks = [];
 
+  /// Callbacks to notify when socket disconnects
+  final List<VoidCallback> _disconnectCallbacks = [];
+
   /// Track when the socket was disconnected to determine refresh scope
   DateTime? _disconnectedAt;
 
@@ -81,6 +84,13 @@ class SocketService {
   VoidCallback onReconnected(void Function(bool needsFullRefresh) callback) {
     _reconnectCallbacks.add(callback);
     return () => _reconnectCallbacks.remove(callback);
+  }
+
+  /// Register a callback to be called when socket disconnects.
+  /// Returns a function to unregister the callback.
+  VoidCallback onDisconnected(VoidCallback callback) {
+    _disconnectCallbacks.add(callback);
+    return () => _disconnectCallbacks.remove(callback);
   }
 
   Future<void> connect() async {
@@ -127,6 +137,14 @@ class SocketService {
     _socket!.onDisconnect((_) {
       if (kDebugMode) debugPrint('Socket disconnected');
       _disconnectedAt = DateTime.now();
+      // Notify disconnect callbacks
+      for (final callback in _disconnectCallbacks) {
+        try {
+          callback();
+        } catch (e) {
+          if (kDebugMode) debugPrint('Error in disconnect callback: $e');
+        }
+      }
     });
 
     _socket!.onConnectError((error) {

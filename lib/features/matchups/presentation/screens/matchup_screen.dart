@@ -91,63 +91,101 @@ class MatchupScreen extends ConsumerWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-            // My matchup (featured)
-            if (state.myMatchup != null) ...[
-              const Text(
-                'My Matchup',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              _MatchupCard(
-                matchup: state.myMatchup!,
-                myRosterId: state.myRosterId,
-                isFeatured: true,
-                onTap: () => _openMatchupDetails(context, state.myMatchup!),
-              ),
-              const SizedBox(height: 24),
-            ],
+            child: _buildMatchupsList(context, state),
+          ),
+        ),
+      ),
+    );
+  }
 
-            // All matchups
-            const Text(
-              'All Matchups',
+  Widget _buildMatchupsList(BuildContext context, MatchupState state) {
+    // Filter other matchups (excluding user's matchup)
+    final otherMatchups = state.weekMatchups.where((matchup) {
+      final isMyMatchup = state.myRosterId != null &&
+          (matchup.roster1Id == state.myRosterId ||
+              matchup.roster2Id == state.myRosterId);
+      return !isMyMatchup;
+    }).toList();
+
+    // Calculate item count:
+    // - If has my matchup: header + spacing + card + spacing = 4 items
+    // - All matchups header + spacing = 2 items
+    // - Other matchups or empty view = otherMatchups.length or 1
+    final hasMyMatchup = state.myMatchup != null;
+    final myMatchupItems = hasMyMatchup ? 4 : 0;
+    final headerItems = 2; // "All Matchups" header + spacing
+    final matchupItems = state.weekMatchups.isEmpty ? 1 : otherMatchups.length;
+    final itemCount = myMatchupItems + headerItems + matchupItems;
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        // My matchup section
+        if (hasMyMatchup) {
+          if (index == 0) {
+            return const Text(
+              'My Matchup',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
-            ),
-            const SizedBox(height: 8),
-            ...state.weekMatchups.map((matchup) {
-              final isMyMatchup = state.myRosterId != null &&
-                  (matchup.roster1Id == state.myRosterId ||
-                      matchup.roster2Id == state.myRosterId);
-              if (isMyMatchup) return const SizedBox.shrink(); // Already shown above
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _MatchupCard(
-                  matchup: matchup,
-                  myRosterId: state.myRosterId,
-                  onTap: () => _openMatchupDetails(context, matchup),
-                ),
-              );
-            }),
+            );
+          }
+          if (index == 1) {
+            return const SizedBox(height: 8);
+          }
+          if (index == 2) {
+            return _MatchupCard(
+              matchup: state.myMatchup!,
+              myRosterId: state.myRosterId,
+              isFeatured: true,
+              onTap: () => _openMatchupDetails(context, state.myMatchup!),
+            );
+          }
+          if (index == 3) {
+            return const SizedBox(height: 24);
+          }
+        }
 
-            if (state.weekMatchups.isEmpty)
-              const AppEmptyView(
-                icon: Icons.sports_football,
-                title: 'No Matchups',
-                subtitle: 'No matchups scheduled for this week.',
-              ),
-          ],
-        ),
+        // Adjust index for "All Matchups" section
+        final adjustedIndex = index - myMatchupItems;
+
+        // All matchups header
+        if (adjustedIndex == 0) {
+          return const Text(
+            'All Matchups',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          );
+        }
+        if (adjustedIndex == 1) {
+          return const SizedBox(height: 8);
+        }
+
+        // Empty state or matchup cards
+        if (state.weekMatchups.isEmpty) {
+          return const AppEmptyView(
+            icon: Icons.sports_football,
+            title: 'No Matchups',
+            subtitle: 'No matchups scheduled for this week.',
+          );
+        }
+
+        // Other matchup cards
+        final matchupIndex = adjustedIndex - headerItems;
+        final matchup = otherMatchups[matchupIndex];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _MatchupCard(
+            matchup: matchup,
+            myRosterId: state.myRosterId,
+            onTap: () => _openMatchupDetails(context, matchup),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

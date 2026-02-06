@@ -68,158 +68,153 @@ class CommissionerScreen extends ConsumerWidget {
                     constraints: const BoxConstraints(maxWidth: 600),
                     child: RefreshIndicator(
                       onRefresh: () => ref.read(commissionerProvider(leagueId).notifier).loadData(),
-                      child: ListView(
+                      child: ListView.builder(
                         padding: const EdgeInsets.all(16),
-                        children: [
-                      // League Status Card
-                      LeagueInfoCard(state: state),
-                      const SizedBox(height: 16),
+                        itemCount: 12, // 12 cards total including Danger Zone
+                        itemBuilder: (context, index) {
+                          // Add spacing between cards (except first one)
+                          Widget wrapWithSpacing(Widget child) {
+                            if (index == 0) return child;
+                            return Column(
+                              children: [
+                                const SizedBox(height: 16),
+                                child,
+                              ],
+                            );
+                          }
 
-                      // Edit League Settings Card
-                      EditLeagueCard(
-                        leagueId: leagueId,
-                        state: state,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Member Management Card
-                      MemberManagementCard(
-                        state: state,
-                        onKickMember: (rosterId, teamName, username) {
-                          ref.read(commissionerProvider(leagueId).notifier).kickMember(rosterId, teamName);
-                        },
-                        onReinstateMember: (rosterId, teamName) {
-                          ref.read(commissionerProvider(leagueId).notifier).reinstateMember(rosterId, teamName);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Invite Members Card
-                      InviteMemberCard(leagueId: leagueId),
-                      const SizedBox(height: 16),
-
-                      // Schedule Management Card
-                      ScheduleManagementCard(
-                        onGenerateSchedule: (weeks) {
-                          ref.read(commissionerProvider(leagueId).notifier).generateSchedule(weeks);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Scoring Card
-                      ScoringCard(
-                        currentWeek: state.league?.currentWeek ?? 1,
-                        onFinalizeWeek: (week) {
-                          ref.read(commissionerProvider(leagueId).notifier).finalizeWeek(week);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Waiver Management Card
-                      WaiverManagementCard(
-                        waiversInitialized: state.waiversInitialized,
-                        onInitializeWaivers: ({int? faabBudget}) {
-                          ref.read(commissionerProvider(leagueId).notifier).initializeWaivers(faabBudget: faabBudget);
-                        },
-                        onProcessWaivers: () {
-                          ref.read(commissionerProvider(leagueId).notifier).processWaivers();
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Dues Config Card
-                      DuesConfigCard(
-                        leagueId: leagueId,
-                        totalRosters: state.league?.totalRosters ?? 12,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Dues Tracker Card
-                      DuesTrackerCard(leagueId: leagueId),
-                      const SizedBox(height: 16),
-
-                      // Playoff Management Card
-                      PlayoffManagementCard(
-                        state: state,
-                        leagueId: leagueId,
-                        onGeneratePlayoffBracket: ({required int playoffTeams, required int startWeek}) {
-                          ref.read(commissionerProvider(leagueId).notifier).generatePlayoffBracket(
-                            playoffTeams: playoffTeams,
-                            startWeek: startWeek,
-                          );
-                        },
-                        onAdvanceWinners: (week) {
-                          ref.read(commissionerProvider(leagueId).notifier).advanceWinners(week);
-                        },
-                        onViewBracket: () {
-                          context.push('/leagues/$leagueId/playoffs');
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Season Reset Card
-                      SeasonResetCard(
-                        state: state,
-                        onReset: ({
-                          required String newSeason,
-                          required String confirmationName,
-                          bool keepMembers = false,
-                          bool clearChat = true,
-                        }) {
-                          return ref.read(commissionerProvider(leagueId).notifier).resetLeague(
-                            newSeason: newSeason,
-                            confirmationName: confirmationName,
-                            keepMembers: keepMembers,
-                            clearChat: clearChat,
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Danger Zone Card
-                      Card(
-                        color: Colors.red.shade50,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.warning, color: Colors.red.shade700),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Danger Zone',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.red.shade700,
-                                    ),
+                          switch (index) {
+                            case 0:
+                              return LeagueInfoCard(state: state);
+                            case 1:
+                              return wrapWithSpacing(EditLeagueCard(
+                                leagueId: leagueId,
+                                state: state,
+                              ));
+                            case 2:
+                              return wrapWithSpacing(MemberManagementCard(
+                                state: state,
+                                onKickMember: (rosterId, teamName, username) {
+                                  ref.read(commissionerProvider(leagueId).notifier).kickMember(rosterId, teamName);
+                                },
+                                onReinstateMember: (rosterId, teamName) {
+                                  ref.read(commissionerProvider(leagueId).notifier).reinstateMember(rosterId, teamName);
+                                },
+                              ));
+                            case 3:
+                              return wrapWithSpacing(InviteMemberCard(leagueId: leagueId));
+                            case 4:
+                              return wrapWithSpacing(ScheduleManagementCard(
+                                onGenerateSchedule: (weeks) {
+                                  ref.read(commissionerProvider(leagueId).notifier).generateSchedule(weeks);
+                                },
+                              ));
+                            case 5:
+                              return wrapWithSpacing(ScoringCard(
+                                currentWeek: state.league?.currentWeek ?? 1,
+                                onFinalizeWeek: (week) {
+                                  ref.read(commissionerProvider(leagueId).notifier).finalizeWeek(week);
+                                },
+                              ));
+                            case 6:
+                              return wrapWithSpacing(WaiverManagementCard(
+                                waiversInitialized: state.waiversInitialized,
+                                onInitializeWaivers: ({int? faabBudget}) {
+                                  ref.read(commissionerProvider(leagueId).notifier).initializeWaivers(faabBudget: faabBudget);
+                                },
+                                onProcessWaivers: () {
+                                  ref.read(commissionerProvider(leagueId).notifier).processWaivers();
+                                },
+                              ));
+                            case 7:
+                              return wrapWithSpacing(DuesConfigCard(
+                                leagueId: leagueId,
+                                totalRosters: state.league?.totalRosters ?? 12,
+                              ));
+                            case 8:
+                              return wrapWithSpacing(DuesTrackerCard(leagueId: leagueId));
+                            case 9:
+                              return wrapWithSpacing(PlayoffManagementCard(
+                                state: state,
+                                leagueId: leagueId,
+                                onGeneratePlayoffBracket: ({required int playoffTeams, required int startWeek}) {
+                                  ref.read(commissionerProvider(leagueId).notifier).generatePlayoffBracket(
+                                    playoffTeams: playoffTeams,
+                                    startWeek: startWeek,
+                                  );
+                                },
+                                onAdvanceWinners: (week) {
+                                  ref.read(commissionerProvider(leagueId).notifier).advanceWinners(week);
+                                },
+                                onViewBracket: () {
+                                  context.push('/leagues/$leagueId/playoffs');
+                                },
+                              ));
+                            case 10:
+                              return wrapWithSpacing(SeasonResetCard(
+                                state: state,
+                                onReset: ({
+                                  required String newSeason,
+                                  required String confirmationName,
+                                  bool keepMembers = false,
+                                  bool clearChat = true,
+                                }) {
+                                  return ref.read(commissionerProvider(leagueId).notifier).resetLeague(
+                                    newSeason: newSeason,
+                                    confirmationName: confirmationName,
+                                    keepMembers: keepMembers,
+                                    clearChat: clearChat,
+                                  );
+                                },
+                              ));
+                            case 11:
+                              // Danger Zone Card
+                              return wrapWithSpacing(Card(
+                                color: Colors.red.shade50,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(Icons.warning, color: Colors.red.shade700),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Danger Zone',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.red.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      const Text(
+                                        'Deleting the league will permanently remove all data including rosters, drafts, matchups, and transactions. This action cannot be undone.',
+                                      ),
+                                      const SizedBox(height: 16),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          icon: const Icon(Icons.delete_forever),
+                                          label: const Text('Delete League'),
+                                          onPressed: () => _showDeleteConfirmation(context, ref),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'Deleting the league will permanently remove all data including rosters, drafts, matchups, and transactions. This action cannot be undone.',
-                              ),
-                              const SizedBox(height: 16),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  icon: const Icon(Icons.delete_forever),
-                                  label: const Text('Delete League'),
-                                  onPressed: () => _showDeleteConfirmation(context, ref),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                              ));
+                            default:
+                              return const SizedBox.shrink();
+                          }
+                        },
                       ),
                     ),
                   ),
