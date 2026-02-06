@@ -30,6 +30,8 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
   final Future<void> Function(int)? onMakePickAssetSelection;
   final Future<void> Function(int)? onAddPickAssetToQueue;
   final bool isPickSubmitting;
+  final bool isQueueSubmitting;
+  final bool isPickAssetQueueSubmitting;
 
   const SnakeLinearDrawerContent({
     super.key,
@@ -49,6 +51,8 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
     this.onMakePickAssetSelection,
     this.onAddPickAssetToQueue,
     this.isPickSubmitting = false,
+    this.isQueueSubmitting = false,
+    this.isPickAssetQueueSubmitting = false,
   });
 
   @override
@@ -231,7 +235,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
           isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
           color: isInQueue ? Colors.green : null,
         ),
-        onPressed: isInQueue || onAddPickAssetToQueue == null
+        onPressed: (isInQueue || isPickAssetQueueSubmitting || onAddPickAssetToQueue == null)
             ? null
             : () => onAddPickAssetToQueue!(pickAsset.id),
         tooltip: isInQueue ? 'In queue' : 'Add to queue',
@@ -247,7 +251,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
             isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
             color: isInQueue ? Colors.green : null,
           ),
-          onPressed: isInQueue || onAddPickAssetToQueue == null
+          onPressed: (isInQueue || isPickAssetQueueSubmitting || onAddPickAssetToQueue == null)
               ? null
               : () => onAddPickAssetToQueue!(pickAsset.id),
           tooltip: isInQueue ? 'In queue' : 'Add to queue',
@@ -313,7 +317,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
           isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
           color: isInQueue ? Colors.green : null,
         ),
-        onPressed: isInQueue ? null : () => onAddToQueue(player.id),
+        onPressed: (isInQueue || isQueueSubmitting) ? null : () => onAddToQueue(player.id),
         tooltip: isInQueue ? 'In queue' : 'Add to queue',
       );
     }
@@ -327,7 +331,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
             isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
             color: isInQueue ? Colors.green : null,
           ),
-          onPressed: isInQueue ? null : () => onAddToQueue(player.id),
+          onPressed: (isInQueue || isQueueSubmitting) ? null : () => onAddToQueue(player.id),
           tooltip: isInQueue ? 'In queue' : 'Add to queue',
         ),
         ElevatedButton(

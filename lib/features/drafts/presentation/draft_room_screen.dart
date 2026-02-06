@@ -382,6 +382,8 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         isConfirmingOrder: _isConfirmingOrder,
         onMakePickAssetSelection: _makePickAssetSelection,
         isPickSubmitting: _isPickSubmitting,
+        isQueueSubmitting: _isQueueSubmitting,
+        isPickAssetQueueSubmitting: _isPickAssetQueueSubmitting,
       ),
     );
   }
@@ -405,6 +407,8 @@ class _DraftRoomBody extends ConsumerStatefulWidget {
   final bool isConfirmingOrder;
   final Future<void> Function(int) onMakePickAssetSelection;
   final bool isPickSubmitting;
+  final bool isQueueSubmitting;
+  final bool isPickAssetQueueSubmitting;
 
   const _DraftRoomBody({
     required this.providerKey,
@@ -423,6 +427,8 @@ class _DraftRoomBody extends ConsumerStatefulWidget {
     required this.isConfirmingOrder,
     required this.onMakePickAssetSelection,
     required this.isPickSubmitting,
+    required this.isQueueSubmitting,
+    required this.isPickAssetQueueSubmitting,
   });
 
   @override
@@ -620,6 +626,8 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
           onSetMaxBid: widget.onSetMaxBid,
           onMakePickAssetSelection: widget.onMakePickAssetSelection,
           isPickSubmitting: widget.isPickSubmitting,
+          isQueueSubmitting: widget.isQueueSubmitting,
+          isPickAssetQueueSubmitting: widget.isPickAssetQueueSubmitting,
         ),
       ],
     );
@@ -640,6 +648,8 @@ class _DraftBottomDrawerWithController extends StatefulWidget {
   final Future<void> Function(int, int) onSetMaxBid;
   final Future<void> Function(int) onMakePickAssetSelection;
   final bool isPickSubmitting;
+  final bool isQueueSubmitting;
+  final bool isPickAssetQueueSubmitting;
 
   const _DraftBottomDrawerWithController({
     super.key,
@@ -655,6 +665,8 @@ class _DraftBottomDrawerWithController extends StatefulWidget {
     required this.onSetMaxBid,
     required this.onMakePickAssetSelection,
     required this.isPickSubmitting,
+    required this.isQueueSubmitting,
+    required this.isPickAssetQueueSubmitting,
   });
 
   @override
@@ -699,6 +711,8 @@ class _DraftBottomDrawerWithControllerState
       onMakePickAssetSelection: widget.onMakePickAssetSelection,
       sheetController: _sheetController,
       isPickSubmitting: widget.isPickSubmitting,
+      isQueueSubmitting: widget.isQueueSubmitting,
+      isPickAssetQueueSubmitting: widget.isPickAssetQueueSubmitting,
     );
   }
 }
