@@ -6,7 +6,7 @@ class DraftPick {
   final int round;
   final int pickInRound;
   final int rosterId;
-  final int playerId;
+  final int? playerId;  // Nullable: null for pick asset selections
   final bool isAutoPick;
   final DateTime? pickedAt;
   final String? playerName;
@@ -28,7 +28,7 @@ class DraftPick {
     required this.round,
     required this.pickInRound,
     required this.rosterId,
-    required this.playerId,
+    this.playerId,  // Now optional
     this.isAutoPick = false,
     this.pickedAt,
     this.playerName,
@@ -50,7 +50,7 @@ class DraftPick {
       round: json['round'] as int? ?? 1,
       pickInRound: json['pick_in_round'] as int? ?? json['pickInRound'] as int? ?? 0,
       rosterId: json['roster_id'] as int? ?? json['rosterId'] as int? ?? 0,
-      playerId: json['player_id'] as int? ?? json['playerId'] as int? ?? 0,
+      playerId: json['player_id'] as int? ?? json['playerId'] as int?,  // No default to 0
       isAutoPick: json['is_auto_pick'] as bool? ?? json['isAutoPick'] as bool? ?? false,
       pickedAt: json['picked_at'] != null
           ? DateTime.tryParse(json['picked_at'].toString())

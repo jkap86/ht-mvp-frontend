@@ -106,7 +106,12 @@ class DraftRoomState {
     return budgets.where((b) => b.rosterId == myRosterId).firstOrNull;
   }
 
-  Set<int> get draftedPlayerIds => picks.map((p) => p.playerId).toSet();
+  /// Get the set of drafted player IDs.
+  /// Filters out pick asset selections which have null playerId.
+  Set<int> get draftedPlayerIds => picks
+      .where((p) => p.playerId != null && !p.isPickAsset)
+      .map((p) => p.playerId!)
+      .toSet();
 
   /// Get the set of drafted pick asset IDs.
   /// Derived directly from picks that have a draftPickAssetId (pick asset selections).

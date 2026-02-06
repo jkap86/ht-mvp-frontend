@@ -103,7 +103,7 @@ class SocketService {
     );
 
     _socket!.onConnect((_) {
-      debugPrint('Socket connected');
+      if (kDebugMode) debugPrint('Socket connected');
       final wasDisconnected = _disconnectedAt != null;
       final shouldRefresh = needsFullRefresh;
       _applyPendingSubscriptions();
@@ -112,25 +112,25 @@ class SocketService {
 
       // Notify reconnect callbacks if this was a reconnection
       if (wasDisconnected) {
-        debugPrint('Socket reconnected after ${_disconnectedAt != null ? DateTime.now().difference(_disconnectedAt!).inSeconds : 0}s, triggering ${_reconnectCallbacks.length} callbacks, needsFullRefresh: $shouldRefresh');
+        if (kDebugMode) debugPrint('Socket reconnected after ${_disconnectedAt != null ? DateTime.now().difference(_disconnectedAt!).inSeconds : 0}s, triggering ${_reconnectCallbacks.length} callbacks, needsFullRefresh: $shouldRefresh');
         _disconnectedAt = null;
         for (final callback in _reconnectCallbacks) {
           try {
             callback(shouldRefresh);
           } catch (e) {
-            debugPrint('Error in reconnect callback: $e');
+            if (kDebugMode) debugPrint('Error in reconnect callback: $e');
           }
         }
       }
     });
 
     _socket!.onDisconnect((_) {
-      debugPrint('Socket disconnected');
+      if (kDebugMode) debugPrint('Socket disconnected');
       _disconnectedAt = DateTime.now();
     });
 
     _socket!.onConnectError((error) {
-      debugPrint('Socket connection error: $error');
+      if (kDebugMode) debugPrint('Socket connection error: $error');
     });
 
     _socket!.connect();
@@ -173,7 +173,7 @@ class SocketService {
           _activeSubscriptions.putIfAbsent(event, () => []).add(callback);
         }
       }
-      debugPrint('Restored ${_listenersToRestore!.length} event listener groups after reconnect');
+      if (kDebugMode) debugPrint('Restored ${_listenersToRestore!.length} event listener groups after reconnect');
       _listenersToRestore = null;
     }
   }
@@ -192,7 +192,7 @@ class SocketService {
   /// Disconnects existing socket and creates new connection with updated auth.
   /// Room tracking and listeners are preserved so they are automatically restored.
   Future<void> reconnect() async {
-    debugPrint('Socket reconnecting with fresh token...');
+    if (kDebugMode) debugPrint('Socket reconnecting with fresh token...');
 
     // Preserve listener metadata for re-registration after reconnect
     _listenersToRestore = Map<String, List<void Function(dynamic)>>.from(

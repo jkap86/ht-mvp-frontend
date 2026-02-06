@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/socket/socket_service.dart';
@@ -104,6 +105,10 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
   VoidCallback? _memberKickedDisposer;
   VoidCallback? _invalidationDisposer;
 
+  // Debounce timer for reload operations
+  Timer? _loadWaiverDataDebounceTimer;
+  static const _debounceDelay = Duration(milliseconds: 300);
+
   WaiversNotifier(
     this._waiverRepo,
     this._socketService,
@@ -124,6 +129,14 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
     );
   }
 
+  /// Debounced version of loadWaiverData to prevent multiple rapid calls
+  void _debouncedLoadWaiverData() {
+    _loadWaiverDataDebounceTimer?.cancel();
+    _loadWaiverDataDebounceTimer = Timer(_debounceDelay, () {
+      if (mounted) loadWaiverData();
+    });
+  }
+
   void _setupSocketListeners() {
     _socketService.joinLeague(leagueId);
 
@@ -141,11 +154,11 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
           _addOrUpdateClaim(claim);
         } catch (e) {
           // Failed to parse, reload waiver data
-          if (reloadOnPartial) loadWaiverData();
+          if (reloadOnPartial) _debouncedLoadWaiverData();
         }
       } else if (reloadOnPartial) {
         // Minimal payload (just claimId) - reload to get full data
-        loadWaiverData();
+        _debouncedLoadWaiverData();
       }
     }
 
@@ -163,7 +176,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
         _removeClaim(claimId);
       } else {
         // No claim ID, reload to sync state
-        loadWaiverData();
+        _debouncedLoadWaiverData();
       }
     });
 
@@ -174,7 +187,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
     _processedDisposer = _socketService.onWaiverProcessed((data) {
       if (!mounted) return;
       // Reload all waiver data after processing
-      loadWaiverData();
+      _debouncedLoadWaiverData();
     });
 
     _claimSuccessfulDisposer = _socketService.onWaiverClaimSuccessful((data) {
@@ -188,7 +201,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
     _priorityUpdatedDisposer = _socketService.onWaiverPriorityUpdated((data) {
       if (!mounted) return;
       if (data is! Map) {
-        loadWaiverData();
+        _debouncedLoadWaiverData();
         return;
       }
 
@@ -201,14 +214,14 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
         state = state.copyWith(priorities: prioritiesList);
       } catch (e) {
         // Failed to parse, reload to sync
-        loadWaiverData();
+        _debouncedLoadWaiverData();
       }
     });
 
     _budgetUpdatedDisposer = _socketService.onWaiverBudgetUpdated((data) {
       if (!mounted) return;
       if (data is! Map) {
-        loadWaiverData();
+        _debouncedLoadWaiverData();
         return;
       }
 
@@ -221,7 +234,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
         state = state.copyWith(budgets: budgetsList);
       } catch (e) {
         // Failed to parse, reload to sync
-        loadWaiverData();
+        _debouncedLoadWaiverData();
       }
     });
 
@@ -229,7 +242,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
     _memberKickedDisposer = _socketService.onMemberKicked((data) {
       if (!mounted) return;
       // Reload waiver data as kicked member's claims may have been affected
-      loadWaiverData();
+      _debouncedLoadWaiverData();
     });
   }
 
@@ -354,6 +367,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
 
   @override
   void dispose() {
+    _loadWaiverDataDebounceTimer?.cancel();
     _socketService.leaveLeague(leagueId);
     _claimSubmittedDisposer?.call();
     _claimCancelledDisposer?.call();
