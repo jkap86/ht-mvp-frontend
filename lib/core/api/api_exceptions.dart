@@ -111,5 +111,5 @@ class ServerException extends ApiException {
 }
 
 class NetworkException extends ApiException {
-  NetworkException([super.message = 'Network error']) : super(null, null);
+  NetworkException([String message = 'Network error']) : super(message, null, null);
 }

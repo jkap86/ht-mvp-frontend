@@ -38,6 +38,9 @@ dependencies:
   # Internationalization / Date formatting
   intl: ^0.19.0
 
+  # UUID generation
+  uuid: ^4.5.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
