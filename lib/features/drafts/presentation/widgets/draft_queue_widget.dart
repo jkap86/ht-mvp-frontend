@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/app_theme.dart';
 import '../providers/draft_queue_provider.dart';
 
 class DraftQueueWidget extends ConsumerWidget {
@@ -8,6 +9,9 @@ class DraftQueueWidget extends ConsumerWidget {
   final int draftId;
   final Set<int> draftedPlayerIds;
   final Set<int> draftedPickAssetIds;
+  final bool isMyTurn;
+  final Future<void> Function(int playerId)? onDraftPlayer;
+  final Future<void> Function(int pickAssetId)? onDraftPickAsset;
 
   const DraftQueueWidget({
     super.key,
@@ -15,6 +19,9 @@ class DraftQueueWidget extends ConsumerWidget {
     required this.draftId,
     required this.draftedPlayerIds,
     this.draftedPickAssetIds = const {},
+    this.isMyTurn = false,
+    this.onDraftPlayer,
+    this.onDraftPickAsset,
   });
 
   DraftQueueKey get _providerKey => (leagueId: leagueId, draftId: draftId);
@@ -102,11 +109,17 @@ class DraftQueueWidget extends ConsumerWidget {
               },
               itemBuilder: (context, index) {
                 final entry = availableQueue[index];
+                final isFirstAndMyTurn = index == 0 && isMyTurn;
                 if (entry.isPlayer) {
                   return _QueuePlayerCard(
                     key: ValueKey('player-${entry.playerId}'),
                     entry: entry,
                     position: index + 1,
+                    isHighlighted: isFirstAndMyTurn,
+                    showDraftNow: isFirstAndMyTurn && onDraftPlayer != null,
+                    onDraftNow: isFirstAndMyTurn && onDraftPlayer != null
+                        ? () => onDraftPlayer!(entry.playerId!)
+                        : null,
                     onRemove: () {
                       ref.read(draftQueueProvider(_providerKey).notifier)
                           .removeFromQueue(entry.playerId!);
@@ -117,6 +130,11 @@ class DraftQueueWidget extends ConsumerWidget {
                     key: ValueKey('pick-${entry.pickAssetId}'),
                     entry: entry,
                     position: index + 1,
+                    isHighlighted: isFirstAndMyTurn,
+                    showDraftNow: isFirstAndMyTurn && onDraftPickAsset != null,
+                    onDraftNow: isFirstAndMyTurn && onDraftPickAsset != null
+                        ? () => onDraftPickAsset!(entry.pickAssetId!)
+                        : null,
                     onRemove: () {
                       ref.read(draftQueueProvider(_providerKey).notifier)
                           .removePickAssetFromQueue(entry.pickAssetId!);
@@ -135,61 +153,109 @@ class _QueuePlayerCard extends StatelessWidget {
   final QueueEntry entry;
   final int position;
   final VoidCallback onRemove;
+  final bool isHighlighted;
+  final bool showDraftNow;
+  final VoidCallback? onDraftNow;
 
   const _QueuePlayerCard({
     super.key,
     required this.entry,
     required this.position,
     required this.onRemove,
+    this.isHighlighted = false,
+    this.showDraftNow = false,
+    this.onDraftNow,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-      child: Container(
-        width: 100,
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CircleAvatar(
-                  radius: 10,
-                  backgroundColor: Colors.grey[600],
-                  child: Text(
-                    '$position',
-                    style: const TextStyle(color: Colors.white, fontSize: 10),
+      decoration: isHighlighted
+          ? BoxDecoration(
+              border: Border.all(color: AppTheme.draftActionPrimary, width: 2),
+              borderRadius: BorderRadius.circular(12),
+            )
+          : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Card(
+            margin: EdgeInsets.zero,
+            shape: isHighlighted
+                ? const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+                  )
+                : null,
+            child: Container(
+              width: 100,
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CircleAvatar(
+                        radius: 10,
+                        backgroundColor: isHighlighted
+                            ? AppTheme.draftActionPrimary
+                            : Colors.grey[600],
+                        child: Text(
+                          '$position',
+                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: onRemove,
+                        child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                      ),
+                    ],
                   ),
-                ),
-                InkWell(
-                  onTap: onRemove,
-                  child: const Icon(Icons.close, size: 16, color: Colors.grey),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    entry.playerName ?? 'Unknown',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    '${entry.playerPosition ?? ''} - ${entry.playerTeam ?? ''}',
+                    style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 4),
-            Expanded(
-              child: Center(
-                child: Text(
-                  entry.playerName ?? 'Unknown',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+          ),
+          if (showDraftNow)
+            SizedBox(
+              width: 100,
+              child: Material(
+                color: AppTheme.draftActionPrimary,
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                child: InkWell(
+                  onTap: onDraftNow,
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 6),
+                    child: Text(
+                      'DRAFT NOW',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-            Text(
-              '${entry.playerPosition ?? ''} - ${entry.playerTeam ?? ''}',
-              style: TextStyle(fontSize: 9, color: Colors.grey[600]),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -199,69 +265,112 @@ class _QueuePickAssetCard extends StatelessWidget {
   final QueueEntry entry;
   final int position;
   final VoidCallback onRemove;
+  final bool isHighlighted;
+  final bool showDraftNow;
+  final VoidCallback? onDraftNow;
 
   const _QueuePickAssetCard({
     super.key,
     required this.entry,
     required this.position,
     required this.onRemove,
+    this.isHighlighted = false,
+    this.showDraftNow = false,
+    this.onDraftNow,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-      color: Colors.amber[50],
-      child: Container(
-        width: 100,
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CircleAvatar(
-                  radius: 10,
-                  backgroundColor: Colors.amber[700],
-                  child: Text(
-                    '$position',
-                    style: const TextStyle(color: Colors.white, fontSize: 10),
+      decoration: isHighlighted
+          ? BoxDecoration(
+              border: Border.all(color: AppTheme.draftActionPrimary, width: 2),
+              borderRadius: BorderRadius.circular(12),
+            )
+          : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Card(
+            margin: EdgeInsets.zero,
+            color: Colors.amber[50],
+            shape: isHighlighted
+                ? const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+                  )
+                : null,
+            child: Container(
+              width: 100,
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CircleAvatar(
+                        radius: 10,
+                        backgroundColor: isHighlighted
+                            ? AppTheme.draftActionPrimary
+                            : Colors.amber[700],
+                        child: Text(
+                          '$position',
+                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: onRemove,
+                        child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                      ),
+                    ],
                   ),
-                ),
-                InkWell(
-                  onTap: onRemove,
-                  child: const Icon(Icons.close, size: 16, color: Colors.grey),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Icon(Icons.how_to_vote_outlined, size: 16, color: Colors.amber[700]),
+                  const SizedBox(height: 2),
+                  Text(
+                    entry.pickAssetDisplayName ?? 'Pick',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    '${entry.pickAssetRound ?? '?'}',
+                    style: TextStyle(fontSize: 9, color: Colors.amber[800]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 4),
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.how_to_vote_outlined, size: 16, color: Colors.amber[700]),
-                    const SizedBox(height: 2),
-                    Text(
-                      entry.pickAssetDisplayName ?? 'Pick',
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
+          ),
+          if (showDraftNow)
+            SizedBox(
+              width: 100,
+              child: Material(
+                color: AppTheme.draftActionPrimary,
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                child: InkWell(
+                  onTap: onDraftNow,
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 6),
+                    child: Text(
+                      'DRAFT NOW',
                       textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-            Text(
-              '${entry.pickAssetRound ?? '?'}',
-              style: TextStyle(fontSize: 9, color: Colors.amber[800]),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }

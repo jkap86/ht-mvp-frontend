@@ -14,6 +14,9 @@ class DraftStatusBar extends ConsumerWidget {
   final bool? isAutodraftEnabled;
   final bool isAutodraftLoading;
   final VoidCallback? onToggleAutodraft;
+  final String? topQueuedPlayerName;
+  final VoidCallback? onDraftFromQueue;
+  final VoidCallback? onPickPlayer;
 
   const DraftStatusBar({
     super.key,
@@ -23,6 +26,9 @@ class DraftStatusBar extends ConsumerWidget {
     this.isAutodraftEnabled,
     this.isAutodraftLoading = false,
     this.onToggleAutodraft,
+    this.topQueuedPlayerName,
+    this.onDraftFromQueue,
+    this.onPickPlayer,
   });
 
   @override
@@ -108,6 +114,28 @@ class DraftStatusBar extends ConsumerWidget {
               ],
             ),
           ),
+          // CTA button when it's user's turn
+          if (isMyTurn && (onDraftFromQueue != null || onPickPlayer != null))
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.draftActionPrimary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                icon: const Icon(Icons.check, size: 18),
+                label: Text(
+                  topQueuedPlayerName != null
+                      ? 'Draft: $topQueuedPlayerName'
+                      : 'Pick Player',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                onPressed: topQueuedPlayerName != null
+                    ? onDraftFromQueue
+                    : onPickPlayer,
+              ),
+            ),
           // Connection status indicator (LIVE/RECONNECTING)
           if (isInProgress) _buildConnectionIndicator(ref),
           // Timer first (more important, shows countdown)

@@ -25,6 +25,7 @@ class DraftBottomDrawer extends ConsumerStatefulWidget {
   final Future<void> Function(int lotId, int maxBid)? onSetMaxBid;
   final Future<void> Function(int pickAssetId)? onMakePickAssetSelection;
   final Future<void> Function(int pickAssetId)? onAddPickAssetToQueue;
+  final DraggableScrollableController? sheetController;
 
   const DraftBottomDrawer({
     super.key,
@@ -39,6 +40,7 @@ class DraftBottomDrawer extends ConsumerStatefulWidget {
     this.onSetMaxBid,
     this.onMakePickAssetSelection,
     this.onAddPickAssetToQueue,
+    this.sheetController,
   });
 
   @override
@@ -48,15 +50,17 @@ class DraftBottomDrawer extends ConsumerStatefulWidget {
 class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
   String _searchQuery = '';
   String? _selectedPosition;
-  final DraggableScrollableController _sheetController =
-      DraggableScrollableController();
+  DraggableScrollableController? _ownedController;
+
+  DraggableScrollableController get _sheetController =>
+      widget.sheetController ?? (_ownedController ??= DraggableScrollableController());
 
   static const double _collapsedSize = 0.22; // Increased to fit queue
   static const double _expandedSize = 0.70;
 
   @override
   void dispose() {
-    _sheetController.dispose();
+    _ownedController?.dispose();
     super.dispose();
   }
 

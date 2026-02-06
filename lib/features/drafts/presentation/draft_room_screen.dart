@@ -381,7 +381,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
 }
 
 /// Main body with grid view and bottom drawer
-class _DraftRoomBody extends ConsumerWidget {
+class _DraftRoomBody extends ConsumerStatefulWidget {
   final DraftRoomKey providerKey;
   final DraftQueueKey queueKey;
   final int leagueId;
@@ -417,48 +417,78 @@ class _DraftRoomBody extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DraftRoomBody> createState() => _DraftRoomBodyState();
+}
+
+class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
+  final GlobalKey<_DraftBottomDrawerWithControllerState> _drawerKey = GlobalKey();
+
+  void _expandDrawer() {
+    _drawerKey.currentState?.expand();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final draft = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.draft),
+      draftRoomProvider(widget.providerKey).select((s) => s.draft),
     );
     final currentPickerName = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.currentPicker?.username),
+      draftRoomProvider(widget.providerKey).select((s) => s.currentPicker?.username),
     );
     final isMyTurn = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.isMyTurn),
+      draftRoomProvider(widget.providerKey).select((s) => s.isMyTurn),
     );
     final isAutodraftEnabled = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.isMyAutodraftEnabled),
+      draftRoomProvider(widget.providerKey).select((s) => s.isMyAutodraftEnabled),
     );
     final isFastAuction = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.isFastAuction),
+      draftRoomProvider(widget.providerKey).select((s) => s.isFastAuction),
     );
     final isCommissioner = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.isCommissioner),
+      draftRoomProvider(widget.providerKey).select((s) => s.isCommissioner),
     );
+
+    // Watch queue for top queued player (for CTA button)
+    final queueState = ref.watch(draftQueueProvider(widget.queueKey));
+    final draftedPlayerIds = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.draftedPlayerIds),
+    );
+    final draftedPickAssetIds = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.draftedPickAssetIds),
+    );
+    // Get top available queue entry (filter out already drafted items)
+    final availableQueue = queueState.queue.where((e) {
+      if (e.isPlayer) return !draftedPlayerIds.contains(e.playerId);
+      if (e.isPickAsset) return !draftedPickAssetIds.contains(e.pickAssetId);
+      return false;
+    }).toList();
+    final topQueueEntry = availableQueue.isNotEmpty ? availableQueue.first : null;
+    final topQueuedPlayerName = topQueueEntry?.isPlayer == true
+        ? topQueueEntry?.playerName
+        : topQueueEntry?.pickAssetDisplayName;
 
     // Check if draft can be started
     final isDraftNotStarted = draft?.status.canStart ?? false;
     // Auctions don't require explicit order confirmation (initial order is created automatically)
     final canStartDraft = isDraftNotStarted &&
         isCommissioner &&
-        (draft?.orderConfirmed == true || isAuction);
+        (draft?.orderConfirmed == true || widget.isAuction);
     // Check if order needs confirmation (non-auction drafts only)
     final needsOrderConfirmation = isDraftNotStarted &&
         isCommissioner &&
         draft?.orderConfirmed != true &&
-        !isAuction;
+        !widget.isAuction;
 
     // Slow auction uses completely different UI (no grid)
-    if (isAuction && !isFastAuction) {
+    if (widget.isAuction && !isFastAuction) {
       return SlowAuctionScreen(
-        providerKey: providerKey,
-        leagueId: leagueId,
-        draftId: draftId,
-        onNominate: onNominate,
-        onSetMaxBid: onSetMaxBid,
-        onStartDraft: onStartDraft,
-        isStartingDraft: isStartingDraft,
+        providerKey: widget.providerKey,
+        leagueId: widget.leagueId,
+        draftId: widget.draftId,
+        onNominate: widget.onNominate,
+        onSetMaxBid: widget.onSetMaxBid,
+        onStartDraft: widget.onStartDraft,
+        isStartingDraft: widget.isStartingDraft,
       );
     }
 
@@ -486,15 +516,15 @@ class _DraftRoomBody extends ConsumerWidget {
                       ),
                     ),
                     OutlinedButton.icon(
-                      onPressed: isConfirmingOrder ? null : onConfirmOrder,
-                      icon: isConfirmingOrder
+                      onPressed: widget.isConfirmingOrder ? null : widget.onConfirmOrder,
+                      icon: widget.isConfirmingOrder
                           ? const SizedBox(
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.check),
-                      label: Text(isConfirmingOrder ? 'Confirming...' : 'Confirm Order'),
+                      label: Text(widget.isConfirmingOrder ? 'Confirming...' : 'Confirm Order'),
                     ),
                   ],
                 ),
@@ -517,15 +547,15 @@ class _DraftRoomBody extends ConsumerWidget {
                       ),
                     ),
                     ElevatedButton.icon(
-                      onPressed: isStartingDraft ? null : onStartDraft,
-                      icon: isStartingDraft
+                      onPressed: widget.isStartingDraft ? null : widget.onStartDraft,
+                      icon: widget.isStartingDraft
                           ? const SizedBox(
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.play_arrow),
-                      label: Text(isStartingDraft ? 'Starting...' : 'Start Draft'),
+                      label: Text(widget.isStartingDraft ? 'Starting...' : 'Start Draft'),
                     ),
                   ],
                 ),
@@ -536,7 +566,7 @@ class _DraftRoomBody extends ConsumerWidget {
               isMyTurn: isMyTurn,
               isAutodraftEnabled: isAutodraftEnabled,
               onToggleAutodraft: () async {
-                final notifier = ref.read(draftRoomProvider(providerKey).notifier);
+                final notifier = ref.read(draftRoomProvider(widget.providerKey).notifier);
                 final error = await notifier.toggleAutodraft(!isAutodraftEnabled);
                 if (error != null && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -544,11 +574,22 @@ class _DraftRoomBody extends ConsumerWidget {
                   );
                 }
               },
+              topQueuedPlayerName: topQueuedPlayerName,
+              onDraftFromQueue: topQueueEntry != null
+                  ? () {
+                      if (topQueueEntry.isPlayer && topQueueEntry.playerId != null) {
+                        widget.onMakePick(topQueueEntry.playerId!);
+                      } else if (topQueueEntry.isPickAsset && topQueueEntry.pickAssetId != null) {
+                        widget.onMakePickAssetSelection(topQueueEntry.pickAssetId!);
+                      }
+                    }
+                  : null,
+              onPickPlayer: _expandDrawer,
             ),
             Expanded(
               child: DraftBoardGridView(
-                leagueId: leagueId,
-                draftId: draftId,
+                leagueId: widget.leagueId,
+                draftId: widget.draftId,
               ),
             ),
             // Space for collapsed drawer
@@ -556,20 +597,95 @@ class _DraftRoomBody extends ConsumerWidget {
           ],
         ),
         // Bottom drawer overlay
-        DraftBottomDrawer(
-          providerKey: providerKey,
-          queueKey: queueKey,
-          leagueId: leagueId,
-          draftId: draftId,
-          isAuction: isAuction,
-          onMakePick: onMakePick,
-          onAddToQueue: onAddToQueue,
-          onAddPickAssetToQueue: onAddPickAssetToQueue,
-          onNominate: onNominate,
-          onSetMaxBid: onSetMaxBid,
-          onMakePickAssetSelection: onMakePickAssetSelection,
+        _DraftBottomDrawerWithController(
+          key: _drawerKey,
+          providerKey: widget.providerKey,
+          queueKey: widget.queueKey,
+          leagueId: widget.leagueId,
+          draftId: widget.draftId,
+          isAuction: widget.isAuction,
+          onMakePick: widget.onMakePick,
+          onAddToQueue: widget.onAddToQueue,
+          onAddPickAssetToQueue: widget.onAddPickAssetToQueue,
+          onNominate: widget.onNominate,
+          onSetMaxBid: widget.onSetMaxBid,
+          onMakePickAssetSelection: widget.onMakePickAssetSelection,
         ),
       ],
+    );
+  }
+}
+
+/// Wrapper around DraftBottomDrawer that exposes an expand() method
+class _DraftBottomDrawerWithController extends StatefulWidget {
+  final DraftRoomKey providerKey;
+  final DraftQueueKey queueKey;
+  final int leagueId;
+  final int draftId;
+  final bool isAuction;
+  final Future<void> Function(int) onMakePick;
+  final Future<void> Function(int) onAddToQueue;
+  final Future<void> Function(int) onAddPickAssetToQueue;
+  final Future<void> Function(int) onNominate;
+  final Future<void> Function(int, int) onSetMaxBid;
+  final Future<void> Function(int) onMakePickAssetSelection;
+
+  const _DraftBottomDrawerWithController({
+    super.key,
+    required this.providerKey,
+    required this.queueKey,
+    required this.leagueId,
+    required this.draftId,
+    required this.isAuction,
+    required this.onMakePick,
+    required this.onAddToQueue,
+    required this.onAddPickAssetToQueue,
+    required this.onNominate,
+    required this.onSetMaxBid,
+    required this.onMakePickAssetSelection,
+  });
+
+  @override
+  State<_DraftBottomDrawerWithController> createState() =>
+      _DraftBottomDrawerWithControllerState();
+}
+
+class _DraftBottomDrawerWithControllerState
+    extends State<_DraftBottomDrawerWithController> {
+  final DraggableScrollableController _sheetController =
+      DraggableScrollableController();
+
+  static const double _expandedSize = 0.70;
+
+  void expand() {
+    _sheetController.animateTo(
+      _expandedSize,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _sheetController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraftBottomDrawer(
+      providerKey: widget.providerKey,
+      queueKey: widget.queueKey,
+      leagueId: widget.leagueId,
+      draftId: widget.draftId,
+      isAuction: widget.isAuction,
+      onMakePick: widget.onMakePick,
+      onAddToQueue: widget.onAddToQueue,
+      onAddPickAssetToQueue: widget.onAddPickAssetToQueue,
+      onNominate: widget.onNominate,
+      onSetMaxBid: widget.onSetMaxBid,
+      onMakePickAssetSelection: widget.onMakePickAssetSelection,
+      sheetController: _sheetController,
     );
   }
 }
