@@ -53,10 +53,59 @@ class DerbyScreen extends ConsumerWidget {
     }
 
     if (derbyState == null) {
+      final isCommissioner = state.isCommissioner;
+      final isDerbySubmitting = state.isDerbySubmitting;
+
       return Scaffold(
         appBar: AppBar(title: const Text('Draft Order Selection')),
-        body: const Center(
-          child: Text('Waiting for derby to start...'),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.shuffle,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Derby Draft Order',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Teams will pick their draft position in random order',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              if (isCommissioner)
+                ElevatedButton.icon(
+                  onPressed: isDerbySubmitting
+                      ? null
+                      : () {
+                          ref.read(draftRoomProvider(_draftKey).notifier).startDerby();
+                        },
+                  icon: isDerbySubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.play_arrow),
+                  label: Text(isDerbySubmitting ? 'Starting...' : 'Start Derby'),
+                )
+              else
+                Text(
+                  'Waiting for commissioner to start...',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
         ),
       );
     }

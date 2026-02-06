@@ -18,6 +18,7 @@ class DerbySlotGrid extends ConsumerWidget {
     final state = ref.watch(draftRoomProvider(draftKey));
     final derbyState = state.derbyState;
     final draftOrder = state.draftOrder;
+    final rosterNames = state.rosterNames;
     final myRosterId = state.myRosterId;
     final isMyTurn = state.isMyDerbyTurn;
     final isSubmitting = state.isDerbySubmitting;
@@ -48,7 +49,7 @@ class DerbySlotGrid extends ConsumerWidget {
         // Find team name for claimed slot
         String? claimedByTeamName;
         if (isClaimed) {
-          claimedByTeamName = _getTeamName(draftOrder, claimedByRosterId);
+          claimedByTeamName = _getTeamName(draftOrder, rosterNames, claimedByRosterId);
         }
 
         return DerbySlotCard(
@@ -59,6 +60,7 @@ class DerbySlotGrid extends ConsumerWidget {
           claimedByTeamName: claimedByTeamName,
           canSelect: isMyTurn && isAvailable && !isSubmitting,
           isSubmitting: isSubmitting,
+          isMyTurn: isMyTurn,
           onSelect: () {
             ref.read(draftRoomProvider(draftKey).notifier).pickDerbySlot(slotNumber);
           },
@@ -74,9 +76,14 @@ class DerbySlotGrid extends ConsumerWidget {
     return 2;
   }
 
-  String? _getTeamName(List<DraftOrderEntry> draftOrder, int rosterId) {
+  String? _getTeamName(List<DraftOrderEntry> draftOrder, Map<int, String> rosterNames, int rosterId) {
+    // Try draft order first (populated after derby completes)
     final entry = draftOrder.where((e) => e.rosterId == rosterId).firstOrNull;
-    return entry?.username;
+    if (entry != null) {
+      return entry.username;
+    }
+    // Fall back to roster names (populated from league members, works during derby)
+    return rosterNames[rosterId];
   }
 }
 
@@ -89,6 +96,7 @@ class DerbySlotCard extends StatelessWidget {
   final String? claimedByTeamName;
   final bool canSelect;
   final bool isSubmitting;
+  final bool isMyTurn;
   final VoidCallback onSelect;
 
   const DerbySlotCard({
@@ -100,6 +108,7 @@ class DerbySlotCard extends StatelessWidget {
     this.claimedByTeamName,
     required this.canSelect,
     required this.isSubmitting,
+    required this.isMyTurn,
     required this.onSelect,
   });
 
@@ -183,7 +192,7 @@ class DerbySlotCard extends StatelessWidget {
                     color: colorScheme.primary,
                   ),
                 ),
-              if (isSubmitting && canSelect)
+              if (isSubmitting && isMyTurn && isAvailable)
                 const Center(
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),

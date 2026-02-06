@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/league_context_provider.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../auth/presentation/auth_provider.dart';
+import '../../../leagues/data/league_repository.dart';
 import '../../../leagues/domain/league.dart';
 import '../../../players/data/player_repository.dart';
 import '../../../players/domain/player.dart';
@@ -64,6 +65,8 @@ class DraftRoomState {
   final DerbyState? derbyState;
   // Whether a derby action is in progress
   final bool isDerbySubmitting;
+  // Roster ID to team name mapping for derby phase (when draftOrder is empty)
+  final Map<int, String> rosterNames;
 
   DraftRoomState({
     this.draft,
@@ -92,6 +95,7 @@ class DraftRoomState {
     this.isCommissioner = false,
     this.derbyState,
     this.isDerbySubmitting = false,
+    this.rosterNames = const {},
   });
 
   bool get isAuction => draft?.draftType == DraftType.auction;
@@ -231,6 +235,7 @@ class DraftRoomState {
     DerbyState? derbyState,
     bool clearDerbyState = false,
     bool? isDerbySubmitting,
+    Map<int, String>? rosterNames,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -263,6 +268,7 @@ class DraftRoomState {
       isCommissioner: isCommissioner ?? this.isCommissioner,
       derbyState: clearDerbyState ? null : (derbyState ?? this.derbyState),
       isDerbySubmitting: isDerbySubmitting ?? this.isDerbySubmitting,
+      rosterNames: rosterNames ?? this.rosterNames,
     );
   }
 }
@@ -274,6 +280,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   final DraftRepository _draftRepo;
   final PlayerRepository _playerRepo;
   final DraftPickAssetRepository _pickAssetRepo;
+  final LeagueRepository _leagueRepo;
   final SocketService _socketService;
   final int leagueId;
   final int draftId;
@@ -296,6 +303,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     this._draftRepo,
     this._playerRepo,
     this._pickAssetRepo,
+    this._leagueRepo,
     this._socketService,
     String? currentUserId,
     this.leagueId,
@@ -549,16 +557,24 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         _draftRepo.getDraftOrder(leagueId, draftId).catchError((e) => <Map<String, dynamic>>[]),
         _draftRepo.getDraftPicks(leagueId, draftId).catchError((e) => <Map<String, dynamic>>[]),
         _pickAssetRepo.getLeaguePickAssets(leagueId).catchError((e) => <DraftPickAsset>[]),
+        _leagueRepo.getLeagueMembers(leagueId).catchError((e) => <Roster>[]),
       ]);
 
       final players = results[0] as List<Player>;
       final orderData = results[1] as List<Map<String, dynamic>>;
       final picksData = results[2] as List<Map<String, dynamic>>;
       final pickAssets = results[3] as List<DraftPickAsset>;
+      final rosters = results[4] as List<Roster>;
 
       final draftOrder = orderData.map((e) => DraftOrderEntry.fromJson(e)).toList();
       final picks = picksData.map((e) => DraftPick.fromJson(e)).toList()
         ..sort((a, b) => a.pickNumber.compareTo(b.pickNumber));
+
+      // Build roster ID to name map for derby phase (when draftOrder is empty)
+      final rosterNames = <int, String>{};
+      for (final roster in rosters) {
+        rosterNames[roster.id] = roster.teamName ?? roster.username;
+      }
 
       if (!mounted) return;
 
@@ -570,6 +586,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         pickAssets: pickAssets,
         includeRookiePicks: includeRookiePicks,
         rookiePicksSeason: rookiePicksSeason,
+        rosterNames: rosterNames,
         isLoading: false,
       );
 
@@ -880,6 +897,16 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     final deadlineStr = data['deadline'] as String? ?? data['slotPickDeadline'] as String?;
     final deadline = deadlineStr != null ? DateTime.tryParse(deadlineStr) : null;
 
+    // Parse remaining slots from event
+    final remainingSlotsRaw = data['remainingSlots'] ?? data['remaining_slots'] ?? [];
+    final List<int> remainingSlots = [];
+    if (remainingSlotsRaw is List) {
+      for (final item in remainingSlotsRaw) {
+        final value = item is int ? item : int.tryParse(item.toString());
+        if (value != null) remainingSlots.add(value);
+      }
+    }
+
     if (slotNumber != null && rosterId != null) {
       final updatedClaimedSlots = Map<int, int>.from(currentState.claimedSlots);
       updatedClaimedSlots[slotNumber] = rosterId;
@@ -890,6 +917,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
           currentPickerRosterId: nextPickerRosterId,
           slotPickDeadline: deadline,
           currentTurnIndex: currentState.currentTurnIndex + 1,
+          availableSlots: remainingSlots,
         ),
       );
     }
@@ -1008,6 +1036,7 @@ final draftRoomProvider =
       ref.watch(draftRepositoryProvider),
       ref.watch(playerRepositoryProvider),
       ref.watch(draftPickAssetRepositoryProvider),
+      ref.watch(leagueRepositoryProvider),
       ref.watch(socketServiceProvider),
       currentUserId,
       key.leagueId,
