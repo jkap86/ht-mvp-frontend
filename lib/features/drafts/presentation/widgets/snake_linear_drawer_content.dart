@@ -29,6 +29,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
   final Future<void> Function(int) onAddToQueue;
   final Future<void> Function(int)? onMakePickAssetSelection;
   final Future<void> Function(int)? onAddPickAssetToQueue;
+  final bool isPickSubmitting;
 
   const SnakeLinearDrawerContent({
     super.key,
@@ -47,6 +48,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
     required this.onAddToQueue,
     this.onMakePickAssetSelection,
     this.onAddPickAssetToQueue,
+    this.isPickSubmitting = false,
   });
 
   @override
@@ -122,6 +124,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
               isMyTurn: isMyTurn,
               onDraftPlayer: onMakePick,
               onDraftPickAsset: onMakePickAssetSelection,
+              isPickSubmitting: isPickSubmitting,
             ),
           ),
         ),
@@ -148,6 +151,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
                 isDraftInProgress: isDraftInProgress,
                 isMyTurn: isMyTurn,
                 isInQueue: queuedPickAssetIds.contains(item.pickAsset!.id),
+                isSubmitting: isPickSubmitting,
               );
             } else {
               return _buildPlayerTile(
@@ -155,6 +159,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
                 isDraftInProgress: isDraftInProgress,
                 isMyTurn: isMyTurn,
                 isInQueue: queuedPlayerIds.contains(item.player!.id),
+                isSubmitting: isPickSubmitting,
               );
             }
           },
@@ -185,6 +190,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
     required bool isDraftInProgress,
     required bool isMyTurn,
     required bool isInQueue,
+    required bool isSubmitting,
   }) {
     return ListTile(
       leading: CircleAvatar(
@@ -206,6 +212,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
         isDraftInProgress: isDraftInProgress,
         isMyTurn: isMyTurn,
         isInQueue: isInQueue,
+        isSubmitting: isSubmitting,
       ),
     );
   }
@@ -215,6 +222,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
     required bool isDraftInProgress,
     required bool isMyTurn,
     required bool isInQueue,
+    required bool isSubmitting,
   }) {
     if (!isDraftInProgress) {
       // Before draft starts - show queue button
@@ -245,10 +253,16 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
           tooltip: isInQueue ? 'In queue' : 'Add to queue',
         ),
         ElevatedButton(
-          onPressed: isMyTurn && onMakePickAssetSelection != null
+          onPressed: isMyTurn && !isSubmitting && onMakePickAssetSelection != null
               ? () => onMakePickAssetSelection!(pickAsset.id)
               : null,
-          child: const Text('Draft'),
+          child: isSubmitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Draft'),
         ),
       ],
     );
@@ -259,6 +273,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
     required bool isDraftInProgress,
     required bool isMyTurn,
     required bool isInQueue,
+    required bool isSubmitting,
   }) {
     return ListTile(
       leading: CircleAvatar(
@@ -279,6 +294,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
         isDraftInProgress: isDraftInProgress,
         isMyTurn: isMyTurn,
         isInQueue: isInQueue,
+        isSubmitting: isSubmitting,
       ),
     );
   }
@@ -288,6 +304,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
     required bool isDraftInProgress,
     required bool isMyTurn,
     required bool isInQueue,
+    required bool isSubmitting,
   }) {
     if (!isDraftInProgress) {
       // Before draft starts - only show queue button
@@ -314,8 +331,14 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
           tooltip: isInQueue ? 'In queue' : 'Add to queue',
         ),
         ElevatedButton(
-          onPressed: isMyTurn ? () => onMakePick(player.id) : null,
-          child: const Text('Draft'),
+          onPressed: isMyTurn && !isSubmitting ? () => onMakePick(player.id) : null,
+          child: isSubmitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Draft'),
         ),
       ],
     );

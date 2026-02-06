@@ -12,6 +12,7 @@ class DraftQueueWidget extends ConsumerWidget {
   final bool isMyTurn;
   final Future<void> Function(int playerId)? onDraftPlayer;
   final Future<void> Function(int pickAssetId)? onDraftPickAsset;
+  final bool isPickSubmitting;
 
   const DraftQueueWidget({
     super.key,
@@ -22,6 +23,7 @@ class DraftQueueWidget extends ConsumerWidget {
     this.isMyTurn = false,
     this.onDraftPlayer,
     this.onDraftPickAsset,
+    this.isPickSubmitting = false,
   });
 
   DraftQueueKey get _providerKey => (leagueId: leagueId, draftId: draftId);
@@ -117,7 +119,8 @@ class DraftQueueWidget extends ConsumerWidget {
                     position: index + 1,
                     isHighlighted: isFirstAndMyTurn,
                     showDraftNow: isFirstAndMyTurn && onDraftPlayer != null,
-                    onDraftNow: isFirstAndMyTurn && onDraftPlayer != null
+                    isSubmitting: isPickSubmitting,
+                    onDraftNow: isFirstAndMyTurn && onDraftPlayer != null && !isPickSubmitting
                         ? () => onDraftPlayer!(entry.playerId!)
                         : null,
                     onRemove: () {
@@ -132,7 +135,8 @@ class DraftQueueWidget extends ConsumerWidget {
                     position: index + 1,
                     isHighlighted: isFirstAndMyTurn,
                     showDraftNow: isFirstAndMyTurn && onDraftPickAsset != null,
-                    onDraftNow: isFirstAndMyTurn && onDraftPickAsset != null
+                    isSubmitting: isPickSubmitting,
+                    onDraftNow: isFirstAndMyTurn && onDraftPickAsset != null && !isPickSubmitting
                         ? () => onDraftPickAsset!(entry.pickAssetId!)
                         : null,
                     onRemove: () {
@@ -155,6 +159,7 @@ class _QueuePlayerCard extends StatelessWidget {
   final VoidCallback onRemove;
   final bool isHighlighted;
   final bool showDraftNow;
+  final bool isSubmitting;
   final VoidCallback? onDraftNow;
 
   const _QueuePlayerCard({
@@ -164,6 +169,7 @@ class _QueuePlayerCard extends StatelessWidget {
     required this.onRemove,
     this.isHighlighted = false,
     this.showDraftNow = false,
+    this.isSubmitting = false,
     this.onDraftNow,
   });
 
@@ -235,22 +241,33 @@ class _QueuePlayerCard extends StatelessWidget {
             SizedBox(
               width: 100,
               child: Material(
-                color: AppTheme.draftActionPrimary,
+                color: isSubmitting ? Colors.grey : AppTheme.draftActionPrimary,
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
                 child: InkWell(
-                  onTap: onDraftNow,
+                  onTap: isSubmitting ? null : onDraftNow,
                   borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 6),
-                    child: Text(
-                      'DRAFT NOW',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: isSubmitting
+                        ? const Center(
+                            child: SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            'DRAFT NOW',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -267,6 +284,7 @@ class _QueuePickAssetCard extends StatelessWidget {
   final VoidCallback onRemove;
   final bool isHighlighted;
   final bool showDraftNow;
+  final bool isSubmitting;
   final VoidCallback? onDraftNow;
 
   const _QueuePickAssetCard({
@@ -276,6 +294,7 @@ class _QueuePickAssetCard extends StatelessWidget {
     required this.onRemove,
     this.isHighlighted = false,
     this.showDraftNow = false,
+    this.isSubmitting = false,
     this.onDraftNow,
   });
 
@@ -350,22 +369,33 @@ class _QueuePickAssetCard extends StatelessWidget {
             SizedBox(
               width: 100,
               child: Material(
-                color: AppTheme.draftActionPrimary,
+                color: isSubmitting ? Colors.grey : AppTheme.draftActionPrimary,
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
                 child: InkWell(
-                  onTap: onDraftNow,
+                  onTap: isSubmitting ? null : onDraftNow,
                   borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 6),
-                    child: Text(
-                      'DRAFT NOW',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: isSubmitting
+                        ? const Center(
+                            child: SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            'DRAFT NOW',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ),

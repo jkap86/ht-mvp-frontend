@@ -315,8 +315,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         .where((p) => p.pickNumber == pick.pickNumber && p.id != pick.id)
         .firstOrNull;
     if (existingAtNumber != null) {
-      debugPrint('DraftRoom: Pick conflict detected at pickNumber ${pick.pickNumber}, triggering resync');
-      _refreshDraftState();
+      debugPrint('DraftRoom: Pick conflict detected at pickNumber ${pick.pickNumber}, triggering full resync');
+      loadData();  // Full resync to recover from any desync (stale picks, traded picks, queue cleanup, etc.)
       return;
     }
 

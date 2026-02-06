@@ -26,6 +26,7 @@ class DraftBottomDrawer extends ConsumerStatefulWidget {
   final Future<void> Function(int pickAssetId)? onMakePickAssetSelection;
   final Future<void> Function(int pickAssetId)? onAddPickAssetToQueue;
   final DraggableScrollableController? sheetController;
+  final bool isPickSubmitting;
 
   const DraftBottomDrawer({
     super.key,
@@ -41,6 +42,7 @@ class DraftBottomDrawer extends ConsumerStatefulWidget {
     this.onMakePickAssetSelection,
     this.onAddPickAssetToQueue,
     this.sheetController,
+    this.isPickSubmitting = false,
   });
 
   @override
@@ -196,6 +198,7 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
                           onAddToQueue: widget.onAddToQueue,
                           onMakePickAssetSelection: widget.onMakePickAssetSelection,
                           onAddPickAssetToQueue: widget.onAddPickAssetToQueue,
+                          isPickSubmitting: widget.isPickSubmitting,
                         ),
                 ),
               ],

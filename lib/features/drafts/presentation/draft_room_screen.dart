@@ -45,6 +45,12 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
   Future<void> _makePick(int playerId) async {
     if (_isPickSubmitting) return; // Prevent double-tap
     setState(() => _isPickSubmitting = true);
+
+    // Look up player name before the pick for use in success message
+    final players = ref.read(draftRoomProvider(_providerKey)).players;
+    final player = players.where((p) => p.id == playerId).firstOrNull;
+    final playerName = player?.fullName ?? 'Player';
+
     try {
       final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
       final error = await notifier.makePick(playerId);
@@ -54,10 +60,10 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
             SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
           );
         } else {
-          // Success feedback
+          // Success feedback with player name
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Pick submitted!'),
+              content: Text('Drafted: $playerName'),
               duration: const Duration(seconds: 2),
               backgroundColor: AppTheme.draftActionPrimary,
             ),
@@ -375,6 +381,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         onConfirmOrder: _confirmOrder,
         isConfirmingOrder: _isConfirmingOrder,
         onMakePickAssetSelection: _makePickAssetSelection,
+        isPickSubmitting: _isPickSubmitting,
       ),
     );
   }
@@ -397,6 +404,7 @@ class _DraftRoomBody extends ConsumerStatefulWidget {
   final Future<void> Function() onConfirmOrder;
   final bool isConfirmingOrder;
   final Future<void> Function(int) onMakePickAssetSelection;
+  final bool isPickSubmitting;
 
   const _DraftRoomBody({
     required this.providerKey,
@@ -414,6 +422,7 @@ class _DraftRoomBody extends ConsumerStatefulWidget {
     required this.onConfirmOrder,
     required this.isConfirmingOrder,
     required this.onMakePickAssetSelection,
+    required this.isPickSubmitting,
   });
 
   @override
@@ -610,6 +619,7 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
           onNominate: widget.onNominate,
           onSetMaxBid: widget.onSetMaxBid,
           onMakePickAssetSelection: widget.onMakePickAssetSelection,
+          isPickSubmitting: widget.isPickSubmitting,
         ),
       ],
     );
@@ -629,6 +639,7 @@ class _DraftBottomDrawerWithController extends StatefulWidget {
   final Future<void> Function(int) onNominate;
   final Future<void> Function(int, int) onSetMaxBid;
   final Future<void> Function(int) onMakePickAssetSelection;
+  final bool isPickSubmitting;
 
   const _DraftBottomDrawerWithController({
     super.key,
@@ -643,6 +654,7 @@ class _DraftBottomDrawerWithController extends StatefulWidget {
     required this.onNominate,
     required this.onSetMaxBid,
     required this.onMakePickAssetSelection,
+    required this.isPickSubmitting,
   });
 
   @override
@@ -686,6 +698,7 @@ class _DraftBottomDrawerWithControllerState
       onSetMaxBid: widget.onSetMaxBid,
       onMakePickAssetSelection: widget.onMakePickAssetSelection,
       sheetController: _sheetController,
+      isPickSubmitting: widget.isPickSubmitting,
     );
   }
 }
