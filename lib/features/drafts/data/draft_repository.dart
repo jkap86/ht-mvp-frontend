@@ -6,6 +6,7 @@ import '../domain/auction_budget.dart';
 import '../domain/auction_lot.dart';
 import '../domain/auction_state.dart';
 import '../domain/bid_history_entry.dart';
+import '../domain/derby_state.dart';
 import '../domain/draft_order_entry.dart';
 import '../domain/draft_pick_asset.dart';
 
@@ -290,5 +291,32 @@ class DraftRepository {
     final pickData = response['data']?['pick'] as Map<String, dynamic>?;
     if (pickData == null) throw Exception('Invalid response: missing pick data');
     return pickData;
+  }
+
+  // Derby methods (draft order selection phase)
+
+  /// Get current derby state
+  Future<DerbyState> getDerbyState(int leagueId, int draftId) async {
+    final response = await _apiClient.get(
+      '/leagues/$leagueId/drafts/$draftId/derby/state',
+    );
+    return DerbyState.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Start derby phase (commissioner only)
+  Future<DerbyState> startDerby(int leagueId, int draftId) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/drafts/$draftId/derby/start',
+    );
+    return DerbyState.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Pick a slot during derby phase
+  Future<void> pickDerbySlot(int leagueId, int draftId, int slotNumber) async {
+    await _apiClient.post(
+      '/leagues/$leagueId/drafts/$draftId/derby/pick-slot',
+      body: {'slot_number': slotNumber},
+      idempotencyKey: _apiClient.generateIdempotencyKey(),
+    );
   }
 }

@@ -1,4 +1,5 @@
 import '../../drafts/domain/auction_settings.dart';
+import '../../drafts/domain/draft_phase.dart';
 import '../../drafts/domain/draft_status.dart';
 import '../../drafts/domain/draft_type.dart';
 
@@ -278,6 +279,7 @@ class Draft {
   final int leagueId;
   final DraftType draftType;
   final DraftStatus status;
+  final DraftPhase phase;
   final int rounds;
   final int pickTimeSeconds;
   final int? currentPick;
@@ -297,6 +299,7 @@ class Draft {
     required this.leagueId,
     required this.draftType,
     required this.status,
+    this.phase = DraftPhase.setup,
     required this.rounds,
     required this.pickTimeSeconds,
     this.currentPick,
@@ -332,6 +335,7 @@ class Draft {
       leagueId: json['league_id'] as int? ?? 0,
       draftType: DraftType.fromString(json['draft_type'] as String?),
       status: DraftStatus.fromString(json['status'] as String?),
+      phase: DraftPhase.fromString(json['phase'] as String?),
       rounds: json['rounds'] as int? ?? 15,
       pickTimeSeconds: json['pick_time_seconds'] as int? ?? 90,
       currentPick: json['current_pick'] as int?,
@@ -363,6 +367,7 @@ class Draft {
     int? leagueId,
     DraftType? draftType,
     DraftStatus? status,
+    DraftPhase? phase,
     int? rounds,
     int? pickTimeSeconds,
     int? currentPick,
@@ -388,6 +393,7 @@ class Draft {
       leagueId: leagueId ?? this.leagueId,
       draftType: draftType ?? this.draftType,
       status: status ?? this.status,
+      phase: phase ?? this.phase,
       rounds: rounds ?? this.rounds,
       pickTimeSeconds: pickTimeSeconds ?? this.pickTimeSeconds,
       currentPick: clearCurrentPick ? null : (currentPick ?? this.currentPick),

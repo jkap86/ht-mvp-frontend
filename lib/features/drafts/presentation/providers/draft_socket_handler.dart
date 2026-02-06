@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/socket/socket_service.dart';
 import '../../domain/auction_lot.dart';
+import '../../domain/derby_state.dart';
 import '../../domain/draft_pick.dart';
 import '../../domain/draft_pick_asset.dart';
 
@@ -42,6 +43,11 @@ abstract class DraftSocketCallbacks {
   void onPickTradedReceived(DraftPickAsset pickAsset);
   // Settings updated callback (commissioner changed settings)
   void onDraftSettingsUpdatedReceived(Map<String, dynamic> data);
+  // Derby callbacks (draft order selection phase)
+  void onDerbyStateReceived(DerbyState state);
+  void onDerbySlotPickedReceived(Map<String, dynamic> data);
+  void onDerbyTurnChangedReceived(Map<String, dynamic> data);
+  void onDerbyPhaseTransitionReceived(Map<String, dynamic> data);
 }
 
 /// Handles all socket event subscriptions for the draft room
@@ -213,6 +219,44 @@ class DraftSocketHandler {
         );
       } catch (e) {
         debugPrint('Failed to parse draft settings: $e');
+      }
+    }));
+
+    // Derby listeners (draft order selection phase)
+    _addDisposer(_socketService.onDerbyState((data) {
+      if (data is! Map) return;
+      try {
+        final state = DerbyState.fromJson(Map<String, dynamic>.from(data));
+        _callbacks.onDerbyStateReceived(state);
+      } catch (e) {
+        debugPrint('Failed to parse derby state: $e');
+      }
+    }));
+
+    _addDisposer(_socketService.onDerbySlotPicked((data) {
+      if (data is! Map) return;
+      try {
+        _callbacks.onDerbySlotPickedReceived(Map<String, dynamic>.from(data));
+      } catch (e) {
+        debugPrint('Failed to parse derby slot picked: $e');
+      }
+    }));
+
+    _addDisposer(_socketService.onDerbyTurnChanged((data) {
+      if (data is! Map) return;
+      try {
+        _callbacks.onDerbyTurnChangedReceived(Map<String, dynamic>.from(data));
+      } catch (e) {
+        debugPrint('Failed to parse derby turn changed: $e');
+      }
+    }));
+
+    _addDisposer(_socketService.onDerbyPhaseTransition((data) {
+      if (data is! Map) return;
+      try {
+        _callbacks.onDerbyPhaseTransitionReceived(Map<String, dynamic>.from(data));
+      } catch (e) {
+        debugPrint('Failed to parse derby phase transition: $e');
       }
     }));
   }

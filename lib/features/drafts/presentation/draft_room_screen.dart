@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../players/domain/player.dart';
+import '../domain/draft_phase.dart';
 import 'providers/draft_room_provider.dart';
 import 'providers/draft_queue_provider.dart';
+import 'screens/derby_screen.dart';
 import 'widgets/draft_status_bar.dart';
 import 'widgets/draft_board_grid_view.dart';
 import 'widgets/draft_bottom_drawer.dart';
@@ -246,6 +248,14 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
           onRetry: () => ref.read(draftRoomProvider(_providerKey).notifier).loadData(),
         ),
       );
+    }
+
+    // Check if draft is in derby phase (draft order selection)
+    final phase = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.draft?.phase),
+    );
+    if (phase == DraftPhase.derby) {
+      return DerbyScreen(leagueId: widget.leagueId, draftId: widget.draftId);
     }
 
     // Use select() for specific fields needed by the app bar

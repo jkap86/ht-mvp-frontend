@@ -39,6 +39,12 @@ class SocketEvents {
   static const auctionNominatorChanged = 'draft:auction_nominator_changed';
   static const auctionError = 'draft:auction_error';
 
+  // Derby events (draft order selection phase)
+  static const derbyState = 'derby:state';
+  static const derbySlotPicked = 'derby:slot_picked';
+  static const derbyTurnChanged = 'derby:turn_changed';
+  static const derbyPhaseTransition = 'derby:phase_transition';
+
   // Chat events
   static const chatMessage = 'chat:message';
 

@@ -449,6 +449,28 @@ class SocketService {
     return on(SocketEvents.auctionError, callback);
   }
 
+  // Derby event listeners (draft order selection phase)
+
+  /// Listen for full derby state updates
+  VoidCallback onDerbyState(void Function(dynamic) callback) {
+    return on(SocketEvents.derbyState, callback);
+  }
+
+  /// Listen for derby slot picked events
+  VoidCallback onDerbySlotPicked(void Function(dynamic) callback) {
+    return on(SocketEvents.derbySlotPicked, callback);
+  }
+
+  /// Listen for derby turn changed events (timeout policy applied)
+  VoidCallback onDerbyTurnChanged(void Function(dynamic) callback) {
+    return on(SocketEvents.derbyTurnChanged, callback);
+  }
+
+  /// Listen for derby phase transition events
+  VoidCallback onDerbyPhaseTransition(void Function(dynamic) callback) {
+    return on(SocketEvents.derbyPhaseTransition, callback);
+  }
+
   // Trade event listeners
   VoidCallback onTradeProposed(void Function(dynamic) callback) {
     return on(SocketEvents.tradeProposed, callback);

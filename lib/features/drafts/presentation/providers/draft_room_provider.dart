@@ -14,9 +14,11 @@ import '../../data/draft_repository.dart';
 import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
 import '../../domain/auction_settings.dart';
+import '../../domain/derby_state.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_pick.dart';
 import '../../domain/draft_pick_asset.dart';
+import '../../domain/draft_phase.dart';
 import '../../domain/draft_status.dart';
 import '../../domain/draft_type.dart';
 import 'draft_socket_handler.dart';
@@ -58,6 +60,10 @@ class DraftRoomState {
   final bool teamsOnXAxis;
   // Commissioner status for start draft button
   final bool isCommissioner;
+  // Derby phase state (draft order selection)
+  final DerbyState? derbyState;
+  // Whether a derby action is in progress
+  final bool isDerbySubmitting;
 
   DraftRoomState({
     this.draft,
@@ -84,10 +90,29 @@ class DraftRoomState {
     this.rookiePicksSeason,
     this.teamsOnXAxis = true,
     this.isCommissioner = false,
+    this.derbyState,
+    this.isDerbySubmitting = false,
   });
 
   bool get isAuction => draft?.draftType == DraftType.auction;
   bool get isFastAuction => isAuction && auctionMode == 'fast';
+
+  /// Whether the draft is currently in derby phase (draft order selection)
+  bool get isDerbyPhase => draft?.phase == DraftPhase.derby;
+
+  /// Whether it's the current user's turn to pick a slot in derby phase
+  bool get isMyDerbyTurn {
+    if (!isDerbyPhase || myRosterId == null || derbyState == null) return false;
+    return derbyState!.currentPickerRosterId == myRosterId;
+  }
+
+  /// Get the available slots in derby phase
+  List<int> get availableDerbySlots => derbyState?.availableSlots ?? [];
+
+  /// Get the derby slot claimed by a specific roster (null if none)
+  int? getDerbySlotForRoster(int rosterId) {
+    return derbyState?.getSlotForRoster(rosterId);
+  }
 
   bool get isMyNomination {
     if (!isFastAuction || myRosterId == null) return false;
@@ -203,6 +228,9 @@ class DraftRoomState {
     int? rookiePicksSeason,
     bool? teamsOnXAxis,
     bool? isCommissioner,
+    DerbyState? derbyState,
+    bool clearDerbyState = false,
+    bool? isDerbySubmitting,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -233,6 +261,8 @@ class DraftRoomState {
       rookiePicksSeason: rookiePicksSeason ?? this.rookiePicksSeason,
       teamsOnXAxis: teamsOnXAxis ?? this.teamsOnXAxis,
       isCommissioner: isCommissioner ?? this.isCommissioner,
+      derbyState: clearDerbyState ? null : (derbyState ?? this.derbyState),
+      isDerbySubmitting: isDerbySubmitting ?? this.isDerbySubmitting,
     );
   }
 }
@@ -551,6 +581,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       if (mounted && includeRookiePicks) {
         loadAvailablePickAssets();
       }
+
+      // Load derby state if in derby phase
+      if (mounted && draft.phase == DraftPhase.derby) {
+        loadDerbyState();
+      }
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(error: e.toString(), isLoading: false);
@@ -822,6 +857,135 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
               DraftOrderEntry.fromJson(Map<String, dynamic>.from(json as Map)))
           .toList();
       state = state.copyWith(draftOrder: newOrder);
+    }
+  }
+
+  // Derby callback implementations
+
+  @override
+  void onDerbyStateReceived(DerbyState derbyState) {
+    if (!mounted) return;
+    state = state.copyWith(derbyState: derbyState);
+  }
+
+  @override
+  void onDerbySlotPickedReceived(Map<String, dynamic> data) {
+    if (!mounted) return;
+    final currentState = state.derbyState;
+    if (currentState == null) return;
+
+    final slotNumber = data['slotNumber'] as int? ?? data['slot_number'] as int?;
+    final rosterId = data['rosterId'] as int? ?? data['roster_id'] as int?;
+    final nextPickerRosterId = data['nextPickerRosterId'] as int? ?? data['next_picker_roster_id'] as int?;
+    final deadlineStr = data['deadline'] as String? ?? data['slotPickDeadline'] as String?;
+    final deadline = deadlineStr != null ? DateTime.tryParse(deadlineStr) : null;
+
+    if (slotNumber != null && rosterId != null) {
+      final updatedClaimedSlots = Map<int, int>.from(currentState.claimedSlots);
+      updatedClaimedSlots[slotNumber] = rosterId;
+
+      state = state.copyWith(
+        derbyState: currentState.copyWith(
+          claimedSlots: updatedClaimedSlots,
+          currentPickerRosterId: nextPickerRosterId,
+          slotPickDeadline: deadline,
+          currentTurnIndex: currentState.currentTurnIndex + 1,
+        ),
+      );
+    }
+  }
+
+  @override
+  void onDerbyTurnChangedReceived(Map<String, dynamic> data) {
+    if (!mounted) return;
+    final currentState = state.derbyState;
+    if (currentState == null) return;
+
+    final currentPickerRosterId = data['currentPickerRosterId'] as int? ?? data['current_picker_roster_id'] as int?;
+    final deadlineStr = data['deadline'] as String? ?? data['slotPickDeadline'] as String?;
+    final deadline = deadlineStr != null ? DateTime.tryParse(deadlineStr) : null;
+
+    state = state.copyWith(
+      derbyState: currentState.copyWith(
+        currentPickerRosterId: currentPickerRosterId,
+        slotPickDeadline: deadline,
+      ),
+    );
+  }
+
+  @override
+  void onDerbyPhaseTransitionReceived(Map<String, dynamic> data) {
+    if (!mounted) return;
+    final phaseStr = data['phase'] as String?;
+    if (phaseStr == null) return;
+
+    final newPhase = DraftPhase.fromString(phaseStr);
+    final currentDraft = state.draft;
+
+    if (currentDraft != null) {
+      state = state.copyWith(
+        draft: currentDraft.copyWith(phase: newPhase),
+        clearDerbyState: newPhase == DraftPhase.live, // Clear derby state when transitioning to live
+      );
+
+      // If transitioning to LIVE, reload the draft order
+      if (newPhase == DraftPhase.live) {
+        _refreshDraftState();
+      }
+    }
+  }
+
+  // Derby action methods
+
+  /// Start the derby phase (commissioner only)
+  Future<String?> startDerby() async {
+    try {
+      state = state.copyWith(isDerbySubmitting: true);
+      final derbyState = await _draftRepo.startDerby(leagueId, draftId);
+      if (mounted) {
+        // Update draft phase and derby state
+        final currentDraft = state.draft;
+        state = state.copyWith(
+          derbyState: derbyState,
+          isDerbySubmitting: false,
+          draft: currentDraft?.copyWith(phase: DraftPhase.derby),
+        );
+      }
+      return null;
+    } catch (e) {
+      if (mounted) {
+        state = state.copyWith(isDerbySubmitting: false);
+      }
+      return e.toString();
+    }
+  }
+
+  /// Pick a slot during derby phase
+  Future<String?> pickDerbySlot(int slotNumber) async {
+    try {
+      state = state.copyWith(isDerbySubmitting: true);
+      await _draftRepo.pickDerbySlot(leagueId, draftId, slotNumber);
+      if (mounted) {
+        state = state.copyWith(isDerbySubmitting: false);
+      }
+      return null;
+    } catch (e) {
+      if (mounted) {
+        state = state.copyWith(isDerbySubmitting: false);
+      }
+      return e.toString();
+    }
+  }
+
+  /// Load derby state from the server
+  Future<void> loadDerbyState() async {
+    if (state.draft?.phase != DraftPhase.derby) return;
+    try {
+      final derbyState = await _draftRepo.getDerbyState(leagueId, draftId);
+      if (!mounted) return;
+      state = state.copyWith(derbyState: derbyState);
+    } catch (e) {
+      debugPrint('Failed to load derby state: $e');
     }
   }
 
