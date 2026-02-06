@@ -4,6 +4,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/api/api_exceptions.dart';
 import '../domain/league.dart';
 import '../domain/invitation.dart';
+import '../domain/dashboard.dart';
 
 final leagueRepositoryProvider = Provider<LeagueRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
@@ -248,6 +249,12 @@ class LeagueRepository {
   Future<Map<String, dynamic>> getNflState() async {
     final response = await _apiClient.get('/players/nfl-state');
     return response as Map<String, dynamic>;
+  }
+
+  /// Get dashboard summary for league home
+  Future<DashboardSummary> getDashboard(int leagueId) async {
+    final response = await _apiClient.get('/leagues/$leagueId/dashboard');
+    return DashboardSummary.fromJson(response);
   }
 }
 

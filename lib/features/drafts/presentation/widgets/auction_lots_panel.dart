@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
 import '../../../players/domain/player.dart';
 import '../../domain/auction_lot.dart';
 import '../providers/draft_room_provider.dart';
@@ -59,10 +60,15 @@ class AuctionLotsPanel extends StatelessWidget {
     // Build a map of budgets by rosterId for quick lookup of bidder names
     final budgetsMap = {for (var b in state.budgets) b.rosterId: b};
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.orange[50],
-        border: Border(top: BorderSide(color: Colors.orange[200]!)),
+        color: isDark ? AppTheme.auctionBgDark : AppTheme.auctionBgLight,
+        border: Border(top: BorderSide(
+          color: isDark ? AppTheme.auctionBorderDark : AppTheme.auctionBorderLight,
+        )),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,13 +78,13 @@ class AuctionLotsPanel extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                const Icon(Icons.gavel, size: 18, color: Colors.orange),
+                const Icon(Icons.gavel, size: 18, color: AppTheme.auctionPrimary),
                 const SizedBox(width: 8),
                 Text(
                   'Active Lots (${activeLots.length})',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.orange,
+                    color: AppTheme.auctionPrimary,
                   ),
                 ),
                 const Spacer(),
@@ -87,7 +93,7 @@ class AuctionLotsPanel extends StatelessWidget {
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Nominate'),
                   style: TextButton.styleFrom(
-                    foregroundColor: Colors.orange,
+                    foregroundColor: AppTheme.auctionPrimary,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                 ),
@@ -161,8 +167,9 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
   }
 
   void _updateRemaining() {
-    final now = DateTime.now();
-    final deadline = widget.lot.bidDeadline;
+    // Use UTC for both to ensure correct countdown regardless of user's timezone
+    final now = DateTime.now().toUtc();
+    final deadline = widget.lot.bidDeadline.toUtc();
     setState(() {
       _remaining = deadline.difference(now);
       if (_remaining.isNegative) {
@@ -294,7 +301,7 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
               child: ElevatedButton(
                 onPressed: isExpired ? null : widget.onBidTap,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
+                  backgroundColor: AppTheme.auctionPrimary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   minimumSize: const Size(0, 28),

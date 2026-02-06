@@ -16,10 +16,22 @@ class DraftPickAssetRepository {
   /// Get all draft pick assets for a league (all seasons)
   Future<List<DraftPickAsset>> getLeaguePickAssets(int leagueId) async {
     final response = await _apiClient.get('/leagues/$leagueId/pick-assets');
-    final assets = (response as List?) ?? [];
-    return assets
-        .map((json) => DraftPickAsset.fromJson(json as Map<String, dynamic>))
-        .toList();
+
+    // Response format: {league_id, seasons, pick_assets: {season: [...]}}
+    final pickAssetsMap = (response as Map<String, dynamic>?)?['pick_assets']
+        as Map<String, dynamic>?;
+    if (pickAssetsMap == null) return [];
+
+    // Flatten all seasons into a single list
+    final allAssets = <DraftPickAsset>[];
+    for (final seasonAssets in pickAssetsMap.values) {
+      final assets = (seasonAssets as List?) ?? [];
+      allAssets.addAll(
+        assets.map(
+            (json) => DraftPickAsset.fromJson(json as Map<String, dynamic>)),
+      );
+    }
+    return allAssets;
   }
 
   /// Get draft pick assets for a specific season in a league

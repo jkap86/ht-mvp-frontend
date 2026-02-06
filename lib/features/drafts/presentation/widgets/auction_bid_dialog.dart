@@ -238,15 +238,47 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
 
               const SizedBox(height: 8),
 
+              // Urgent warning banner when < 30 seconds remaining
+              if (!isExpired && _timeRemaining.inSeconds < 30)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: theme.colorScheme.onError,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Lot closing soon! Submit your bid now.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onError,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // Time remaining
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: isExpired
                       ? theme.colorScheme.errorContainer
-                      : _timeRemaining.inMinutes < 5
-                          ? theme.colorScheme.errorContainer.withAlpha(128)
-                          : theme.colorScheme.surfaceContainerHighest,
+                      : _timeRemaining.inSeconds < 30
+                          ? theme.colorScheme.errorContainer
+                          : _timeRemaining.inMinutes < 5
+                              ? theme.colorScheme.errorContainer.withAlpha(128)
+                              : theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -262,9 +294,11 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
                         fontWeight: FontWeight.bold,
                         color: isExpired
                             ? theme.colorScheme.error
-                            : _timeRemaining.inMinutes < 5
+                            : _timeRemaining.inSeconds < 30
                                 ? theme.colorScheme.error
-                                : null,
+                                : _timeRemaining.inMinutes < 5
+                                    ? theme.colorScheme.error
+                                    : null,
                       ),
                     ),
                   ],

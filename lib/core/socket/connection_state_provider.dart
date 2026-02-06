@@ -19,8 +19,8 @@ final socketConnectionProvider = StreamProvider<SocketConnectionState>((ref) {
       ? SocketConnectionState.connected
       : SocketConnectionState.disconnected);
 
-  // Listen for reconnect events
-  final unsubscribeReconnect = socketService.onReconnected((needsFullRefresh) {
+  // Listen for connect events (initial and reconnect)
+  final unsubscribeConnect = socketService.onConnected(() {
     controller.add(SocketConnectionState.connected);
   });
 
@@ -30,7 +30,7 @@ final socketConnectionProvider = StreamProvider<SocketConnectionState>((ref) {
   });
 
   ref.onDispose(() {
-    unsubscribeReconnect();
+    unsubscribeConnect();
     unsubscribeDisconnect();
     controller.close();
   });

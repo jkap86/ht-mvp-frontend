@@ -463,9 +463,12 @@ class DraftBoardGridView extends ConsumerWidget {
     );
 
     // Find the pick asset for this slot (if any)
+    // Filter by draftId to ensure we only match assets for this specific draft
     final pickAsset = pickAssets
         .where((asset) =>
-            asset.round == round && asset.originalRosterId == entry.rosterId)
+            asset.draftId == draftId &&
+            asset.round == round &&
+            asset.originalRosterId == entry.rosterId)
         .firstOrNull;
 
     return DraftGridCell(

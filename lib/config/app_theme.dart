@@ -24,6 +24,14 @@ class AppTheme {
   static const Color draftNormal = Color(0xFF1F6FEB);         // Timer normal, in-progress
   static const Color draftSuccess = Color(0xFF238636);        // Timer plenty of time (>60s)
 
+  // Auction-specific colors
+  static const Color auctionPrimary = Color(0xFFFF9800);      // Orange - auction accent
+  static const Color auctionBgLight = Color(0xFFFFF3E0);      // Light orange background
+  static const Color auctionBgDark = Color(0xFF3D2E1E);       // Dark orange-tinted background
+  static const Color auctionBorderLight = Color(0xFFFFCC80);  // Light orange border
+  static const Color auctionBorderDark = Color(0xFF5D4E3E);   // Dark orange border
+  static const Color auctionTextMuted = Color(0xFF6E7681);    // Muted text color
+
   // Position colors (industry standard)
   static const Color positionQB = Color(0xFFE91E63);        // Pink/Magenta
   static const Color positionRB = Color(0xFF00BFA5);        // Teal

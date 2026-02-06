@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../leagues/domain/league.dart';
+import '../../../leagues/presentation/widgets/league_status_pill.dart';
 
 class LeagueCard extends StatelessWidget {
   final League league;
@@ -23,17 +24,55 @@ class LeagueCard extends StatelessWidget {
                 color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
-        title: Text(
-          league.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                league.name,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            _buildStatusPill(),
+          ],
         ),
-        subtitle: Text('${league.status} - Season ${league.season}'),
+        subtitle: Text('Season ${league.season}'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
           context.go('/leagues/${league.id}');
           onNavigate?.call();
         },
       ),
+    );
+  }
+
+  Widget _buildStatusPill() {
+    // Determine status type based on league and season status
+    LeagueStatusType statusType;
+    int? week;
+
+    if (league.seasonStatus == SeasonStatus.regularSeason ||
+        league.seasonStatus == SeasonStatus.playoffs) {
+      statusType = LeagueStatusType.inSeason;
+      week = league.currentWeek;
+    } else {
+      // Pre-season, show status based on league status
+      switch (league.status) {
+        case 'pre_draft':
+          statusType = LeagueStatusType.preSeason;
+          break;
+        case 'drafting':
+          statusType = LeagueStatusType.draftLive;
+          break;
+        default:
+          statusType = LeagueStatusType.preSeason;
+      }
+    }
+
+    return LeagueStatusPill(
+      type: statusType,
+      week: week,
     );
   }
 }

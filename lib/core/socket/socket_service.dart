@@ -51,6 +51,9 @@ class SocketService {
   /// Callbacks to notify when socket reconnects (receives needsFullRefresh flag)
   final List<void Function(bool needsFullRefresh)> _reconnectCallbacks = [];
 
+  /// Callbacks to notify when socket connects (initial or reconnect)
+  final List<VoidCallback> _connectCallbacks = [];
+
   /// Callbacks to notify when socket disconnects
   final List<VoidCallback> _disconnectCallbacks = [];
 
@@ -93,6 +96,13 @@ class SocketService {
     return () => _disconnectCallbacks.remove(callback);
   }
 
+  /// Register a callback for ANY connection (initial or reconnect).
+  /// Returns a function to unregister the callback.
+  VoidCallback onConnected(VoidCallback callback) {
+    _connectCallbacks.add(callback);
+    return () => _connectCallbacks.remove(callback);
+  }
+
   Future<void> connect() async {
     if (_socket != null && _socket!.connected) return;
 
@@ -130,6 +140,15 @@ class SocketService {
           } catch (e) {
             if (kDebugMode) debugPrint('Error in reconnect callback: $e');
           }
+        }
+      }
+
+      // Notify connect callbacks for ALL connections (initial and reconnect)
+      for (final callback in _connectCallbacks) {
+        try {
+          callback();
+        } catch (e) {
+          if (kDebugMode) debugPrint('Error in connect callback: $e');
         }
       }
     });

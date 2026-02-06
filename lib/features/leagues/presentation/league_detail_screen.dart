@@ -10,6 +10,7 @@ import '../../drafts/domain/draft_order_entry.dart';
 import '../../drafts/domain/draft_type.dart';
 import '../../notifications/presentation/widgets/notification_bell.dart';
 import 'providers/league_detail_provider.dart';
+import 'providers/league_dashboard_provider.dart';
 import 'widgets/league_header_widget.dart';
 import 'widgets/league_members_section.dart';
 import 'widgets/league_drafts_section.dart';
@@ -17,6 +18,9 @@ import 'widgets/create_draft_dialog.dart';
 import 'widgets/invite_member_sheet.dart';
 import 'widgets/matchup_preview_card.dart';
 import 'widgets/action_alerts_banner.dart';
+import 'widgets/next_up_card.dart';
+import 'widgets/pending_counts_row.dart';
+import 'widgets/announcements_block.dart';
 import '../../drafts/presentation/widgets/edit_draft_settings_dialog.dart';
 
 class LeagueDetailScreen extends ConsumerStatefulWidget {
@@ -268,6 +272,8 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
   }
 
   Widget _buildOverviewTab(LeagueDetailState state) {
+    final dashboardState = ref.watch(leagueDashboardProvider(widget.leagueId));
+
     // Build items list for ListView.builder
     final items = <Widget>[
       LeagueHeaderWidget(
@@ -280,6 +286,30 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
       ),
       const SizedBox(height: 16),
     ];
+
+    // Next Up Card - shows the most relevant upcoming action
+    if (dashboardState.nextUpType != NextUpType.none) {
+      items.add(NextUpCard(
+        state: dashboardState,
+        onTap: () => _handleNextUpTap(dashboardState),
+      ));
+      items.add(const SizedBox(height: 16));
+    }
+
+    // Pending Counts Row - shows pending trades, waivers, messages
+    if (dashboardState.pendingTrades > 0 ||
+        dashboardState.activeWaiverClaims > 0 ||
+        dashboardState.unreadChatMessages > 0) {
+      items.add(PendingCountsRow(
+        pendingTrades: dashboardState.pendingTrades,
+        activeWaiverClaims: dashboardState.activeWaiverClaims,
+        unreadChatMessages: dashboardState.unreadChatMessages,
+        onTradesTap: () => context.go('/leagues/${widget.leagueId}/trades'),
+        onWaiversTap: () => context.go('/leagues/${widget.leagueId}/players'),
+        onChatTap: null, // TODO: Navigate to chat when implemented
+      ));
+      items.add(const SizedBox(height: 16));
+    }
 
     // Matchup Preview Card (in-season only)
     if (state.isInSeason && state.currentMatchup != null) {
@@ -306,6 +336,14 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
       items.add(_buildActionAlertsBanner(state));
     }
 
+    // Announcements Block
+    if (dashboardState.announcements.isNotEmpty) {
+      items.add(AnnouncementsBlock(
+        announcements: dashboardState.announcements,
+      ));
+      items.add(const SizedBox(height: 16));
+    }
+
     items.add(LeagueMembersSection(
       league: state.league!,
       members: state.members,
@@ -327,7 +365,12 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     ));
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(leagueDetailProvider(widget.leagueId).notifier).loadData(),
+      onRefresh: () async {
+        await Future.wait([
+          ref.read(leagueDetailProvider(widget.leagueId).notifier).loadData(),
+          ref.read(leagueDashboardProvider(widget.leagueId).notifier).loadDashboard(),
+        ]);
+      },
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
@@ -339,6 +382,32 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         ),
       ),
     );
+  }
+
+  void _handleNextUpTap(LeagueDashboardState dashboardState) {
+    final draftId = dashboardState.draft?.id;
+    switch (dashboardState.nextUpType) {
+      case NextUpType.draftLive:
+      case NextUpType.draftPaused:
+      case NextUpType.draftScheduled:
+        if (draftId != null) {
+          context.push('/leagues/${widget.leagueId}/drafts/$draftId');
+        }
+        break;
+      case NextUpType.auctionActive:
+        if (draftId != null) {
+          context.push('/leagues/${widget.leagueId}/drafts/$draftId');
+        }
+        break;
+      case NextUpType.waiversSoon:
+        context.go('/leagues/${widget.leagueId}/players');
+        break;
+      case NextUpType.inSeason:
+        context.go('/leagues/${widget.leagueId}/matchups');
+        break;
+      case NextUpType.none:
+        break;
+    }
   }
 
   Widget _buildActionAlertsBanner(LeagueDetailState state) {
