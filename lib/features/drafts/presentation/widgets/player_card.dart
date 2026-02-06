@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../config/app_theme.dart';
 import '../../../players/domain/player.dart';
 import '../utils/position_colors.dart';
+import 'shared/position_badge.dart';
 
 class PlayerCard extends StatelessWidget {
   final Player player;
@@ -31,7 +32,6 @@ class PlayerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final positionColor = getPositionColor(player.primaryPosition);
 
     return Opacity(
@@ -46,11 +46,7 @@ class PlayerCard extends StatelessWidget {
             child: Row(
               children: [
                 // Position Badge
-                _PositionBadge(
-                  position: player.primaryPosition,
-                  color: positionColor,
-                  isDark: isDark,
-                ),
+                PositionBadge(position: player.primaryPosition),
                 const SizedBox(width: 12),
 
                 // Player Info
@@ -231,40 +227,3 @@ class PlayerCard extends StatelessWidget {
   }
 }
 
-class _PositionBadge extends StatelessWidget {
-  final String position;
-  final Color color;
-  final bool isDark;
-
-  const _PositionBadge({
-    required this.position,
-    required this.color,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 50 : 35),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: color.withAlpha(isDark ? 100 : 70),
-          width: 1.5,
-        ),
-      ),
-      child: Center(
-        child: Text(
-          position,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-}

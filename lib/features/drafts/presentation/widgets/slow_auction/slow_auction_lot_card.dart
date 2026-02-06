@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../../../../../config/app_theme.dart';
@@ -9,7 +7,9 @@ import '../../../data/draft_repository.dart';
 import '../../../domain/auction_lot.dart';
 import '../../../domain/bid_history_entry.dart';
 import '../../../domain/draft_order_entry.dart';
-import '../../utils/position_colors.dart';
+import '../../mixins/countdown_mixin.dart';
+import '../shared/bid_amount_display.dart';
+import '../shared/position_badge.dart';
 
 /// Individual auction card for the slow auction list view.
 /// Expandable to show bid history inline.
@@ -39,9 +39,8 @@ class SlowAuctionLotCard extends StatefulWidget {
   State<SlowAuctionLotCard> createState() => _SlowAuctionLotCardState();
 }
 
-class _SlowAuctionLotCardState extends State<SlowAuctionLotCard> {
-  Timer? _timer;
-  Duration _timeRemaining = Duration.zero;
+class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
+    with CountdownMixin {
   bool _isExpanded = false;
   List<BidHistoryEntry>? _bidHistory;
   bool _isLoadingHistory = false;
@@ -50,39 +49,14 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard> {
   @override
   void initState() {
     super.initState();
-    _updateTimeRemaining();
-    _startTimer();
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
-      _updateTimeRemaining();
-    });
-  }
-
-  void _updateTimeRemaining() {
-    // Use UTC for both to ensure correct countdown regardless of user's timezone
-    final now = DateTime.now().toUtc();
-    final deadline = widget.lot.bidDeadline.toUtc();
-    final remaining = deadline.difference(now);
-    if (mounted) {
-      setState(() {
-        _timeRemaining = remaining.isNegative ? Duration.zero : remaining;
-      });
-    }
+    startCountdown(widget.lot.bidDeadline, interval: const Duration(minutes: 1));
   }
 
   @override
   void didUpdateWidget(SlowAuctionLotCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.lot.bidDeadline != widget.lot.bidDeadline) {
-      _updateTimeRemaining();
+      updateTimeRemaining(widget.lot.bidDeadline);
     }
     // Refresh bid history if lot changed and we're expanded
     if (oldWidget.lot.id != widget.lot.id && _isExpanded) {
@@ -131,28 +105,6 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard> {
     }
   }
 
-  String _formatTimeRemaining() {
-    if (_timeRemaining == Duration.zero) return 'Ended';
-    if (_timeRemaining.inDays > 0) {
-      return '${_timeRemaining.inDays}d ${_timeRemaining.inHours.remainder(24)}h';
-    }
-    if (_timeRemaining.inHours > 0) {
-      return '${_timeRemaining.inHours}h ${_timeRemaining.inMinutes.remainder(60)}m';
-    }
-    return '${_timeRemaining.inMinutes}m';
-  }
-
-  String _formatTimeAgo(DateTime dateTime) {
-    // Use UTC for both to ensure consistent time differences
-    final now = DateTime.now().toUtc();
-    final utcDateTime = dateTime.toUtc();
-    final diff = now.difference(utcDateTime);
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-    return 'just now';
-  }
-
   String _getUsernameForRoster(int rosterId) {
     final entry = widget.draftOrder
         .where((e) => e.rosterId == rosterId)
@@ -160,21 +112,11 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard> {
     return entry?.username ?? 'Team $rosterId';
   }
 
-  /// Get urgency level for time remaining
-  /// 0 = expired, 1 = critical (<30m), 2 = soon (<2h), 3 = normal
-  int _getUrgencyLevel() {
-    if (_timeRemaining == Duration.zero) return 0;
-    if (_timeRemaining.inMinutes < 30) return 1;
-    if (_timeRemaining.inHours < 2) return 2;
-    return 3;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final positionColor = getPositionColor(widget.player.primaryPosition);
-    final urgency = _getUrgencyLevel();
+    final urgency = getSlowAuctionUrgencyLevel();
     final isExpired = urgency == 0;
     final isEndingSoon = urgency <= 2;
 
@@ -205,28 +147,7 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard> {
               child: Row(
                 children: [
                   // Position badge
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: positionColor.withAlpha(isDark ? 50 : 35),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: positionColor.withAlpha(isDark ? 100 : 70),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        widget.player.primaryPosition,
-                        style: TextStyle(
-                          color: positionColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
+                  PositionBadge(position: widget.player.primaryPosition),
 
                   const SizedBox(width: 12),
 
@@ -287,41 +208,16 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       // Current bid
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: widget.isWinning
-                              ? AppTheme.draftActionPrimary
-                              : theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '\$${widget.lot.currentBid}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            fontFamily: 'monospace',
-                            color: widget.isWinning
-                                ? Colors.white
-                                : theme.colorScheme.onSurface,
-                          ),
-                        ),
+                      BidAmountDisplay(
+                        amount: widget.lot.currentBid,
+                        isWinning: widget.isWinning,
                       ),
                       // User's max bid (if they've bid)
                       if (widget.lot.myMaxBid != null) ...[
                         const SizedBox(height: 4),
-                        Text(
-                          'Max: \$${widget.lot.myMaxBid}',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: widget.isWinning
-                                ? AppTheme.draftActionPrimary
-                                : theme.colorScheme.tertiary,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'monospace',
-                          ),
+                        MaxBidIndicator(
+                          maxBid: widget.lot.myMaxBid!,
+                          isWinning: widget.isWinning,
                         ),
                       ],
                       const SizedBox(height: 6),
@@ -340,7 +236,7 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            _formatTimeRemaining(),
+                            formatSlowCountdown(),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: urgency == 1
                                   ? AppTheme.draftUrgent
@@ -466,20 +362,13 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard> {
             ),
           )
         else
-          // Show bid history (most recent first)
-          ..._bidHistory!.reversed.take(5).map((entry) => _buildBidHistoryTile(entry, theme, isDark)),
-
-        // Show "more" indicator if there are more than 5 bids
-        if (_bidHistory != null && _bidHistory!.length > 5)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text(
-              '+${_bidHistory!.length - 5} more bids',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontStyle: FontStyle.italic,
+          // Show bid history (most recent first) in scrollable container
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 200),
+            child: SingleChildScrollView(
+              child: Column(
+                children: _bidHistory!.reversed.map((entry) => _buildBidHistoryTile(entry, theme, isDark)).toList(),
               ),
-              textAlign: TextAlign.center,
             ),
           ),
 
@@ -540,7 +429,7 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard> {
                   ),
                 ),
                 Text(
-                  _formatTimeAgo(entry.createdAt),
+                  formatTimeAgo(entry.createdAt),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
