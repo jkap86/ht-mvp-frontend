@@ -109,15 +109,13 @@ class DraftRoomState {
   Set<int> get draftedPlayerIds => picks.map((p) => p.playerId).toSet();
 
   /// Get the set of drafted pick asset IDs.
-  /// This is computed by comparing all pick assets against available ones.
+  /// Derived directly from picks that have a draftPickAssetId (pick asset selections).
   /// Note: The backend handles queue cleanup when a pick asset is drafted.
   Set<int> get draftedPickAssetIds {
-    // Get the set of available pick asset IDs
-    final availableIds = availablePickAssets.map((p) => p.id).toSet();
-    // Compare against all pick assets we know about to find drafted ones
-    // If pickAssets is empty, we return empty set (queue filtering will still work
-    // because backend removes drafted items from queues)
-    return pickAssets.where((p) => !availableIds.contains(p.id)).map((p) => p.id).toSet();
+    return picks
+        .where((p) => p.draftPickAssetId != null)
+        .map((p) => p.draftPickAssetId!)
+        .toSet();
   }
 
   DraftOrderEntry? get currentPicker {
@@ -241,11 +239,13 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   final DraftRepository _draftRepo;
   final PlayerRepository _playerRepo;
   final DraftPickAssetRepository _pickAssetRepo;
+  final SocketService _socketService;
   final int leagueId;
   final int draftId;
 
   late final DraftSocketHandler _socketHandler;
   Timer? _budgetRefreshTimer;
+  VoidCallback? _reconnectUnsubscribe;
 
   /// Extract playerPool from draft settings, defaulting to veteran + rookie
   List<String>? _extractPlayerPool(Map<String, dynamic>? settings) {
@@ -261,18 +261,40 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     this._draftRepo,
     this._playerRepo,
     this._pickAssetRepo,
-    SocketService socketService,
+    this._socketService,
     String? currentUserId,
     this.leagueId,
     this.draftId,
   ) : super(DraftRoomState(currentUserId: currentUserId)) {
     _socketHandler = DraftSocketHandler(
-      socketService: socketService,
+      socketService: _socketService,
       draftId: draftId,
       callbacks: this,
     );
     _socketHandler.setupListeners();
+
+    // Subscribe to socket reconnection events to refresh state
+    _reconnectUnsubscribe = _socketService.onReconnected(_onSocketReconnected);
+
     loadData();
+  }
+
+  /// Handle socket reconnection - refresh state if disconnected too long
+  void _onSocketReconnected(bool needsFullRefresh) {
+    if (!mounted) return;
+
+    if (needsFullRefresh) {
+      // Long disconnect (>30s) - do a full reload to ensure consistency
+      debugPrint('DraftRoom: Socket reconnected after long disconnect, refreshing all data');
+      loadData();
+    } else {
+      // Short disconnect - just resync draft state and picks
+      debugPrint('DraftRoom: Socket reconnected, doing lightweight resync');
+      _refreshDraftState();
+      if (state.isAuction) {
+        loadAuctionData();
+      }
+    }
   }
 
   // Socket callback implementations
@@ -604,8 +626,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   }
 
   Future<String?> setMaxBid(int lotId, int maxBid) async {
-    // Save current state for rollback on error
-    final previousLots = state.activeLots;
+    // Save previous myMaxBid for this specific lot (for targeted rollback)
+    final previousMaxBid = state.activeLots
+        .where((l) => l.id == lotId)
+        .firstOrNull
+        ?.myMaxBid;
 
     // Optimistic update: immediately reflect user's max bid in state
     if (mounted) {
@@ -621,9 +646,15 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       await _draftRepo.setMaxBid(leagueId, draftId, lotId, maxBid);
       return null;
     } catch (e) {
-      // Rollback optimistic update on error
+      // Rollback only the specific myMaxBid change, preserving any socket updates
+      // that may have arrived during the API call (e.g., currentBid changes)
       if (mounted) {
-        state = state.copyWith(activeLots: previousLots);
+        state = state.copyWith(
+          activeLots: state.activeLots.map((l) {
+            if (l.id == lotId) return l.copyWith(myMaxBid: previousMaxBid);
+            return l;
+          }).toList(),
+        );
       }
       return e.toString();
     }
@@ -763,6 +794,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   @override
   void dispose() {
     _budgetRefreshTimer?.cancel();
+    _reconnectUnsubscribe?.call();
     _socketHandler.dispose();
     super.dispose();
   }

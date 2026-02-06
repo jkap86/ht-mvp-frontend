@@ -53,6 +53,7 @@ class DraftRepository {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/pick',
       body: {'player_id': playerId},
+      idempotencyKey: _apiClient.generateIdempotencyKey(),
     );
     final pickData = response as Map<String, dynamic>?;
     if (pickData == null) throw Exception('Invalid response: missing pick data');
@@ -167,6 +168,7 @@ class DraftRepository {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/actions',
       body: {'action': 'nominate', 'playerId': playerId},
+      idempotencyKey: _apiClient.generateIdempotencyKey(),
     );
     final lotData = response['data']?['lot'] ?? response['lot'];
     if (lotData == null) {
@@ -180,6 +182,7 @@ class DraftRepository {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/actions',
       body: {'action': 'set_max_bid', 'lotId': lotId, 'maxBid': maxBid},
+      idempotencyKey: _apiClient.generateIdempotencyKey(),
     );
     final lotData = response['data']?['lot'] ?? response['lot'];
     if (lotData == null) {
@@ -282,6 +285,7 @@ class DraftRepository {
         'action': 'pick',
         'draftPickAssetId': pickAssetId,
       },
+      idempotencyKey: _apiClient.generateIdempotencyKey(),
     );
     final pickData = response['data']?['pick'] as Map<String, dynamic>?;
     if (pickData == null) throw Exception('Invalid response: missing pick data');

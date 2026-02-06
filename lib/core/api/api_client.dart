@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../config/app_config.dart';
 import 'api_exceptions.dart';
@@ -14,6 +15,7 @@ final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
 class ApiClient {
   final String baseUrl = AppConfig.apiBaseUrl;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final Uuid _uuid = const Uuid();
 
   /// Request timeout duration
   static const Duration requestTimeout = Duration(seconds: 30);
@@ -23,6 +25,9 @@ class ApiClient {
 
   /// Base delay for exponential backoff (in milliseconds)
   static const int baseDelayMs = 500;
+
+  /// Generate a new idempotency key for requests that need safe retries
+  String generateIdempotencyKey() => _uuid.v4();
 
   /// Callback for token refresh. Set this after login to enable automatic
   /// token refresh on 401 responses. Returns true if refresh succeeded.
@@ -78,7 +83,10 @@ class ApiClient {
     await _storage.delete(key: AppConfig.refreshTokenKey);
   }
 
-  Future<Map<String, String>> _getHeaders({bool auth = true}) async {
+  Future<Map<String, String>> _getHeaders({
+    bool auth = true,
+    String? idempotencyKey,
+  }) async {
     final headers = <String, String>{
       'Content-Type': 'application/json',
     };
@@ -89,6 +97,10 @@ class ApiClient {
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       }
+    }
+
+    if (idempotencyKey != null) {
+      headers['x-idempotency-key'] = idempotencyKey;
     }
 
     return headers;
@@ -124,21 +136,23 @@ class ApiClient {
   /// and exponential backoff retry for transient failures.
   /// [executeRequest] is a function that performs the actual HTTP call.
   /// [auth] indicates whether to attempt token refresh on 401.
+  /// [idempotencyKey] is passed to headers for safe retries on mutating requests.
   Future<dynamic> _executeWithRetry({
     required Future<http.Response> Function(Map<String, String> headers) executeRequest,
     required bool auth,
+    String? idempotencyKey,
   }) async {
     Object? lastError;
 
     for (int attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        final headers = await _getHeaders(auth: auth);
+        final headers = await _getHeaders(auth: auth, idempotencyKey: idempotencyKey);
         final response = await executeRequest(headers).timeout(requestTimeout);
         return _handleResponse(response);
       } on UnauthorizedException {
         // Attempt token refresh and retry once (not part of exponential backoff)
         if (auth && await _attemptTokenRefresh()) {
-          final headers = await _getHeaders(auth: auth);
+          final headers = await _getHeaders(auth: auth, idempotencyKey: idempotencyKey);
           final response = await executeRequest(headers).timeout(requestTimeout);
           return _handleResponse(response);
         }
@@ -176,9 +190,15 @@ class ApiClient {
     );
   }
 
-  Future<dynamic> post(String endpoint, {dynamic body, bool auth = true}) async {
+  Future<dynamic> post(
+    String endpoint, {
+    dynamic body,
+    bool auth = true,
+    String? idempotencyKey,
+  }) async {
     return _executeWithRetry(
       auth: auth,
+      idempotencyKey: idempotencyKey,
       executeRequest: (headers) => http.post(
         Uri.parse('$baseUrl$endpoint'),
         headers: headers,
@@ -228,23 +248,30 @@ class ApiClient {
 
     // Handle both old format {error: "msg"} and new format {error: {code, message}}
     final errorField = body?['error'];
-    final message = (errorField is Map)
-        ? errorField['message'] ?? 'An error occurred'
-        : errorField ?? body?['message'] ?? 'An error occurred';
+    String message;
+    String? errorCode;
+
+    if (errorField is Map) {
+      message = errorField['message'] as String? ?? 'An error occurred';
+      errorCode = errorField['code'] as String?;
+    } else {
+      message = errorField as String? ?? body?['message'] as String? ?? 'An error occurred';
+      errorCode = null;
+    }
 
     switch (response.statusCode) {
       case 400:
-        throw ValidationException(message);
+        throw ValidationException(message, errorCode);
       case 401:
-        throw UnauthorizedException(message);
+        throw UnauthorizedException(message, errorCode);
       case 403:
-        throw ForbiddenException(message);
+        throw ForbiddenException(message, errorCode);
       case 404:
-        throw NotFoundException(message);
+        throw NotFoundException(message, errorCode);
       case 409:
-        throw ConflictException(message);
+        throw ConflictException(message, errorCode);
       default:
-        throw ServerException(message);
+        throw ServerException(message, errorCode);
     }
   }
 }
