@@ -46,6 +46,7 @@ class League {
   final int? commissionerRosterId;
   final int? userRosterId;
   final Map<String, dynamic> settings;
+  final Map<String, dynamic> scoringSettings;
   final Map<String, dynamic> leagueSettings;
   final int currentWeek;
   final SeasonStatus seasonStatus;
@@ -63,6 +64,7 @@ class League {
     this.commissionerRosterId,
     this.userRosterId,
     required this.settings,
+    this.scoringSettings = const {},
     this.leagueSettings = const {},
     this.currentWeek = 1,
     this.seasonStatus = SeasonStatus.preSeason,
@@ -72,7 +74,7 @@ class League {
   });
 
   String get scoringType {
-    final rec = settings['scoring_settings']?['rec'];
+    final rec = scoringSettings['rec'];
     if (rec == null) return 'PPR';
     if (rec == 0.0) return 'Standard';
     if (rec == 0.5) return 'Half-PPR';
@@ -125,6 +127,7 @@ class League {
       commissionerRosterId: json['commissioner_roster_id'] as int?,
       userRosterId: json['user_roster_id'] as int?,
       settings: (json['settings'] as Map<String, dynamic>?) ?? {},
+      scoringSettings: (json['scoring_settings'] as Map<String, dynamic>?) ?? {},
       leagueSettings: (json['league_settings'] as Map<String, dynamic>?) ?? {},
       currentWeek: json['current_week'] as int? ?? 1,
       seasonStatus: SeasonStatus.fromString(json['season_status'] as String?),
