@@ -21,7 +21,6 @@ class ScoringSettings {
   int bonus100YardRush;
   int bonus100YardRec;
   int bonus300YardPass;
-  int bonus40YardTd;
 
   // Misc
   int fumbleLostPoints;
@@ -40,7 +39,6 @@ class ScoringSettings {
     this.bonus100YardRush = 0,
     this.bonus100YardRec = 0,
     this.bonus300YardPass = 0,
-    this.bonus40YardTd = 0,
     this.fumbleLostPoints = -2,
     this.twoPtConversion = 2,
   });
@@ -59,7 +57,6 @@ class ScoringSettings {
       'bonus_rush_yd_100': bonus100YardRush,
       'bonus_rec_yd_100': bonus100YardRec,
       'bonus_pass_yd_300': bonus300YardPass,
-      'bonus_40_yd_td': bonus40YardTd,
       'fum_lost': fumbleLostPoints,
       'two_pt': twoPtConversion,
     };
@@ -220,14 +217,6 @@ class ScoringSettingsEditor extends StatelessWidget {
                       value: settings.bonus300YardPass,
                       onChanged: (v) {
                         settings.bonus300YardPass = v.toInt();
-                        onSettingsChanged();
-                      },
-                    ),
-                    _ScoringInputData(
-                      label: '40+ Yard TD',
-                      value: settings.bonus40YardTd,
-                      onChanged: (v) {
-                        settings.bonus40YardTd = v.toInt();
                         onSettingsChanged();
                       },
                     ),

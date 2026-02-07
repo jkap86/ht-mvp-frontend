@@ -90,7 +90,6 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
       bonus100YardRush: (json['bonus_rush_yd_100'] as num?)?.toInt() ?? 0,
       bonus100YardRec: (json['bonus_rec_yd_100'] as num?)?.toInt() ?? 0,
       bonus300YardPass: (json['bonus_pass_yd_300'] as num?)?.toInt() ?? 0,
-      bonus40YardTd: (json['bonus_40_yd_td'] as num?)?.toInt() ?? 0,
       fumbleLostPoints: (json['fum_lost'] as num?)?.toInt() ?? -2,
       twoPtConversion: (json['two_pt'] as num?)?.toInt() ?? 2,
     );
