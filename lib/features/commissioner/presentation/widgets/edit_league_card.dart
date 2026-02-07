@@ -63,7 +63,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
     _rookieDraftRounds = league.settings['rookie_draft_rounds'] as int? ?? 5;
     _totalRosters = league.totalRosters;
 
-    _scoringSettings = _parseScoringSettings(league.settings['scoring_settings']);
+    _scoringSettings = _parseScoringSettings(league.scoringSettings);
     _rosterConfig = _parseRosterConfig(league.settings['roster_config']);
     _hasChanges = false;
   }
