@@ -87,9 +87,12 @@ class League {
     return type ?? 'lineup';
   }
 
+  /// Check if this is a bestball league
+  bool get isBestball => rosterType == 'bestball';
+
   /// Display name for roster type
   String get rosterTypeDisplay {
-    return rosterType == 'bestball' ? 'Bestball' : 'Lineup';
+    return isBestball ? 'Bestball' : 'Lineup';
   }
 
   /// Display name for league mode

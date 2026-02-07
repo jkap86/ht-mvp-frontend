@@ -28,6 +28,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
   late String _selectedMode;
   late bool _isPublic;
   late bool _useLeagueMedian;
+  late bool _isBestball;
   late int _rookieDraftRounds;
   late int _totalRosters;
 
@@ -60,6 +61,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
     _selectedMode = league.mode;
     _isPublic = league.isPublic;
     _useLeagueMedian = league.leagueSettings['useLeagueMedian'] as bool? ?? false;
+    _isBestball = league.isBestball;
     _rookieDraftRounds = league.settings['rookie_draft_rounds'] as int? ?? 5;
     _totalRosters = league.totalRosters;
 
@@ -137,12 +139,14 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
       updatedSettings['rookie_draft_rounds'] = _rookieDraftRounds;
     }
 
-    // Build leagueSettings map for league median
+    // Build leagueSettings map for league median and bestball
     final currentUseMedian = league.leagueSettings['useLeagueMedian'] as bool? ?? false;
+    final currentIsBestball = league.isBestball;
     Map<String, dynamic>? updatedLeagueSettings;
-    if (_useLeagueMedian != currentUseMedian) {
+    if (_useLeagueMedian != currentUseMedian || _isBestball != currentIsBestball) {
       updatedLeagueSettings = Map<String, dynamic>.from(league.leagueSettings);
       updatedLeagueSettings['useLeagueMedian'] = _useLeagueMedian;
+      updatedLeagueSettings['rosterType'] = _isBestball ? 'bestball' : 'lineup';
     }
 
     final success = await ref.read(commissionerProvider(widget.leagueId).notifier).updateLeague(
@@ -266,6 +270,11 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
 
               // League Median Toggle
               _buildLeagueMedianToggle(colorScheme, league),
+
+              const SizedBox(height: 12),
+
+              // Bestball Toggle
+              _buildBestballToggle(colorScheme, league),
 
               const SizedBox(height: 12),
 
@@ -609,6 +618,98 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
                     ? null
                     : (value) {
                         setState(() => _useLeagueMedian = value);
+                        _markChanged();
+                      },
+              ),
+            ],
+          ),
+          if (isLocked) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Locked after season starts',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBestballToggle(ColorScheme colorScheme, dynamic league) {
+    // Toggle is locked after season starts
+    final isLocked = league.seasonStatus != SeasonStatus.preSeason;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                size: 20,
+                color: isLocked ? colorScheme.onSurface.withAlpha(97) : colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Bestball',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: isLocked
+                            ? colorScheme.onSurface.withAlpha(153)
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      _isBestball
+                          ? 'Optimal lineup is set automatically each week'
+                          : 'Managers set their own lineups',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onSurface.withAlpha(153),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _isBestball,
+                onChanged: isLocked
+                    ? null
+                    : (value) {
+                        setState(() => _isBestball = value);
                         _markChanged();
                       },
               ),
