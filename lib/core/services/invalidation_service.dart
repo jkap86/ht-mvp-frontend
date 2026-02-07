@@ -121,11 +121,15 @@ class InvalidationService {
   Future<void> invalidate(InvalidationEvent event, int leagueId) async {
     final types = invalidationRules[event];
     if (types == null || types.isEmpty) {
-      debugPrint('InvalidationService: No rules for event $event');
+      if (kDebugMode) {
+        debugPrint('InvalidationService: No rules for event $event');
+      }
       return;
     }
 
-    debugPrint('InvalidationService: Invalidating $types for event $event in league $leagueId');
+    if (kDebugMode) {
+      debugPrint('InvalidationService: Invalidating $types for event $event in league $leagueId');
+    }
 
     for (final type in types) {
       await _invalidateType(type, leagueId);
@@ -141,11 +145,15 @@ class InvalidationService {
   Future<void> _invalidateType(InvalidationType type, int leagueId) async {
     final callbacks = _callbacks[type]?[leagueId];
     if (callbacks == null || callbacks.isEmpty) {
-      debugPrint('InvalidationService: No callbacks for $type in league $leagueId');
+      if (kDebugMode) {
+        debugPrint('InvalidationService: No callbacks for $type in league $leagueId');
+      }
       return;
     }
 
-    debugPrint('InvalidationService: Calling ${callbacks.length} callbacks for $type in league $leagueId');
+    if (kDebugMode) {
+      debugPrint('InvalidationService: Calling ${callbacks.length} callbacks for $type in league $leagueId');
+    }
 
     // Make a copy to avoid concurrent modification
     final callbacksCopy = List<InvalidationCallback>.from(callbacks);
@@ -153,14 +161,18 @@ class InvalidationService {
       try {
         await callback();
       } catch (e) {
-        debugPrint('InvalidationService: Error invalidating $type: $e');
+        if (kDebugMode) {
+          debugPrint('InvalidationService: Error invalidating $type: $e');
+        }
       }
     }
   }
 
   /// Invalidate all data types for a league.
   Future<void> invalidateAll(int leagueId) async {
-    debugPrint('InvalidationService: Invalidating all types for league $leagueId');
+    if (kDebugMode) {
+      debugPrint('InvalidationService: Invalidating all types for league $leagueId');
+    }
     for (final type in InvalidationType.values) {
       await _invalidateType(type, leagueId);
     }

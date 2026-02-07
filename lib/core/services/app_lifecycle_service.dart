@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -75,7 +76,9 @@ class AppLifecycleService with WidgetsBindingObserver {
     final duration = backgroundDuration;
     _backgroundedAt = null;
 
-    debugPrint('App resumed after ${duration.inSeconds}s, refreshing: $wasStale');
+    if (kDebugMode) {
+      debugPrint('App resumed after ${duration.inSeconds}s, refreshing: $wasStale');
+    }
 
     // Always try to ensure socket is connected
     if (!_socketService.isConnected) {
@@ -89,12 +92,16 @@ class AppLifecycleService with WidgetsBindingObserver {
   }
 
   Future<void> _triggerRefreshCallbacks() async {
-    debugPrint('Triggering ${_refreshCallbacks.length} refresh callbacks');
+    if (kDebugMode) {
+      debugPrint('Triggering ${_refreshCallbacks.length} refresh callbacks');
+    }
     for (final callback in _refreshCallbacks) {
       try {
         await callback();
       } catch (e) {
-        debugPrint('Error in refresh callback: $e');
+        if (kDebugMode) {
+          debugPrint('Error in refresh callback: $e');
+        }
       }
     }
   }

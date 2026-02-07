@@ -62,16 +62,22 @@ class SyncService {
   Future<void> syncLeagueData(int leagueId) async {
     final callbacks = _leagueSyncCallbacks[leagueId];
     if (callbacks == null || callbacks.isEmpty) {
-      debugPrint('SyncService: No callbacks registered for league $leagueId');
+      if (kDebugMode) {
+        debugPrint('SyncService: No callbacks registered for league $leagueId');
+      }
       return;
     }
 
-    debugPrint('SyncService: Syncing ${callbacks.length} callbacks for league $leagueId');
+    if (kDebugMode) {
+      debugPrint('SyncService: Syncing ${callbacks.length} callbacks for league $leagueId');
+    }
     for (final callback in callbacks) {
       try {
         await callback();
       } catch (e) {
-        debugPrint('SyncService: Error syncing league $leagueId: $e');
+        if (kDebugMode) {
+          debugPrint('SyncService: Error syncing league $leagueId: $e');
+        }
       }
     }
   }
@@ -80,23 +86,31 @@ class SyncService {
   Future<void> syncDraftData(int draftId) async {
     final callbacks = _draftSyncCallbacks[draftId];
     if (callbacks == null || callbacks.isEmpty) {
-      debugPrint('SyncService: No callbacks registered for draft $draftId');
+      if (kDebugMode) {
+        debugPrint('SyncService: No callbacks registered for draft $draftId');
+      }
       return;
     }
 
-    debugPrint('SyncService: Syncing ${callbacks.length} callbacks for draft $draftId');
+    if (kDebugMode) {
+      debugPrint('SyncService: Syncing ${callbacks.length} callbacks for draft $draftId');
+    }
     for (final callback in callbacks) {
       try {
         await callback();
       } catch (e) {
-        debugPrint('SyncService: Error syncing draft $draftId: $e');
+        if (kDebugMode) {
+          debugPrint('SyncService: Error syncing draft $draftId: $e');
+        }
       }
     }
   }
 
   /// Sync all registered providers globally.
   Future<void> syncAll() async {
-    debugPrint('SyncService: Starting global sync');
+    if (kDebugMode) {
+      debugPrint('SyncService: Starting global sync');
+    }
 
     // Sync all leagues
     for (final leagueId in _leagueSyncCallbacks.keys.toList()) {
@@ -113,11 +127,15 @@ class SyncService {
       try {
         await callback();
       } catch (e) {
-        debugPrint('SyncService: Error in global sync callback: $e');
+        if (kDebugMode) {
+          debugPrint('SyncService: Error in global sync callback: $e');
+        }
       }
     }
 
-    debugPrint('SyncService: Global sync complete');
+    if (kDebugMode) {
+      debugPrint('SyncService: Global sync complete');
+    }
   }
 
   /// Get list of active league IDs with registered sync callbacks.

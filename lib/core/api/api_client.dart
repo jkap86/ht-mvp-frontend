@@ -93,7 +93,9 @@ class ApiClient {
 
     if (auth) {
       final token = await _getAccessToken();
-      debugPrint('API: Token present: ${token != null}, length: ${token?.length ?? 0}');
+      if (kDebugMode) {
+        debugPrint('API: Token present: ${token != null}, length: ${token?.length ?? 0}');
+      }
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       }
