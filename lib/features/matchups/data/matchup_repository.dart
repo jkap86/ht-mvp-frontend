@@ -32,7 +32,7 @@ class MatchupRepository {
   /// Get a specific matchup with details (basic)
   Future<MatchupDetails> getMatchup(int leagueId, int matchupId) async {
     final response = await _apiClient.get('/leagues/$leagueId/matchups/$matchupId');
-    return MatchupDetails.fromJson(response);
+    return MatchupDetails.fromJson(response['matchup'] ?? response);
   }
 
   /// Get a matchup with full lineup details
@@ -69,5 +69,18 @@ class MatchupRepository {
   Future<Map<String, dynamic>> getScoringRules(int leagueId) async {
     final response = await _apiClient.get('/leagues/$leagueId/scoring/rules');
     return response as Map<String, dynamic>;
+  }
+
+  /// Get the maximum scheduled week for the league
+  Future<int> getMaxScheduledWeek(int leagueId) async {
+    // Fetch all matchups (without week filter) to find max week
+    final response = await _apiClient.get('/leagues/$leagueId/matchups');
+    final matchups = ((response['matchups'] as List?) ?? [])
+        .map((json) => Matchup.fromJson(json as Map<String, dynamic>))
+        .toList();
+
+    if (matchups.isEmpty) return 14; // Default if no schedule yet
+
+    return matchups.map((m) => m.week).reduce((a, b) => a > b ? a : b);
   }
 }

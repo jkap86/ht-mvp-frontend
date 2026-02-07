@@ -61,7 +61,8 @@ class MatchupScreen extends ConsumerWidget {
               ref.read(matchupProvider(leagueId).notifier).changeWeek(week);
             },
             itemBuilder: (context) {
-              final totalWeeks = state.league?.totalWeeks ?? 18;
+              // Use maxScheduledWeek if available, otherwise fall back to totalWeeks
+              final totalWeeks = state.maxScheduledWeek ?? state.league?.totalWeeks ?? 14;
               return List.generate(
                 totalWeeks,
                 (index) => PopupMenuItem(
@@ -108,11 +109,13 @@ class MatchupScreen extends ConsumerWidget {
     }).toList();
 
     // Calculate item count:
-    // - If has my matchup: header + spacing + card + spacing = 4 items
+    // - If has my matchup OR on BYE: header + spacing + card + spacing = 4 items
     // - All matchups header + spacing = 2 items
     // - Other matchups or empty view = otherMatchups.length or 1
     final hasMyMatchup = state.myMatchup != null;
-    final myMatchupItems = hasMyMatchup ? 4 : 0;
+    final isOnBye = state.isOnBye;
+    final showMySection = hasMyMatchup || isOnBye;
+    final myMatchupItems = showMySection ? 4 : 0;
     final headerItems = 2; // "All Matchups" header + spacing
     final matchupItems = state.weekMatchups.isEmpty ? 1 : otherMatchups.length;
     final itemCount = myMatchupItems + headerItems + matchupItems;
@@ -121,12 +124,12 @@ class MatchupScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       itemCount: itemCount,
       itemBuilder: (context, index) {
-        // My matchup section
-        if (hasMyMatchup) {
+        // My matchup section (or BYE week)
+        if (showMySection) {
           if (index == 0) {
-            return const Text(
-              'My Matchup',
-              style: TextStyle(
+            return Text(
+              isOnBye ? 'My Week' : 'My Matchup',
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -136,6 +139,10 @@ class MatchupScreen extends ConsumerWidget {
             return const SizedBox(height: 8);
           }
           if (index == 2) {
+            // Show BYE card if user is on bye, otherwise show matchup card
+            if (isOnBye) {
+              return const _ByeWeekCard();
+            }
             return _MatchupCard(
               matchup: state.myMatchup!,
               myRosterId: state.myRosterId,
@@ -346,6 +353,46 @@ class _TeamRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ByeWeekCard extends StatelessWidget {
+  const _ByeWeekCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Icon(
+              Icons.beach_access,
+              size: 48,
+              color: Colors.blue.shade300,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'BYE Week',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No matchup scheduled this week. Take a break!',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

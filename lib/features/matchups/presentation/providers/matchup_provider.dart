@@ -16,6 +16,7 @@ class MatchupState {
   final bool isLoading;
   final String? error;
   final DateTime? lastUpdated;
+  final int? maxScheduledWeek; // Maximum week with scheduled matchups
 
   MatchupState({
     this.league,
@@ -25,6 +26,7 @@ class MatchupState {
     this.isLoading = true,
     this.error,
     this.lastUpdated,
+    this.maxScheduledWeek,
   });
 
   /// Check if data is stale (older than 5 minutes)
@@ -43,6 +45,9 @@ class MatchupState {
   /// Get all matchups for the current week
   List<Matchup> get weekMatchups => matchups;
 
+  /// Check if user is on a BYE week (has roster but no matchup)
+  bool get isOnBye => myRosterId != null && myMatchup == null;
+
   MatchupState copyWith({
     League? league,
     List<Matchup>? matchups,
@@ -52,6 +57,7 @@ class MatchupState {
     String? error,
     bool clearError = false,
     DateTime? lastUpdated,
+    int? maxScheduledWeek,
   }) {
     return MatchupState(
       league: league ?? this.league,
@@ -61,6 +67,7 @@ class MatchupState {
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      maxScheduledWeek: maxScheduledWeek ?? this.maxScheduledWeek,
     );
   }
 }
@@ -141,9 +148,17 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
+      // Fetch league and max scheduled week in parallel
       final league = await _leagueRepo.getLeague(leagueId);
       final currentWeek = league.currentWeek;
-      final matchups = await _matchupRepo.getMatchups(leagueId, week: currentWeek);
+
+      final results = await Future.wait([
+        _matchupRepo.getMatchups(leagueId, week: currentWeek),
+        _matchupRepo.getMaxScheduledWeek(leagueId),
+      ]);
+
+      final matchups = results[0] as List<Matchup>;
+      final maxScheduledWeek = results[1] as int;
 
       state = state.copyWith(
         league: league,
@@ -152,6 +167,7 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
         myRosterId: league.userRosterId,
         isLoading: false,
         lastUpdated: DateTime.now(),
+        maxScheduledWeek: maxScheduledWeek,
       );
     } catch (e) {
       state = state.copyWith(

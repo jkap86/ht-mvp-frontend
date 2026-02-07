@@ -32,7 +32,7 @@ class MatchupDetailScreen extends ConsumerWidget {
         title: const Text('Matchup Details'),
       ),
       body: detailsAsync.when(
-        data: (details) => _buildContent(context, details),
+        data: (details) => _buildContent(context, ref, details),
         loading: () => const AppLoadingView(),
         error: (error, _) => AppErrorView(
           message: error.toString(),
@@ -52,7 +52,7 @@ class MatchupDetailScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildContent(BuildContext context, MatchupDetails details) {
+  Widget _buildContent(BuildContext context, WidgetRef ref, MatchupDetails details) {
     final matchup = details.matchup;
     final team1 = details.team1;
     final team2 = details.team2;
@@ -62,7 +62,9 @@ class MatchupDetailScreen extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        // Trigger refresh by invalidating the provider
+        final key = (leagueId: leagueId, matchupId: matchupId);
+        ref.invalidate(matchupDetailsProvider(key));
+        await ref.read(matchupDetailsProvider(key).future);
       },
       child: Center(
         child: ConstrainedBox(
