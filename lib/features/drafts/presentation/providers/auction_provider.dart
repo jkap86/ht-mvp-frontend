@@ -144,7 +144,7 @@ class AuctionNotifier extends StateNotifier<AuctionState>
         isLoading: false,
       );
     } catch (e) {
-      debugPrint('Failed to load auction data: $e');
+      if (kDebugMode) debugPrint('Failed to load auction data: $e');
       if (mounted) {
         state = state.copyWith(
           error: 'Failed to load auction data',

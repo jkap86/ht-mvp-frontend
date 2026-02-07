@@ -111,16 +111,16 @@ class AuthRepository {
             await _apiClient.setTokens(newAccessToken, newRefreshToken);
             return true;
           }
-          debugPrint('Token refresh failed: missing tokens in response');
+          if (kDebugMode) debugPrint('Token refresh failed: missing tokens in response');
         } on FormatException catch (e) {
-          debugPrint('Token refresh failed: invalid JSON response - $e');
+          if (kDebugMode) debugPrint('Token refresh failed: invalid JSON response - $e');
         }
       } else {
-        debugPrint('Token refresh failed: status ${response.statusCode}');
+        if (kDebugMode) debugPrint('Token refresh failed: status ${response.statusCode}');
       }
       return false;
     } catch (e) {
-      debugPrint('Token refresh failed: $e');
+      if (kDebugMode) debugPrint('Token refresh failed: $e');
       return false;
     }
   }
