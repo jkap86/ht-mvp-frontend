@@ -328,11 +328,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
     if (needsFullRefresh) {
       // Long disconnect (>30s) - do a full reload to ensure consistency
-      debugPrint('DraftRoom: Socket reconnected after long disconnect, refreshing all data');
+      if (kDebugMode) debugPrint('DraftRoom: Socket reconnected after long disconnect, refreshing all data');
       loadData();
     } else {
       // Short disconnect - just resync draft state and picks
-      debugPrint('DraftRoom: Socket reconnected, doing lightweight resync');
+      if (kDebugMode) debugPrint('DraftRoom: Socket reconnected, doing lightweight resync');
       _refreshDraftState();
       if (state.isAuction) {
         loadAuctionData();
@@ -353,7 +353,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         .where((p) => p.pickNumber == pick.pickNumber && p.id != pick.id)
         .firstOrNull;
     if (existingAtNumber != null) {
-      debugPrint('DraftRoom: Pick conflict detected at pickNumber ${pick.pickNumber}, triggering full resync');
+      if (kDebugMode) debugPrint('DraftRoom: Pick conflict detected at pickNumber ${pick.pickNumber}, triggering full resync');
       loadData();  // Full resync to recover from any desync (stale picks, traded picks, queue cleanup, etc.)
       return;
     }
@@ -619,7 +619,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       assets.sort((a, b) => a.sortKey.compareTo(b.sortKey));
       state = state.copyWith(availablePickAssets: assets);
     } catch (e) {
-      debugPrint('Failed to load available pick assets: $e');
+      if (kDebugMode) debugPrint('Failed to load available pick assets: $e');
     }
   }
 
@@ -642,7 +642,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       );
     } catch (e) {
       // Auction data is supplemental - log for debugging but don't block UI
-      debugPrint('Failed to load auction data: $e');
+      if (kDebugMode) debugPrint('Failed to load auction data: $e');
       // Still update state with error for potential UI feedback
       if (mounted) {
         state = state.copyWith(error: 'Failed to load auction data');
@@ -1013,7 +1013,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       if (!mounted) return;
       state = state.copyWith(derbyState: derbyState);
     } catch (e) {
-      debugPrint('Failed to load derby state: $e');
+      if (kDebugMode) debugPrint('Failed to load derby state: $e');
     }
   }
 

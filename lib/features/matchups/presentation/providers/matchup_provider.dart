@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, VoidCallback, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
@@ -130,7 +130,7 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
       }
     } catch (e) {
       // Silently fail on background refresh
-      debugPrint('Failed to refresh matchups: $e');
+      if (kDebugMode) debugPrint('Failed to refresh matchups: $e');
     }
   }
 
