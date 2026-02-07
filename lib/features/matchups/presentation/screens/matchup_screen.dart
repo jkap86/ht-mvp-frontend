@@ -61,8 +61,11 @@ class MatchupScreen extends ConsumerWidget {
               ref.read(matchupProvider(leagueId).notifier).changeWeek(week);
             },
             itemBuilder: (context) {
-              // Use maxScheduledWeek if available, otherwise fall back to totalWeeks
-              final totalWeeks = state.maxScheduledWeek ?? state.league?.totalWeeks ?? 14;
+              // Use maxScheduledWeek if available (> 0), otherwise fall back to totalWeeks
+              final maxWeek = state.maxScheduledWeek;
+              final totalWeeks = (maxWeek != null && maxWeek > 0)
+                  ? maxWeek
+                  : (state.league?.totalWeeks ?? 14);
               return List.generate(
                 totalWeeks,
                 (index) => PopupMenuItem(

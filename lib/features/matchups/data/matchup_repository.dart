@@ -80,7 +80,7 @@ class MatchupRepository {
         .map((json) => Matchup.fromJson(json as Map<String, dynamic>))
         .toList();
 
-    if (matchups.isEmpty) return 14; // Default if no schedule yet
+    if (matchups.isEmpty) return 0; // No schedule yet - let caller use league.totalWeeks
 
     return matchups.map((m) => m.week).reduce((a, b) => a > b ? a : b);
   }
