@@ -111,6 +111,7 @@ class CommissionerRepository {
     String? mode,
     bool? isPublic,
     Map<String, dynamic>? settings,
+    Map<String, dynamic>? leagueSettings,
     Map<String, dynamic>? scoringSettings,
     int? totalRosters,
   }) {
@@ -120,6 +121,7 @@ class CommissionerRepository {
       mode: mode,
       isPublic: isPublic,
       settings: settings,
+      leagueSettings: leagueSettings,
       scoringSettings: scoringSettings,
       totalRosters: totalRosters,
     );

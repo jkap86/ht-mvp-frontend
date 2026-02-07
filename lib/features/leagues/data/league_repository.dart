@@ -167,6 +167,7 @@ class LeagueRepository {
     String? mode,
     bool? isPublic,
     Map<String, dynamic>? settings,
+    Map<String, dynamic>? leagueSettings,
     Map<String, dynamic>? scoringSettings,
     int? totalRosters,
   }) async {
@@ -175,6 +176,7 @@ class LeagueRepository {
       if (mode != null) 'mode': mode,
       if (isPublic != null) 'is_public': isPublic,
       if (settings != null) 'settings': settings,
+      if (leagueSettings != null) 'league_settings': leagueSettings,
       if (scoringSettings != null) 'scoring_settings': scoringSettings,
       if (totalRosters != null) 'total_rosters': totalRosters,
     });

@@ -77,10 +77,12 @@ class StandingsScreen extends ConsumerWidget {
 
   Widget _buildStandingsTable(BuildContext context, StandingsState state) {
     final playoffLine = (state.league?.totalRosters ?? 12) ~/ 2; // Top half makes playoffs
+    // Check if any standing has median scoring enabled
+    final hasMedianScoring = state.standings.any((s) => s.hasMedianScoring);
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 800),
+        constraints: const BoxConstraints(maxWidth: 900),
         child: SingleChildScrollView(
           scrollDirection: Axis.vertical,
           child: SingleChildScrollView(
@@ -89,14 +91,16 @@ class StandingsScreen extends ConsumerWidget {
           headingRowColor: WidgetStateProperty.all(
             Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
-          columns: const [
-            DataColumn(label: Text('Rank')),
-            DataColumn(label: Text('Team')),
-            DataColumn(label: Text('Record')),
-            DataColumn(label: Text('PF'), numeric: true),
-            DataColumn(label: Text('PA'), numeric: true),
-            DataColumn(label: Text('+/-'), numeric: true),
-            DataColumn(label: Text('Streak')),
+          columns: [
+            const DataColumn(label: Text('Rank')),
+            const DataColumn(label: Text('Team')),
+            DataColumn(label: Text(hasMedianScoring ? 'Total' : 'Record')),
+            if (hasMedianScoring) const DataColumn(label: Text('H2H')),
+            if (hasMedianScoring) const DataColumn(label: Text('Median')),
+            const DataColumn(label: Text('PF'), numeric: true),
+            const DataColumn(label: Text('PA'), numeric: true),
+            const DataColumn(label: Text('+/-'), numeric: true),
+            const DataColumn(label: Text('Streak')),
           ],
           rows: state.standings.map((standing) {
             final isMyTeam = standing.rosterId == state.myRosterId;
@@ -149,6 +153,28 @@ class StandingsScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                if (hasMedianScoring)
+                  DataCell(
+                    Text(
+                      standing.h2hRecord,
+                      style: TextStyle(
+                        fontWeight: isMyTeam ? FontWeight.bold : FontWeight.normal,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                if (hasMedianScoring)
+                  DataCell(
+                    Text(
+                      standing.medianRecord ?? '-',
+                      style: TextStyle(
+                        fontWeight: isMyTeam ? FontWeight.bold : FontWeight.normal,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
                 DataCell(
                   Text(
                     standing.pointsFor.toStringAsFixed(1),

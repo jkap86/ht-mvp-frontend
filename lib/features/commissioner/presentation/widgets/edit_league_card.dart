@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../home/presentation/widgets/scoring_settings_editor.dart';
 import '../../../home/presentation/widgets/roster_config_editor.dart';
+import '../../../leagues/domain/league.dart';
 import '../providers/commissioner_provider.dart';
 
 /// Card for editing league settings (commissioner only)
@@ -26,6 +27,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
 
   late String _selectedMode;
   late bool _isPublic;
+  late bool _useLeagueMedian;
   late int _rookieDraftRounds;
   late int _totalRosters;
 
@@ -57,6 +59,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
     _nameController.text = league.name;
     _selectedMode = league.mode;
     _isPublic = league.isPublic;
+    _useLeagueMedian = league.leagueSettings['useLeagueMedian'] as bool? ?? false;
     _rookieDraftRounds = league.settings['rookie_draft_rounds'] as int? ?? 5;
     _totalRosters = league.totalRosters;
 
@@ -135,11 +138,20 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
       updatedSettings['rookie_draft_rounds'] = _rookieDraftRounds;
     }
 
+    // Build leagueSettings map for league median
+    final currentUseMedian = league.leagueSettings['useLeagueMedian'] as bool? ?? false;
+    Map<String, dynamic>? updatedLeagueSettings;
+    if (_useLeagueMedian != currentUseMedian) {
+      updatedLeagueSettings = Map<String, dynamic>.from(league.leagueSettings);
+      updatedLeagueSettings['useLeagueMedian'] = _useLeagueMedian;
+    }
+
     final success = await ref.read(commissionerProvider(widget.leagueId).notifier).updateLeague(
       name: _nameController.text != league.name ? _nameController.text : null,
       mode: _selectedMode != league.mode ? _selectedMode : null,
       isPublic: _isPublic != league.isPublic ? _isPublic : null,
       settings: updatedSettings,
+      leagueSettings: updatedLeagueSettings,
       scoringSettings: _scoringSettings.toJson(),
       totalRosters: _totalRosters != league.totalRosters ? _totalRosters : null,
     );
@@ -250,6 +262,11 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
 
               // Public Toggle
               _buildPublicToggle(colorScheme),
+
+              const SizedBox(height: 12),
+
+              // League Median Toggle
+              _buildLeagueMedianToggle(colorScheme, league),
 
               const SizedBox(height: 12),
 
@@ -534,6 +551,98 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
               _markChanged();
             },
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeagueMedianToggle(ColorScheme colorScheme, dynamic league) {
+    // Toggle is locked after first week is finalized (regular season or beyond)
+    final isLocked = league.seasonStatus != SeasonStatus.preSeason;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.trending_up,
+                size: 20,
+                color: isLocked ? colorScheme.onSurface.withAlpha(97) : colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'League Median Scoring',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: isLocked
+                            ? colorScheme.onSurface.withAlpha(153)
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      _useLeagueMedian
+                          ? 'Teams also play against the weekly median score'
+                          : 'Standard head-to-head scoring only',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onSurface.withAlpha(153),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _useLeagueMedian,
+                onChanged: isLocked
+                    ? null
+                    : (value) {
+                        setState(() => _useLeagueMedian = value);
+                        _markChanged();
+                      },
+              ),
+            ],
+          ),
+          if (isLocked) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Locked after season starts',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

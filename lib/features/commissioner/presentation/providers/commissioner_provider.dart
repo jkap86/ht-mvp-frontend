@@ -224,6 +224,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     String? mode,
     bool? isPublic,
     Map<String, dynamic>? settings,
+    Map<String, dynamic>? leagueSettings,
     Map<String, dynamic>? scoringSettings,
     int? totalRosters,
   }) async {
@@ -236,6 +237,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
         mode: mode,
         isPublic: isPublic,
         settings: settings,
+        leagueSettings: leagueSettings,
         scoringSettings: scoringSettings,
         totalRosters: totalRosters,
       );

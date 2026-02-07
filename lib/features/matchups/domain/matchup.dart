@@ -162,9 +162,19 @@ class Standing {
   final int rosterId;
   final String teamName;
   final String? userId;
+  // Total record (H2H + Median when league median is enabled)
   final int wins;
   final int losses;
   final int ties;
+  // H2H breakdown
+  final int h2hWins;
+  final int h2hLosses;
+  final int h2hTies;
+  // Median breakdown (null if league doesn't use median)
+  final int? medianWins;
+  final int? medianLosses;
+  final int? medianTies;
+  // Other stats
   final double pointsFor;
   final double pointsAgainst;
   final String streak;
@@ -177,11 +187,20 @@ class Standing {
     required this.wins,
     required this.losses,
     required this.ties,
+    required this.h2hWins,
+    required this.h2hLosses,
+    required this.h2hTies,
+    this.medianWins,
+    this.medianLosses,
+    this.medianTies,
     required this.pointsFor,
     required this.pointsAgainst,
     required this.streak,
     required this.rank,
   });
+
+  /// Whether this standing includes median scoring
+  bool get hasMedianScoring => medianWins != null;
 
   /// Calculate win percentage
   double get winPercentage {
@@ -190,10 +209,25 @@ class Standing {
     return (wins + (ties * 0.5)) / total;
   }
 
-  /// Format record as "W-L" or "W-L-T"
+  /// Format total record as "W-L" or "W-L-T"
   String get record {
     if (ties > 0) return '$wins-$losses-$ties';
     return '$wins-$losses';
+  }
+
+  /// Format H2H record as "W-L" or "W-L-T"
+  String get h2hRecord {
+    if (h2hTies > 0) return '$h2hWins-$h2hLosses-$h2hTies';
+    return '$h2hWins-$h2hLosses';
+  }
+
+  /// Format median record as "W-L" or "W-L-T" (null if not using median)
+  String? get medianRecord {
+    if (medianWins == null) return null;
+    if (medianTies != null && medianTies! > 0) {
+      return '$medianWins-$medianLosses-$medianTies';
+    }
+    return '$medianWins-$medianLosses';
   }
 
   /// Point differential
@@ -207,6 +241,12 @@ class Standing {
       wins: json['wins'] as int? ?? 0,
       losses: json['losses'] as int? ?? 0,
       ties: json['ties'] as int? ?? 0,
+      h2hWins: json['h2h_wins'] as int? ?? json['wins'] as int? ?? 0,
+      h2hLosses: json['h2h_losses'] as int? ?? json['losses'] as int? ?? 0,
+      h2hTies: json['h2h_ties'] as int? ?? json['ties'] as int? ?? 0,
+      medianWins: json['median_wins'] as int?,
+      medianLosses: json['median_losses'] as int?,
+      medianTies: json['median_ties'] as int?,
       pointsFor: (json['points_for'] as num?)?.toDouble() ?? 0,
       pointsAgainst: (json['points_against'] as num?)?.toDouble() ?? 0,
       streak: json['streak'] as String? ?? '',
