@@ -29,10 +29,11 @@ class MatchupRepository {
         .toList();
   }
 
-  /// Get a specific matchup with details (basic)
-  Future<MatchupDetails> getMatchup(int leagueId, int matchupId) async {
+  /// Get a specific matchup (basic, without lineup details)
+  /// Use getMatchupWithLineups() for full team lineup information
+  Future<Matchup> getMatchupBasic(int leagueId, int matchupId) async {
     final response = await _apiClient.get('/leagues/$leagueId/matchups/$matchupId');
-    return MatchupDetails.fromJson(response['matchup'] ?? response);
+    return Matchup.fromJson(response['matchup'] ?? response);
   }
 
   /// Get a matchup with full lineup details

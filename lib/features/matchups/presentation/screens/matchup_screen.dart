@@ -117,7 +117,9 @@ class MatchupScreen extends ConsumerWidget {
     final showMySection = hasMyMatchup || isOnBye;
     final myMatchupItems = showMySection ? 4 : 0;
     final headerItems = 2; // "All Matchups" header + spacing
-    final matchupItems = state.weekMatchups.isEmpty ? 1 : otherMatchups.length;
+    // Show empty view if no matchups at all OR if there are matchups but none are "other" matchups
+    final showEmptyView = state.weekMatchups.isEmpty || otherMatchups.isEmpty;
+    final matchupItems = showEmptyView ? 1 : otherMatchups.length;
     final itemCount = myMatchupItems + headerItems + matchupItems;
 
     return ListView.builder(
@@ -178,6 +180,15 @@ class MatchupScreen extends ConsumerWidget {
             icon: Icons.sports_football,
             title: 'No Matchups',
             subtitle: 'No matchups scheduled for this week.',
+          );
+        }
+
+        // Show empty view when there are no other matchups (e.g., 2-team league)
+        if (otherMatchups.isEmpty) {
+          return const AppEmptyView(
+            icon: Icons.sports_football,
+            title: 'No Other Matchups',
+            subtitle: 'No other matchups this week.',
           );
         }
 
