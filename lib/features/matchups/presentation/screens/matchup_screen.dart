@@ -242,6 +242,14 @@ class _MatchupCard extends StatelessWidget {
     final isMyTeam1 = myRosterId == matchup.roster1Id;
     final isMyTeam2 = myRosterId == matchup.roster2Id;
 
+    // Use live scores for non-final matchups, otherwise use final scores
+    final team1Points = matchup.isFinal
+        ? matchup.roster1Points
+        : (matchup.roster1PointsActual ?? matchup.roster1Points);
+    final team2Points = matchup.isFinal
+        ? matchup.roster2Points
+        : (matchup.roster2PointsActual ?? matchup.roster2Points);
+
     return Card(
       elevation: isFeatured ? 4 : 1,
       child: InkWell(
@@ -254,9 +262,11 @@ class _MatchupCard extends StatelessWidget {
               // Team 1
               _TeamRow(
                 teamName: matchup.roster1TeamName ?? 'Team 1',
-                points: matchup.roster1Points,
+                points: team1Points,
+                projectedPoints: matchup.isFinal ? null : matchup.roster1PointsProjected,
                 isWinner: matchup.isFinal && matchup.winnerId == matchup.roster1Id,
                 isMyTeam: isMyTeam1,
+                showProjection: !matchup.isFinal,
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
@@ -271,46 +281,83 @@ class _MatchupCard extends StatelessWidget {
               // Team 2
               _TeamRow(
                 teamName: matchup.roster2TeamName ?? 'Team 2',
-                points: matchup.roster2Points,
+                points: team2Points,
+                projectedPoints: matchup.isFinal ? null : matchup.roster2PointsProjected,
                 isWinner: matchup.isFinal && matchup.winnerId == matchup.roster2Id,
                 isMyTeam: isMyTeam2,
+                showProjection: !matchup.isFinal,
               ),
-              if (matchup.isFinal) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Final',
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+              // Status badges
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (matchup.isFinal)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Final',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    )
+                  else if (matchup.hasLiveData)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'LIVE',
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
-              if (matchup.isPlayoff && !matchup.isFinal) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Playoff',
-                    style: TextStyle(
-                      color: Colors.orange,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                  if (matchup.isPlayoff && !matchup.isFinal) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Playoff',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                  ],
+                ],
+              ),
             ],
           ),
         ),
@@ -322,14 +369,18 @@ class _MatchupCard extends StatelessWidget {
 class _TeamRow extends StatelessWidget {
   final String teamName;
   final double? points;
+  final double? projectedPoints;
   final bool isWinner;
   final bool isMyTeam;
+  final bool showProjection;
 
   const _TeamRow({
     required this.teamName,
     this.points,
+    this.projectedPoints,
     this.isWinner = false,
     this.isMyTeam = false,
+    this.showProjection = false,
   });
 
   @override
@@ -358,13 +409,28 @@ class _TeamRow extends StatelessWidget {
             ],
           ),
         ),
-        Text(
-          points?.toStringAsFixed(2) ?? '-',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            color: isWinner ? Colors.green : null,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Actual points (prominent)
+            Text(
+              points?.toStringAsFixed(2) ?? '-',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: isWinner ? Colors.green : null,
+              ),
+            ),
+            // Projected points (smaller, secondary)
+            if (showProjection && projectedPoints != null)
+              Text(
+                'Proj: ${projectedPoints!.toStringAsFixed(1)}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+          ],
         ),
       ],
     );

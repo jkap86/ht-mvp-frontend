@@ -56,9 +56,18 @@ class MatchupDetailScreen extends ConsumerWidget {
     final matchup = details.matchup;
     final team1 = details.team1;
     final team2 = details.team2;
-    final isTeam1Winner = team1.totalPoints > team2.totalPoints;
-    final isTeam2Winner = team2.totalPoints > team1.totalPoints;
-    final isTie = team1.totalPoints == team2.totalPoints && matchup.isFinal;
+
+    // Use live actual points if available, otherwise use team total points
+    final team1ActualPoints = matchup.isFinal
+        ? team1.totalPoints
+        : (matchup.roster1PointsActual ?? team1.totalPoints);
+    final team2ActualPoints = matchup.isFinal
+        ? team2.totalPoints
+        : (matchup.roster2PointsActual ?? team2.totalPoints);
+
+    final isTeam1Winner = team1ActualPoints > team2ActualPoints;
+    final isTeam2Winner = team2ActualPoints > team1ActualPoints;
+    final isTie = team1ActualPoints == team2ActualPoints && matchup.isFinal;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -77,11 +86,14 @@ class MatchupDetailScreen extends ConsumerWidget {
             _ScoreHeader(
               team1Name: team1.teamName,
               team2Name: team2.teamName,
-              team1Points: team1.totalPoints,
-              team2Points: team2.totalPoints,
+              team1Points: team1ActualPoints,
+              team2Points: team2ActualPoints,
+              team1ProjectedPoints: matchup.roster1PointsProjected,
+              team2ProjectedPoints: matchup.roster2PointsProjected,
               isTeam1Winner: isTeam1Winner,
               isTeam2Winner: isTeam2Winner,
               isFinal: matchup.isFinal,
+              isLive: matchup.hasLiveData,
               week: matchup.week,
             ),
 
@@ -130,9 +142,12 @@ class _ScoreHeader extends StatelessWidget {
   final String team2Name;
   final double team1Points;
   final double team2Points;
+  final double? team1ProjectedPoints;
+  final double? team2ProjectedPoints;
   final bool isTeam1Winner;
   final bool isTeam2Winner;
   final bool isFinal;
+  final bool isLive;
   final int week;
 
   const _ScoreHeader({
@@ -140,9 +155,12 @@ class _ScoreHeader extends StatelessWidget {
     required this.team2Name,
     required this.team1Points,
     required this.team2Points,
+    this.team1ProjectedPoints,
+    this.team2ProjectedPoints,
     required this.isTeam1Winner,
     required this.isTeam2Winner,
     required this.isFinal,
+    this.isLive = false,
     required this.week,
   });
 
@@ -162,21 +180,58 @@ class _ScoreHeader extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Week indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'Week $week${isFinal ? ' - Final' : ''}',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Theme.of(context).primaryColor,
+          // Week indicator with status
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Week $week',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
               ),
-            ),
+              if (isLive && !isFinal) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'LIVE',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 16),
 
@@ -212,6 +267,15 @@ class _ScoreHeader extends StatelessWidget {
                             : null,
                       ),
                     ),
+                    // Projected points (for live games)
+                    if (!isFinal && team1ProjectedPoints != null)
+                      Text(
+                        'Proj: ${team1ProjectedPoints!.toStringAsFixed(1)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
                     if (isTeam1Winner && isFinal)
                       const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
                   ],
@@ -280,6 +344,15 @@ class _ScoreHeader extends StatelessWidget {
                             : null,
                       ),
                     ),
+                    // Projected points (for live games)
+                    if (!isFinal && team2ProjectedPoints != null)
+                      Text(
+                        'Proj: ${team2ProjectedPoints!.toStringAsFixed(1)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
                     if (isTeam2Winner && isFinal)
                       const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
                   ],
