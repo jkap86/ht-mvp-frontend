@@ -649,8 +649,12 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     try {
       final auctionState = await _draftRepo.getAuctionState(leagueId, draftId);
       if (!mounted) return;
+      // Sort activeLots by bidDeadline ASC to match _upsertAndSortLot() invariant
+      // This ensures activeLots.first is always the earliest-deadline lot
+      final sortedActiveLots = [...auctionState.activeLots]
+        ..sort((a, b) => a.bidDeadline.compareTo(b.bidDeadline));
       state = state.copyWith(
-        activeLots: auctionState.activeLots,
+        activeLots: sortedActiveLots,
         budgets: auctionState.budgets,
         auctionMode: auctionState.auctionMode,
         currentNominatorRosterId: auctionState.currentNominatorRosterId,
