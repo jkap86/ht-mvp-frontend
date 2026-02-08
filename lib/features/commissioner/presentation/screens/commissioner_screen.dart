@@ -137,10 +137,19 @@ class CommissionerScreen extends ConsumerWidget {
                               return wrapWithSpacing(PlayoffManagementCard(
                                 state: state,
                                 leagueId: leagueId,
-                                onGeneratePlayoffBracket: ({required int playoffTeams, required int startWeek}) {
+                                onGeneratePlayoffBracket: ({
+                                  required int playoffTeams,
+                                  required int startWeek,
+                                  bool? enableThirdPlaceGame,
+                                  String? consolationType,
+                                  int? consolationTeams,
+                                }) {
                                   ref.read(commissionerProvider(leagueId).notifier).generatePlayoffBracket(
                                     playoffTeams: playoffTeams,
                                     startWeek: startWeek,
+                                    enableThirdPlaceGame: enableThirdPlaceGame,
+                                    consolationType: consolationType,
+                                    consolationTeams: consolationTeams,
                                   );
                                 },
                                 onAdvanceWinners: (week) {

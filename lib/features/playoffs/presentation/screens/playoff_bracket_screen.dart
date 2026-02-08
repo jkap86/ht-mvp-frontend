@@ -170,6 +170,10 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
 
   Widget _buildBracketInfoCard(BuildContext context, PlayoffBracketState state) {
     final bracket = state.bracketView!.bracket!;
+    final settings = state.bracketView!.settings;
+    final hasThirdPlaceGame = settings?.enableThirdPlaceGame ?? false;
+    final hasConsolation = state.bracketView!.hasConsolation;
+    final consolationTeams = settings?.consolationTeams;
 
     return Card(
       child: Padding(
@@ -217,6 +221,32 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
                 ),
               ],
             ),
+            // Show enabled features as chips
+            if (hasThirdPlaceGame || hasConsolation) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (hasThirdPlaceGame)
+                    Chip(
+                      avatar: Icon(Icons.looks_3, size: 18, color: Colors.brown.shade700),
+                      label: const Text('3rd Place Game'),
+                      backgroundColor: Colors.brown.shade50,
+                      labelStyle: TextStyle(color: Colors.brown.shade700),
+                    ),
+                  if (hasConsolation)
+                    Chip(
+                      avatar: Icon(Icons.sports_handball, size: 18, color: Colors.teal.shade700),
+                      label: Text(consolationTeams != null
+                          ? 'Consolation ($consolationTeams teams)'
+                          : 'Consolation'),
+                      backgroundColor: Colors.teal.shade50,
+                      labelStyle: TextStyle(color: Colors.teal.shade700),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

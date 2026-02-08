@@ -14,17 +14,37 @@ class PlayoffRepository {
   PlayoffRepository(this._apiClient);
 
   /// Generate playoff bracket (commissioner only)
+  ///
+  /// Optional parameters:
+  /// - enableThirdPlaceGame: Enable 3rd place game
+  /// - consolationType: 'NONE' or 'CONSOLATION'
+  /// - consolationTeams: 4, 6, or 8 (null for auto)
   Future<PlayoffBracketView> generateBracket(
     int leagueId, {
     required int playoffTeams,
     required int startWeek,
+    bool? enableThirdPlaceGame,
+    String? consolationType,
+    int? consolationTeams,
   }) async {
+    final body = <String, dynamic>{
+      'playoff_teams': playoffTeams,
+      'start_week': startWeek,
+    };
+
+    if (enableThirdPlaceGame != null) {
+      body['enable_third_place_game'] = enableThirdPlaceGame;
+    }
+    if (consolationType != null) {
+      body['consolation_type'] = consolationType;
+    }
+    if (consolationTeams != null) {
+      body['consolation_teams'] = consolationTeams;
+    }
+
     final response = await _apiClient.post(
       '/leagues/$leagueId/playoffs/generate',
-      body: {
-        'playoff_teams': playoffTeams,
-        'start_week': startWeek,
-      },
+      body: body,
     );
     return PlayoffBracketView.fromJson(response);
   }

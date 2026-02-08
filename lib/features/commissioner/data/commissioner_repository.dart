@@ -151,15 +151,26 @@ class CommissionerRepository {
   // ============================================================
 
   /// Generate playoff bracket
+  ///
+  /// Optional parameters:
+  /// - enableThirdPlaceGame: Enable 3rd place game
+  /// - consolationType: 'NONE' or 'CONSOLATION'
+  /// - consolationTeams: 4, 6, or 8 (null for auto)
   Future<PlayoffBracketView> generatePlayoffBracket(
     int leagueId, {
     required int playoffTeams,
     required int startWeek,
+    bool? enableThirdPlaceGame,
+    String? consolationType,
+    int? consolationTeams,
   }) {
     return _playoffRepo.generateBracket(
       leagueId,
       playoffTeams: playoffTeams,
       startWeek: startWeek,
+      enableThirdPlaceGame: enableThirdPlaceGame,
+      consolationType: consolationType,
+      consolationTeams: consolationTeams,
     );
   }
 

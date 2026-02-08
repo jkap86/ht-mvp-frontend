@@ -17,6 +17,100 @@ enum PlayoffStatus {
   }
 }
 
+enum ConsolationType {
+  none,
+  consolation;
+
+  static ConsolationType fromString(String? value) {
+    switch (value) {
+      case 'CONSOLATION':
+        return ConsolationType.consolation;
+      default:
+        return ConsolationType.none;
+    }
+  }
+
+  String toApiValue() {
+    switch (this) {
+      case ConsolationType.consolation:
+        return 'CONSOLATION';
+      case ConsolationType.none:
+        return 'NONE';
+    }
+  }
+}
+
+class PlayoffSettings {
+  final bool enableThirdPlaceGame;
+  final ConsolationType consolationType;
+  final int? consolationTeams;
+
+  PlayoffSettings({
+    this.enableThirdPlaceGame = false,
+    this.consolationType = ConsolationType.none,
+    this.consolationTeams,
+  });
+
+  factory PlayoffSettings.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return PlayoffSettings();
+    return PlayoffSettings(
+      enableThirdPlaceGame: json['enable_third_place_game'] as bool? ?? false,
+      consolationType:
+          ConsolationType.fromString(json['consolation_type'] as String?),
+      consolationTeams: json['consolation_teams'] as int?,
+    );
+  }
+}
+
+class ConsolationSeed {
+  final int rosterId;
+  final int standingsPosition;
+  final String teamName;
+  final String record;
+
+  ConsolationSeed({
+    required this.rosterId,
+    required this.standingsPosition,
+    required this.teamName,
+    required this.record,
+  });
+
+  factory ConsolationSeed.fromJson(Map<String, dynamic> json) {
+    return ConsolationSeed(
+      rosterId: json['roster_id'] as int,
+      standingsPosition: json['standings_position'] as int,
+      teamName: json['team_name'] as String? ?? 'Team',
+      record: json['record'] as String? ?? '',
+    );
+  }
+}
+
+class ConsolationBracket {
+  final List<ConsolationSeed> seeds;
+  final List<PlayoffRound> rounds;
+
+  ConsolationBracket({
+    required this.seeds,
+    required this.rounds,
+  });
+
+  factory ConsolationBracket.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return ConsolationBracket(seeds: [], rounds: []);
+    }
+    return ConsolationBracket(
+      seeds: (json['seeds'] as List<dynamic>?)
+              ?.map((s) => ConsolationSeed.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          [],
+      rounds: (json['rounds'] as List<dynamic>?)
+              ?.map((r) => PlayoffRound.fromJson(r as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+}
+
 class PlayoffBracket {
   final int id;
   final int leagueId;
@@ -130,6 +224,7 @@ class PlayoffMatchup {
   final int week;
   final int round;
   final int bracketPosition;
+  final String bracketType;
   final PlayoffTeam? team1;
   final PlayoffTeam? team2;
   final PlayoffTeam? winner;
@@ -140,6 +235,7 @@ class PlayoffMatchup {
     required this.week,
     required this.round,
     required this.bracketPosition,
+    this.bracketType = 'WINNERS',
     this.team1,
     this.team2,
     this.winner,
@@ -152,6 +248,7 @@ class PlayoffMatchup {
       week: json['week'] as int,
       round: json['round'] as int,
       bracketPosition: json['bracket_position'] as int? ?? 0,
+      bracketType: json['bracket_type'] as String? ?? 'WINNERS',
       team1: json['team1'] != null
           ? PlayoffTeam.fromJson(json['team1'] as Map<String, dynamic>)
           : null,
@@ -196,16 +293,25 @@ class PlayoffBracketView {
   final List<PlayoffSeed> seeds;
   final List<PlayoffRound> rounds;
   final PlayoffTeam? champion;
+  final PlayoffMatchup? thirdPlaceGame;
+  final ConsolationBracket? consolation;
+  final PlayoffSettings? settings;
 
   PlayoffBracketView({
     this.bracket,
     required this.seeds,
     required this.rounds,
     this.champion,
+    this.thirdPlaceGame,
+    this.consolation,
+    this.settings,
   });
 
   bool get hasPlayoffs => bracket != null;
   bool get isChampionshipDecided => champion != null;
+  bool get hasThirdPlaceGame => thirdPlaceGame != null;
+  bool get hasConsolation =>
+      consolation != null && consolation!.rounds.isNotEmpty;
 
   factory PlayoffBracketView.fromJson(Map<String, dynamic> json) {
     return PlayoffBracketView(
@@ -223,6 +329,17 @@ class PlayoffBracketView {
       champion: json['champion'] != null
           ? PlayoffTeam.fromJson(json['champion'] as Map<String, dynamic>)
           : null,
+      thirdPlaceGame: json['third_place'] != null &&
+              json['third_place']['matchup'] != null
+          ? PlayoffMatchup.fromJson(
+              json['third_place']['matchup'] as Map<String, dynamic>)
+          : null,
+      consolation: json['consolation'] != null
+          ? ConsolationBracket.fromJson(
+              json['consolation'] as Map<String, dynamic>)
+          : null,
+      settings: PlayoffSettings.fromJson(
+          json['settings'] as Map<String, dynamic>?),
     );
   }
 
@@ -232,6 +349,9 @@ class PlayoffBracketView {
       seeds: [],
       rounds: [],
       champion: null,
+      thirdPlaceGame: null,
+      consolation: null,
+      settings: PlayoffSettings(),
     );
   }
 }

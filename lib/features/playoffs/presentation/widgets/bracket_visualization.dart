@@ -22,6 +22,57 @@ class BracketVisualization extends StatelessWidget {
     }
 
     return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section 1: Winners Bracket (always shown)
+          _buildSectionHeader(context, 'Winners Bracket', Icons.emoji_events, Colors.amber),
+          const SizedBox(height: 8),
+          _buildWinnersBracket(context),
+
+          // Section 2: 3rd Place Game (conditional)
+          if (bracketView.hasThirdPlaceGame) ...[
+            const SizedBox(height: 24),
+            _buildSectionHeader(context, '3rd Place Game', Icons.looks_3, Colors.brown.shade400),
+            const SizedBox(height: 8),
+            _buildThirdPlaceSection(context),
+          ],
+
+          // Section 3: Consolation Bracket (conditional)
+          if (bracketView.hasConsolation) ...[
+            const SizedBox(height: 24),
+            _buildSectionHeader(context, 'Consolation Bracket', Icons.sports_handball, Colors.teal),
+            const SizedBox(height: 8),
+            _buildConsolationBracket(context),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Builds a styled section header
+  Widget _buildSectionHeader(BuildContext context, String title, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the winners bracket horizontal scroll
+  Widget _buildWinnersBracket(BuildContext context) {
+    return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -40,6 +91,232 @@ class BracketVisualization extends StatelessWidget {
       ),
     );
   }
+
+  /// Builds the 3rd place game section
+  Widget _buildThirdPlaceSection(BuildContext context) {
+    final thirdPlaceGame = bracketView.thirdPlaceGame!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        color: Colors.brown.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Week ${thirdPlaceGame.week}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (thirdPlaceGame.isFinal)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.brown.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'FINAL',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.brown.shade700,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: 200,
+                child: PlayoffMatchupCard(
+                  matchup: thirdPlaceGame,
+                  userRosterId: userRosterId,
+                ),
+              ),
+              if (thirdPlaceGame.isFinal && thirdPlaceGame.winner != null) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Icon(Icons.workspace_premium, color: Colors.brown.shade400, size: 20),
+                    const SizedBox(width: 4),
+                    Text(
+                      '3rd Place: ${thirdPlaceGame.winner!.teamName}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.brown.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds the consolation bracket section
+  Widget _buildConsolationBracket(BuildContext context) {
+    final consolation = bracketView.consolation!;
+
+    // Check if there's a consolation winner from the final round
+    PlayoffTeam? consolationWinner;
+    if (consolation.rounds.isNotEmpty) {
+      final lastRound = consolation.rounds.last;
+      if (lastRound.matchups.isNotEmpty && lastRound.matchups.first.winner != null) {
+        consolationWinner = lastRound.matchups.first.winner;
+      }
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Consolation seeding column (left side)
+          _buildConsolationSeedingColumn(context, consolation.seeds),
+          const SizedBox(width: 16),
+          // Each round as a column
+          ...consolation.rounds.map((round) => _buildRoundColumn(context, round)),
+          // Consolation winner (right side)
+          if (consolationWinner != null) ...[
+            const SizedBox(width: 16),
+            _buildConsolationWinnerColumn(context, consolationWinner),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Builds the consolation bracket seeding column
+  Widget _buildConsolationSeedingColumn(BuildContext context, List<ConsolationSeed> seeds) {
+    return Container(
+      width: 140,
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Seeds',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          ...seeds.map((seed) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.teal.shade200,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${seed.standingsPosition}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            seed.teamName,
+                            style: TextStyle(
+                              fontWeight: seed.rosterId == userRosterId
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: seed.rosterId == userRosterId
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            seed.record,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey.shade600,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the consolation winner column
+  Widget _buildConsolationWinnerColumn(BuildContext context, PlayoffTeam winner) {
+    return Container(
+      width: 160,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.star,
+            size: 48,
+            color: Colors.teal.shade400,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'CONSOLATION',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal.shade700,
+                ),
+          ),
+          Text(
+            'WINNER',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal.shade700,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            winner.teamName,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: winner.rosterId == userRosterId
+                  ? Theme.of(context).colorScheme.primary
+                  : null,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            winner.record,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey.shade600,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildSeedingColumn(BuildContext context) {
     return Container(

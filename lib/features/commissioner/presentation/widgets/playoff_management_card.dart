@@ -7,7 +7,13 @@ import '../providers/commissioner_provider.dart';
 class PlayoffManagementCard extends StatefulWidget {
   final CommissionerState state;
   final int leagueId;
-  final void Function({required int playoffTeams, required int startWeek}) onGeneratePlayoffBracket;
+  final void Function({
+    required int playoffTeams,
+    required int startWeek,
+    bool? enableThirdPlaceGame,
+    String? consolationType,
+    int? consolationTeams,
+  }) onGeneratePlayoffBracket;
   final void Function(int week) onAdvanceWinners;
   final void Function() onViewBracket;
 
@@ -28,57 +34,125 @@ class _PlayoffManagementCardState extends State<PlayoffManagementCard> {
   int _selectedWeek = 1;
   int _playoffTeams = 6;
   int _playoffStartWeek = 15;
+  bool _enableThirdPlaceGame = false;
+  String _consolationType = 'NONE';
+  int? _consolationTeams;
 
   void _showGeneratePlayoffBracketDialog(int currentWeek) {
     setState(() {
       _playoffTeams = 6;
       _playoffStartWeek = currentWeek + 1;
+      _enableThirdPlaceGame = false;
+      _consolationType = 'NONE';
+      _consolationTeams = null;
     });
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Generate Playoff Bracket'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Create a playoff bracket based on current standings.'),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<int>(
-                value: _playoffTeams,
-                decoration: const InputDecoration(
-                  labelText: 'Playoff Teams',
-                  border: OutlineInputBorder(),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Create a playoff bracket based on current standings.'),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<int>(
+                  value: _playoffTeams,
+                  decoration: const InputDecoration(
+                    labelText: 'Playoff Teams',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 4, child: Text('4 teams (2 rounds)')),
+                    DropdownMenuItem(value: 6, child: Text('6 teams (3 rounds, top 2 get bye)')),
+                    DropdownMenuItem(value: 8, child: Text('8 teams (3 rounds)')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setDialogState(() => _playoffTeams = value);
+                    }
+                  },
                 ),
-                items: const [
-                  DropdownMenuItem(value: 4, child: Text('4 teams (2 rounds)')),
-                  DropdownMenuItem(value: 6, child: Text('6 teams (3 rounds, top 2 get bye)')),
-                  DropdownMenuItem(value: 8, child: Text('8 teams (3 rounds)')),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<int>(
+                  value: _playoffStartWeek,
+                  decoration: const InputDecoration(
+                    labelText: 'Start Week',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: List.generate(18, (i) => i + 1)
+                      .map((w) => DropdownMenuItem(value: w, child: Text('Week $w')))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setDialogState(() => _playoffStartWeek = value);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 8),
+                // 3rd Place Game toggle
+                SwitchListTile(
+                  title: const Text('3rd Place Game'),
+                  subtitle: const Text('Semifinal losers compete for 3rd place'),
+                  value: _enableThirdPlaceGame,
+                  onChanged: (value) {
+                    setDialogState(() => _enableThirdPlaceGame = value);
+                  },
+                  contentPadding: EdgeInsets.zero,
+                ),
+                const SizedBox(height: 8),
+                // Consolation dropdown
+                DropdownButtonFormField<String>(
+                  value: _consolationType,
+                  decoration: const InputDecoration(
+                    labelText: 'Consolation Bracket',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'NONE', child: Text('None')),
+                    DropdownMenuItem(
+                      value: 'CONSOLATION',
+                      child: Text('Consolation (Winner Advances)'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setDialogState(() {
+                      _consolationType = value ?? 'NONE';
+                      if (_consolationType == 'NONE') {
+                        _consolationTeams = null;
+                      }
+                    });
+                  },
+                ),
+                // Consolation teams (conditional)
+                if (_consolationType != 'NONE') ...[
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<int?>(
+                    value: _consolationTeams,
+                    decoration: const InputDecoration(
+                      labelText: 'Consolation Teams',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: null,
+                        child: Text('Auto (remaining non-playoff teams)'),
+                      ),
+                      DropdownMenuItem(value: 4, child: Text('4 teams')),
+                      DropdownMenuItem(value: 6, child: Text('6 teams')),
+                      DropdownMenuItem(value: 8, child: Text('8 teams')),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() => _consolationTeams = value);
+                    },
+                  ),
                 ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setDialogState(() => _playoffTeams = value);
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<int>(
-                value: _playoffStartWeek,
-                decoration: const InputDecoration(
-                  labelText: 'Start Week',
-                  border: OutlineInputBorder(),
-                ),
-                items: List.generate(18, (i) => i + 1)
-                    .map((w) => DropdownMenuItem(value: w, child: Text('Week $w')))
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setDialogState(() => _playoffStartWeek = value);
-                  }
-                },
-              ),
-            ],
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -91,6 +165,9 @@ class _PlayoffManagementCardState extends State<PlayoffManagementCard> {
                 widget.onGeneratePlayoffBracket(
                   playoffTeams: _playoffTeams,
                   startWeek: _playoffStartWeek,
+                  enableThirdPlaceGame: _enableThirdPlaceGame ? true : null,
+                  consolationType: _consolationType != 'NONE' ? _consolationType : null,
+                  consolationTeams: _consolationTeams,
                 );
               },
               child: const Text('Generate'),

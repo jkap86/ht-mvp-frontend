@@ -152,6 +152,9 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
   Future<bool> generatePlayoffBracket({
     required int playoffTeams,
     required int startWeek,
+    bool? enableThirdPlaceGame,
+    String? consolationType,
+    int? consolationTeams,
   }) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
@@ -160,6 +163,9 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
         leagueId,
         playoffTeams: playoffTeams,
         startWeek: startWeek,
+        enableThirdPlaceGame: enableThirdPlaceGame,
+        consolationType: consolationType,
+        consolationTeams: consolationTeams,
       );
       state = state.copyWith(
         bracketView: bracketView,
