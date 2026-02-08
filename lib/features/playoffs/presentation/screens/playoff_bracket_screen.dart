@@ -17,30 +17,47 @@ class PlayoffBracketScreen extends ConsumerStatefulWidget {
 }
 
 class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
+  ProviderSubscription? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Schedule listener setup for after first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _subscription = ref.listenManual(
+        playoffBracketProvider(widget.leagueId),
+        (prev, next) {
+          if (next.successMessage != null && prev?.successMessage != next.successMessage) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(next.successMessage!),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+          if (next.error != null && prev?.error != next.error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(next.error!),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.close();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(playoffBracketProvider(widget.leagueId));
     final leagueState = ref.watch(leagueDetailProvider(widget.leagueId));
-
-    // Show snackbar for success/error messages
-    ref.listen(playoffBracketProvider(widget.leagueId), (prev, next) {
-      if (next.successMessage != null && prev?.successMessage != next.successMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.successMessage!),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-      if (next.error != null && prev?.error != next.error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error!),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(
