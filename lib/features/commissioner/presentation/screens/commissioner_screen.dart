@@ -11,6 +11,7 @@ import '../widgets/member_management_card.dart';
 import '../widgets/playoff_management_card.dart';
 import '../widgets/schedule_management_card.dart';
 import '../widgets/scoring_card.dart';
+import '../widgets/season_controls_card.dart';
 import '../widgets/season_reset_card.dart';
 import '../widgets/waiver_management_card.dart';
 import '../../../dues/presentation/widgets/dues_config_card.dart';
@@ -70,7 +71,7 @@ class CommissionerScreen extends ConsumerWidget {
                       onRefresh: () => ref.read(commissionerProvider(leagueId).notifier).loadData(),
                       child: ListView.builder(
                         padding: const EdgeInsets.all(16),
-                        itemCount: 12, // 12 cards total including Danger Zone
+                        itemCount: 13, // 13 cards total including Danger Zone
                         itemBuilder: (context, index) {
                           // Add spacing between cards (except first one)
                           Widget wrapWithSpacing(Widget child) {
@@ -160,6 +161,11 @@ class CommissionerScreen extends ConsumerWidget {
                                 },
                               ));
                             case 10:
+                              return wrapWithSpacing(SeasonControlsCard(
+                                leagueId: leagueId,
+                                state: state,
+                              ));
+                            case 11:
                               return wrapWithSpacing(SeasonResetCard(
                                 state: state,
                                 onReset: ({
@@ -176,7 +182,7 @@ class CommissionerScreen extends ConsumerWidget {
                                   );
                                 },
                               ));
-                            case 11:
+                            case 12:
                               // Danger Zone Card
                               return wrapWithSpacing(Card(
                                 color: Colors.red.shade50,
@@ -213,7 +219,7 @@ class CommissionerScreen extends ConsumerWidget {
                                           ),
                                           icon: const Icon(Icons.delete_forever),
                                           label: const Text('Delete League'),
-                                          onPressed: () => _showDeleteConfirmation(context, ref),
+                                          onPressed: () => _showDeleteConfirmation(context, ref, state.league?.name ?? ''),
                                         ),
                                       ),
                                     ],
@@ -240,34 +246,59 @@ class CommissionerScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, WidgetRef ref) {
+  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, String leagueName) {
+    final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete League?'),
-        content: const Text(
-          'This will permanently delete the league and all associated data. This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          final matches = controller.text.trim().toLowerCase() == leagueName.trim().toLowerCase();
+          return AlertDialog(
+            title: const Text('Delete League?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'This will permanently delete the league and all associated data. This action cannot be undone.',
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    labelText: 'Type "$leagueName" to confirm',
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ],
             ),
-            onPressed: () async {
-              Navigator.of(dialogContext).pop();
-              final success = await ref.read(commissionerProvider(leagueId).notifier).deleteLeague();
-              if (success && context.mounted) {
-                context.go('/');
-              }
-            },
-            child: const Text('Delete'),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: matches
+                    ? () async {
+                        Navigator.of(dialogContext).pop();
+                        final success = await ref
+                            .read(commissionerProvider(leagueId).notifier)
+                            .deleteLeague(confirmationName: controller.text.trim());
+                        if (success && context.mounted) {
+                          context.go('/');
+                        }
+                      }
+                    : null,
+                child: const Text('Delete'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

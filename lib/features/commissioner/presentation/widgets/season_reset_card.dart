@@ -102,8 +102,9 @@ class _SeasonResetCardState extends State<SeasonResetCard> {
               onPressed: () async {
                 Navigator.pop(context);
                 final currentSeason = widget.state.league?.season ?? DateTime.now().year;
+                final nextSeason = currentSeason + 1;
                 await widget.onReset(
-                  newSeason: currentSeason.toString(),
+                  newSeason: nextSeason.toString(),
                   confirmationName: _confirmationController.text.trim(),
                   keepMembers: _keepMembers,
                   clearChat: _clearChat,

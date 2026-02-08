@@ -220,12 +220,13 @@ class ApiClient {
     );
   }
 
-  Future<dynamic> delete(String endpoint, {bool auth = true}) async {
+  Future<dynamic> delete(String endpoint, {dynamic body, bool auth = true}) async {
     return _executeWithRetry(
       auth: auth,
       executeRequest: (headers) => http.delete(
         Uri.parse('$baseUrl$endpoint'),
         headers: headers,
+        body: body != null ? jsonEncode(body) : null,
       ),
     );
   }

@@ -134,8 +134,25 @@ class LeagueRepository {
   }
 
   /// Delete league (commissioner only)
-  Future<void> deleteLeague(int leagueId) async {
-    await _apiClient.delete('/leagues/$leagueId');
+  /// Requires confirmationName to match the league name (case-insensitive)
+  Future<void> deleteLeague(int leagueId, {required String confirmationName}) async {
+    await _apiClient.delete('/leagues/$leagueId', body: {
+      'confirmationName': confirmationName,
+    });
+  }
+
+  /// Update season controls (commissioner only)
+  /// Used for manual season status and week management
+  Future<League> updateSeasonControls(
+    int leagueId, {
+    String? seasonStatus,
+    int? currentWeek,
+  }) async {
+    final response = await _apiClient.post('/leagues/$leagueId/season-controls', body: {
+      if (seasonStatus != null) 'seasonStatus': seasonStatus,
+      if (currentWeek != null) 'currentWeek': currentWeek,
+    });
+    return League.fromJson(response);
   }
 
   /// Reset league for new season (commissioner only)

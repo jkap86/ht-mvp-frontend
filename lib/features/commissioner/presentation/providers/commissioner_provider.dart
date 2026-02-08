@@ -202,15 +202,40 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     }
   }
 
-  Future<bool> deleteLeague() async {
+  Future<bool> deleteLeague({required String confirmationName}) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _repo.deleteLeague(leagueId);
+      await _repo.deleteLeague(leagueId, confirmationName: confirmationName);
       state = state.copyWith(
         isProcessing: false,
         successMessage: 'League deleted successfully',
       );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isProcessing: false,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> updateSeasonControls({String? seasonStatus, int? currentWeek}) async {
+    state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
+
+    try {
+      final updatedLeague = await _repo.updateSeasonControls(
+        leagueId,
+        seasonStatus: seasonStatus,
+        currentWeek: currentWeek,
+      );
+      state = state.copyWith(
+        league: updatedLeague,
+        isProcessing: false,
+        successMessage: 'Season controls updated successfully',
+      );
+      await _invalidationService.invalidateType(InvalidationType.leagueDetail, leagueId);
       return true;
     } catch (e) {
       state = state.copyWith(

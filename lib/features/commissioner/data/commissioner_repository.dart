@@ -82,9 +82,22 @@ class CommissionerRepository {
   // League Management
   // ============================================================
 
-  /// Delete the league
-  Future<void> deleteLeague(int leagueId) {
-    return _leagueRepo.deleteLeague(leagueId);
+  /// Delete the league (requires confirmationName to match league name)
+  Future<void> deleteLeague(int leagueId, {required String confirmationName}) {
+    return _leagueRepo.deleteLeague(leagueId, confirmationName: confirmationName);
+  }
+
+  /// Update season controls (season status and/or current week)
+  Future<League> updateSeasonControls(
+    int leagueId, {
+    String? seasonStatus,
+    int? currentWeek,
+  }) {
+    return _leagueRepo.updateSeasonControls(
+      leagueId,
+      seasonStatus: seasonStatus,
+      currentWeek: currentWeek,
+    );
   }
 
   /// Reset the league for a new season
