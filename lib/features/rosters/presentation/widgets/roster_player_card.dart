@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/semantic_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../domain/roster_lineup.dart';
 import '../../domain/roster_player.dart';
 
@@ -25,25 +29,29 @@ class RosterPlayerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final positionColor = getPositionColor(player.position);
+
     final card = Card(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         side: isSelected
-            ? const BorderSide(color: Colors.blue, width: 2)
+            ? BorderSide(color: SelectionColors.primary, width: 2)
             : isHighlighted
-                ? const BorderSide(color: Colors.green, width: 2)
+                ? BorderSide(color: SelectionColors.success, width: 2)
                 : BorderSide.none,
       ),
       color: isSelected
-          ? Colors.blue.shade50
+          ? SelectionColors.primary.withAlpha(isDark ? 30 : 20)
           : isHighlighted
-              ? Colors.green.shade50
+              ? SelectionColors.success.withAlpha(isDark ? 30 : 20)
               : null,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         child: Padding(
-          padding: const EdgeInsets.all(8),
+          padding: AppSpacing.cardPaddingCompact,
           child: Row(
             children: [
               // Position badge (compact)
@@ -51,21 +59,21 @@ class RosterPlayerCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: _getPositionColor(player.position),
-                  borderRadius: BorderRadius.circular(6),
+                  color: positionColor,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm + 2),
                 ),
                 child: Center(
                   child: Text(
                     player.position ?? '?',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: AppTypography.fontSm,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
 
               // Player info
               Expanded(
@@ -77,9 +85,8 @@ class RosterPlayerCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             player.fullName ?? 'Unknown Player',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                            style: AppTypography.bodyBold.copyWith(
+                              color: theme.colorScheme.onSurface,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -91,28 +98,25 @@ class RosterPlayerCard extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: _getInjuryColor(player.injuryStatus),
-                              borderRadius: BorderRadius.circular(4),
+                              color: getInjuryColor(player.injuryStatus),
+                              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                             ),
                             child: Text(
                               player.injuryStatus!,
-                              style: const TextStyle(
+                              style: AppTypography.labelBold.copyWith(
                                 color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Row(
                       children: [
                         Text(
                           player.team ?? 'FA',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
+                          style: AppTypography.body.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                         if (showSlot && currentSlot != null) ...[
@@ -120,25 +124,25 @@ class RosterPlayerCard extends StatelessWidget {
                           Text(
                             currentSlot!.code,
                             style: TextStyle(
-                              color: Theme.of(context).primaryColor,
+                              color: theme.primaryColor,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                         if (player.byeWeek != null) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(4),
+                              color: isDark
+                                  ? AppTheme.darkCardColor
+                                  : Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                             ),
                             child: Text(
                               'BYE ${player.byeWeek}',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
+                              style: AppTypography.label.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -151,23 +155,20 @@ class RosterPlayerCard extends StatelessWidget {
 
               // Projected Points
               if (player.projectedPoints != null) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
                       player.projectedPoints!.toStringAsFixed(1),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Theme.of(context).primaryColor,
+                      style: AppTypography.bodyBold.copyWith(
+                        color: theme.primaryColor,
                       ),
                     ),
                     Text(
                       'PROJ',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey.shade500,
+                      style: AppTypography.label.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -188,13 +189,13 @@ class RosterPlayerCard extends StatelessWidget {
         onDismissed: (_) => onDrop?.call(),
         background: Container(
           alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 16),
-          color: Colors.red,
+          padding: const EdgeInsets.only(right: AppSpacing.lg),
+          color: AppTheme.errorColor,
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Icon(Icons.delete, color: Colors.white),
-              SizedBox(width: 8),
+              SizedBox(width: AppSpacing.sm),
               Text(
                 'Drop',
                 style: TextStyle(
@@ -210,43 +211,5 @@ class RosterPlayerCard extends StatelessWidget {
     }
 
     return card;
-  }
-
-  Color _getPositionColor(String? position) {
-    switch (position?.toUpperCase()) {
-      case 'QB':
-        return Colors.red;
-      case 'RB':
-        return Colors.green;
-      case 'WR':
-        return Colors.blue;
-      case 'TE':
-        return Colors.orange;
-      case 'K':
-        return Colors.purple;
-      case 'DEF':
-        return Colors.brown;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  Color _getInjuryColor(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'OUT':
-        return Colors.red;
-      case 'DOUBTFUL':
-        return Colors.red.shade300;
-      case 'QUESTIONABLE':
-        return Colors.orange;
-      case 'PROBABLE':
-        return Colors.yellow.shade700;
-      case 'IR':
-        return Colors.red.shade900;
-      case 'PUP':
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
   }
 }

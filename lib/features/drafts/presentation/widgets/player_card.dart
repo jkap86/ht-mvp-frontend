@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../config/app_theme.dart';
 import '../../../players/domain/player.dart';
 import '../utils/position_colors.dart';
-import 'shared/position_badge.dart';
+import '../../../../core/widgets/position_badge.dart';
 
 class PlayerCard extends StatelessWidget {
   final Player player;

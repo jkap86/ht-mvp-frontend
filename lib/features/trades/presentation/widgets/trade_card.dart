@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/semantic_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../domain/trade.dart';
 import '../../domain/trade_status.dart';
 
@@ -16,12 +21,14 @@ class TradeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Card(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -32,11 +39,13 @@ class TradeCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     DateFormat.MMMd().format(trade.createdAt),
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
               // Teams
               Row(
@@ -47,19 +56,26 @@ class TradeCard extends StatelessWidget {
                       children: [
                         Text(
                           trade.proposerTeamName,
-                          style: Theme.of(context).textTheme.titleSmall,
+                          style: AppTypography.bodyBold.copyWith(
+                            color: theme.colorScheme.onSurface,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           '${trade.proposerGiving.length} player(s)',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Icon(Icons.swap_horiz, color: Colors.grey),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    child: Icon(
+                      Icons.swap_horiz,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   Expanded(
                     child: Column(
@@ -67,12 +83,16 @@ class TradeCard extends StatelessWidget {
                       children: [
                         Text(
                           trade.recipientTeamName,
-                          style: Theme.of(context).textTheme.titleSmall,
+                          style: AppTypography.bodyBold.copyWith(
+                            color: theme.colorScheme.onSurface,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           '${trade.recipientGiving.length} player(s)',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -82,18 +102,20 @@ class TradeCard extends StatelessWidget {
 
               // Player preview
               if (trade.items.isNotEmpty) ...[
-                const Divider(height: 24),
+                const Divider(height: AppSpacing.xl),
                 _buildPlayerPreview(context),
               ],
 
               // Expiry info for pending trades
               if (trade.status.isPending) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Expires ${DateFormat.MMMd().add_jm().format(trade.expiresAt)}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: trade.isExpired ? Colors.red : Colors.orange,
-                      ),
+                  style: AppTypography.bodySmall.copyWith(
+                    color: trade.isExpired
+                        ? AppTheme.errorColor
+                        : TradeStatusColors.pending,
+                  ),
                 ),
               ],
             ],
@@ -104,35 +126,37 @@ class TradeCard extends StatelessWidget {
   }
 
   Widget _buildStatusBadge(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     Color color;
     switch (trade.status) {
       case TradeStatus.pending:
       case TradeStatus.countered:
-        color = Colors.orange;
+        color = TradeStatusColors.pending;
         break;
       case TradeStatus.accepted:
       case TradeStatus.inReview:
-        color = Colors.blue;
+        color = TradeStatusColors.inReview;
         break;
       case TradeStatus.completed:
-        color = Colors.green;
+        color = TradeStatusColors.completed;
         break;
       default:
-        color = Colors.grey;
+        color = TradeStatusColors.failed;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: color.withAlpha(isDark ? 30 : 25),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: color.withAlpha(isDark ? 75 : 75)),
       ),
       child: Text(
         trade.status.label,
-        style: TextStyle(
+        style: AppTypography.bodySmall.copyWith(
           color: color,
-          fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -140,6 +164,7 @@ class TradeCard extends StatelessWidget {
   }
 
   Widget _buildPlayerPreview(BuildContext context) {
+    final theme = Theme.of(context);
     final proposerPlayers = trade.proposerGiving.take(2).toList();
     final recipientPlayers = trade.recipientGiving.take(2).toList();
 
@@ -151,20 +176,24 @@ class TradeCard extends StatelessWidget {
             children: proposerPlayers
                 .map((item) => Text(
                       '${item.displayPosition} ${item.fullName}',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ))
                 .toList(),
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: AppSpacing.lg),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: recipientPlayers
                 .map((item) => Text(
                       '${item.fullName} ${item.displayPosition}',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ))
                 .toList(),

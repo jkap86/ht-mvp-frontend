@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/trade.dart';
 import '../../domain/trade_item.dart';
-import '../../../rosters/presentation/widgets/position_badge.dart';
+import '../../../../core/widgets/position_badge.dart';
 
 /// Widget showing the players involved in a trade, split by team
 class TradePlayersSection extends StatelessWidget {

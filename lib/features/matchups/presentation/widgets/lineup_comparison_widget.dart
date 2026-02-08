@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/semantic_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../domain/matchup.dart';
 
 class LineupComparisonWidget extends StatelessWidget {
@@ -29,7 +33,7 @@ class LineupComparisonWidget extends StatelessWidget {
     team2Starters.sort((a, b) => _slotIndex(a.slot) - _slotIndex(b.slot));
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
       child: Column(
         children: [
           // Header row
@@ -47,7 +51,7 @@ class LineupComparisonWidget extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
 
           // Bench section
           _buildSectionHeader(context, 'BENCH'),
@@ -61,11 +65,13 @@ class LineupComparisonWidget extends StatelessWidget {
           ),
 
           if (team1Bench.isEmpty && team2Bench.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Text(
                 'No bench players',
-                style: TextStyle(color: Colors.grey),
+                style: AppTypography.body.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
         ],
@@ -82,17 +88,18 @@ class LineupComparisonWidget extends StatelessWidget {
   int _maxLength(int a, int b) => a > b ? a : b;
 
   Widget _buildHeaderRow(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.sm),
+      color: theme.colorScheme.surfaceContainerHighest,
       child: Row(
         children: [
           Expanded(
             child: Text(
               team1.teamName,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isTeam1Winner ? Colors.green.shade700 : null,
+              style: AppTypography.bodyBold.copyWith(
+                color: isTeam1Winner ? SelectionColors.success : theme.colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
@@ -101,21 +108,19 @@ class LineupComparisonWidget extends StatelessWidget {
           Container(
             width: 50,
             alignment: Alignment.center,
-            child: const Text(
+            child: Text(
               'POS',
-              style: TextStyle(
+              style: AppTypography.bodySmall.copyWith(
                 fontWeight: FontWeight.bold,
-                fontSize: 12,
-                color: Colors.grey,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),
           Expanded(
             child: Text(
               team2.teamName,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isTeam2Winner ? Colors.green.shade700 : null,
+              style: AppTypography.bodyBold.copyWith(
+                color: isTeam2Winner ? SelectionColors.success : theme.colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
@@ -127,16 +132,18 @@ class LineupComparisonWidget extends StatelessWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
       width: double.infinity,
-      color: Colors.grey.shade200,
+      color: isDark ? AppTheme.darkCardColor : Colors.grey.shade200,
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 11,
+        style: AppTypography.label.copyWith(
           fontWeight: FontWeight.bold,
-          color: Colors.grey,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -147,6 +154,8 @@ class LineupComparisonWidget extends StatelessWidget {
     MatchupPlayer? player1,
     MatchupPlayer? player2,
   ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final slot = player1?.slot ?? player2?.slot ?? '';
     final points1Won = player1 != null && player2 != null && player1.points > player2.points;
     final points2Won = player1 != null && player2 != null && player2.points > player1.points;
@@ -154,7 +163,10 @@ class LineupComparisonWidget extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+          bottom: BorderSide(
+            color: isDark ? AppTheme.darkCardColor : Colors.grey.shade200,
+            width: 1,
+          ),
         ),
       ),
       child: Row(
@@ -171,7 +183,7 @@ class LineupComparisonWidget extends StatelessWidget {
           // Position badge
           Container(
             width: 50,
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
             child: Center(
               child: _PositionBadge(slot: slot),
             ),
@@ -204,15 +216,16 @@ class _PlayerCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (player == null) {
       return Container(
-        padding: const EdgeInsets.all(8),
-        child: const Text(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Text(
           'Empty',
-          style: TextStyle(
-            color: Colors.grey,
+          style: AppTypography.bodySmall.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
             fontStyle: FontStyle.italic,
-            fontSize: 12,
           ),
         ),
       );
@@ -221,9 +234,9 @@ class _PlayerCell extends StatelessWidget {
     final isLeftAligned = alignment == CrossAxisAlignment.start;
 
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
-        color: isWinning ? Colors.green.withValues(alpha: 0.1) : null,
+        color: isWinning ? SelectionColors.success.withAlpha(25) : null,
       ),
       child: Row(
         mainAxisAlignment:
@@ -232,7 +245,7 @@ class _PlayerCell extends StatelessWidget {
           if (!isLeftAligned) ...[
             // Points (right side - show first)
             _PointsDisplay(points: player!.points, isWinning: isWinning),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
           ],
 
           // Player info
@@ -242,18 +255,17 @@ class _PlayerCell extends StatelessWidget {
               children: [
                 Text(
                   player!.fullName,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: AppTypography.bodySmall.copyWith(
                     fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                   textAlign: isLeftAligned ? TextAlign.left : TextAlign.right,
                 ),
                 Text(
                   '${player!.position ?? ''} - ${player!.team ?? 'FA'}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey.shade600,
+                  style: AppTypography.label.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                   textAlign: isLeftAligned ? TextAlign.left : TextAlign.right,
                 ),
@@ -262,7 +274,7 @@ class _PlayerCell extends StatelessWidget {
           ),
 
           if (isLeftAligned) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             // Points (left side - show last)
             _PointsDisplay(points: player!.points, isWinning: isWinning),
           ],
@@ -283,20 +295,25 @@ class _PointsDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: isWinning
-            ? Colors.green.shade100
-            : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(4),
+            ? SelectionColors.success.withAlpha(isDark ? 50 : 30)
+            : (isDark ? AppTheme.darkCardColor : Colors.grey.shade100),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       ),
       child: Text(
         points.toStringAsFixed(2),
         style: TextStyle(
-          fontSize: 11,
+          fontSize: AppTypography.fontXs + 1,
           fontWeight: FontWeight.bold,
-          color: isWinning ? Colors.green.shade700 : Colors.grey.shade700,
+          color: isWinning
+              ? SelectionColors.success
+              : theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -310,14 +327,15 @@ class _PositionBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _getPositionColor(slot);
+    final color = getPositionColor(slot);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: 36,
       height: 24,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(4),
+        color: color.withAlpha(isDark ? 50 : 35),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       ),
       child: Center(
         child: Text(
@@ -325,33 +343,10 @@ class _PositionBadge extends StatelessWidget {
           style: TextStyle(
             color: color,
             fontWeight: FontWeight.bold,
-            fontSize: 10,
+            fontSize: AppTypography.fontXs,
           ),
         ),
       ),
     );
-  }
-
-  Color _getPositionColor(String slot) {
-    switch (slot.toUpperCase()) {
-      case 'QB':
-        return Colors.red;
-      case 'RB':
-        return Colors.green;
-      case 'WR':
-        return Colors.blue;
-      case 'TE':
-        return Colors.orange;
-      case 'K':
-        return Colors.purple;
-      case 'DEF':
-        return Colors.brown;
-      case 'FLEX':
-        return Colors.teal;
-      case 'BN':
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
   }
 }

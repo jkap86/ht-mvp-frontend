@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/semantic_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../players/domain/player.dart';
 
 class FreeAgentCard extends StatelessWidget {
@@ -18,9 +21,12 @@ class FreeAgentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final positionColor = getPositionColor(player.position);
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: AppSpacing.cardPadding,
         child: Row(
           children: [
             // Position badge
@@ -28,21 +34,20 @@ class FreeAgentCard extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: _getPositionColor(player.position),
-                borderRadius: BorderRadius.circular(8),
+                color: positionColor,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
               child: Center(
                 child: Text(
                   player.position ?? '?',
-                  style: const TextStyle(
+                  style: AppTypography.bodySmall.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
 
             // Player info
             Expanded(
@@ -54,9 +59,8 @@ class FreeAgentCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           player.fullName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                          style: AppTypography.title.copyWith(
+                            color: theme.colorScheme.onSurface,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -68,26 +72,23 @@ class FreeAgentCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: _getInjuryColor(player.injuryStatus),
-                            borderRadius: BorderRadius.circular(4),
+                            color: getInjuryColor(player.injuryStatus),
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                           ),
                           child: Text(
                             player.injuryStatus!,
-                            style: const TextStyle(
+                            style: AppTypography.labelBold.copyWith(
                               color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     player.team ?? 'Free Agent',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
+                    style: AppTypography.body.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -95,7 +96,7 @@ class FreeAgentCard extends StatelessWidget {
             ),
 
             // Add/Claim button
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             if (isAdding)
               const SizedBox(
                 width: 24,
@@ -108,54 +109,18 @@ class FreeAgentCard extends StatelessWidget {
                 avatar: const Icon(Icons.access_time, size: 18),
                 label: const Text('Claim'),
                 onPressed: onAdd,
-                backgroundColor: Colors.orange.withValues(alpha: 0.1),
-                side: BorderSide(color: Colors.orange.withValues(alpha: 0.3)),
+                backgroundColor: SelectionColors.warning.withAlpha(25),
+                side: BorderSide(color: SelectionColors.warning.withAlpha(75)),
               )
             else
               IconButton(
                 icon: const Icon(Icons.add_circle),
-                color: Theme.of(context).primaryColor,
+                color: theme.primaryColor,
                 onPressed: onAdd,
               ),
           ],
         ),
       ),
     );
-  }
-
-  Color _getPositionColor(String? position) {
-    switch (position?.toUpperCase()) {
-      case 'QB':
-        return Colors.red;
-      case 'RB':
-        return Colors.green;
-      case 'WR':
-        return Colors.blue;
-      case 'TE':
-        return Colors.orange;
-      case 'K':
-        return Colors.purple;
-      case 'DEF':
-        return Colors.brown;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  Color _getInjuryColor(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'OUT':
-        return Colors.red;
-      case 'DOUBTFUL':
-        return Colors.red.shade300;
-      case 'QUESTIONABLE':
-        return Colors.orange;
-      case 'PROBABLE':
-        return Colors.yellow.shade700;
-      case 'IR':
-        return Colors.red.shade900;
-      default:
-        return Colors.grey;
-    }
   }
 }

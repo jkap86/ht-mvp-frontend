@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/position_badge.dart';
+import '../../../../core/theme/semantic_colors.dart';
 import '../../domain/roster_lineup.dart';
 import '../../domain/roster_player.dart';
-import 'position_badge.dart';
 
 /// A row displaying a player in a lineup slot
 class LineupPlayerRow extends StatelessWidget {
@@ -71,7 +72,7 @@ class LineupPlayerRow extends StatelessWidget {
                                   ),
                                   margin: const EdgeInsets.only(left: 8),
                                   decoration: BoxDecoration(
-                                    color: _getInjuryColor(player!.injuryStatus),
+                                    color: getInjuryColor(player!.injuryStatus),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -164,24 +165,5 @@ class LineupPlayerRow extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Color _getInjuryColor(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'OUT':
-        return Colors.red;
-      case 'DOUBTFUL':
-        return Colors.red.shade300;
-      case 'QUESTIONABLE':
-        return Colors.orange;
-      case 'PROBABLE':
-        return Colors.yellow.shade700;
-      case 'IR':
-        return Colors.red.shade900;
-      case 'PUP':
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
   }
 }

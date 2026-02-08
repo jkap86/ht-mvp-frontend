@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/roster_lineup.dart';
 import '../../domain/roster_player.dart';
-import 'position_badge.dart';
+import '../../../../core/widgets/position_badge.dart';
 
 /// A modal for swapping a starter with an eligible bench player
 class SwapPlayerModal extends StatelessWidget {

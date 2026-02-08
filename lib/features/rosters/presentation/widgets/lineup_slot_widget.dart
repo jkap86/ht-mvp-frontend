@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/semantic_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../domain/roster_lineup.dart';
 import '../../domain/roster_player.dart';
 
@@ -25,29 +29,32 @@ class LineupSlotWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Card(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         side: isSelected
-            ? const BorderSide(color: Colors.blue, width: 2)
+            ? BorderSide(color: SelectionColors.primary, width: 2)
             : isHighlighted
-                ? const BorderSide(color: Colors.green, width: 2)
+                ? BorderSide(color: SelectionColors.success, width: 2)
                 : isOneWayHighlight
-                    ? const BorderSide(color: Colors.orange, width: 2)
+                    ? BorderSide(color: SelectionColors.warning, width: 2)
                     : BorderSide.none,
       ),
       color: isSelected
-          ? Colors.blue.shade50
+          ? SelectionColors.primary.withAlpha(isDark ? 30 : 20)
           : isHighlighted
-              ? Colors.green.shade50
+              ? SelectionColors.success.withAlpha(isDark ? 30 : 20)
               : isOneWayHighlight
-                  ? Colors.orange.shade50
+                  ? SelectionColors.warning.withAlpha(isDark ? 30 : 20)
                   : null,
       child: InkWell(
         onTap: isLocked ? null : onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         child: Padding(
-          padding: const EdgeInsets.all(8),
+          padding: AppSpacing.cardPaddingCompact,
           child: Row(
             children: [
               // Slot badge (compact)
@@ -56,20 +63,20 @@ class LineupSlotWidget extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: _getSlotColor(),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm + 2),
                 ),
                 child: Center(
                   child: Text(
                     slot.code,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: AppTypography.fontSm,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
 
               // Player info or empty state
               Expanded(
@@ -80,7 +87,7 @@ class LineupSlotWidget extends StatelessWidget {
 
               // Points or lock icon
               if (isLocked)
-                const Icon(Icons.lock, color: Colors.grey, size: 20)
+                Icon(Icons.lock, color: theme.colorScheme.onSurfaceVariant, size: 20)
               else if (player != null) ...[
                 if (player!.projectedPoints != null)
                   Column(
@@ -89,23 +96,20 @@ class LineupSlotWidget extends StatelessWidget {
                     children: [
                       Text(
                         player!.projectedPoints!.toStringAsFixed(1),
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Theme.of(context).primaryColor,
+                        style: AppTypography.bodyBold.copyWith(
+                          color: theme.primaryColor,
                         ),
                       ),
                       Text(
                         'PROJ',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey.shade500,
+                        style: AppTypography.label.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   )
                 else
-                  const Icon(Icons.chevron_right, color: Colors.grey),
+                  Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
               ],
             ],
           ),
@@ -115,6 +119,9 @@ class LineupSlotWidget extends StatelessWidget {
   }
 
   Widget _buildPlayerInfo(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -123,9 +130,8 @@ class LineupSlotWidget extends StatelessWidget {
             Expanded(
               child: Text(
                 player!.fullName ?? 'Unknown Player',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                style: AppTypography.bodyBold.copyWith(
+                  color: theme.colorScheme.onSurface,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -134,44 +140,41 @@ class LineupSlotWidget extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _getInjuryColor(player!.injuryStatus),
-                  borderRadius: BorderRadius.circular(4),
+                  color: getInjuryColor(player!.injuryStatus),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
                 child: Text(
                   player!.injuryStatus!,
-                  style: const TextStyle(
+                  style: AppTypography.labelBold.copyWith(
                     color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         Row(
           children: [
             Text(
               '${player!.position ?? "?"} - ${player!.team ?? "FA"}',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
+              style: AppTypography.body.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             if (player!.byeWeek != null) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(4),
+                  color: isDark
+                      ? AppTheme.darkCardColor
+                      : Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
                 child: Text(
                   'BYE ${player!.byeWeek}',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
+                  style: AppTypography.label.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -183,12 +186,13 @@ class LineupSlotWidget extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Text(
       'Empty',
-      style: TextStyle(
-        color: Colors.grey[400],
+      style: AppTypography.title.copyWith(
+        color: theme.colorScheme.onSurfaceVariant.withAlpha(150),
         fontStyle: FontStyle.italic,
-        fontSize: 16,
       ),
     );
   }
@@ -196,56 +200,37 @@ class LineupSlotWidget extends StatelessWidget {
   Color _getSlotColor() {
     switch (slot) {
       case LineupSlot.qb:
-        return Colors.red;
+        return AppTheme.positionQB;
       case LineupSlot.rb:
-        return Colors.green;
+        return AppTheme.positionRB;
       case LineupSlot.wr:
-        return Colors.blue;
+        return AppTheme.positionWR;
       case LineupSlot.te:
-        return Colors.orange;
+        return AppTheme.positionTE;
       case LineupSlot.flex:
-        return Colors.purple;
+        return AppTheme.positionFLEX;
       case LineupSlot.superFlex:
-        return Colors.deepPurple;
+        return AppTheme.positionSuperFlex;
       case LineupSlot.recFlex:
-        return Colors.cyan;
+        return AppTheme.positionRecFlex;
       case LineupSlot.k:
-        return Colors.teal;
+        return AppTheme.positionK;
       case LineupSlot.def:
-        return Colors.brown;
+        return AppTheme.positionDEF;
       case LineupSlot.dl:
-        return Colors.brown.shade800;
+        return AppTheme.positionDL;
       case LineupSlot.lb:
-        return Colors.brown.shade600;
+        return AppTheme.positionLB;
       case LineupSlot.db:
-        return Colors.brown.shade400;
+        return AppTheme.positionDB;
       case LineupSlot.idpFlex:
-        return Colors.brown;
+        return AppTheme.positionIdpFlex;
       case LineupSlot.bn:
-        return Colors.grey;
+        return AppTheme.positionFLEX;
       case LineupSlot.ir:
-        return Colors.grey.shade600;
+        return AppTheme.positionIR;
       case LineupSlot.taxi:
-        return Colors.amber;
-    }
-  }
-
-  Color _getInjuryColor(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'OUT':
-        return Colors.red;
-      case 'DOUBTFUL':
-        return Colors.red.shade300;
-      case 'QUESTIONABLE':
-        return Colors.orange;
-      case 'PROBABLE':
-        return Colors.yellow.shade700;
-      case 'IR':
-        return Colors.red.shade900;
-      case 'PUP':
-        return Colors.grey;
-      default:
-        return Colors.grey;
+        return AppTheme.positionTaxi;
     }
   }
 }

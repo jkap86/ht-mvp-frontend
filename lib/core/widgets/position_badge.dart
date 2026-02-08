@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
-import '../../utils/position_colors.dart';
+import '../theme/semantic_colors.dart';
+import '../theme/app_spacing.dart';
 
-/// Reusable position badge widget used across auction lot cards and player cards.
-/// Displays a colored badge with the player's position abbreviation.
+/// A badge displaying a player position with color coding.
+/// Uses semantic position colors from AppTheme.
 class PositionBadge extends StatelessWidget {
-  final String position;
+  final String? position;
   final double size;
 
   const PositionBadge({
     super.key,
-    required this.position,
+    this.position,
     this.size = 44,
   });
 
@@ -24,7 +25,7 @@ class PositionBadge extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: positionColor.withAlpha(isDark ? 50 : 35),
-        borderRadius: BorderRadius.circular(size * 0.23),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(
           color: positionColor.withAlpha(isDark ? 100 : 70),
           width: 1.5,
@@ -32,7 +33,7 @@ class PositionBadge extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          position,
+          position ?? '?',
           style: TextStyle(
             color: positionColor,
             fontWeight: FontWeight.bold,
@@ -42,4 +43,7 @@ class PositionBadge extends StatelessWidget {
       ),
     );
   }
+
+  /// Get the position color for use in other widgets.
+  static Color getColor(String? position) => getPositionColor(position);
 }

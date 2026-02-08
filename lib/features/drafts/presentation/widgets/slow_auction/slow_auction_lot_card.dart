@@ -9,7 +9,7 @@ import '../../../domain/bid_history_entry.dart';
 import '../../../domain/draft_order_entry.dart';
 import '../../mixins/countdown_mixin.dart';
 import '../shared/bid_amount_display.dart';
-import '../shared/position_badge.dart';
+import '../../../../../core/widgets/position_badge.dart';
 
 /// Individual auction card for the slow auction list view.
 /// Expandable to show bid history inline.

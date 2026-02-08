@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../rosters/data/roster_repository.dart';
 import '../../../rosters/domain/roster_player.dart';
-import '../../../rosters/presentation/widgets/position_badge.dart';
+import '../../../../core/widgets/position_badge.dart';
+import '../../../../core/theme/semantic_colors.dart';
 
 /// Provider for roster players used in trade player selection
 final tradeRosterPlayersProvider =
@@ -105,7 +106,7 @@ class PlayerSelectorWidget extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 4, vertical: 1),
                         decoration: BoxDecoration(
-                          color: _getInjuryColor(player.injuryStatus),
+                          color: getInjuryColor(player.injuryStatus),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -129,20 +130,4 @@ class PlayerSelectorWidget extends ConsumerWidget {
     );
   }
 
-  Color _getInjuryColor(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'OUT':
-        return Colors.red;
-      case 'DOUBTFUL':
-        return Colors.red.shade300;
-      case 'QUESTIONABLE':
-        return Colors.orange;
-      case 'PROBABLE':
-        return Colors.yellow.shade700;
-      case 'IR':
-        return Colors.red.shade900;
-      default:
-        return Colors.grey;
-    }
-  }
 }

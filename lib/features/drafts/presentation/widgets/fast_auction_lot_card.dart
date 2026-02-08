@@ -5,7 +5,7 @@ import '../../../players/domain/player.dart';
 import '../../domain/auction_lot.dart';
 import '../mixins/countdown_mixin.dart';
 import 'shared/bid_amount_display.dart';
-import 'shared/position_badge.dart';
+import '../../../../core/widgets/position_badge.dart';
 
 /// Card widget showing the active lot in fast auction mode.
 /// Displays countdown timer, player info, current bid, and bid button.
