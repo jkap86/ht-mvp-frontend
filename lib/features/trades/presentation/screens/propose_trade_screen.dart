@@ -23,6 +23,27 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
   bool _isSubmitting = false;
   bool _notifyDm = true;
   String _leagueChatMode = 'summary';
+  bool _leagueChatModeInitialized = false;
+
+  void _initializeLeagueChatMode(LeagueDetailState leagueState) {
+    if (_leagueChatModeInitialized) return;
+    _leagueChatModeInitialized = true;
+
+    final leagueSettings = leagueState.league?.leagueSettings;
+    final max = (leagueSettings?['tradeProposalLeagueChatMax'] as String?) ?? 'details';
+    final defaultMode = (leagueSettings?['tradeProposalLeagueChatDefault'] as String?) ?? 'summary';
+
+    // Clamp default to max
+    _leagueChatMode = _clampMode(defaultMode, max);
+  }
+
+  String _clampMode(String mode, String max) {
+    const order = ['none', 'summary', 'details'];
+    final modeIdx = order.indexOf(mode);
+    final maxIdx = order.indexOf(max);
+    if (modeIdx < 0 || maxIdx < 0) return 'summary';
+    return order[modeIdx.clamp(0, maxIdx)];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +55,9 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
         body: const AppLoadingView(message: 'Loading league data...'),
       );
     }
+
+    // Initialize league chat mode from league settings (once)
+    _initializeLeagueChatMode(leagueState);
 
     final myRosterId = leagueState.league?.userRosterId;
     final otherMembers =
