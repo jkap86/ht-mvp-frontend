@@ -15,6 +15,8 @@ class FastAuctionLotCard extends StatefulWidget {
   final String? leadingBidderName;
   final dynamic myBudget;
   final VoidCallback onBidTap;
+  /// Server clock offset in milliseconds for accurate countdown
+  final int? serverClockOffsetMs;
 
   const FastAuctionLotCard({
     super.key,
@@ -23,6 +25,7 @@ class FastAuctionLotCard extends StatefulWidget {
     required this.leadingBidderName,
     required this.myBudget,
     required this.onBidTap,
+    this.serverClockOffsetMs,
   });
 
   @override
@@ -44,14 +47,18 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-    startCountdown(widget.lot.bidDeadline);
+    startCountdown(widget.lot.bidDeadline, serverClockOffsetMs: widget.serverClockOffsetMs);
   }
 
   @override
   void didUpdateWidget(FastAuctionLotCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Update server clock offset if changed
+    if (oldWidget.serverClockOffsetMs != widget.serverClockOffsetMs) {
+      updateServerClockOffset(widget.serverClockOffsetMs);
+    }
     if (oldWidget.lot.bidDeadline != widget.lot.bidDeadline) {
-      updateTimeRemaining(widget.lot.bidDeadline);
+      updateTimeRemaining(widget.lot.bidDeadline, serverClockOffsetMs: widget.serverClockOffsetMs);
     }
     _updatePulseAnimation();
   }

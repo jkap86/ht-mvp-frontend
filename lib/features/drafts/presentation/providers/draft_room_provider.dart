@@ -67,6 +67,9 @@ class DraftRoomState {
   final bool isDerbySubmitting;
   // Roster ID to team name mapping for derby phase (when draftOrder is empty)
   final Map<int, String> rosterNames;
+  // Server clock offset in milliseconds (serverTime - localTime)
+  // Used to correct countdown timers for client clock drift
+  final int? serverClockOffsetMs;
 
   DraftRoomState({
     this.draft,
@@ -96,6 +99,7 @@ class DraftRoomState {
     this.derbyState,
     this.isDerbySubmitting = false,
     this.rosterNames = const {},
+    this.serverClockOffsetMs,
   });
 
   bool get isAuction => draft?.draftType == DraftType.auction;
@@ -236,6 +240,7 @@ class DraftRoomState {
     bool clearDerbyState = false,
     bool? isDerbySubmitting,
     Map<int, String>? rosterNames,
+    int? serverClockOffsetMs,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -269,6 +274,7 @@ class DraftRoomState {
       derbyState: clearDerbyState ? null : (derbyState ?? this.derbyState),
       isDerbySubmitting: isDerbySubmitting ?? this.isDerbySubmitting,
       rosterNames: rosterNames ?? this.rosterNames,
+      serverClockOffsetMs: serverClockOffsetMs ?? this.serverClockOffsetMs,
     );
   }
 }
@@ -433,6 +439,19 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     }
   }
 
+  /// Update server clock offset based on serverTime from socket events.
+  /// Used to correct countdown timers for client clock drift.
+  void _updateServerClockOffset(int? serverTime) {
+    if (serverTime == null) return;
+    final localNow = DateTime.now().millisecondsSinceEpoch;
+    final offset = serverTime - localNow;
+    // Only update if significantly different (>500ms) to avoid jitter
+    final currentOffset = state.serverClockOffsetMs ?? 0;
+    if ((offset - currentOffset).abs() > 500) {
+      state = state.copyWith(serverClockOffsetMs: offset);
+    }
+  }
+
   /// Helper to upsert a lot and maintain sorted order by bidDeadline.
   /// Prevents duplicates and preserves user's myMaxBid on updates.
   void _upsertAndSortLot(AuctionLot lot) {
@@ -455,14 +474,16 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   }
 
   @override
-  void onLotCreatedReceived(AuctionLot lot) {
+  void onLotCreatedReceived(AuctionLot lot, {int? serverTime}) {
     if (!mounted) return;
+    _updateServerClockOffset(serverTime);
     _upsertAndSortLot(lot);
   }
 
   @override
-  void onLotUpdatedReceived(AuctionLot lot) {
+  void onLotUpdatedReceived(AuctionLot lot, {int? serverTime}) {
     if (!mounted) return;
+    _updateServerClockOffset(serverTime);
     final myRosterId = state.myRosterId;
 
     state = state.copyWith(
@@ -911,12 +932,13 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       final updatedClaimedSlots = Map<int, int>.from(currentState.claimedSlots);
       updatedClaimedSlots[slotNumber] = rosterId;
 
+      // Note: currentTurnIndex is NOT mutated here - server is authoritative
+      // via derby:turn_changed events for timeout policies (PUSH_BACK_ONE, PUSH_TO_END)
       state = state.copyWith(
         derbyState: currentState.copyWith(
           claimedSlots: updatedClaimedSlots,
           currentPickerRosterId: nextPickerRosterId,
           slotPickDeadline: deadline,
-          currentTurnIndex: currentState.currentTurnIndex + 1,
           availableSlots: remainingSlots,
         ),
       );

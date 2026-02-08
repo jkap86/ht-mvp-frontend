@@ -5,10 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../players/domain/player.dart';
+import '../domain/auction_settings.dart';
 import '../domain/draft_phase.dart';
 import 'providers/draft_room_provider.dart';
 import 'providers/draft_queue_provider.dart';
 import 'screens/derby_screen.dart';
+import 'widgets/auction_bid_dialog.dart';
 import 'widgets/draft_status_bar.dart';
 import 'widgets/draft_board_grid_view.dart';
 import 'widgets/draft_bottom_drawer.dart';
@@ -293,7 +295,8 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       draftRoomProvider(_providerKey).select((s) => s.outbidNotification),
       (previous, next) {
         if (next != null) {
-          final players = ref.read(draftRoomProvider(_providerKey)).players;
+          final state = ref.read(draftRoomProvider(_providerKey));
+          final players = state.players;
           final player = players.where((p) => p.id == next.playerId).firstOrNull;
           final playerName = player?.fullName ?? 'Player';
           ScaffoldMessenger.of(context).showSnackBar(
@@ -303,7 +306,27 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
               action: SnackBarAction(
                 label: 'View',
                 textColor: Colors.white,
-                onPressed: () {},
+                onPressed: () {
+                  // Find the lot user was outbid on and open bid dialog
+                  final currentState = ref.read(draftRoomProvider(_providerKey));
+                  final lot = currentState.activeLots.where((l) => l.id == next.lotId).firstOrNull;
+                  final lotPlayer = lot != null
+                      ? currentState.players.where((p) => p.id == lot.playerId).firstOrNull
+                      : null;
+                  if (lot != null && lotPlayer != null && context.mounted) {
+                    AuctionBidDialog.show(
+                      context,
+                      leagueId: widget.leagueId,
+                      draftId: widget.draftId,
+                      lot: lot,
+                      player: lotPlayer,
+                      myBudget: currentState.myBudget,
+                      draftOrder: currentState.draftOrder,
+                      settings: currentState.auctionSettings ?? AuctionSettings.defaults,
+                      onSubmit: (maxBid) => _handleSetMaxBid(lot.id, maxBid),
+                    );
+                  }
+                },
               ),
             ),
           );

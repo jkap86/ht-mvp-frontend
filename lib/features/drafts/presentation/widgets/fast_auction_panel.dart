@@ -24,6 +24,8 @@ class FastAuctionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Active lot is the one with earliest deadline (first in sorted list)
+    // activeLots is maintained sorted by bidDeadline ASC in _upsertAndSortLot()
     final activeLot = state.activeLots.isNotEmpty ? state.activeLots.first : null;
     final nominator = state.currentNominator;
     final isMyNomination = state.isMyNomination;
@@ -59,12 +61,14 @@ class FastAuctionPanel extends StatelessWidget {
                   : null,
               myBudget: state.myBudget,
               onBidTap: () => onBidTap(activeLot),
+              serverClockOffsetMs: state.serverClockOffsetMs,
             )
           else
             FastAuctionWaitingState(
               isMyNomination: isMyNomination,
               onNominateTap: onNominateTap,
               nominationDeadline: state.nominationDeadline,
+              serverClockOffsetMs: state.serverClockOffsetMs,
             ),
         ],
       ),

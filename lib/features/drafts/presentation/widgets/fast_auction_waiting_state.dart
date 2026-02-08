@@ -10,12 +10,15 @@ class FastAuctionWaitingState extends StatefulWidget {
   final bool isMyNomination;
   final VoidCallback onNominateTap;
   final DateTime? nominationDeadline;
+  /// Server clock offset in milliseconds for accurate countdown
+  final int? serverClockOffsetMs;
 
   const FastAuctionWaitingState({
     super.key,
     required this.isMyNomination,
     required this.onNominateTap,
     this.nominationDeadline,
+    this.serverClockOffsetMs,
   });
 
   @override
@@ -43,6 +46,12 @@ class _FastAuctionWaitingStateState extends State<FastAuctionWaitingState> {
     }
   }
 
+  /// Get the current time adjusted for server clock offset.
+  DateTime _getServerNow() {
+    if (widget.serverClockOffsetMs == null) return DateTime.now();
+    return DateTime.now().add(Duration(milliseconds: widget.serverClockOffsetMs!));
+  }
+
   void _updateRemaining() {
     if (widget.nominationDeadline == null) {
       setState(() {
@@ -51,7 +60,8 @@ class _FastAuctionWaitingStateState extends State<FastAuctionWaitingState> {
       return;
     }
     // Use UTC for both to ensure correct countdown regardless of user's timezone
-    final now = DateTime.now().toUtc();
+    // Apply server clock offset for accurate countdown on devices with clock drift
+    final now = _getServerNow().toUtc();
     final deadline = widget.nominationDeadline!.toUtc();
     setState(() {
       _remaining = deadline.difference(now);

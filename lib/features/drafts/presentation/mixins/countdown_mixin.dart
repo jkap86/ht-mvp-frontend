@@ -4,15 +4,19 @@ import 'package:flutter/material.dart';
 
 /// Mixin that provides countdown timer functionality for widgets displaying time-based deadlines.
 /// Handles UTC time conversion and provides urgency level calculation.
+/// Supports server clock offset correction for accurate countdowns on devices with clock drift.
 mixin CountdownMixin<T extends StatefulWidget> on State<T> {
   Timer? _countdownTimer;
   Duration timeRemaining = Duration.zero;
+  int? _serverClockOffsetMs;
 
   /// Start a countdown timer that updates every [interval].
   /// The [deadline] should be the target time (will be converted to UTC internally).
-  void startCountdown(DateTime deadline, {Duration interval = const Duration(seconds: 1)}) {
-    updateTimeRemaining(deadline);
-    _countdownTimer = Timer.periodic(interval, (_) => updateTimeRemaining(deadline));
+  /// Optionally provide [serverClockOffsetMs] to correct for client clock drift.
+  void startCountdown(DateTime deadline, {Duration interval = const Duration(seconds: 1), int? serverClockOffsetMs}) {
+    _serverClockOffsetMs = serverClockOffsetMs;
+    updateTimeRemaining(deadline, serverClockOffsetMs: serverClockOffsetMs);
+    _countdownTimer = Timer.periodic(interval, (_) => updateTimeRemaining(deadline, serverClockOffsetMs: _serverClockOffsetMs));
   }
 
   /// Stop the countdown timer.
@@ -21,9 +25,23 @@ mixin CountdownMixin<T extends StatefulWidget> on State<T> {
     _countdownTimer = null;
   }
 
+  /// Update the server clock offset for more accurate countdowns.
+  void updateServerClockOffset(int? offsetMs) {
+    _serverClockOffsetMs = offsetMs;
+  }
+
+  /// Get the current time adjusted for server clock offset.
+  /// If no offset is available, returns device time.
+  DateTime getServerNow({int? serverClockOffsetMs}) {
+    final offset = serverClockOffsetMs ?? _serverClockOffsetMs;
+    if (offset == null) return DateTime.now();
+    return DateTime.now().add(Duration(milliseconds: offset));
+  }
+
   /// Manually update the time remaining based on the deadline.
-  void updateTimeRemaining(DateTime deadline) {
-    final now = DateTime.now().toUtc();
+  /// Uses server clock offset if available for accurate countdown.
+  void updateTimeRemaining(DateTime deadline, {int? serverClockOffsetMs}) {
+    final now = getServerNow(serverClockOffsetMs: serverClockOffsetMs).toUtc();
     final utcDeadline = deadline.toUtc();
     if (mounted) {
       setState(() {

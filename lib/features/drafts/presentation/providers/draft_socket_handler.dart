@@ -30,8 +30,8 @@ abstract class DraftSocketCallbacks {
   void onDraftPausedReceived();
   void onDraftResumedReceived();
   // Auction callbacks
-  void onLotCreatedReceived(AuctionLot lot);
-  void onLotUpdatedReceived(AuctionLot lot);
+  void onLotCreatedReceived(AuctionLot lot, {int? serverTime});
+  void onLotUpdatedReceived(AuctionLot lot, {int? serverTime});
   void onLotWonReceived(int lotId);
   void onLotPassedReceived(int lotId);
   void onOutbidReceived(OutbidNotification notification);
@@ -129,7 +129,9 @@ class DraftSocketHandler {
         final lotData = data['lot'] ?? data;
         if (lotData is! Map) return;
         final lot = AuctionLot.fromJson(Map<String, dynamic>.from(lotData));
-        _callbacks.onLotCreatedReceived(lot);
+        // Extract serverTime for clock synchronization (sent as milliseconds since epoch)
+        final serverTime = data['serverTime'] as int?;
+        _callbacks.onLotCreatedReceived(lot, serverTime: serverTime);
       } catch (e) {
         if (kDebugMode) debugPrint('Failed to parse auction lot created: $e');
       }
@@ -141,7 +143,9 @@ class DraftSocketHandler {
         final lotData = data['lot'] ?? data;
         if (lotData is! Map) return;
         final lot = AuctionLot.fromJson(Map<String, dynamic>.from(lotData));
-        _callbacks.onLotUpdatedReceived(lot);
+        // Extract serverTime for clock synchronization (sent as milliseconds since epoch)
+        final serverTime = data['serverTime'] as int?;
+        _callbacks.onLotUpdatedReceived(lot, serverTime: serverTime);
       } catch (e) {
         if (kDebugMode) debugPrint('Failed to parse auction lot updated: $e');
       }
