@@ -38,6 +38,8 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
   final _messageController = TextEditingController();
   bool _isSubmitting = false;
   int? _initializedForTradeId;
+  bool _notifyDm = true;
+  String _leagueChatMode = 'summary';
 
   @override
   void dispose() {
@@ -219,12 +221,73 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
               ),
               maxLines: 3,
             ),
+
+            // Notification Options
+            const SizedBox(height: 24),
+            Text('Notification Options', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Card(
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Send DM'),
+                    subtitle: const Text('Send trade details directly to recipient'),
+                    value: _notifyDm,
+                    onChanged: (value) => setState(() => _notifyDm = value),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('League Chat Notification'),
+                    subtitle: Text(_getLeagueChatModeDescription(_leagueChatMode)),
+                    trailing: DropdownButton<String>(
+                      value: _leagueChatMode,
+                      underline: const SizedBox(),
+                      items: _buildLeagueChatModeItems(leagueState),
+                      onChanged: (value) {
+                        if (value != null) setState(() => _leagueChatMode = value);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
           ),
         ),
       ),
     );
+  }
+
+  String _getLeagueChatModeDescription(String mode) {
+    switch (mode) {
+      case 'none':
+        return 'No notification in league chat';
+      case 'summary':
+        return 'Post summary to league chat';
+      case 'details':
+        return 'Post full details to league chat';
+      default:
+        return '';
+    }
+  }
+
+  List<DropdownMenuItem<String>> _buildLeagueChatModeItems(LeagueDetailState leagueState) {
+    final leagueSettings = leagueState.league?.leagueSettings;
+    final max = (leagueSettings?['tradeProposalLeagueChatMax'] as String?) ?? 'details';
+
+    final items = <DropdownMenuItem<String>>[];
+    items.add(const DropdownMenuItem(value: 'none', child: Text('None')));
+
+    if (max == 'summary' || max == 'details') {
+      items.add(const DropdownMenuItem(value: 'summary', child: Text('Summary')));
+    }
+
+    if (max == 'details') {
+      items.add(const DropdownMenuItem(value: 'details', child: Text('Full Details')));
+    }
+
+    return items;
   }
 
   bool _canSubmit() {
@@ -247,6 +310,8 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
         message: _messageController.text.isNotEmpty
             ? _messageController.text
             : null,
+        notifyDm: _notifyDm,
+        leagueChatMode: _leagueChatMode,
       );
 
       if (mounted) {

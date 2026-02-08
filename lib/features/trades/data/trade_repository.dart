@@ -43,6 +43,10 @@ class TradeRepository {
     required List<int> offeringPlayerIds,
     required List<int> requestingPlayerIds,
     String? message,
+    bool notifyDm = true,
+    String leagueChatMode = 'summary',
+    List<int>? offeringPickAssetIds,
+    List<int>? requestingPickAssetIds,
   }) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/trades',
@@ -51,6 +55,12 @@ class TradeRepository {
         'offering_player_ids': offeringPlayerIds,
         'requesting_player_ids': requestingPlayerIds,
         if (message != null && message.isNotEmpty) 'message': message,
+        'notify_dm': notifyDm,
+        'league_chat_mode': leagueChatMode,
+        if (offeringPickAssetIds != null && offeringPickAssetIds.isNotEmpty)
+          'offering_pick_asset_ids': offeringPickAssetIds,
+        if (requestingPickAssetIds != null && requestingPickAssetIds.isNotEmpty)
+          'requesting_pick_asset_ids': requestingPickAssetIds,
       },
     );
     return Trade.fromJson(response);
@@ -87,6 +97,10 @@ class TradeRepository {
     required List<int> offeringPlayerIds,
     required List<int> requestingPlayerIds,
     String? message,
+    bool notifyDm = true,
+    String leagueChatMode = 'summary',
+    List<int>? offeringPickAssetIds,
+    List<int>? requestingPickAssetIds,
   }) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/trades/$tradeId/counter',
@@ -94,6 +108,12 @@ class TradeRepository {
         'offering_player_ids': offeringPlayerIds,
         'requesting_player_ids': requestingPlayerIds,
         if (message != null && message.isNotEmpty) 'message': message,
+        'notify_dm': notifyDm,
+        'league_chat_mode': leagueChatMode,
+        if (offeringPickAssetIds != null && offeringPickAssetIds.isNotEmpty)
+          'offering_pick_asset_ids': offeringPickAssetIds,
+        if (requestingPickAssetIds != null && requestingPickAssetIds.isNotEmpty)
+          'requesting_pick_asset_ids': requestingPickAssetIds,
       },
     );
     return Trade.fromJson(response);

@@ -21,6 +21,8 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
   final List<int> _offeringPlayerIds = [];
   final List<int> _requestingPlayerIds = [];
   bool _isSubmitting = false;
+  bool _notifyDm = true;
+  String _leagueChatMode = 'summary';
 
   @override
   Widget build(BuildContext context) {
@@ -152,12 +154,74 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
                   ),
                 ],
               ),
+
+            // Notification Options
+            const SizedBox(height: 24),
+            Text('Notification Options', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Card(
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Send DM'),
+                    subtitle: const Text('Send trade details directly to recipient'),
+                    value: _notifyDm,
+                    onChanged: (value) => setState(() => _notifyDm = value),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('League Chat Notification'),
+                    subtitle: Text(_getLeagueChatModeDescription(_leagueChatMode)),
+                    trailing: DropdownButton<String>(
+                      value: _leagueChatMode,
+                      underline: const SizedBox(),
+                      items: _buildLeagueChatModeItems(),
+                      onChanged: (value) {
+                        if (value != null) setState(() => _leagueChatMode = value);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
           ),
         ),
       ),
     );
+  }
+
+  String _getLeagueChatModeDescription(String mode) {
+    switch (mode) {
+      case 'none':
+        return 'No notification in league chat';
+      case 'summary':
+        return 'Post summary to league chat';
+      case 'details':
+        return 'Post full details to league chat';
+      default:
+        return '';
+    }
+  }
+
+  List<DropdownMenuItem<String>> _buildLeagueChatModeItems() {
+    final leagueState = ref.read(leagueDetailProvider(widget.leagueId));
+    final leagueSettings = leagueState.league?.leagueSettings;
+    final max = (leagueSettings?['tradeProposalLeagueChatMax'] as String?) ?? 'details';
+
+    final items = <DropdownMenuItem<String>>[];
+    items.add(const DropdownMenuItem(value: 'none', child: Text('None')));
+
+    if (max == 'summary' || max == 'details') {
+      items.add(const DropdownMenuItem(value: 'summary', child: Text('Summary')));
+    }
+
+    if (max == 'details') {
+      items.add(const DropdownMenuItem(value: 'details', child: Text('Full Details')));
+    }
+
+    return items;
   }
 
   bool _canSubmit() {
@@ -183,6 +247,8 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
         recipientRosterId: _selectedRecipientRosterId!,
         offeringPlayerIds: _offeringPlayerIds,
         requestingPlayerIds: _requestingPlayerIds,
+        notifyDm: _notifyDm,
+        leagueChatMode: _leagueChatMode,
       );
 
       if (mounted) {
