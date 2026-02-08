@@ -231,6 +231,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         rosterPlayers: rosterPlayers,
         isFaabLeague: isFaabLeague,
         waiversState: waiversState,
+        maxRosterSize: maxRosterSize,
       );
       return;
     }
@@ -288,6 +289,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     required List<RosterPlayer> rosterPlayers,
     required bool isFaabLeague,
     required WaiversState waiversState,
+    required int maxRosterSize,
   }) {
     final faabBudget = waiversState.getBudgetForRoster(widget.rosterId);
 
@@ -302,6 +304,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
       rosterPlayers: rosterPlayers,
       faabBudget: faabBudget,
       isFaabLeague: isFaabLeague,
+      maxRosterSize: maxRosterSize,
       onSubmit: ({
         required int playerId,
         int? dropPlayerId,

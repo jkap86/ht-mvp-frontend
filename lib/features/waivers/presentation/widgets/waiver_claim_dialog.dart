@@ -15,6 +15,7 @@ class WaiverClaimDialog extends ConsumerStatefulWidget {
   final List<RosterPlayer> rosterPlayers;
   final FaabBudget? faabBudget;
   final bool isFaabLeague;
+  final int maxRosterSize;
   final Future<void> Function({
     required int playerId,
     int? dropPlayerId,
@@ -32,6 +33,7 @@ class WaiverClaimDialog extends ConsumerStatefulWidget {
     required this.rosterPlayers,
     this.faabBudget,
     required this.isFaabLeague,
+    required this.maxRosterSize,
     required this.onSubmit,
   });
 
@@ -44,13 +46,13 @@ class _WaiverClaimDialogState extends ConsumerState<WaiverClaimDialog> {
   final _bidController = TextEditingController(text: '0');
   int? _selectedDropPlayerId;
   bool _isSubmitting = false;
-  final bool _needsDropPlayer = false;
+  late bool _needsDropPlayer;
 
   @override
   void initState() {
     super.initState();
     // Check if roster is full and requires a drop
-    // This would need to be passed in or calculated
+    _needsDropPlayer = widget.rosterPlayers.length >= widget.maxRosterSize;
   }
 
   @override
@@ -327,6 +329,7 @@ Future<bool?> showWaiverClaimDialog({
   required List<RosterPlayer> rosterPlayers,
   FaabBudget? faabBudget,
   required bool isFaabLeague,
+  required int maxRosterSize,
   required Future<void> Function({
     required int playerId,
     int? dropPlayerId,
@@ -345,6 +348,7 @@ Future<bool?> showWaiverClaimDialog({
       rosterPlayers: rosterPlayers,
       faabBudget: faabBudget,
       isFaabLeague: isFaabLeague,
+      maxRosterSize: maxRosterSize,
       onSubmit: onSubmit,
     ),
   );
