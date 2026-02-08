@@ -72,14 +72,23 @@ class _BrowsePublicTabState extends ConsumerState<BrowsePublicTab>
   }
 
   Future<void> _joinLeague(PublicLeague league) async {
+    // Show confirmation dialog for bench joining
+    if (league.canJoinAsBench) {
+      final confirmed = await _showBenchJoinDialog(league);
+      if (confirmed != true) return;
+    }
+
     final joinedLeague = await ref.read(publicLeaguesProvider.notifier).joinLeague(league.id);
 
     if (!mounted) return;
 
     if (joinedLeague != null) {
+      final message = league.canJoinAsBench
+          ? 'Joined ${league.name} as bench member'
+          : 'Successfully joined ${league.name}!';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Successfully joined ${league.name}!'),
+          content: Text(message),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -97,6 +106,49 @@ class _BrowsePublicTabState extends ConsumerState<BrowsePublicTab>
         ),
       );
     }
+  }
+
+  Future<bool?> _showBenchJoinDialog(PublicLeague league) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Join as Bench Member'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This league is at capacity but not all members have paid their dues.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'You can join as a bench member. You\'ll be able to participate once a spot opens up or the commissioner reinstates you.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            if (league.hasDues && league.buyInAmount != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Buy-in: ${league.buyInDisplay}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Join as Bench'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -156,9 +208,9 @@ class _PublicLeagueCard extends StatelessWidget {
               children: [
                 _buildInfoChip(
                   context,
-                  Icons.people,
+                  _getStatusIcon(league.fillStatus),
                   league.memberCountDisplay,
-                  league.isFull ? colorScheme.error : colorScheme.primary,
+                  _getStatusColor(league.fillStatus, colorScheme),
                 ),
                 const SizedBox(width: 12),
                 _buildInfoChip(
@@ -167,33 +219,83 @@ class _PublicLeagueCard extends StatelessWidget {
                   _formatMode(league.mode),
                   colorScheme.secondary,
                 ),
+                if (league.hasDues) ...[
+                  const SizedBox(width: 12),
+                  _buildInfoChip(
+                    context,
+                    Icons.attach_money,
+                    league.buyInDisplay,
+                    colorScheme.tertiary,
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: league.isFull || isJoining ? null : onJoin,
-                icon: isJoining
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(league.isFull ? Icons.block : Icons.login),
-                label: Text(
-                  isJoining
-                      ? 'Joining...'
-                      : league.isFull
-                          ? 'League Full'
-                          : 'Join League',
-                ),
-              ),
+              child: _buildJoinButton(colorScheme),
             ),
           ],
         ),
       ),
     );
+  }
+
+  IconData _getStatusIcon(FillStatus status) {
+    switch (status) {
+      case FillStatus.open:
+        return Icons.group;
+      case FillStatus.waitingPayment:
+        return Icons.hourglass_empty;
+      case FillStatus.filled:
+        return Icons.block;
+    }
+  }
+
+  Color _getStatusColor(FillStatus status, ColorScheme colorScheme) {
+    switch (status) {
+      case FillStatus.open:
+        return colorScheme.primary;
+      case FillStatus.waitingPayment:
+        return colorScheme.tertiary;
+      case FillStatus.filled:
+        return colorScheme.error;
+    }
+  }
+
+  Widget _buildJoinButton(ColorScheme colorScheme) {
+    if (isJoining) {
+      return FilledButton.icon(
+        onPressed: null,
+        icon: const SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        label: const Text('Joining...'),
+      );
+    }
+
+    switch (league.fillStatus) {
+      case FillStatus.open:
+        return FilledButton.icon(
+          onPressed: onJoin,
+          icon: const Icon(Icons.login),
+          label: const Text('Join League'),
+        );
+      case FillStatus.waitingPayment:
+        return FilledButton.tonalIcon(
+          onPressed: onJoin,
+          icon: const Icon(Icons.person_add),
+          label: const Text('Join as Bench'),
+        );
+      case FillStatus.filled:
+        return FilledButton.icon(
+          onPressed: null,
+          icon: const Icon(Icons.block),
+          label: const Text('League Full'),
+        );
+    }
   }
 
   Widget _buildInfoChip(BuildContext context, IconData icon, String label, Color color) {
