@@ -67,11 +67,6 @@ class LeagueRepository {
     return League.fromJson(response);
   }
 
-  Future<League> joinLeague(String inviteCode) async {
-    final response = await _apiClient.post('/leagues/join/$inviteCode');
-    return League.fromJson(response);
-  }
-
   Future<List<Roster>> getLeagueMembers(int leagueId) async {
     final response = await _apiClient.get('/leagues/$leagueId/members');
     if (response is! List) {
@@ -322,19 +317,6 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
         isPublic: isPublic,
         draftStructure: draftStructure,
       );
-      state = state.copyWith(
-        leagues: [...state.leagues, league],
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
-
-  Future<void> joinLeague(String inviteCode) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final league = await _repository.joinLeague(inviteCode);
       state = state.copyWith(
         leagues: [...state.leagues, league],
         isLoading: false,

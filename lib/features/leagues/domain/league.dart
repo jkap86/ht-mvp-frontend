@@ -42,7 +42,6 @@ class League {
   final String status;
   final int season;
   final int totalRosters;
-  final String? inviteCode;
   final int? commissionerRosterId;
   final int? userRosterId;
   final Map<String, dynamic> settings;
@@ -60,7 +59,6 @@ class League {
     required this.status,
     required this.season,
     required this.totalRosters,
-    this.inviteCode,
     this.commissionerRosterId,
     this.userRosterId,
     required this.settings,
@@ -126,7 +124,6 @@ class League {
       status: json['status'] as String? ?? 'draft',
       season: int.tryParse(json['season']?.toString() ?? '') ?? DateTime.now().year,
       totalRosters: json['total_rosters'] as int? ?? 12,
-      inviteCode: json['invite_code'] as String?,
       commissionerRosterId: json['commissioner_roster_id'] as int?,
       userRosterId: json['user_roster_id'] as int?,
       settings: (json['settings'] as Map<String, dynamic>?) ?? {},

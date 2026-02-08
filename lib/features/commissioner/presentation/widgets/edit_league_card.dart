@@ -543,7 +543,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
                 Text(
                   _isPublic
                       ? 'Anyone can find and join this league'
-                      : 'Only people with the invite code can join',
+                      : 'Only invited members can join',
                   style: TextStyle(
                     fontSize: 11,
                     color: colorScheme.onSurface.withAlpha(153),
