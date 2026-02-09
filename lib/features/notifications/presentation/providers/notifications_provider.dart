@@ -235,7 +235,7 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
 }
 
 final notificationsProvider =
-    StateNotifierProvider<NotificationsNotifier, NotificationsState>((ref) {
+    StateNotifierProvider.autoDispose<NotificationsNotifier, NotificationsState>((ref) {
   return NotificationsNotifier(
     ref.watch(notificationsRepositoryProvider),
     ref.watch(socketServiceProvider),

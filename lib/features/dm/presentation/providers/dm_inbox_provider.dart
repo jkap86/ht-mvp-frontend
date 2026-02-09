@@ -195,7 +195,7 @@ class DmInboxNotifier extends StateNotifier<DmInboxState> {
   }
 }
 
-final dmInboxProvider = StateNotifierProvider<DmInboxNotifier, DmInboxState>(
+final dmInboxProvider = StateNotifierProvider.autoDispose<DmInboxNotifier, DmInboxState>(
   (ref) => DmInboxNotifier(
     ref.watch(dmRepositoryProvider),
     ref.watch(socketServiceProvider),

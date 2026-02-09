@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -16,6 +17,7 @@ class ApiClient {
   final String baseUrl = AppConfig.apiBaseUrl;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final Uuid _uuid = const Uuid();
+  final Random _random = Random();
 
   /// Request timeout duration
   static const Duration requestTimeout = Duration(seconds: 30);
@@ -130,7 +132,8 @@ class ApiClient {
     // Exponential backoff: baseDelay * 2^attempt
     final exponentialDelay = baseDelayMs * (1 << attempt);
     // Add jitter (0-50% of the delay) to prevent thundering herd
-    final jitter = (exponentialDelay * 0.5 * (DateTime.now().millisecond / 1000)).toInt();
+    // Use Random() for proper entropy instead of DateTime.now().millisecond
+    final jitter = _random.nextInt((exponentialDelay * 0.5).toInt() + 1);
     return Duration(milliseconds: exponentialDelay + jitter);
   }
 
