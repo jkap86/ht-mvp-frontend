@@ -135,9 +135,14 @@ class TradeRepository {
     if (tradeData == null) {
       throw Exception('Invalid response: missing trade data');
     }
+    final voteCountMap =
+        (response['vote_count'] as Map<String, dynamic>?) ?? {};
     return {
       'trade': Trade.fromJson(tradeData),
-      'vote_count': response['vote_count'] as int? ?? 0,
+      'vote_count': {
+        'approve': voteCountMap['approve'] as int? ?? 0,
+        'veto': voteCountMap['veto'] as int? ?? 0,
+      },
     };
   }
 }
