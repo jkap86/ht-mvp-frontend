@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/draft_pick.dart';
-import '../utils/position_colors.dart';
+import '../../../../core/theme/semantic_colors.dart';
 
 /// Individual roster slot showing a drafted player or empty slot.
 class RosterSlot extends StatelessWidget {

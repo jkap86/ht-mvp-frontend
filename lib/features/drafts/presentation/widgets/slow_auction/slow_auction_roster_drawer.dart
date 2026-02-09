@@ -7,7 +7,7 @@ import '../../../domain/auction_lot.dart';
 import '../../../domain/draft_order_entry.dart';
 import '../../../domain/draft_pick.dart';
 import '../../providers/draft_room_provider.dart';
-import '../../utils/position_colors.dart';
+import '../../../../../core/theme/semantic_colors.dart';
 
 /// Slide-out drawer showing all teams and their rosters in slow auction.
 /// Teams are displayed vertically and expand on tap to show players.

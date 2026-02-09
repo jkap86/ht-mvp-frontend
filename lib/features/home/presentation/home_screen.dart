@@ -35,7 +35,7 @@ class HomeScreen extends ConsumerWidget {
           const NotificationBell(),
           IconButton(
             icon: Icon(
-              ref.watch(themeModeProvider) == ThemeMode.dark
+              Theme.of(context).brightness == Brightness.dark
                   ? Icons.light_mode
                   : Icons.dark_mode,
             ),

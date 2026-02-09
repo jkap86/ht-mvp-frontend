@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../players/domain/player.dart';
-import 'package:hypetrain_mvp/features/drafts/presentation/utils/position_colors.dart';
+import 'package:hypetrain_mvp/core/theme/semantic_colors.dart';
 
 class AvailablePlayersList extends StatelessWidget {
   final List<Player> players;

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
+import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../domain/matchup.dart';
 import '../providers/matchup_provider.dart';
@@ -27,7 +26,7 @@ class MatchupDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => _navigateBack(context),
+          onPressed: () => navigateBack(context, fallback: '/leagues/$leagueId/matchups'),
         ),
         title: const Text('Matchup Details'),
       ),
@@ -44,13 +43,6 @@ class MatchupDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _navigateBack(BuildContext context) {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go('/leagues/$leagueId/matchups');
-    }
-  }
 
   Widget _buildContent(BuildContext context, WidgetRef ref, MatchupDetails details) {
     final matchup = details.matchup;

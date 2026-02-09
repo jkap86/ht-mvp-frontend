@@ -22,10 +22,11 @@ class UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final bgColor = backgroundColor ??
-        (isHighlighted ? Colors.indigo : Colors.grey[300]);
+        (isHighlighted ? colorScheme.primary : colorScheme.surfaceContainerHighest);
     final fgColor = textColor ??
-        (isHighlighted ? Colors.white : Colors.black87);
+        (isHighlighted ? colorScheme.onPrimary : colorScheme.onSurface);
 
     return Stack(
       clipBehavior: Clip.none,

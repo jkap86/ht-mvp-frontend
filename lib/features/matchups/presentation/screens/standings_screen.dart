@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
+import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../providers/standings_provider.dart';
 
@@ -22,7 +21,7 @@ class StandingsScreen extends ConsumerWidget {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => _navigateBack(context),
+            onPressed: () => navigateBack(context, fallback: '/leagues/$leagueId'),
           ),
           title: const Text('Standings'),
         ),
@@ -35,7 +34,7 @@ class StandingsScreen extends ConsumerWidget {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => _navigateBack(context),
+            onPressed: () => navigateBack(context, fallback: '/leagues/$leagueId'),
           ),
           title: const Text('Standings'),
         ),
@@ -50,7 +49,7 @@ class StandingsScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => _navigateBack(context),
+          onPressed: () => navigateBack(context, fallback: '/leagues/$leagueId'),
         ),
         title: Text(state.league?.name ?? 'Standings'),
       ),
@@ -67,13 +66,6 @@ class StandingsScreen extends ConsumerWidget {
     );
   }
 
-  void _navigateBack(BuildContext context) {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go('/leagues/$leagueId');
-    }
-  }
 
   Widget _buildStandingsTable(BuildContext context, StandingsState state) {
     final playoffLine = (state.league?.totalRosters ?? 12) ~/ 2; // Top half makes playoffs

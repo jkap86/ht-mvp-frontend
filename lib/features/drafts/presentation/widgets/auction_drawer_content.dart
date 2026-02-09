@@ -5,7 +5,7 @@ import '../../../players/domain/player.dart';
 import '../../domain/auction_settings.dart';
 import '../providers/draft_room_provider.dart';
 import '../utils/player_filtering.dart';
-import '../utils/position_colors.dart';
+import '../../../../core/theme/semantic_colors.dart';
 import 'auction_bid_dialog.dart';
 import 'auction_lots_panel.dart';
 import 'nomination_hint_row.dart';

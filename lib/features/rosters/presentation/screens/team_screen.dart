@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../domain/roster_lineup.dart';
 import '../../domain/roster_player.dart';
@@ -112,7 +113,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => _navigateBack(context),
+            onPressed: () => navigateBack(context),
           ),
           title: const Text('My Team'),
         ),
@@ -125,7 +126,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => _navigateBack(context),
+            onPressed: () => navigateBack(context),
           ),
           title: const Text('My Team'),
         ),
@@ -140,7 +141,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => _navigateBack(context),
+          onPressed: () => navigateBack(context),
         ),
         title: _buildTeamSelector(state),
         actions: [
@@ -314,14 +315,6 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
     );
   }
 
-  void _navigateBack(BuildContext context) {
-    // Use pop to go back properly instead of navigating to home
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go('/');
-    }
-  }
 
   Widget _buildLineupTab(TeamState state, {bool readOnly = false}) {
     if (state.lineup?.isLocked == true || readOnly) {

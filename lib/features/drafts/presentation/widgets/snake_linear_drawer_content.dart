@@ -6,7 +6,7 @@ import '../../domain/draft_pick_asset.dart';
 import '../providers/draft_room_provider.dart';
 import '../providers/draft_queue_provider.dart';
 import '../utils/player_filtering.dart';
-import '../utils/position_colors.dart';
+import '../../../../core/theme/semantic_colors.dart';
 import 'draft_queue_widget.dart';
 import 'player_search_filter_panel.dart';
 import 'queue_header_delegate.dart';

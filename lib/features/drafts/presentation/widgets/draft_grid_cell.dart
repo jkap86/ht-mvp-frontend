@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../config/app_theme.dart';
 import '../../domain/draft_pick.dart';
 import '../../domain/draft_pick_asset.dart';
-import '../utils/position_colors.dart';
+import '../../../../core/theme/semantic_colors.dart';
 
 class DraftGridCell extends StatelessWidget {
   final DraftPick? pick;

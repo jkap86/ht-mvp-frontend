@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../utils/position_colors.dart';
+import '../../../../core/theme/semantic_colors.dart';
 
 class PositionFilterChips extends StatelessWidget {
   final String? selectedPosition;

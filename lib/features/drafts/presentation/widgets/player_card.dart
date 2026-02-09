@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../players/domain/player.dart';
-import '../utils/position_colors.dart';
+import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/widgets/position_badge.dart';
 
 class PlayerCard extends StatelessWidget {
@@ -77,7 +77,7 @@ class PlayerCard extends StatelessWidget {
                               ),
                               margin: const EdgeInsets.only(left: 8),
                               decoration: BoxDecoration(
-                                color: _getInjuryColor(player.injuryStatus),
+                                color: getInjuryColor(player.injuryStatus),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -218,25 +218,6 @@ class PlayerCard extends StatelessWidget {
           ),
       ],
     );
-  }
-
-  Color _getInjuryColor(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'OUT':
-        return AppTheme.injuryOut;
-      case 'DOUBTFUL':
-        return AppTheme.injuryDoubtful.withAlpha(200);
-      case 'QUESTIONABLE':
-        return AppTheme.injuryQuestionable;
-      case 'PROBABLE':
-        return AppTheme.injuryProbable.withAlpha(180);
-      case 'IR':
-        return AppTheme.injuryOut;
-      case 'PUP':
-        return const Color(0xFF6E7681);
-      default:
-        return const Color(0xFF6E7681);
-    }
   }
 }
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
+import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../players/domain/player.dart';
 import '../../../waivers/presentation/providers/waiver_provider.dart';
@@ -78,7 +77,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => _navigateBack(context),
+          onPressed: () => navigateBack(context, fallback: '/leagues/${widget.leagueId}'),
         ),
         title: const Text('Free Agents'),
         bottom: PreferredSize(
@@ -140,13 +139,6 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     );
   }
 
-  void _navigateBack(BuildContext context) {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go('/leagues/${widget.leagueId}');
-    }
-  }
 
   Widget _buildBody(
     FreeAgentsState state, {

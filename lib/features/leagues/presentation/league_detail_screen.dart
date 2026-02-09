@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/dev_console.dart';
 import '../../../core/widgets/states/states.dart';
 import '../domain/league.dart';
@@ -48,14 +49,6 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     super.dispose();
   }
 
-  void _navigateBack(BuildContext context) {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      // At root of League tab, go to home
-      context.go('/');
-    }
-  }
 
   int _calculateRosterSlots(League league) {
     final rosterConfig = league.settings['roster_config'];
@@ -214,7 +207,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => _navigateBack(context),
+            onPressed: () => navigateBack(context),
           ),
           title: const Text('Loading...'),
         ),
@@ -227,7 +220,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => _navigateBack(context),
+            onPressed: () => navigateBack(context),
           ),
           title: const Text('Error'),
         ),
@@ -242,7 +235,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => _navigateBack(context),
+          onPressed: () => navigateBack(context),
         ),
         title: Text(state.league?.name ?? 'League'),
         actions: const [

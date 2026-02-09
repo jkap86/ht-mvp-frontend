@@ -24,12 +24,12 @@ class AppErrorView extends StatelessWidget {
             Icon(
               Icons.error_outline,
               size: 48,
-              color: Colors.red[400],
+              color: Theme.of(context).colorScheme.error,
             ),
             const SizedBox(height: 16),
             Text(
               message,
-              style: TextStyle(color: Colors.red[700]),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
               textAlign: TextAlign.center,
             ),
             if (onRetry != null) ...[

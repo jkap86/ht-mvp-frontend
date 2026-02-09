@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../domain/matchup.dart';
 import '../providers/matchup_provider.dart';
@@ -23,7 +24,7 @@ class MatchupScreen extends ConsumerWidget {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => _navigateBack(context),
+            onPressed: () => navigateBack(context),
           ),
           title: const Text('Matchups'),
         ),
@@ -36,7 +37,7 @@ class MatchupScreen extends ConsumerWidget {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => _navigateBack(context),
+            onPressed: () => navigateBack(context),
           ),
           title: const Text('Matchups'),
         ),
@@ -51,7 +52,7 @@ class MatchupScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => _navigateBack(context),
+          onPressed: () => navigateBack(context),
         ),
         title: Text(state.league?.name ?? 'Matchups'),
         actions: [
@@ -210,14 +211,6 @@ class MatchupScreen extends ConsumerWidget {
     );
   }
 
-  void _navigateBack(BuildContext context) {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      // At root of Matchups tab, go to home
-      context.go('/');
-    }
-  }
 
   void _openMatchupDetails(BuildContext context, Matchup matchup) {
     context.push('/leagues/$leagueId/matchups/${matchup.id}');

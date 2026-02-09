@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/draft_pick.dart';
-import '../utils/position_colors.dart';
+import '../../../../core/theme/semantic_colors.dart';
 import 'roster_slot.dart';
 
 /// A section showing roster slots for a specific position.

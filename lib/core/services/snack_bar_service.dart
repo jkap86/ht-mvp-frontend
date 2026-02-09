@@ -76,10 +76,11 @@ class SnackBarService {
 
   /// Show error message using BuildContext
   static void showErrorWithContext(BuildContext context, String message) {
+    final colorScheme = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red.shade700,
+        backgroundColor: colorScheme.error,
         behavior: SnackBarBehavior.floating,
       ),
     );

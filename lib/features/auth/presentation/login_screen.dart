@@ -70,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     'Sign in to continue',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                     textAlign: TextAlign.center,
                   ),
@@ -79,13 +79,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.red[50],
+                        color: Theme.of(context).colorScheme.errorContainer,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red[200]!),
+                        border: Border.all(color: Theme.of(context).colorScheme.error.withAlpha(80)),
                       ),
                       child: Text(
                         authState.error!,
-                        style: TextStyle(color: Colors.red[700]),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
                         textAlign: TextAlign.center,
                       ),
                     ),
