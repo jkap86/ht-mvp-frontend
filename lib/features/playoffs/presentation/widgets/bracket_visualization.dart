@@ -96,6 +96,17 @@ class BracketVisualization extends StatelessWidget {
   Widget _buildThirdPlaceSection(BuildContext context) {
     final thirdPlaceGame = bracketView.thirdPlaceGame!;
 
+    // Build week label based on series length
+    String weekLabel;
+    if (thirdPlaceGame.seriesLength > 1) {
+      // Multi-week series: show range
+      final startWeek = thirdPlaceGame.week - thirdPlaceGame.seriesGame + 1;
+      final endWeek = startWeek + thirdPlaceGame.seriesLength - 1;
+      weekLabel = 'Weeks $startWeek-$endWeek';
+    } else {
+      weekLabel = 'Week ${thirdPlaceGame.week}';
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Card(
@@ -108,7 +119,7 @@ class BracketVisualization extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    'Week ${thirdPlaceGame.week}',
+                    weekLabel,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey.shade600,
                         ),
@@ -416,7 +427,7 @@ class BracketVisualization extends StatelessWidget {
             ),
           ),
           Text(
-            'Week ${round.week}',
+            round.weekLabel, // Use weekLabel for multi-week support
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Colors.grey.shade600,
                 ),

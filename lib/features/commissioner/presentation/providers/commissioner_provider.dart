@@ -152,6 +152,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
   Future<bool> generatePlayoffBracket({
     required int playoffTeams,
     required int startWeek,
+    List<int>? weeksByRound,
     bool? enableThirdPlaceGame,
     String? consolationType,
     int? consolationTeams,
@@ -163,6 +164,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
         leagueId,
         playoffTeams: playoffTeams,
         startWeek: startWeek,
+        weeksByRound: weeksByRound,
         enableThirdPlaceGame: enableThirdPlaceGame,
         consolationType: consolationType,
         consolationTeams: consolationTeams,

@@ -141,6 +141,7 @@ class CommissionerScreen extends ConsumerWidget {
                                 onGeneratePlayoffBracket: ({
                                   required int playoffTeams,
                                   required int startWeek,
+                                  List<int>? weeksByRound,
                                   bool? enableThirdPlaceGame,
                                   String? consolationType,
                                   int? consolationTeams,
@@ -148,6 +149,7 @@ class CommissionerScreen extends ConsumerWidget {
                                   ref.read(commissionerProvider(leagueId).notifier).generatePlayoffBracket(
                                     playoffTeams: playoffTeams,
                                     startWeek: startWeek,
+                                    weeksByRound: weeksByRound,
                                     enableThirdPlaceGame: enableThirdPlaceGame,
                                     consolationType: consolationType,
                                     consolationTeams: consolationTeams,

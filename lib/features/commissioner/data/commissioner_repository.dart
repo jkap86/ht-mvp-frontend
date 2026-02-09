@@ -166,6 +166,7 @@ class CommissionerRepository {
   /// Generate playoff bracket
   ///
   /// Optional parameters:
+  /// - weeksByRound: Array of weeks per round (e.g., [1, 2, 2] for multi-week series)
   /// - enableThirdPlaceGame: Enable 3rd place game
   /// - consolationType: 'NONE' or 'CONSOLATION'
   /// - consolationTeams: 4, 6, or 8 (null for auto)
@@ -173,6 +174,7 @@ class CommissionerRepository {
     int leagueId, {
     required int playoffTeams,
     required int startWeek,
+    List<int>? weeksByRound,
     bool? enableThirdPlaceGame,
     String? consolationType,
     int? consolationTeams,
@@ -181,6 +183,7 @@ class CommissionerRepository {
       leagueId,
       playoffTeams: playoffTeams,
       startWeek: startWeek,
+      weeksByRound: weeksByRound,
       enableThirdPlaceGame: enableThirdPlaceGame,
       consolationType: consolationType,
       consolationTeams: consolationTeams,

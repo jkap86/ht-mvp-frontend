@@ -44,11 +44,13 @@ class PlayoffSettings {
   final bool enableThirdPlaceGame;
   final ConsolationType consolationType;
   final int? consolationTeams;
+  final List<int>? weeksByRound; // [1, 2, 2] = R1:1wk, R2:2wk, R3:2wk
 
   PlayoffSettings({
     this.enableThirdPlaceGame = false,
     this.consolationType = ConsolationType.none,
     this.consolationTeams,
+    this.weeksByRound,
   });
 
   factory PlayoffSettings.fromJson(Map<String, dynamic>? json) {
@@ -58,6 +60,9 @@ class PlayoffSettings {
       consolationType:
           ConsolationType.fromString(json['consolation_type'] as String?),
       consolationTeams: json['consolation_teams'] as int?,
+      weeksByRound: (json['weeks_by_round'] as List<dynamic>?)
+          ?.map((e) => e as int)
+          .toList(),
     );
   }
 }
@@ -121,6 +126,7 @@ class PlayoffBracket {
   final int championshipWeek;
   final PlayoffStatus status;
   final int? championRosterId;
+  final List<int>? weeksByRound; // [1, 2, 2] = R1:1wk, R2:2wk, R3:2wk
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -134,6 +140,7 @@ class PlayoffBracket {
     required this.championshipWeek,
     required this.status,
     this.championRosterId,
+    this.weeksByRound,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -149,6 +156,9 @@ class PlayoffBracket {
       championshipWeek: json['championship_week'] as int,
       status: PlayoffStatus.fromString(json['status'] as String?),
       championRosterId: json['champion_roster_id'] as int?,
+      weeksByRound: (json['weeks_by_round'] as List<dynamic>?)
+          ?.map((e) => e as int)
+          .toList(),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -229,6 +239,10 @@ class PlayoffMatchup {
   final PlayoffTeam? team2;
   final PlayoffTeam? winner;
   final bool isFinal;
+  // Multi-week series fields
+  final String? seriesId;
+  final int seriesGame; // 1 or 2
+  final int seriesLength; // 1 or 2
 
   PlayoffMatchup({
     required this.matchupId,
@@ -240,7 +254,17 @@ class PlayoffMatchup {
     this.team2,
     this.winner,
     required this.isFinal,
+    this.seriesId,
+    this.seriesGame = 1,
+    this.seriesLength = 1,
   });
+
+  /// Whether this is a multi-week series matchup
+  bool get isMultiWeekSeries => seriesLength > 1;
+
+  /// Label for the series game (e.g., "Game 1 of 2")
+  String get gameLabel =>
+      seriesLength > 1 ? 'Game $seriesGame of $seriesLength' : '';
 
   factory PlayoffMatchup.fromJson(Map<String, dynamic> json) {
     return PlayoffMatchup(
@@ -259,27 +283,45 @@ class PlayoffMatchup {
           ? PlayoffTeam.fromJson(json['winner'] as Map<String, dynamic>)
           : null,
       isFinal: json['is_final'] as bool? ?? false,
+      seriesId: json['series_id'] as String?,
+      seriesGame: json['series_game'] as int? ?? 1,
+      seriesLength: json['series_length'] as int? ?? 1,
     );
   }
 }
 
 class PlayoffRound {
   final int round;
-  final int week;
+  final int week; // Start week (backward compatible)
+  final int weekStart;
+  final int weekEnd;
   final String name;
   final List<PlayoffMatchup> matchups;
 
   PlayoffRound({
     required this.round,
     required this.week,
+    int? weekStart,
+    int? weekEnd,
     required this.name,
     required this.matchups,
-  });
+  })  : weekStart = weekStart ?? week,
+        weekEnd = weekEnd ?? week;
+
+  /// Whether this round spans multiple weeks
+  bool get isMultiWeek => weekStart != weekEnd;
+
+  /// Label for the week range (e.g., "Week 15" or "Weeks 15-16")
+  String get weekLabel =>
+      isMultiWeek ? 'Weeks $weekStart-$weekEnd' : 'Week $weekStart';
 
   factory PlayoffRound.fromJson(Map<String, dynamic> json) {
+    final week = json['week'] as int;
     return PlayoffRound(
       round: json['round'] as int,
-      week: json['week'] as int,
+      week: week,
+      weekStart: json['week_start'] as int? ?? week,
+      weekEnd: json['week_end'] as int? ?? week,
       name: json['name'] as String,
       matchups: (json['matchups'] as List<dynamic>)
           .map((m) => PlayoffMatchup.fromJson(m as Map<String, dynamic>))

@@ -36,6 +36,37 @@ class PlayoffMatchupCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Series game badge for multi-week matchups
+            if (matchup.isMultiWeekSeries) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                margin: const EdgeInsets.only(bottom: 4),
+                decoration: BoxDecoration(
+                  color: Colors.indigo.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.indigo.shade200),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.sports_score,
+                      size: 12,
+                      color: Colors.indigo.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      matchup.gameLabel,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.indigo.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             _buildTeamRow(context, matchup.team1, isTop: true),
             const Divider(height: 8),
             _buildTeamRow(context, matchup.team2, isTop: false),

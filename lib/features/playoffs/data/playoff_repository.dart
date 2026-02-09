@@ -16,6 +16,7 @@ class PlayoffRepository {
   /// Generate playoff bracket (commissioner only)
   ///
   /// Optional parameters:
+  /// - weeksByRound: Array of weeks per round (e.g., [1, 2, 2] for multi-week series)
   /// - enableThirdPlaceGame: Enable 3rd place game
   /// - consolationType: 'NONE' or 'CONSOLATION'
   /// - consolationTeams: 4, 6, or 8 (null for auto)
@@ -23,6 +24,7 @@ class PlayoffRepository {
     int leagueId, {
     required int playoffTeams,
     required int startWeek,
+    List<int>? weeksByRound,
     bool? enableThirdPlaceGame,
     String? consolationType,
     int? consolationTeams,
@@ -32,6 +34,9 @@ class PlayoffRepository {
       'start_week': startWeek,
     };
 
+    if (weeksByRound != null) {
+      body['weeks_by_round'] = weeksByRound;
+    }
     if (enableThirdPlaceGame != null) {
       body['enable_third_place_game'] = enableThirdPlaceGame;
     }
