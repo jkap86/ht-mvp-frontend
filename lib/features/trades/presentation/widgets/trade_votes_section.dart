@@ -35,8 +35,16 @@ class TradeVotesSection extends StatelessWidget {
                 ),
               ],
             ),
-            if (trade.votes.isNotEmpty) ...[
-              const Divider(height: 24),
+            const Divider(height: 24),
+            if (trade.votes.isEmpty)
+              Text(
+                'No votes yet',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey,
+                    ),
+              )
+            else
               ...trade.votes.map((vote) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
@@ -51,7 +59,6 @@ class TradeVotesSection extends StatelessWidget {
                       ],
                     ),
                   )),
-            ],
           ],
         ),
       ),

@@ -6,6 +6,7 @@ import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../domain/trade.dart';
+import '../../domain/trade_item.dart';
 import '../../domain/trade_status.dart';
 
 /// Card widget displaying a trade summary in a list
@@ -62,7 +63,7 @@ class TradeCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          '${trade.proposerGiving.length} player(s)',
+                          _buildAssetCountLabel(trade.proposerGiving),
                           style: AppTypography.bodySmall.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -89,7 +90,7 @@ class TradeCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          '${trade.recipientGiving.length} player(s)',
+                          _buildAssetCountLabel(trade.recipientGiving),
                           style: AppTypography.bodySmall.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -163,19 +164,35 @@ class TradeCard extends StatelessWidget {
     );
   }
 
+  String _buildAssetCountLabel(List<TradeItem> items) {
+    final playerCount = items.where((i) => i.isPlayer).length;
+    final pickCount = items.where((i) => i.isDraftPick).length;
+
+    final parts = <String>[];
+    if (playerCount > 0) {
+      parts.add('$playerCount player${playerCount != 1 ? 's' : ''}');
+    }
+    if (pickCount > 0) {
+      parts.add('$pickCount pick${pickCount != 1 ? 's' : ''}');
+    }
+    return parts.isEmpty ? 'No assets' : parts.join(' + ');
+  }
+
   Widget _buildPlayerPreview(BuildContext context) {
     final theme = Theme.of(context);
-    final proposerPlayers = trade.proposerGiving.take(2).toList();
-    final recipientPlayers = trade.recipientGiving.take(2).toList();
+    final proposerItems = trade.proposerGiving.take(3).toList();
+    final recipientItems = trade.recipientGiving.take(3).toList();
 
     return Row(
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: proposerPlayers
+            children: proposerItems
                 .map((item) => Text(
-                      '${item.displayPosition} ${item.fullName}',
+                      item.isPlayer
+                          ? '${item.displayPosition} ${item.fullName}'
+                          : item.pickDisplayName,
                       style: AppTypography.bodySmall.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -188,9 +205,11 @@ class TradeCard extends StatelessWidget {
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
-            children: recipientPlayers
+            children: recipientItems
                 .map((item) => Text(
-                      '${item.fullName} ${item.displayPosition}',
+                      item.isPlayer
+                          ? '${item.fullName} ${item.displayPosition}'
+                          : item.pickDisplayName,
                       style: AppTypography.bodySmall.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

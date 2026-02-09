@@ -8,7 +8,7 @@ import '../../data/trade_repository.dart';
 import '../../domain/trade.dart';
 import '../../domain/trade_status.dart';
 import '../providers/trades_provider.dart';
-import '../widgets/trade_players_section.dart';
+import '../widgets/trade_assets_section.dart';
 import '../widgets/trade_status_banner.dart';
 import '../widgets/trade_summary_card.dart';
 import '../widgets/trade_votes_section.dart';
@@ -72,14 +72,13 @@ class TradeDetailScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           TradeSummaryCard(trade: trade),
           const SizedBox(height: 24),
-          TradePlayersSection(trade: trade),
+          TradeAssetsSection(trade: trade),
           const SizedBox(height: 24),
           if (trade.message != null && trade.message!.isNotEmpty) ...[
             _buildMessageSection(context, trade),
             const SizedBox(height: 24),
           ],
-          if (trade.status == TradeStatus.inReview &&
-              trade.votes.isNotEmpty) ...[
+          if (trade.status == TradeStatus.inReview) ...[
             TradeVotesSection(trade: trade),
             const SizedBox(height: 24),
           ],

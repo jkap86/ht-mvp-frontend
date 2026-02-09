@@ -7,6 +7,7 @@ import '../../../leagues/presentation/providers/league_detail_provider.dart';
 import '../../data/trade_repository.dart';
 import '../../domain/trade.dart';
 import '../widgets/player_selector_widget.dart';
+import '../widgets/draft_pick_selector_widget.dart';
 
 /// Provider to fetch the original trade for counter
 final originalTradeProvider =
@@ -35,6 +36,8 @@ class CounterTradeScreen extends ConsumerStatefulWidget {
 class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
   final List<int> _offeringPlayerIds = [];
   final List<int> _requestingPlayerIds = [];
+  Set<int> _offeringPickAssetIds = {};
+  Set<int> _requestingPickAssetIds = {};
   final _messageController = TextEditingController();
   bool _isSubmitting = false;
   int? _initializedForTradeId;
@@ -76,24 +79,36 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
     // Clear any existing selections when re-initializing
     _offeringPlayerIds.clear();
     _requestingPlayerIds.clear();
+    _offeringPickAssetIds = {};
+    _requestingPickAssetIds = {};
 
-    // Pre-fill with inverted players from original trade
+    // Pre-fill with inverted items from original trade
     // What they were requesting becomes what we offer
     // What they were offering becomes what we request
-    // NOTE: Only process player items - draft picks are not supported in counter trades yet
     for (final item in originalTrade.items) {
-      // Skip draft pick items - only process player trades
-      if (!item.isPlayer) continue;
+      if (item.isPlayer) {
+        // Validate playerId is valid (> 0) before adding
+        if (item.playerId <= 0) continue;
 
-      // Validate playerId is valid (> 0) before adding
-      if (item.playerId <= 0) continue;
+        if (item.toRosterId == myRosterId) {
+          // They were giving this player to us, so we request it
+          _requestingPlayerIds.add(item.playerId);
+        } else if (item.fromRosterId == myRosterId) {
+          // We were giving this player to them, so we offer it
+          _offeringPlayerIds.add(item.playerId);
+        }
+      } else if (item.isDraftPick) {
+        // Handle draft pick items
+        final pickId = item.draftPickAssetId;
+        if (pickId == null || pickId <= 0) continue;
 
-      if (item.toRosterId == myRosterId) {
-        // They were giving this player to us, so we request it
-        _requestingPlayerIds.add(item.playerId);
-      } else if (item.fromRosterId == myRosterId) {
-        // We were giving this player to them, so we offer it
-        _offeringPlayerIds.add(item.playerId);
+        if (item.toRosterId == myRosterId) {
+          // They were giving this pick to us, so we request it
+          _requestingPickAssetIds.add(pickId);
+        } else if (item.fromRosterId == myRosterId) {
+          // We were giving this pick to them, so we offer it
+          _offeringPickAssetIds.add(pickId);
+        }
       }
     }
   }
@@ -201,7 +216,7 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Players you're offering
+            // Assets you're offering
             if (myRosterId != null) ...[
               Text('You Give', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
@@ -215,10 +230,19 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
                     ..addAll(ids);
                 }),
               ),
+              const SizedBox(height: 16),
+              DraftPickSelectorWidget(
+                rosterId: myRosterId,
+                selectedPickAssetIds: _offeringPickAssetIds,
+                onSelectionChanged: (ids) => setState(() {
+                  _offeringPickAssetIds = ids;
+                }),
+                title: 'You Give',
+              ),
               const SizedBox(height: 24),
             ],
 
-            // Players you want
+            // Assets you want
             Text('You Get', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             PlayerSelectorWidget(
@@ -230,6 +254,15 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
                   ..clear()
                   ..addAll(ids);
               }),
+            ),
+            const SizedBox(height: 16),
+            DraftPickSelectorWidget(
+              rosterId: otherRosterId,
+              selectedPickAssetIds: _requestingPickAssetIds,
+              onSelectionChanged: (ids) => setState(() {
+                _requestingPickAssetIds = ids;
+              }),
+              title: 'You Get',
             ),
             const SizedBox(height: 24),
 
@@ -315,8 +348,9 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
   }
 
   bool _canSubmit() {
-    return !_isSubmitting &&
-        (_offeringPlayerIds.isNotEmpty || _requestingPlayerIds.isNotEmpty);
+    final hasAssetsToOffer = _offeringPlayerIds.isNotEmpty || _offeringPickAssetIds.isNotEmpty;
+    final hasAssetsToRequest = _requestingPlayerIds.isNotEmpty || _requestingPickAssetIds.isNotEmpty;
+    return !_isSubmitting && hasAssetsToOffer && hasAssetsToRequest;
   }
 
   Future<void> _handleSubmit() async {
@@ -336,6 +370,8 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
             : null,
         notifyDm: _notifyDm,
         leagueChatMode: _leagueChatMode,
+        offeringPickAssetIds: _offeringPickAssetIds.toList(),
+        requestingPickAssetIds: _requestingPickAssetIds.toList(),
       );
 
       if (mounted) {

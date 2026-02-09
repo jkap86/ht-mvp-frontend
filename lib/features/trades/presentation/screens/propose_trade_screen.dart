@@ -5,6 +5,7 @@ import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../leagues/presentation/providers/league_detail_provider.dart';
 import '../../data/trade_repository.dart';
 import '../widgets/player_selector_widget.dart' show PlayerSelectorWidget, tradeRosterPlayersProvider;
+import '../widgets/draft_pick_selector_widget.dart';
 
 /// Screen for proposing a new trade to another team
 class ProposeTradeScreen extends ConsumerStatefulWidget {
@@ -20,6 +21,8 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
   int? _selectedRecipientRosterId;
   final List<int> _offeringPlayerIds = [];
   final List<int> _requestingPlayerIds = [];
+  Set<int> _offeringPickAssetIds = {};
+  Set<int> _requestingPickAssetIds = {};
   bool _isSubmitting = false;
   bool _notifyDm = true;
   String _leagueChatMode = 'summary';
@@ -106,6 +109,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
                 setState(() {
                   _selectedRecipientRosterId = value;
                   _requestingPlayerIds.clear();
+                  _requestingPickAssetIds = {};
                 });
               },
             ),
@@ -133,6 +137,15 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
                               ..addAll(ids);
                           }),
                         ),
+                        const SizedBox(height: 16),
+                        DraftPickSelectorWidget(
+                          rosterId: myRosterId,
+                          selectedPickAssetIds: _offeringPickAssetIds,
+                          onSelectionChanged: (ids) => setState(() {
+                            _offeringPickAssetIds = ids;
+                          }),
+                          title: 'You Give',
+                        ),
                       ],
                     ),
                   ),
@@ -144,7 +157,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
                       children: [
                         Text('You Get', style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 8),
-                        if (_selectedRecipientRosterId != null)
+                        if (_selectedRecipientRosterId != null) ...[
                           PlayerSelectorWidget(
                             leagueId: widget.leagueId,
                             rosterId: _selectedRecipientRosterId!,
@@ -154,8 +167,17 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
                                 ..clear()
                                 ..addAll(ids);
                             }),
-                          )
-                        else
+                          ),
+                          const SizedBox(height: 16),
+                          DraftPickSelectorWidget(
+                            rosterId: _selectedRecipientRosterId!,
+                            selectedPickAssetIds: _requestingPickAssetIds,
+                            onSelectionChanged: (ids) => setState(() {
+                              _requestingPickAssetIds = ids;
+                            }),
+                            title: 'You Get',
+                          ),
+                        ] else
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
@@ -249,10 +271,12 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
   }
 
   bool _canSubmit() {
+    final hasAssetsToOffer = _offeringPlayerIds.isNotEmpty || _offeringPickAssetIds.isNotEmpty;
+    final hasAssetsToRequest = _requestingPlayerIds.isNotEmpty || _requestingPickAssetIds.isNotEmpty;
     return !_isSubmitting &&
         _selectedRecipientRosterId != null &&
-        _offeringPlayerIds.isNotEmpty &&
-        _requestingPlayerIds.isNotEmpty;
+        hasAssetsToOffer &&
+        hasAssetsToRequest;
   }
 
   Future<void> _handleSubmit() async {
@@ -273,6 +297,8 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
         requestingPlayerIds: _requestingPlayerIds,
         notifyDm: _notifyDm,
         leagueChatMode: _leagueChatMode,
+        offeringPickAssetIds: _offeringPickAssetIds.toList(),
+        requestingPickAssetIds: _requestingPickAssetIds.toList(),
       );
 
       if (mounted) {
@@ -330,13 +356,31 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
     final myPlayers = myPlayersAsync?.valueOrNull ?? [];
     final theirPlayers = theirPlayersAsync.valueOrNull ?? [];
 
-    final offeringNames = myPlayers
+    // Get pick names from the providers
+    final myPicksAsync = myRosterId != null
+        ? ref.read(tradeRosterPicksProvider(myRosterId))
+        : null;
+    final theirPicksAsync = ref.read(tradeRosterPicksProvider(_selectedRecipientRosterId!));
+
+    final myPicks = myPicksAsync?.valueOrNull ?? [];
+    final theirPicks = theirPicksAsync.valueOrNull ?? [];
+
+    final offeringPlayerNames = myPlayers
         .where((p) => _offeringPlayerIds.contains(p.playerId))
         .map((p) => p.fullName ?? 'Unknown')
         .toList();
-    final requestingNames = theirPlayers
+    final requestingPlayerNames = theirPlayers
         .where((p) => _requestingPlayerIds.contains(p.playerId))
         .map((p) => p.fullName ?? 'Unknown')
+        .toList();
+
+    final offeringPickNames = myPicks
+        .where((p) => _offeringPickAssetIds.contains(p.id))
+        .map((p) => p.displayName)
+        .toList();
+    final requestingPickNames = theirPicks
+        .where((p) => _requestingPickAssetIds.contains(p.id))
+        .map((p) => p.displayName)
         .toList();
 
     final result = await showDialog<bool>(
@@ -355,14 +399,16 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
               const SizedBox(height: 16),
               _buildTradeSummarySection(
                 'You Give',
-                offeringNames,
+                offeringPlayerNames,
+                offeringPickNames,
                 Colors.red.shade100,
                 Icons.arrow_upward,
               ),
               const SizedBox(height: 8),
               _buildTradeSummarySection(
                 'You Get',
-                requestingNames,
+                requestingPlayerNames,
+                requestingPickNames,
                 Colors.green.shade100,
                 Icons.arrow_downward,
               ),
@@ -410,9 +456,13 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
   Widget _buildTradeSummarySection(
     String label,
     List<String> playerNames,
+    List<String> pickNames,
     Color backgroundColor,
     IconData icon,
   ) {
+    final totalAssets = playerNames.length + pickNames.length;
+    final assetLabel = _buildAssetCountLabel(playerNames.length, pickNames.length);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -429,23 +479,49 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
               Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
               const Spacer(),
               Text(
-                '${playerNames.length} player${playerNames.length != 1 ? 's' : ''}',
+                assetLabel,
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
               ),
             ],
           ),
-          if (playerNames.isNotEmpty) ...[
+          if (totalAssets > 0) ...[
             const SizedBox(height: 8),
-            ...playerNames.map((name) => Padding(
-              padding: const EdgeInsets.only(left: 26, top: 2),
-              child: Text(
-                '• $name',
-                style: const TextStyle(fontSize: 13),
-              ),
-            )),
+            if (playerNames.isNotEmpty) ...[
+              ...playerNames.map((name) => Padding(
+                padding: const EdgeInsets.only(left: 26, top: 2),
+                child: Text(
+                  '• $name',
+                  style: const TextStyle(fontSize: 13),
+                ),
+              )),
+            ],
+            if (pickNames.isNotEmpty) ...[
+              ...pickNames.map((name) => Padding(
+                padding: const EdgeInsets.only(left: 26, top: 2),
+                child: Row(
+                  children: [
+                    const Text('• ', style: TextStyle(fontSize: 13)),
+                    const Icon(Icons.sports_football, size: 12),
+                    const SizedBox(width: 4),
+                    Text(name, style: const TextStyle(fontSize: 13)),
+                  ],
+                ),
+              )),
+            ],
           ],
         ],
       ),
     );
+  }
+
+  String _buildAssetCountLabel(int playerCount, int pickCount) {
+    final parts = <String>[];
+    if (playerCount > 0) {
+      parts.add('$playerCount player${playerCount != 1 ? 's' : ''}');
+    }
+    if (pickCount > 0) {
+      parts.add('$pickCount pick${pickCount != 1 ? 's' : ''}');
+    }
+    return parts.isEmpty ? 'No assets' : parts.join(' + ');
   }
 }
