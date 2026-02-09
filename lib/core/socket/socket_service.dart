@@ -567,6 +567,15 @@ class SocketService {
     return on(SocketEvents.memberJoined, callback);
   }
 
+  VoidCallback onMemberBenched(void Function(dynamic) callback) {
+    return on(SocketEvents.memberBenched, callback);
+  }
+
+  // League event listeners
+  VoidCallback onLeagueSettingsUpdated(void Function(dynamic) callback) {
+    return on(SocketEvents.leagueSettingsUpdated, callback);
+  }
+
   // Invitation event listeners
   VoidCallback onInvitationReceived(void Function(dynamic) callback) {
     return on(SocketEvents.invitationReceived, callback);

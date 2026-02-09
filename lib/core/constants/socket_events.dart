@@ -11,6 +11,7 @@ class SocketEvents {
   // League events
   static const leagueJoin = 'join:league';
   static const leagueLeave = 'leave:league';
+  static const leagueSettingsUpdated = 'league:settings_updated';
 
   // Draft events
   static const draftJoin = 'join:draft';
@@ -82,6 +83,7 @@ class SocketEvents {
   // Member events
   static const memberKicked = 'member:kicked';
   static const memberJoined = 'member:joined';
+  static const memberBenched = 'member:benched';
 
   // Invitation events
   static const invitationReceived = 'invitation:received';

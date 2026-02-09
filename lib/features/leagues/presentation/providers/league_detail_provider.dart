@@ -128,7 +128,9 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
   final int leagueId;
   VoidCallback? _memberJoinedDisposer;
   VoidCallback? _memberKickedDisposer;
+  VoidCallback? _memberBenchedDisposer;
   VoidCallback? _draftCreatedDisposer;
+  VoidCallback? _leagueSettingsDisposer;
   VoidCallback? _invalidationDisposer;
 
   LeagueDetailNotifier(this._leagueRepo, this._draftRepo, this._matchupRepo, this._rosterRepo, this._socketService, this._invalidationService, this.leagueId) : super(LeagueDetailState()) {
@@ -155,9 +157,17 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
       if (!mounted) return;
       _refreshMembers();
     });
+    _memberBenchedDisposer = _socketService.onMemberBenched((data) {
+      if (!mounted) return;
+      _refreshMembers();
+    });
     _draftCreatedDisposer = _socketService.onDraftCreated((data) {
       if (!mounted) return;
       _refreshDrafts();
+    });
+    _leagueSettingsDisposer = _socketService.onLeagueSettingsUpdated((data) {
+      if (!mounted) return;
+      loadData(); // Full refresh when settings change
     });
   }
 
@@ -179,7 +189,9 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
   void dispose() {
     _memberJoinedDisposer?.call();
     _memberKickedDisposer?.call();
+    _memberBenchedDisposer?.call();
     _draftCreatedDisposer?.call();
+    _leagueSettingsDisposer?.call();
     _invalidationDisposer?.call();
     _socketService.leaveLeague(leagueId);
     super.dispose();
