@@ -210,6 +210,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
     try {
       // Load league info first to get current week
       final league = await _leagueRepo.getLeague(leagueId);
+      if (!mounted) return;
       final currentWeek = league.currentWeek;
 
       // Load roster players and league members in parallel
@@ -217,6 +218,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
         _rosterRepo.getRosterPlayers(leagueId, rosterId),
         _leagueRepo.getLeagueMembers(leagueId),
       ]);
+      if (!mounted) return;
       final players = results[0] as List<RosterPlayer>;
       final members = results[1] as List<Roster>;
 
@@ -227,6 +229,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       } catch (_) {
         // Lineup doesn't exist yet - that's OK
       }
+      if (!mounted) return;
 
       state = state.copyWith(
         league: league,
@@ -238,6 +241,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
         leagueMembers: members,
       );
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(
         error: e.toString(),
         isLoading: false,
@@ -253,11 +257,13 @@ class TeamNotifier extends StateNotifier<TeamState> {
 
     try {
       final lineup = await _rosterRepo.getLineup(leagueId, rosterId, week);
+      if (!mounted) return;
       state = state.copyWith(
         lineup: lineup,
         isLoading: false,
       );
     } catch (e) {
+      if (!mounted) return;
       // Lineup may not exist yet for future weeks - that's OK
       state = state.copyWith(
         lineup: null,
@@ -283,6 +289,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
         playerId,
         toSlot,
       );
+      if (!mounted) return false;
 
       state = state.copyWith(
         lineup: updatedLineup,
@@ -290,6 +297,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isSaving: false,
@@ -314,6 +322,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
         state.currentWeek,
         lineup,
       );
+      if (!mounted) return false;
 
       state = state.copyWith(
         lineup: updatedLineup,
@@ -321,6 +330,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isSaving: false,
@@ -335,6 +345,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
 
     try {
       await _rosterRepo.dropPlayer(leagueId, rosterId, playerId);
+      if (!mounted) return false;
 
       // Remove from local state
       state = state.copyWith(
@@ -343,6 +354,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isSaving: false,
@@ -380,6 +392,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
         state.currentWeek,
         optimized.slots,
       );
+      if (!mounted) return false;
 
       state = state.copyWith(
         lineup: updatedLineup,
@@ -387,6 +400,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isSaving: false,

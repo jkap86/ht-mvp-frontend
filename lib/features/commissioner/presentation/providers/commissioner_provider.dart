@@ -74,6 +74,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
 
     try {
       final data = await _repo.loadCommissionerData(leagueId);
+      if (!mounted) return;
 
       state = state.copyWith(
         league: data.league,
@@ -82,6 +83,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
         isLoading: false,
       );
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(
         error: e.toString(),
         isLoading: false,
@@ -94,8 +96,10 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
 
     try {
       await _repo.kickMember(leagueId, rosterId);
+      if (!mounted) return false;
       // Reload members
       final members = await _repo.getMembers(leagueId);
+      if (!mounted) return false;
       state = state.copyWith(
         members: members,
         isProcessing: false,
@@ -103,6 +107,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isProcessing: false,
@@ -116,12 +121,14 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
 
     try {
       await _repo.generateSchedule(leagueId, weeks: weeks);
+      if (!mounted) return false;
       state = state.copyWith(
         isProcessing: false,
         successMessage: 'Schedule generated for $weeks weeks',
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isProcessing: false,
@@ -135,12 +142,14 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
 
     try {
       await _repo.finalizeMatchups(leagueId, week);
+      if (!mounted) return false;
       state = state.copyWith(
         isProcessing: false,
         successMessage: 'Week $week has been finalized',
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isProcessing: false,
@@ -169,6 +178,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
         consolationType: consolationType,
         consolationTeams: consolationTeams,
       );
+      if (!mounted) return false;
       state = state.copyWith(
         bracketView: bracketView,
         isProcessing: false,
@@ -176,6 +186,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isProcessing: false,
@@ -189,6 +200,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
 
     try {
       final bracketView = await _repo.advanceWinners(leagueId, week);
+      if (!mounted) return false;
       state = state.copyWith(
         bracketView: bracketView,
         isProcessing: false,
@@ -196,6 +208,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isProcessing: false,
@@ -209,12 +222,14 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
 
     try {
       await _repo.deleteLeague(leagueId, confirmationName: confirmationName);
+      if (!mounted) return false;
       state = state.copyWith(
         isProcessing: false,
         successMessage: 'League deleted successfully',
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isProcessing: false,
@@ -232,6 +247,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
         seasonStatus: seasonStatus,
         currentWeek: currentWeek,
       );
+      if (!mounted) return false;
       state = state.copyWith(
         league: updatedLeague,
         isProcessing: false,
@@ -240,6 +256,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
       await _invalidationService.invalidateType(InvalidationType.leagueDetail, leagueId);
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isProcessing: false,
@@ -274,8 +291,10 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
         scoringSettings: scoringSettings,
         totalRosters: totalRosters,
       );
+      if (!mounted) return false;
       // Reload members to reflect benching changes
       final members = await _repo.getMembers(leagueId);
+      if (!mounted) return false;
       state = state.copyWith(
         league: updatedLeague,
         members: members,
@@ -286,6 +305,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
       await _invalidationService.invalidateType(InvalidationType.leagueDetail, leagueId);
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isProcessing: false,
@@ -299,8 +319,10 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
 
     try {
       await _repo.reinstateMember(leagueId, rosterId);
+      if (!mounted) return false;
       // Reload members
       final members = await _repo.getMembers(leagueId);
+      if (!mounted) return false;
       state = state.copyWith(
         members: members,
         isProcessing: false,
@@ -308,6 +330,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isProcessing: false,
@@ -332,6 +355,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
         keepMembers: keepMembers,
         clearChat: clearChat,
       );
+      if (!mounted) return false;
       state = state.copyWith(
         isProcessing: false,
         successMessage: 'League reset for $newSeason season',
@@ -339,6 +363,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
       await loadData();
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isProcessing: false,
@@ -352,6 +377,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
 
     try {
       await _repo.initializeWaivers(leagueId, faabBudget: faabBudget);
+      if (!mounted) return false;
       state = state.copyWith(
         waiversInitialized: true,
         isProcessing: false,
@@ -359,6 +385,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isProcessing: false,
@@ -372,6 +399,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
 
     try {
       final result = await _repo.processWaivers(leagueId);
+      if (!mounted) return false;
       final processed = result['processed'] ?? 0;
       final successful = result['successful'] ?? 0;
       state = state.copyWith(
@@ -380,6 +408,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
       );
       return true;
     } catch (e) {
+      if (!mounted) return false;
       state = state.copyWith(
         error: e.toString(),
         isProcessing: false,

@@ -293,6 +293,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
   late final DraftSocketHandler _socketHandler;
   Timer? _budgetRefreshTimer;
+  Timer? _outbidDismissTimer;
   VoidCallback? _reconnectUnsubscribe;
 
   /// Extract playerPool from draft settings, defaulting to veteran + rookie
@@ -532,8 +533,9 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     if (!mounted) return;
     state = state.copyWith(outbidNotification: notification);
 
-    // Auto-dismiss outbid notification after 5 seconds
-    Future.delayed(const Duration(seconds: 5), () {
+    // Cancel any pending dismiss timer and start a new one
+    _outbidDismissTimer?.cancel();
+    _outbidDismissTimer = Timer(const Duration(seconds: 5), () {
       if (!mounted) return;
       // Only clear if this is still the same notification (prevent clearing newer ones)
       if (state.outbidNotification?.lotId == notification.lotId &&
@@ -1046,6 +1048,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   @override
   void dispose() {
     _budgetRefreshTimer?.cancel();
+    _outbidDismissTimer?.cancel();
     _reconnectUnsubscribe?.call();
     _socketHandler.dispose();
     super.dispose();

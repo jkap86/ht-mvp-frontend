@@ -148,6 +148,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   void clearError() {
     state = state.copyWith(error: null);
   }
+
+  @override
+  void dispose() {
+    _clearTokenRefreshCallback();
+    super.dispose();
+  }
 }
 
 final authStateProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
