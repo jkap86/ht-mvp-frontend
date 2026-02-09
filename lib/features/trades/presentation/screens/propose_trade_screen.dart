@@ -314,8 +314,17 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final errorMsg = e.toString().toLowerCase();
+        String displayMessage;
+        if (errorMsg.contains('pending trade') ||
+            errorMsg.contains('already in another trade')) {
+          displayMessage =
+              'One or more selected players are already in another pending trade. Remove them and try again.';
+        } else {
+          displayMessage = 'Error: ${e.toString()}';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
+          SnackBar(content: Text(displayMessage)),
         );
       }
     } finally {

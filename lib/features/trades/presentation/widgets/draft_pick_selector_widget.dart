@@ -50,7 +50,7 @@ class DraftPickSelectorWidget extends ConsumerWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                'Draft Picks',
+                '$title - Draft Picks',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.primary,
