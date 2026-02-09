@@ -5,6 +5,7 @@ import '../../../core/widgets/states/states.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../domain/chat_message.dart';
 import 'providers/chat_provider.dart';
+import 'widgets/system_message_bubble.dart';
 
 class ChatWidget extends ConsumerStatefulWidget {
   final int leagueId;
@@ -20,7 +21,22 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
   final _scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    // List is reversed, so "end" (oldest messages) is at maxScrollExtent
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 100) {
+      ref.read(chatProvider(widget.leagueId).notifier).loadMoreMessages();
+    }
+  }
+
+  @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -62,9 +78,21 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
                   controller: _scrollController,
                   reverse: true,
                   padding: const EdgeInsets.all(8),
-                  itemCount: state.messages.length,
+                  itemCount: state.messages.length + (state.isLoadingMore ? 1 : 0),
                   itemBuilder: (context, index) {
+                    // Show loading indicator at the end (oldest messages position)
+                    if (index == state.messages.length && state.isLoadingMore) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      );
+                    }
+
                     final message = state.messages[index];
+                    // Render system messages differently
+                    if (message.isSystemMessage) {
+                      return SystemMessageBubble(message: message);
+                    }
                     return _MessageBubble(message: message);
                   },
                 ),

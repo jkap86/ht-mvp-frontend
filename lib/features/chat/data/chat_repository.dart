@@ -13,8 +13,18 @@ class ChatRepository {
 
   ChatRepository(this._apiClient);
 
-  Future<List<ChatMessage>> getMessages(int leagueId) async {
-    final response = await _apiClient.get('/leagues/$leagueId/chat');
+  Future<List<ChatMessage>> getMessages(
+    int leagueId, {
+    int limit = 50,
+    int? before,
+  }) async {
+    final queryParts = <String>['limit=$limit'];
+    if (before != null) {
+      queryParts.add('before=$before');
+    }
+    final queryString = queryParts.join('&');
+
+    final response = await _apiClient.get('/leagues/$leagueId/chat?$queryString');
     return (response as List)
         .map((json) => ChatMessage.fromJson(json))
         .toList();

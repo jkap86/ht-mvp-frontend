@@ -27,7 +27,22 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
   final _scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    // List is reversed, so "end" (oldest messages) is at maxScrollExtent
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 100) {
+      ref.read(chatProvider(widget.leagueId).notifier).loadMoreMessages();
+    }
+  }
+
+  @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -84,12 +99,23 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
       );
     }
 
+    // Add 1 to itemCount for loading indicator when loading more
+    final itemCount = state.messages.length + (state.isLoadingMore ? 1 : 0);
+
     return ListView.builder(
       controller: _scrollController,
       reverse: true,
       padding: const EdgeInsets.all(8),
-      itemCount: state.messages.length,
+      itemCount: itemCount,
       itemBuilder: (context, index) {
+        // Show loading indicator at the end (oldest messages position)
+        if (index == state.messages.length && state.isLoadingMore) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        }
+
         final message = state.messages[index];
         // Render system messages differently
         if (message.isSystemMessage) {
