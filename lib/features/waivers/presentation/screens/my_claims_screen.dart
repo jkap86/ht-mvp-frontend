@@ -80,7 +80,8 @@ class MyClaimsScreen extends ConsumerWidget {
       );
     }
 
-    final claims = state.filteredClaims;
+    // Use sortedPendingClaims for pending filter, filteredClaims for others
+    final claims = state.filter == 'pending' ? state.sortedPendingClaims : state.filteredClaims;
 
     if (claims.isEmpty) {
       return AppEmptyView(
@@ -90,6 +91,11 @@ class MyClaimsScreen extends ConsumerWidget {
             ? 'You have no pending waiver claims'
             : 'No waiver claims found',
       );
+    }
+
+    // For pending claims, use ReorderableListView
+    if (state.filter == 'pending' && claims.length > 1) {
+      return _buildReorderablePendingList(context, ref, claims);
     }
 
     return RefreshIndicator(
@@ -105,6 +111,7 @@ class MyClaimsScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 12),
             child: _ClaimCard(
               claim: claim,
+              claimOrder: claim.status.isPending ? index + 1 : null,
               onCancel: claim.status.isPending
                   ? () => _handleCancel(context, ref, claim)
                   : null,
@@ -112,6 +119,46 @@ class MyClaimsScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildReorderablePendingList(BuildContext context, WidgetRef ref, List<WaiverClaim> claims) {
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: claims.length,
+      onReorder: (oldIndex, newIndex) {
+        if (newIndex > oldIndex) newIndex--;
+        final ids = claims.map((c) => c.id).toList();
+        final item = ids.removeAt(oldIndex);
+        ids.insert(newIndex, item);
+        ref
+            .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+            .reorderClaims(ids);
+      },
+      itemBuilder: (context, index) {
+        final claim = claims[index];
+        return Padding(
+          key: ValueKey('claim-${claim.id}'),
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _ReorderableClaimCard(
+            claim: claim,
+            claimOrder: index + 1,
+            isFirst: index == 0,
+            isLast: index == claims.length - 1,
+            onMoveUp: index > 0
+                ? () => ref
+                    .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                    .moveClaimUp(claim.id)
+                : null,
+            onMoveDown: index < claims.length - 1
+                ? () => ref
+                    .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                    .moveClaimDown(claim.id)
+                : null,
+            onCancel: () => _handleCancel(context, ref, claim),
+          ),
+        );
+      },
     );
   }
 
@@ -171,10 +218,12 @@ class _FilterChip extends StatelessWidget {
 
 class _ClaimCard extends StatelessWidget {
   final WaiverClaim claim;
+  final int? claimOrder;
   final VoidCallback? onCancel;
 
   const _ClaimCard({
     required this.claim,
+    this.claimOrder,
     this.onCancel,
   });
 
@@ -186,9 +235,27 @@ class _ClaimCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with status
+            // Header with claim order (if pending) and status
             Row(
               children: [
+                if (claimOrder != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '#$claimOrder',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 _buildStatusBadge(context),
                 const Spacer(),
                 Text(
@@ -375,6 +442,204 @@ class _ClaimCard extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
+      ),
+    );
+  }
+
+  Color _getPositionColor(String position) {
+    switch (position.toUpperCase()) {
+      case 'QB':
+        return Colors.red;
+      case 'RB':
+        return Colors.green;
+      case 'WR':
+        return Colors.blue;
+      case 'TE':
+        return Colors.orange;
+      case 'K':
+        return Colors.purple;
+      case 'DEF':
+      case 'DST':
+        return Colors.brown;
+      default:
+        return Colors.grey;
+    }
+  }
+}
+
+/// Reorderable claim card with drag handle and up/down buttons
+class _ReorderableClaimCard extends StatelessWidget {
+  final WaiverClaim claim;
+  final int claimOrder;
+  final bool isFirst;
+  final bool isLast;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
+  final VoidCallback onCancel;
+
+  const _ReorderableClaimCard({
+    required this.claim,
+    required this.claimOrder,
+    required this.isFirst,
+    required this.isLast,
+    this.onMoveUp,
+    this.onMoveDown,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Row(
+        children: [
+          // Drag handle
+          ReorderableDragStartListener(
+            index: claimOrder - 1,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
+              child: Icon(
+                Icons.drag_handle,
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+          ),
+          // Claim order badge
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '#$claimOrder',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Claim content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (claim.playerPosition != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _getPositionColor(claim.playerPosition!),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            claim.playerPosition!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Expanded(
+                        child: Text(
+                          claim.playerName,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (claim.playerTeam != null) ...[
+                        Text(
+                          claim.playerTeam!,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      if (claim.bidAmount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '\$${claim.bidAmount}',
+                            style: TextStyle(
+                              color: Colors.green.shade700,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      if (claim.dropPlayerName != null) ...[
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.swap_horiz,
+                          size: 12,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            claim.dropPlayerName!,
+                            style: Theme.of(context).textTheme.bodySmall,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Up/Down buttons
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_upward, size: 18),
+                onPressed: onMoveUp,
+                visualDensity: VisualDensity.compact,
+                color: onMoveUp != null
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_downward, size: 18),
+                onPressed: onMoveDown,
+                visualDensity: VisualDensity.compact,
+                color: onMoveDown != null
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+              ),
+            ],
+          ),
+          // Cancel button
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            onPressed: onCancel,
+            color: Colors.red,
+            visualDensity: VisualDensity.compact,
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
     );
   }

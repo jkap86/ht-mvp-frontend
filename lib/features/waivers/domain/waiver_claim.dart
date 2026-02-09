@@ -14,6 +14,8 @@ class WaiverClaim {
   final String? dropPlayerPosition;
   final int bidAmount;
   final int? priorityAtClaim;
+  /// User-defined priority order for claims within a roster. Lower = higher priority.
+  final int claimOrder;
   final WaiverClaimStatus status;
   final int season;
   final int week;
@@ -37,6 +39,7 @@ class WaiverClaim {
     this.dropPlayerPosition,
     required this.bidAmount,
     this.priorityAtClaim,
+    this.claimOrder = 1,
     required this.status,
     required this.season,
     required this.week,
@@ -62,6 +65,7 @@ class WaiverClaim {
       dropPlayerPosition: json['drop_player_position'] as String?,
       bidAmount: json['bid_amount'] as int? ?? 0,
       priorityAtClaim: json['priority_at_claim'] as int?,
+      claimOrder: json['claim_order'] as int? ?? 1,
       status: WaiverClaimStatus.fromString(json['status'] as String?),
       season: json['season'] as int? ?? DateTime.now().year,
       week: json['week'] as int? ?? 1,
@@ -91,6 +95,7 @@ class WaiverClaim {
     String? dropPlayerPosition,
     int? bidAmount,
     int? priorityAtClaim,
+    int? claimOrder,
     WaiverClaimStatus? status,
     int? season,
     int? week,
@@ -114,6 +119,7 @@ class WaiverClaim {
       dropPlayerPosition: dropPlayerPosition ?? this.dropPlayerPosition,
       bidAmount: bidAmount ?? this.bidAmount,
       priorityAtClaim: priorityAtClaim ?? this.priorityAtClaim,
+      claimOrder: claimOrder ?? this.claimOrder,
       status: status ?? this.status,
       season: season ?? this.season,
       week: week ?? this.week,

@@ -45,6 +45,13 @@ class WaiversState {
   List<WaiverClaim> get pendingClaims =>
       claims.where((c) => c.status.isPending).toList();
 
+  /// Get pending claims sorted by claim_order
+  List<WaiverClaim> get sortedPendingClaims {
+    final pending = claims.where((c) => c.status.isPending).toList();
+    pending.sort((a, b) => a.claimOrder.compareTo(b.claimOrder));
+    return pending;
+  }
+
   /// Get user's FAAB budget (if any)
   FaabBudget? getBudgetForRoster(int rosterId) {
     try {
@@ -97,6 +104,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
   VoidCallback? _claimSubmittedDisposer;
   VoidCallback? _claimCancelledDisposer;
   VoidCallback? _claimUpdatedDisposer;
+  VoidCallback? _claimsReorderedDisposer;
   VoidCallback? _processedDisposer;
   VoidCallback? _claimSuccessfulDisposer;
   VoidCallback? _claimFailedDisposer;
@@ -182,6 +190,34 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
 
     _claimUpdatedDisposer = _socketService.onWaiverClaimUpdated((data) {
       handleClaimEvent(data);
+    });
+
+    _claimsReorderedDisposer = _socketService.onWaiverClaimsReordered((data) {
+      if (!mounted) return;
+      if (data is! Map) {
+        _debouncedLoadWaiverData();
+        return;
+      }
+
+      try {
+        final claimsList = (data['claims'] as List?)
+                ?.cast<Map<String, dynamic>>()
+                .map((json) => WaiverClaim.fromJson(json))
+                .toList() ??
+            [];
+        // Update claims with new order
+        final currentClaims = [...state.claims];
+        for (final updated in claimsList) {
+          final index = currentClaims.indexWhere((c) => c.id == updated.id);
+          if (index >= 0) {
+            currentClaims[index] = updated;
+          }
+        }
+        state = state.copyWith(claims: currentClaims);
+      } catch (e) {
+        // Failed to parse, reload to sync
+        _debouncedLoadWaiverData();
+      }
     });
 
     _processedDisposer = _socketService.onWaiverProcessed((data) {
@@ -360,6 +396,57 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
     }
   }
 
+  /// Reorder waiver claims
+  /// Takes a list of claim IDs in the desired order
+  Future<bool> reorderClaims(List<int> claimIds) async {
+    try {
+      final updatedClaims = await _waiverRepo.reorderClaims(leagueId, claimIds);
+      // Update local state with new claim orders
+      final currentClaims = [...state.claims];
+      for (final updated in updatedClaims) {
+        final index = currentClaims.indexWhere((c) => c.id == updated.id);
+        if (index >= 0) {
+          currentClaims[index] = updated;
+        }
+      }
+      state = state.copyWith(claims: currentClaims);
+      return true;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return false;
+    }
+  }
+
+  /// Move a claim up in priority (decrease claim_order)
+  Future<bool> moveClaimUp(int claimId) async {
+    final pending = state.sortedPendingClaims;
+    final index = pending.indexWhere((c) => c.id == claimId);
+    if (index <= 0) return false; // Already at top or not found
+
+    final ids = pending.map((c) => c.id).toList();
+    // Swap with previous
+    final temp = ids[index];
+    ids[index] = ids[index - 1];
+    ids[index - 1] = temp;
+
+    return reorderClaims(ids);
+  }
+
+  /// Move a claim down in priority (increase claim_order)
+  Future<bool> moveClaimDown(int claimId) async {
+    final pending = state.sortedPendingClaims;
+    final index = pending.indexWhere((c) => c.id == claimId);
+    if (index < 0 || index >= pending.length - 1) return false; // At bottom or not found
+
+    final ids = pending.map((c) => c.id).toList();
+    // Swap with next
+    final temp = ids[index];
+    ids[index] = ids[index + 1];
+    ids[index + 1] = temp;
+
+    return reorderClaims(ids);
+  }
+
   /// Clear any error messages
   void clearError() {
     state = state.copyWith(clearError: true);
@@ -372,6 +459,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
     _claimSubmittedDisposer?.call();
     _claimCancelledDisposer?.call();
     _claimUpdatedDisposer?.call();
+    _claimsReorderedDisposer?.call();
     _processedDisposer?.call();
     _claimSuccessfulDisposer?.call();
     _claimFailedDisposer?.call();

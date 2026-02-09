@@ -80,6 +80,21 @@ class WaiverRepository {
     await _apiClient.delete('/leagues/$leagueId/waivers/claims/$claimId');
   }
 
+  /// Reorder waiver claims
+  /// Takes a list of claim IDs in the desired order
+  Future<List<WaiverClaim>> reorderClaims(
+    int leagueId,
+    List<int> claimIds,
+  ) async {
+    final response = await _apiClient.patch(
+      '/leagues/$leagueId/waivers/claims/reorder',
+      body: {'claim_ids': claimIds},
+    );
+    final claimsList =
+        (response['claims'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return claimsList.map((json) => WaiverClaim.fromJson(json)).toList();
+  }
+
   /// Get waiver priority order
   Future<List<WaiverPriority>> getPriority(int leagueId) async {
     final response = await _apiClient.get('/leagues/$leagueId/waivers/priority');

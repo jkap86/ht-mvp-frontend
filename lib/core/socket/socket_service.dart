@@ -525,6 +525,10 @@ class SocketService {
     return on(SocketEvents.waiverClaimUpdated, callback);
   }
 
+  VoidCallback onWaiverClaimsReordered(void Function(dynamic) callback) {
+    return on(SocketEvents.waiverClaimsReordered, callback);
+  }
+
   VoidCallback onWaiverProcessed(void Function(dynamic) callback) {
     return on(SocketEvents.waiverProcessed, callback);
   }

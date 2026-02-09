@@ -68,6 +68,7 @@ class SocketEvents {
   static const waiverClaimSubmitted = 'waiver:claim_submitted';
   static const waiverClaimCancelled = 'waiver:claim_cancelled';
   static const waiverClaimUpdated = 'waiver:claim_updated';
+  static const waiverClaimsReordered = 'waiver:claims_reordered';
   static const waiverProcessed = 'waiver:processed';
   static const waiverClaimSuccessful = 'waiver:claim_successful';
   static const waiverClaimFailed = 'waiver:claim_failed';
