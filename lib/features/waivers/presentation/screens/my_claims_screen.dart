@@ -126,14 +126,22 @@ class MyClaimsScreen extends ConsumerWidget {
     return ReorderableListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: claims.length,
-      onReorder: (oldIndex, newIndex) {
+      onReorder: (oldIndex, newIndex) async {
         if (newIndex > oldIndex) newIndex--;
         final ids = claims.map((c) => c.id).toList();
         final item = ids.removeAt(oldIndex);
         ids.insert(newIndex, item);
-        ref
+        final success = await ref
             .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
             .reorderClaims(ids);
+        if (!success && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to reorder claims. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       },
       itemBuilder: (context, index) {
         final claim = claims[index];
@@ -146,14 +154,34 @@ class MyClaimsScreen extends ConsumerWidget {
             isFirst: index == 0,
             isLast: index == claims.length - 1,
             onMoveUp: index > 0
-                ? () => ref
-                    .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
-                    .moveClaimUp(claim.id)
+                ? () async {
+                    final success = await ref
+                        .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                        .moveClaimUp(claim.id);
+                    if (!success && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to reorder claims. Please try again.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 : null,
             onMoveDown: index < claims.length - 1
-                ? () => ref
-                    .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
-                    .moveClaimDown(claim.id)
+                ? () async {
+                    final success = await ref
+                        .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                        .moveClaimDown(claim.id);
+                    if (!success && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to reorder claims. Please try again.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 : null,
             onCancel: () => _handleCancel(context, ref, claim),
           ),
