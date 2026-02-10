@@ -6,6 +6,7 @@ import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
+import '../../../../core/widgets/week_selector_strip.dart';
 import '../../domain/matchup.dart';
 import '../providers/matchup_provider.dart';
 
@@ -57,50 +58,33 @@ class MatchupScreen extends ConsumerWidget {
           onPressed: () => navigateBack(context),
         ),
         title: Text(state.league?.name ?? 'Matchups'),
-        actions: [
-          PopupMenuButton<int>(
-            initialValue: state.currentWeek,
-            onSelected: (week) {
-              ref.read(matchupProvider(leagueId).notifier).changeWeek(week);
-            },
-            itemBuilder: (context) {
-              // Use maxScheduledWeek if available (> 0), otherwise fall back to totalWeeks
+      ),
+      body: Column(
+        children: [
+          WeekSelectorStrip(
+            currentWeek: state.currentWeek,
+            totalWeeks: () {
               final maxWeek = state.maxScheduledWeek;
-              final totalWeeks = (maxWeek != null && maxWeek > 0)
+              return (maxWeek != null && maxWeek > 0)
                   ? maxWeek
                   : (state.league?.totalWeeks ?? 14);
-              return List.generate(
-                totalWeeks,
-                (index) => PopupMenuItem(
-                  value: index + 1,
-                  child: Text('Week ${index + 1}'),
-                ),
-              );
+            }(),
+            onWeekSelected: (week) {
+              ref.read(matchupProvider(leagueId).notifier).changeWeek(week);
             },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Week ${state.currentWeek}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const Icon(Icons.arrow_drop_down),
-                ],
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => ref.read(matchupProvider(leagueId).notifier).loadData(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: _buildMatchupsList(context, state),
+                ),
               ),
             ),
           ),
         ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(matchupProvider(leagueId).notifier).loadData(),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: _buildMatchupsList(context, state),
-          ),
-        ),
       ),
     );
   }

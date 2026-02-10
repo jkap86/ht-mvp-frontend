@@ -5,6 +5,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
+import '../../../../core/widgets/team_selector_sheet.dart';
 import '../../../leagues/presentation/providers/league_detail_provider.dart';
 import '../../data/trade_repository.dart';
 import '../widgets/player_selector_widget.dart' show PlayerSelectorWidget, tradeRosterPlayersProvider;
@@ -96,25 +97,60 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
                 // Step 1: Select Trade Partner
             Text('Trade With', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            DropdownButtonFormField<int>(
-              value: _selectedRecipientRosterId,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Select a team',
-              ),
-              items: otherMembers
-                  .map((member) => DropdownMenuItem(
-                        value: member.rosterId,
-                        child: Text(member.teamName ?? member.username),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedRecipientRosterId = value;
-                  _requestingPlayerIds.clear();
-                  _requestingPickAssetIds = {};
-                });
+            GestureDetector(
+              onTap: () {
+                showTeamSelectorSheet(
+                  context: context,
+                  teams: otherMembers
+                      .where((m) => m.rosterId != null)
+                      .map((m) => TeamOption(
+                            rosterId: m.rosterId!,
+                            teamName: m.teamName ?? m.username,
+                          ))
+                      .toList(),
+                  currentTeamId: _selectedRecipientRosterId,
+                  onTeamSelected: (rosterId) {
+                    setState(() {
+                      _selectedRecipientRosterId = rosterId;
+                      _requestingPlayerIds.clear();
+                      _requestingPickAssetIds = {};
+                    });
+                  },
+                );
               },
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Select a team',
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _selectedRecipientRosterId != null
+                            ? otherMembers
+                                    .where((m) => m.rosterId == _selectedRecipientRosterId)
+                                    .firstOrNull
+                                    ?.teamName ??
+                                otherMembers
+                                    .where((m) => m.rosterId == _selectedRecipientRosterId)
+                                    .firstOrNull
+                                    ?.username ??
+                                'Team'
+                            : 'Select a team',
+                        style: TextStyle(
+                          color: _selectedRecipientRosterId != null
+                              ? null
+                              : Theme.of(context).hintColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Icon(Icons.arrow_drop_down),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 24),
 

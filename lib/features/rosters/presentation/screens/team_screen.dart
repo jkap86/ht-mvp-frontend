@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
+import '../../../../core/widgets/team_selector_sheet.dart';
+import '../../../../core/widgets/week_selector_strip.dart';
 import '../../domain/roster_lineup.dart';
 import '../../domain/roster_player.dart';
 import '../providers/team_provider.dart';
@@ -146,9 +148,6 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           onPressed: () => navigateBack(context),
         ),
         title: _buildTeamSelector(state),
-        actions: [
-          _buildWeekSelector(state),
-        ],
         bottom: _tabController == null
             ? null
             : TabBar(
@@ -167,6 +166,14 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           ? const AppLoadingView()
           : Column(
               children: [
+                // Week selector strip
+                WeekSelectorStrip(
+                  currentWeek: state.currentWeek,
+                  totalWeeks: state.league?.totalWeeks ?? 18,
+                  onWeekSelected: (week) {
+                    ref.read(teamProvider(_key).notifier).changeWeek(week);
+                  },
+                ),
                 // Show viewing banner when not own team
                 if (!isOwnTeam)
                   Container(
@@ -234,40 +241,25 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
         .firstOrNull;
     final displayName = currentMember?.teamName ?? currentMember?.username ?? 'Team';
 
-    return PopupMenuButton<int>(
-      initialValue: widget.rosterId,
-      onSelected: (rosterId) {
-        if (rosterId != widget.rosterId) {
-          context.go('/leagues/${widget.leagueId}/team/$rosterId');
-        }
-      },
-      itemBuilder: (context) {
-        return state.leagueMembers.map((member) {
-          final name = member.teamName ?? member.username;
-          final isCurrentUser = member.rosterId == state.league?.userRosterId;
-          return PopupMenuItem(
-            value: member.rosterId,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    name,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (isCurrentUser)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Icon(
-                      Icons.person,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-              ],
-            ),
-          );
-        }).toList();
+    return GestureDetector(
+      onTap: () {
+        showTeamSelectorSheet(
+          context: context,
+          teams: state.leagueMembers
+              .where((m) => m.rosterId != null)
+              .map((m) => TeamOption(
+                    rosterId: m.rosterId!,
+                    teamName: m.teamName ?? m.username,
+                    isCurrentUser: m.rosterId == state.league?.userRosterId,
+                  ))
+              .toList(),
+          currentTeamId: widget.rosterId,
+          onTeamSelected: (rosterId) {
+            if (rosterId != widget.rosterId) {
+              context.go('/leagues/${widget.leagueId}/team/$rosterId');
+            }
+          },
+        );
       },
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -285,178 +277,148 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
     );
   }
 
-  Widget _buildWeekSelector(TeamState state) {
-    final totalWeeks = state.league?.totalWeeks ?? 18;
-    return PopupMenuButton<int>(
-      initialValue: state.currentWeek,
-      onSelected: (week) {
-        ref.read(teamProvider(_key).notifier).changeWeek(week);
-      },
-      itemBuilder: (context) {
-        return List.generate(
-          totalWeeks,
-          (index) => PopupMenuItem(
-            value: index + 1,
-            child: Text('Week ${index + 1}'),
-          ),
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Week ${state.currentWeek}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const Icon(Icons.arrow_drop_down),
-          ],
-        ),
-      ),
-    );
-  }
-
-
   Widget _buildLineupTab(TeamState state, {bool readOnly = false}) {
     if (state.lineup?.isLocked == true || readOnly) {
       return _buildLockedLineup(state);
     }
 
+    final starterWidgets = _buildStarterSlots(state);
+    final benchWidgets = _buildBenchSlots(state);
+
+    // Build items: header widgets + starters header + starters + bench header + bench
+    final items = <Widget>[
+      // Optimal lineup banner
+      OptimalLineupBanner(
+        issues: state.lineupIssues,
+        currentProjected: state.projectedStarterPoints,
+        optimalProjected: state.optimalProjectedPoints,
+        isSaving: state.isSaving,
+        onSetOptimal: () {
+          final key = newIdempotencyKey();
+          ref.read(teamProvider(_key).notifier).setOptimalLineup(idempotencyKey: key);
+        },
+      ),
+      // Points summary
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: TeamPointsSummary(
+          totalPoints: state.totalPoints,
+          startersCount: state.starters.length,
+          benchCount: state.bench.length,
+        ),
+      ),
+      // Swap hint banner
+      _buildSwapHintBanner(),
+      // Starters header
+      const Padding(
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Text('Starters', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      ),
+      ...starterWidgets,
+      // Bench header
+      const Padding(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: Text('Bench', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      ),
+      ...benchWidgets,
+      const SizedBox(height: 16),
+    ];
+
     return RefreshIndicator(
       onRefresh: () => ref.read(teamProvider(_key).notifier).loadData(),
-      child: Column(
-        children: [
-          // Optimal lineup banner (self-hides when lineup is optimal)
-          OptimalLineupBanner(
-            issues: state.lineupIssues,
-            currentProjected: state.projectedStarterPoints,
-            optimalProjected: state.optimalProjectedPoints,
-            isSaving: state.isSaving,
-            onSetOptimal: () {
-              final key = newIdempotencyKey();
-              ref.read(teamProvider(_key).notifier).setOptimalLineup(idempotencyKey: key);
-            },
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: items.length,
+            itemBuilder: (context, index) => items[index],
           ),
-          // Points summary at top (not scrollable)
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TeamPointsSummary(
-              totalPoints: state.totalPoints,
-              startersCount: state.starters.length,
-              benchCount: state.bench.length,
-            ),
-          ),
-          // Side-by-side columns (scrollable)
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Starters column (left)
-                Expanded(
-                  child: _buildStartersListView(state),
-                ),
-                const VerticalDivider(width: 1),
-                // Bench column (right)
-                Expanded(
-                  child: _buildBenchListView(state),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildLockedLineup(TeamState state) {
+    final starterWidgets = _buildStarterSlots(state);
+    final benchWidgets = _buildBenchSlots(state);
+
+    final items = <Widget>[
+      const LineupLockedBanner(),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: TeamPointsSummary(
+          totalPoints: state.totalPoints,
+          startersCount: state.starters.length,
+          benchCount: state.bench.length,
+        ),
+      ),
+      const Padding(
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Text('Starters', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      ),
+      ...starterWidgets,
+      const Padding(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: Text('Bench', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      ),
+      ...benchWidgets,
+      const SizedBox(height: 16),
+    ];
+
     return RefreshIndicator(
       onRefresh: () => ref.read(teamProvider(_key).notifier).loadData(),
-      child: Column(
-        children: [
-          // Locked banner and points summary at top (not scrollable)
-          const LineupLockedBanner(),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TeamPointsSummary(
-              totalPoints: state.totalPoints,
-              startersCount: state.starters.length,
-              benchCount: state.bench.length,
-            ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: items.length,
+            itemBuilder: (context, index) => items[index],
           ),
-          // Side-by-side columns (scrollable)
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Starters column (left)
-                Expanded(
-                  child: _buildStartersListView(state),
-                ),
-                const VerticalDivider(width: 1),
-                // Bench column (right)
-                Expanded(
-                  child: _buildBenchListView(state),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  /// Builds a lazy ListView for starters with header
-  Widget _buildStartersListView(TeamState state) {
-    final starterWidgets = _buildStarterSlots(state);
-    // +1 for header, +1 for spacing
-    final itemCount = starterWidgets.length + 2;
+  Widget _buildSwapHintBanner() {
+    final isVisible = _selectedPlayerId != null;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: itemCount,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return const Text(
-            'Starters',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          );
-        }
-        if (index == 1) {
-          return const SizedBox(height: 8);
-        }
-        return starterWidgets[index - 2];
-      },
-    );
-  }
-
-  /// Builds a lazy ListView for bench with header
-  Widget _buildBenchListView(TeamState state) {
-    final benchWidgets = _buildBenchSlots(state);
-    // +1 for header, +1 for spacing
-    final itemCount = benchWidgets.length + 2;
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: itemCount,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return const Text(
-            'Bench',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          );
-        }
-        if (index == 1) {
-          return const SizedBox(height: 8);
-        }
-        return benchWidgets[index - 2];
-      },
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      child: isVisible
+          ? Container(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.touch_app, color: colorScheme.onPrimaryContainer, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Tap a highlighted slot to swap',
+                      style: TextStyle(
+                        color: colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() {
+                      _selectedPlayerId = null;
+                      _selectedSlot = null;
+                    }),
+                    child: Icon(Icons.close, size: 18, color: colorScheme.onPrimaryContainer),
+                  ),
+                ],
+              ),
+            )
+          : const SizedBox.shrink(),
     );
   }
 
