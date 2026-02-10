@@ -31,42 +31,39 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(user?.username ?? 'Home'),
+        title: const Text('HypeTrain'),
         actions: [
           const NotificationBell(),
           IconButton(
-            icon: Icon(
-              Theme.of(context).brightness == Brightness.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            tooltip: 'Toggle theme',
+            icon: const Icon(Icons.account_circle_outlined),
+            tooltip: 'Settings',
             onPressed: () {
-              ref.read(themeModeProvider.notifier).toggleTheme();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: () async {
-              await ref.read(authStateProvider.notifier).logout();
+              showModalBottomSheet(
+                context: context,
+                builder: (_) => _SettingsSheet(
+                  username: user?.username,
+                  onLogout: () async {
+                    await ref.read(authStateProvider.notifier).logout();
 
-              // Invalidate global user-specific providers
-              ref.invalidate(myLeaguesProvider);
-              ref.invalidate(invitationsProvider);
-              ref.invalidate(publicLeaguesProvider);
-              ref.invalidate(homeDashboardProvider);
-              ref.invalidate(notificationsProvider);
+                    // Invalidate global user-specific providers
+                    ref.invalidate(myLeaguesProvider);
+                    ref.invalidate(invitationsProvider);
+                    ref.invalidate(publicLeaguesProvider);
+                    ref.invalidate(homeDashboardProvider);
+                    ref.invalidate(notificationsProvider);
 
-              // Invalidate family providers (clears ALL cached instances)
-              ref.invalidate(leagueDetailProvider);
-              ref.invalidate(leagueContextProvider);
-              ref.invalidate(commissionerProvider);
-              ref.invalidate(leagueInvitationsProvider);
+                    // Invalidate family providers (clears ALL cached instances)
+                    ref.invalidate(leagueDetailProvider);
+                    ref.invalidate(leagueContextProvider);
+                    ref.invalidate(commissionerProvider);
+                    ref.invalidate(leagueInvitationsProvider);
 
-              if (context.mounted) {
-                context.go('/login');
-              }
+                    if (context.mounted) {
+                      context.go('/login');
+                    }
+                  },
+                ),
+              );
             },
           ),
         ],
@@ -117,7 +114,7 @@ class HomeScreen extends ConsumerWidget {
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500),
+          constraints: const BoxConstraints(maxWidth: 600),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -164,7 +161,7 @@ class HomeScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500),
+          constraints: const BoxConstraints(maxWidth: 600),
           child: SkeletonShimmer(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,6 +246,73 @@ class HomeScreen extends ConsumerWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsSheet extends ConsumerWidget {
+  final String? username;
+  final VoidCallback onLogout;
+
+  const _SettingsSheet({
+    required this.username,
+    required this.onLogout,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Username header
+            if (username != null) ...[
+              Icon(
+                Icons.account_circle,
+                size: 48,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                username!,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+            ],
+            // Theme toggle
+            ListTile(
+              leading: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
+              title: const Text('Dark Mode'),
+              trailing: Switch(
+                value: isDark,
+                onChanged: (_) {
+                  ref.read(themeModeProvider.notifier).toggleTheme();
+                },
+              ),
+            ),
+            // Logout
+            ListTile(
+              leading: Icon(Icons.logout, color: colorScheme.error),
+              title: Text(
+                'Logout',
+                style: TextStyle(color: colorScheme.error),
+              ),
+              onTap: () {
+                Navigator.of(context).pop();
+                onLogout();
+              },
+            ),
+          ],
         ),
       ),
     );

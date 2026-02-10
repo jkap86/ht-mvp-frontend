@@ -12,15 +12,17 @@ class TradesState {
   final List<Trade> trades;
   final bool isLoading;
   final String? error;
-  final String filter; // 'all', 'pending', 'completed'
+  final String filter; // 'mine', 'all', 'pending', 'completed'
   final DateTime? lastUpdated;
+  final int? userRosterId;
 
   TradesState({
     this.trades = const [],
     this.isLoading = true,
     this.error,
-    this.filter = 'all',
+    this.filter = 'mine',
     this.lastUpdated,
+    this.userRosterId,
   });
 
   /// Check if data is stale (older than 5 minutes)
@@ -31,7 +33,13 @@ class TradesState {
 
   /// Get trades filtered by current filter
   List<Trade> get filteredTrades {
-    if (filter == 'pending') {
+    if (filter == 'mine' && userRosterId != null) {
+      return trades
+          .where((t) =>
+              t.proposerRosterId == userRosterId ||
+              t.recipientRosterId == userRosterId)
+          .toList();
+    } else if (filter == 'pending') {
       return trades
           .where((t) => t.status.isPending || t.status == TradeStatus.inReview)
           .toList();
@@ -56,6 +64,7 @@ class TradesState {
     String? filter,
     bool clearError = false,
     DateTime? lastUpdated,
+    int? userRosterId,
   }) {
     return TradesState(
       trades: trades ?? this.trades,
@@ -63,6 +72,7 @@ class TradesState {
       error: clearError ? null : (error ?? this.error),
       filter: filter ?? this.filter,
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      userRosterId: userRosterId ?? this.userRosterId,
     );
   }
 }
@@ -265,6 +275,13 @@ class TradesNotifier extends StateNotifier<TradesState> {
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(error: e.toString(), isLoading: false);
+    }
+  }
+
+  /// Set the user's roster ID for "My Trades" filtering
+  void setUserRosterId(int? rosterId) {
+    if (rosterId != state.userRosterId) {
+      state = state.copyWith(userRosterId: rosterId);
     }
   }
 

@@ -37,6 +37,29 @@ class TradeCard extends StatelessWidget {
               Row(
                 children: [
                   _buildStatusBadge(context),
+                  if (trade.canRespond) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.error.withAlpha(25),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                        border: Border.all(
+                          color: theme.colorScheme.error.withAlpha(75),
+                        ),
+                      ),
+                      child: Text(
+                        'Action Needed',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: theme.colorScheme.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                   const Spacer(),
                   Text(
                     DateFormat.MMMd().format(trade.createdAt),

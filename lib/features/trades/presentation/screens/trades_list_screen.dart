@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../../core/widgets/states/app_error_view.dart';
 import '../../../../core/widgets/states/app_empty_view.dart';
+import '../../../leagues/presentation/providers/league_detail_provider.dart';
 import '../providers/trades_provider.dart';
 import '../widgets/trade_card.dart';
 
@@ -16,6 +17,13 @@ class TradesListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(tradesProvider(leagueId));
+
+    // Pass user roster ID to enable "My Trades" filter
+    final leagueState = ref.watch(leagueDetailProvider(leagueId));
+    final userRosterId = leagueState.league?.userRosterId;
+    if (userRosterId != null) {
+      ref.read(tradesProvider(leagueId).notifier).setUserRosterId(userRosterId);
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -40,31 +48,41 @@ class TradesListScreen extends ConsumerWidget {
       BuildContext context, WidgetRef ref, TradesState state) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          _FilterChip(
-            label: 'All',
-            selected: state.filter == 'all',
-            onSelected: () =>
-                ref.read(tradesProvider(leagueId).notifier).setFilter('all'),
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            label: 'Pending',
-            selected: state.filter == 'pending',
-            onSelected: () => ref
-                .read(tradesProvider(leagueId).notifier)
-                .setFilter('pending'),
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            label: 'Completed',
-            selected: state.filter == 'completed',
-            onSelected: () => ref
-                .read(tradesProvider(leagueId).notifier)
-                .setFilter('completed'),
-          ),
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _FilterChip(
+              label: 'My Trades',
+              selected: state.filter == 'mine',
+              onSelected: () =>
+                  ref.read(tradesProvider(leagueId).notifier).setFilter('mine'),
+            ),
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: 'All',
+              selected: state.filter == 'all',
+              onSelected: () =>
+                  ref.read(tradesProvider(leagueId).notifier).setFilter('all'),
+            ),
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: 'Pending',
+              selected: state.filter == 'pending',
+              onSelected: () => ref
+                  .read(tradesProvider(leagueId).notifier)
+                  .setFilter('pending'),
+            ),
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: 'Completed',
+              selected: state.filter == 'completed',
+              onSelected: () => ref
+                  .read(tradesProvider(leagueId).notifier)
+                  .setFilter('completed'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -87,9 +105,11 @@ class TradesListScreen extends ConsumerWidget {
       return AppEmptyView(
         icon: Icons.swap_horiz,
         title: 'No Trades',
-        subtitle: state.filter == 'pending'
-            ? 'No pending trades at the moment'
-            : 'No trades have been made yet',
+        subtitle: state.filter == 'mine'
+            ? 'You have no trades yet'
+            : state.filter == 'pending'
+                ? 'No pending trades at the moment'
+                : 'No trades have been made yet',
         action: ElevatedButton.icon(
           onPressed: () => context.push('/leagues/$leagueId/trades/propose'),
           icon: const Icon(Icons.add),

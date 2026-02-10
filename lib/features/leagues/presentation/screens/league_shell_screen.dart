@@ -25,9 +25,7 @@ class _LeagueShellScreenState extends ConsumerState<LeagueShellScreen> {
   Widget build(BuildContext context) {
     final dashboardState = ref.watch(leagueDashboardProvider(widget.leagueId));
 
-    // Calculate badge counts from dashboard data
     final pendingTradesCount = dashboardState.pendingTrades;
-    final unreadMessagesCount = dashboardState.unreadChatMessages;
 
     return Scaffold(
       body: widget.navigationShell,
@@ -68,17 +66,9 @@ class _LeagueShellScreenState extends ConsumerState<LeagueShellScreen> {
             selectedIcon: Icon(Icons.person_search),
             label: 'Players',
           ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: unreadMessagesCount > 0,
-              label: Text('$unreadMessagesCount'),
-              child: const Icon(Icons.emoji_events_outlined),
-            ),
-            selectedIcon: Badge(
-              isLabelVisible: unreadMessagesCount > 0,
-              label: Text('$unreadMessagesCount'),
-              child: const Icon(Icons.emoji_events),
-            ),
+          const NavigationDestination(
+            icon: Icon(Icons.shield_outlined),
+            selectedIcon: Icon(Icons.shield),
             label: 'League',
           ),
         ],
