@@ -273,7 +273,11 @@ class ApiClient {
       // Non-JSON response body (e.g., HTML error page from proxy/LB)
       // For successful responses, this is a critical error - we expected JSON
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        throw ServerException('Invalid JSON response from server', 'INVALID_JSON');
+        throw ApiException(
+          'Invalid JSON response from server',
+          response.statusCode,
+          'INVALID_JSON',
+        );
       }
       // For error responses, set body to null and continue to error handling
       body = null;
