@@ -190,7 +190,7 @@ class DraftGridCell extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : positionColor,
+                        color: isDark ? theme.colorScheme.onPrimary : positionColor,
                       ),
                     ),
                   ),
@@ -316,7 +316,7 @@ class DraftGridCell extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : pickAssetColor,
+                        color: isDark ? theme.colorScheme.onPrimary : pickAssetColor,
                       ),
                     ),
                   ),

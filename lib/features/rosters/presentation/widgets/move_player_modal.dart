@@ -96,7 +96,7 @@ class SwapPlayerModal extends StatelessWidget {
         const Divider(height: 1),
         if (currentPlayer != null && onMoveToBench != null)
           ListTile(
-            leading: const Icon(Icons.arrow_downward, color: Colors.orange),
+            leading: Icon(Icons.arrow_downward, color: Theme.of(context).colorScheme.tertiary),
             title: const Text('Move to Bench'),
             onTap: () {
               Navigator.pop(context);
@@ -121,7 +121,7 @@ class SwapPlayerModal extends StatelessWidget {
                           player.injuryStatus!,
                           style: const TextStyle(fontSize: 10),
                         ),
-                        backgroundColor: Colors.red.shade100,
+                        backgroundColor: Theme.of(context).colorScheme.errorContainer,
                       )
                     : null,
                 onTap: () {

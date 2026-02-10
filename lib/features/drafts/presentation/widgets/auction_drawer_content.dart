@@ -106,8 +106,8 @@ class AuctionDrawerContent extends ConsumerWidget {
                 backgroundColor: getPositionColor(player.primaryPosition),
                 child: Text(
                   player.primaryPosition,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
+
 /// Represents a draft structure option for league creation.
 class DraftStructureOption {
   final String id;
@@ -69,7 +71,7 @@ class DraftStructureSelector extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
       ),
       padding: const EdgeInsets.all(16),
@@ -111,14 +113,14 @@ class DraftStructureSelector extends StatelessWidget {
 
     return InkWell(
       onTap: () => onChanged(option.id),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppSpacing.buttonRadius,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
               ? colorScheme.primaryContainer.withAlpha(128)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppSpacing.buttonRadius,
           border: isSelected
               ? Border.all(color: colorScheme.primary.withAlpha(128))
               : null,

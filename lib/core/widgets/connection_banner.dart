@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../config/app_theme.dart';
 import '../socket/connection_state_provider.dart';
 
 /// A banner that displays socket connection status to the user.
@@ -38,6 +39,12 @@ class _ConnectionBannerContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isReconnecting = state == SocketConnectionState.reconnecting;
+    final bannerBg = isDark
+        ? AppTheme.draftWarning.withAlpha(40)
+        : AppTheme.draftWarning.withAlpha(30);
+    final bannerFg = isDark
+        ? AppTheme.draftWarning
+        : AppTheme.draftWarning;
 
     return Material(
       elevation: 2,
@@ -45,7 +52,7 @@ class _ConnectionBannerContent extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isDark ? Colors.orange.shade900 : Colors.orange.shade100,
+          color: bannerBg,
         ),
         child: SafeArea(
           bottom: false,
@@ -60,9 +67,7 @@ class _ConnectionBannerContent extends StatelessWidget {
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isDark ? Colors.orange.shade100 : Colors.orange.shade900,
-                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(bannerFg),
                     ),
                   ),
                 )
@@ -72,13 +77,13 @@ class _ConnectionBannerContent extends StatelessWidget {
                   child: Icon(
                     Icons.wifi_off,
                     size: 18,
-                    color: isDark ? Colors.orange.shade100 : Colors.orange.shade900,
+                    color: bannerFg,
                   ),
                 ),
               Text(
                 isReconnecting ? 'Reconnecting...' : 'Connection lost',
                 style: TextStyle(
-                  color: isDark ? Colors.orange.shade100 : Colors.orange.shade900,
+                  color: bannerFg,
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
                 ),

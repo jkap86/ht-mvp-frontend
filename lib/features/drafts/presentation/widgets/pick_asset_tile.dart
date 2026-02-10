@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/draft_pick_asset.dart';
 
 /// Widget to display a draftable pick asset in the draft room.
@@ -46,7 +47,7 @@ class PickAssetTile extends StatelessWidget {
       height: 48,
       decoration: BoxDecoration(
         color: colorScheme.secondary,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppSpacing.buttonRadius,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -142,7 +143,7 @@ class PickAssetsSectionHeader extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: colorScheme.secondary.withAlpha(50),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppSpacing.cardRadius,
             ),
             child: Text(
               '$count available',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../config/app_theme.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../leagues/presentation/providers/league_detail_provider.dart';
 import '../providers/playoff_bracket_provider.dart';
@@ -31,7 +32,7 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(next.successMessage!),
-                backgroundColor: Colors.green,
+                backgroundColor: AppTheme.draftSuccess,
               ),
             );
           }
@@ -39,7 +40,7 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(next.error!),
-                backgroundColor: Colors.red,
+                backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
           }
@@ -119,7 +120,7 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
                   ),
                 if (state.isProcessing)
                   Container(
-                    color: Colors.black26,
+                    color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.26),
                     child: const Center(
                       child: CircularProgressIndicator(),
                     ),
@@ -139,7 +140,7 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
             Icon(
               Icons.emoji_events_outlined,
               size: 80,
-              color: Colors.grey.shade400,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
@@ -152,7 +153,7 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
                   ? 'Generate a playoff bracket from the Commissioner Tools.'
                   : 'The commissioner has not generated the playoff bracket yet.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             if (isCommissioner) ...[
               const SizedBox(height: 24),
@@ -230,19 +231,19 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
                 children: [
                   if (hasThirdPlaceGame)
                     Chip(
-                      avatar: Icon(Icons.looks_3, size: 18, color: Colors.brown.shade700),
+                      avatar: Icon(Icons.looks_3, size: 18, color: Theme.of(context).colorScheme.tertiary),
                       label: const Text('3rd Place Game'),
-                      backgroundColor: Colors.brown.shade50,
-                      labelStyle: TextStyle(color: Colors.brown.shade700),
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     ),
                   if (hasConsolation)
                     Chip(
-                      avatar: Icon(Icons.sports_handball, size: 18, color: Colors.teal.shade700),
+                      avatar: Icon(Icons.sports_handball, size: 18, color: Theme.of(context).colorScheme.tertiary),
                       label: Text(consolationTeams != null
                           ? 'Consolation ($consolationTeams teams)'
                           : 'Consolation'),
-                      backgroundColor: Colors.teal.shade50,
-                      labelStyle: TextStyle(color: Colors.teal.shade700),
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     ),
                 ],
               ),
@@ -256,18 +257,19 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
   Widget _buildStatusChip(status) {
     Color color;
     String label;
+    final colorScheme = Theme.of(context).colorScheme;
 
     switch (status.toString()) {
       case 'PlayoffStatus.active':
-        color = Colors.green;
+        color = AppTheme.draftSuccess;
         label = 'Active';
         break;
       case 'PlayoffStatus.completed':
-        color = Colors.blue;
+        color = colorScheme.primary;
         label = 'Completed';
         break;
       default:
-        color = Colors.orange;
+        color = colorScheme.tertiary;
         label = 'Pending';
     }
 
@@ -290,7 +292,7 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
       ],

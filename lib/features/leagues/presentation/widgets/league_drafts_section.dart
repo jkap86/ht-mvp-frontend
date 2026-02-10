@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../drafts/domain/draft_order_entry.dart';
 import '../../../drafts/domain/draft_status.dart';
 import '../../domain/league.dart';
@@ -95,12 +97,12 @@ class LeagueDraftsSection extends StatelessWidget {
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.event, size: 48, color: Colors.grey[400]),
+            Icon(Icons.event, size: 48, color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 8),
             Text(
               'No drafts yet',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
           ],
@@ -271,7 +273,7 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppSpacing.buttonRadius,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,13 +370,13 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.check_circle, size: 16, color: Colors.green[700]),
+                Icon(Icons.check_circle, size: 16, color: AppTheme.draftActionPrimary),
                 const SizedBox(width: 4),
                 Text(
                   'Draft order confirmed',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.green[700],
+                    color: AppTheme.draftActionPrimary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -396,7 +398,7 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppSpacing.buttonRadius,
         border: Border.all(
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
         ),
@@ -510,22 +512,22 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.green.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+        color: AppTheme.draftActionPrimary.withValues(alpha: 0.1),
+        borderRadius: AppSpacing.buttonRadius,
+        border: Border.all(color: AppTheme.draftActionPrimary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.check_circle, size: 16, color: Colors.green[700]),
+              Icon(Icons.check_circle, size: 16, color: AppTheme.draftActionPrimary),
               const SizedBox(width: 6),
               Text(
                 'Draft Order Set!',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
+                  color: AppTheme.draftActionPrimary,
                   fontSize: 13,
                 ),
               ),
@@ -542,7 +544,7 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppSpacing.cardRadius,
                       ),
                       child: Text(
                         '${entry.draftPosition}',
@@ -589,7 +591,7 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
         Icon(
           Icons.schedule,
           size: 14,
-          color: scheduled != null ? theme.colorScheme.primary : Colors.grey[500],
+          color: scheduled != null ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
         ),
         const SizedBox(width: 4),
         Expanded(
@@ -601,7 +603,7 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
               fontSize: 12,
               color: scheduled != null
                   ? theme.colorScheme.primary
-                  : Colors.grey[500],
+                  : theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -649,29 +651,30 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
   }
 
   Widget _buildStatusBadge(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     Color backgroundColor;
     Color textColor;
     String label;
 
     switch (widget.draft.status) {
       case DraftStatus.notStarted:
-        backgroundColor = Colors.grey[200]!;
-        textColor = Colors.grey[800]!;
+        backgroundColor = colorScheme.surfaceContainerHighest;
+        textColor = colorScheme.onSurfaceVariant;
         label = 'Not Started';
         break;
       case DraftStatus.inProgress:
-        backgroundColor = Colors.green;
-        textColor = Colors.white;
+        backgroundColor = AppTheme.draftActionPrimary;
+        textColor = colorScheme.onPrimary;
         label = 'Live';
         break;
       case DraftStatus.completed:
-        backgroundColor = Colors.blue[100]!;
-        textColor = Colors.blue[800]!;
+        backgroundColor = colorScheme.primaryContainer;
+        textColor = colorScheme.onPrimaryContainer;
         label = 'Completed';
         break;
       case DraftStatus.paused:
-        backgroundColor = Colors.orange;
-        textColor = Colors.white;
+        backgroundColor = AppTheme.draftWarning;
+        textColor = colorScheme.onPrimary;
         label = 'Paused';
         break;
     }
@@ -680,7 +683,7 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
       ),
       child: Text(
         label,

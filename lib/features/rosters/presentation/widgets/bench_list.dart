@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/section_header.dart';
 import '../../domain/roster_lineup.dart';
 import '../../domain/roster_player.dart';
 import 'lineup_player_row.dart';
@@ -24,27 +25,19 @@ class BenchList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Text(
-            'BENCH',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
-          ),
-        ),
+        const SectionHeader(title: 'BENCH'),
         if (benchPlayers.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(16),
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Center(
               child: Text(
                 'No bench players',
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
               ),
             ),
           )

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../leagues/domain/league.dart';
 import '../providers/commissioner_provider.dart';
 
@@ -87,7 +88,7 @@ class _SeasonControlsCardState extends ConsumerState<SeasonControlsCard> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
-      color: Colors.blue.shade50,
+      color: colorScheme.primaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -95,13 +96,13 @@ class _SeasonControlsCardState extends ConsumerState<SeasonControlsCard> {
           children: [
             Row(
               children: [
-                Icon(Icons.settings, color: Colors.blue.shade700),
+                Icon(Icons.settings, color: colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
                   'Season Controls',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
+                        color: colorScheme.primary,
                       ),
                 ),
               ],
@@ -111,20 +112,20 @@ class _SeasonControlsCardState extends ConsumerState<SeasonControlsCard> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.amber.shade100,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber.shade300),
+                color: colorScheme.tertiaryContainer,
+                borderRadius: AppSpacing.buttonRadius,
+                border: Border.all(color: colorScheme.tertiary.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber, color: Colors.amber.shade700, size: 20),
+                  Icon(Icons.warning_amber, color: colorScheme.tertiary, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Changing these settings affects schedules, lineups, and scoring.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.amber.shade900,
+                        color: colorScheme.onTertiaryContainer,
                       ),
                     ),
                   ),
@@ -172,8 +173,8 @@ class _SeasonControlsCardState extends ConsumerState<SeasonControlsCard> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _hasChanges ? Colors.blue : colorScheme.surfaceContainerHighest,
-                  foregroundColor: _hasChanges ? Colors.white : colorScheme.onSurfaceVariant,
+                  backgroundColor: _hasChanges ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+                  foregroundColor: _hasChanges ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
                 ),
                 icon: const Icon(Icons.save),
                 label: const Text('Save Changes'),

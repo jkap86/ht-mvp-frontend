@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/playoff.dart';
 import 'playoff_matchup_card.dart';
 
@@ -26,14 +28,14 @@ class BracketVisualization extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Section 1: Winners Bracket (always shown)
-          _buildSectionHeader(context, 'Winners Bracket', Icons.emoji_events, Colors.amber),
+          _buildSectionHeader(context, 'Winners Bracket', Icons.emoji_events, AppTheme.draftWarning),
           const SizedBox(height: 8),
           _buildWinnersBracket(context),
 
           // Section 2: 3rd Place Game (conditional)
           if (bracketView.hasThirdPlaceGame) ...[
             const SizedBox(height: 24),
-            _buildSectionHeader(context, '3rd Place Game', Icons.looks_3, Colors.brown.shade400),
+            _buildSectionHeader(context, '3rd Place Game', Icons.looks_3, Theme.of(context).colorScheme.tertiary),
             const SizedBox(height: 8),
             _buildThirdPlaceSection(context),
           ],
@@ -41,7 +43,7 @@ class BracketVisualization extends StatelessWidget {
           // Section 3: Consolation Bracket (conditional)
           if (bracketView.hasConsolation) ...[
             const SizedBox(height: 24),
-            _buildSectionHeader(context, 'Consolation Bracket', Icons.sports_handball, Colors.teal),
+            _buildSectionHeader(context, 'Consolation Bracket', Icons.sports_handball, Theme.of(context).colorScheme.tertiary),
             const SizedBox(height: 8),
             _buildConsolationBracket(context),
           ],
@@ -110,7 +112,7 @@ class BracketVisualization extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Card(
-        color: Colors.brown.shade50,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -121,7 +123,7 @@ class BracketVisualization extends StatelessWidget {
                   Text(
                     weekLabel,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                   ),
                   const SizedBox(width: 8),
@@ -129,15 +131,15 @@ class BracketVisualization extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.brown.shade100,
-                        borderRadius: BorderRadius.circular(8),
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: AppSpacing.buttonRadius,
                       ),
                       child: Text(
                         'FINAL',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: Colors.brown.shade700,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -155,13 +157,13 @@ class BracketVisualization extends StatelessWidget {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Icon(Icons.workspace_premium, color: Colors.brown.shade400, size: 20),
+                    Icon(Icons.workspace_premium, color: Theme.of(context).colorScheme.tertiary, size: 20),
                     const SizedBox(width: 4),
                     Text(
                       '3rd Place: ${thirdPlaceGame.winner!.teamName}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.brown.shade700,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ],
@@ -231,15 +233,15 @@ class BracketVisualization extends StatelessWidget {
                       height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.teal.shade200,
+                        color: Theme.of(context).colorScheme.tertiary,
                       ),
                       child: Center(
                         child: Text(
                           '${seed.standingsPosition}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onTertiary,
                           ),
                         ),
                       ),
@@ -264,7 +266,7 @@ class BracketVisualization extends StatelessWidget {
                           Text(
                             seed.record,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey.shade600,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                           ),
                         ],
@@ -289,21 +291,21 @@ class BracketVisualization extends StatelessWidget {
           Icon(
             Icons.star,
             size: 48,
-            color: Colors.teal.shade400,
+            color: Theme.of(context).colorScheme.tertiary,
           ),
           const SizedBox(height: 8),
           Text(
             'CONSOLATION',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.teal.shade700,
+                  color: Theme.of(context).colorScheme.tertiary,
                 ),
           ),
           Text(
             'WINNER',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.teal.shade700,
+                  color: Theme.of(context).colorScheme.tertiary,
                 ),
           ),
           const SizedBox(height: 8),
@@ -320,7 +322,7 @@ class BracketVisualization extends StatelessWidget {
           Text(
             winner.record,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
         ],
@@ -352,15 +354,15 @@ class BracketVisualization extends StatelessWidget {
                       height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: _getSeedColor(seed.seed),
+                        color: _getSeedColor(context, seed.seed),
                       ),
                       child: Center(
                         child: Text(
                           '${seed.seed}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         ),
                       ),
@@ -385,7 +387,7 @@ class BracketVisualization extends StatelessWidget {
                           Text(
                             seed.regularSeasonRecord,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey.shade600,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                           ),
                         ],
@@ -416,7 +418,7 @@ class BracketVisualization extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
             ),
             child: Text(
               round.name,
@@ -429,18 +431,18 @@ class BracketVisualization extends StatelessWidget {
           Text(
             round.weekLabel, // Use weekLabel for multi-week support
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 16),
           if (round.matchups.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Text(
                 'TBD',
                 style: TextStyle(
                   fontStyle: FontStyle.italic,
-                  color: Colors.grey,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             )
@@ -471,14 +473,14 @@ class BracketVisualization extends StatelessWidget {
           const Icon(
             Icons.emoji_events,
             size: 64,
-            color: Colors.amber,
+            color: AppTheme.draftWarning,
           ),
           const SizedBox(height: 8),
           Text(
             'CHAMPION',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.amber.shade800,
+                  color: AppTheme.draftWarning,
                 ),
           ),
           const SizedBox(height: 8),
@@ -487,15 +489,15 @@ class BracketVisualization extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _getSeedColor(champion.seed),
+              color: _getSeedColor(context, champion.seed),
             ),
             child: Center(
               child: Text(
                 '${champion.seed}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onPrimary,
                 ),
               ),
             ),
@@ -514,7 +516,7 @@ class BracketVisualization extends StatelessWidget {
           Text(
             champion.record,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
         ],
@@ -522,16 +524,16 @@ class BracketVisualization extends StatelessWidget {
     );
   }
 
-  Color _getSeedColor(int seed) {
+  Color _getSeedColor(BuildContext context, int seed) {
     switch (seed) {
       case 1:
-        return Colors.amber;
+        return AppTheme.draftWarning;
       case 2:
-        return Colors.grey.shade400;
+        return Theme.of(context).colorScheme.outline;
       case 3:
-        return Colors.brown.shade300;
+        return Theme.of(context).colorScheme.tertiary;
       default:
-        return Colors.blueGrey.shade200;
+        return Theme.of(context).colorScheme.outlineVariant;
     }
   }
 }

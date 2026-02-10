@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_spacing.dart';
+
 /// Card showing transactions summary with navigation to transactions page
 class HomeTransactionsCard extends StatelessWidget {
   final int tradeCount;
@@ -17,7 +19,7 @@ class HomeTransactionsCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: () => context.go('/transactions'),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -27,7 +29,7 @@ class HomeTransactionsCard extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   color: colorScheme.tertiaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppSpacing.cardRadius,
                 ),
                 child: Badge(
                   isLabelVisible: tradeCount > 0,

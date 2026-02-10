@@ -35,23 +35,23 @@ class LeagueInfoCard extends StatelessWidget {
               ],
             ),
             const Divider(),
-            _buildInfoRow('Season', league.season.toString()),
-            _buildInfoRow('Current Week', league.currentWeek.toString()),
-            _buildInfoRow('Status', league.status.toUpperCase()),
-            _buildInfoRow('Members', '${state.members.length}/${league.totalRosters}'),
+            _buildInfoRow(context, 'Season', league.season.toString()),
+            _buildInfoRow(context, 'Current Week', league.currentWeek.toString()),
+            _buildInfoRow(context, 'Status', league.status.toUpperCase()),
+            _buildInfoRow(context, 'Members', '${state.members.length}/${league.totalRosters}'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey.shade600)),
+          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),

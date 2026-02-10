@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/section_header.dart';
 import '../providers/draft_queue_provider.dart';
 
 class DraftQueueWidget extends ConsumerWidget {
@@ -50,21 +52,10 @@ class DraftQueueWidget extends ConsumerWidget {
     }).toList();
 
     if (availableQueue.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            const Icon(Icons.queue, size: 18, color: Colors.grey),
-            const SizedBox(width: 8),
-            Text(
-              'My Queue (0)',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
-              ),
-            ),
-          ],
-        ),
+      return const SectionHeader(
+        title: 'My Queue',
+        icon: Icons.queue,
+        count: 0,
       );
     }
 
@@ -72,21 +63,10 @@ class DraftQueueWidget extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              const Icon(Icons.queue, size: 18, color: Colors.grey),
-              const SizedBox(width: 8),
-              Text(
-                'My Queue (${availableQueue.length})',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
-                ),
-              ),
-            ],
-          ),
+        SectionHeader(
+          title: 'My Queue',
+          icon: Icons.queue,
+          count: availableQueue.length,
         ),
           SizedBox(
             height: 80,
@@ -180,7 +160,7 @@ class _QueuePlayerCard extends StatelessWidget {
       decoration: isHighlighted
           ? BoxDecoration(
               border: Border.all(color: AppTheme.draftActionPrimary, width: 2),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppSpacing.cardRadius,
             )
           : null,
       child: Column(
@@ -207,15 +187,15 @@ class _QueuePlayerCard extends StatelessWidget {
                         radius: 10,
                         backgroundColor: isHighlighted
                             ? AppTheme.draftActionPrimary
-                            : Colors.grey[600],
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                         child: Text(
                           '$position',
-                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 10),
                         ),
                       ),
                       InkWell(
                         onTap: onRemove,
-                        child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                        child: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -229,7 +209,7 @@ class _QueuePlayerCard extends StatelessWidget {
                   ),
                   Text(
                     '${entry.playerPosition ?? ''} - ${entry.playerTeam ?? ''}',
-                    style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -241,7 +221,7 @@ class _QueuePlayerCard extends StatelessWidget {
             SizedBox(
               width: 100,
               child: Material(
-                color: isSubmitting ? Colors.grey : AppTheme.draftActionPrimary,
+                color: isSubmitting ? Theme.of(context).colorScheme.outline : AppTheme.draftActionPrimary,
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
                 child: InkWell(
                   onTap: isSubmitting ? null : onDraftNow,
@@ -249,21 +229,21 @@ class _QueuePlayerCard extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     child: isSubmitting
-                        ? const Center(
+                        ? Center(
                             child: SizedBox(
                               width: 12,
                               height: 12,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                               ),
                             ),
                           )
-                        : const Text(
+                        : Text(
                             'DRAFT NOW',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
@@ -305,7 +285,7 @@ class _QueuePickAssetCard extends StatelessWidget {
       decoration: isHighlighted
           ? BoxDecoration(
               border: Border.all(color: AppTheme.draftActionPrimary, width: 2),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppSpacing.cardRadius,
             )
           : null,
       child: Column(
@@ -313,7 +293,7 @@ class _QueuePickAssetCard extends StatelessWidget {
         children: [
           Card(
             margin: EdgeInsets.zero,
-            color: Colors.amber[50],
+            color: Theme.of(context).colorScheme.tertiaryContainer,
             shape: isHighlighted
                 ? const RoundedRectangleBorder(
                     borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
@@ -333,20 +313,20 @@ class _QueuePickAssetCard extends StatelessWidget {
                         radius: 10,
                         backgroundColor: isHighlighted
                             ? AppTheme.draftActionPrimary
-                            : Colors.amber[700],
+                            : AppTheme.draftWarning,
                         child: Text(
                           '$position',
-                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 10),
                         ),
                       ),
                       InkWell(
                         onTap: onRemove,
-                        child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                        child: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Icon(Icons.how_to_vote_outlined, size: 16, color: Colors.amber[700]),
+                  Icon(Icons.how_to_vote_outlined, size: 16, color: AppTheme.draftWarning),
                   const SizedBox(height: 2),
                   Text(
                     entry.pickAssetDisplayName ?? 'Pick',
@@ -357,7 +337,7 @@ class _QueuePickAssetCard extends StatelessWidget {
                   ),
                   Text(
                     '${entry.pickAssetRound ?? '?'}',
-                    style: TextStyle(fontSize: 9, color: Colors.amber[800]),
+                    style: TextStyle(fontSize: 9, color: AppTheme.draftWarning),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -369,7 +349,7 @@ class _QueuePickAssetCard extends StatelessWidget {
             SizedBox(
               width: 100,
               child: Material(
-                color: isSubmitting ? Colors.grey : AppTheme.draftActionPrimary,
+                color: isSubmitting ? Theme.of(context).colorScheme.outline : AppTheme.draftActionPrimary,
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
                 child: InkWell(
                   onTap: isSubmitting ? null : onDraftNow,
@@ -377,21 +357,21 @@ class _QueuePickAssetCard extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     child: isSubmitting
-                        ? const Center(
+                        ? Center(
                             child: SizedBox(
                               width: 12,
                               height: 12,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                               ),
                             ),
                           )
-                        : const Text(
+                        : Text(
                             'DRAFT NOW',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
 import '../../../players/domain/player.dart';
 import 'package:hypetrain_mvp/core/theme/semantic_colors.dart';
 
@@ -35,8 +36,8 @@ class AvailablePlayersList extends StatelessWidget {
             backgroundColor: getPositionColor(player.primaryPosition),
             child: Text(
               player.primaryPosition,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
@@ -59,7 +60,7 @@ class AvailablePlayersList extends StatelessWidget {
       return IconButton(
         icon: Icon(
           isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
-          color: isInQueue ? Colors.green : null,
+          color: isInQueue ? AppTheme.draftActionPrimary : null,
         ),
         onPressed: isInQueue ? null : () => onAddToQueue!(player.id),
         tooltip: isInQueue ? 'In queue' : 'Add to queue',
@@ -74,7 +75,7 @@ class AvailablePlayersList extends StatelessWidget {
           IconButton(
             icon: Icon(
               isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
-              color: isInQueue ? Colors.green : null,
+              color: isInQueue ? AppTheme.draftActionPrimary : null,
             ),
             onPressed: isInQueue ? null : () => onAddToQueue!(player.id),
             tooltip: isInQueue ? 'In queue' : 'Add to queue',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../providers/draft_room_provider.dart';
 import '../providers/draft_queue_provider.dart';
 import '../../domain/auction_lot.dart';
@@ -143,10 +144,10 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
+                  const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusXl)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
+                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/socket/connection_state_provider.dart';
 import '../../../leagues/domain/league.dart';
 import 'autodraft_toggle_widget.dart';
@@ -121,7 +122,7 @@ class DraftStatusBar extends ConsumerWidget {
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.draftActionPrimary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 icon: const Icon(Icons.check, size: 18),
@@ -170,9 +171,9 @@ class DraftStatusBar extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: isConnected
-                  ? Colors.green.withAlpha(51) // 0.2 opacity
-                  : Colors.orange.withAlpha(51),
-              borderRadius: BorderRadius.circular(4),
+                  ? AppTheme.draftActionPrimary.withAlpha(51)
+                  : AppTheme.draftWarning.withAlpha(51),
+              borderRadius: AppSpacing.badgeRadius,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -180,7 +181,7 @@ class DraftStatusBar extends ConsumerWidget {
                 Icon(
                   isConnected ? Icons.wifi : Icons.wifi_off,
                   size: 12,
-                  color: isConnected ? Colors.green : Colors.orange,
+                  color: isConnected ? AppTheme.draftActionPrimary : AppTheme.draftWarning,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -188,7 +189,7 @@ class DraftStatusBar extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: isConnected ? Colors.green : Colors.orange,
+                    color: isConnected ? AppTheme.draftActionPrimary : AppTheme.draftWarning,
                   ),
                 ),
               ],

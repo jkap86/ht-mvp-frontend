@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../leagues/presentation/providers/league_detail_provider.dart';
 import '../../data/trade_repository.dart';
@@ -181,15 +182,15 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(8),
-                              color: Colors.grey.shade50,
+                              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                              borderRadius: AppSpacing.buttonRadius,
+                              color: Theme.of(context).colorScheme.surfaceContainerLowest,
                             ),
                             child: Center(
                               child: Text(
                                 'Select a trade partner',
                                 style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   fontStyle: FontStyle.italic,
                                 ),
                               ),
@@ -306,9 +307,9 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
         final messenger = ScaffoldMessenger.of(context);
         context.pop();
         messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Trade proposed!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Trade proposed!'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       }
@@ -410,7 +411,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
                 'You Give',
                 offeringPlayerNames,
                 offeringPickNames,
-                Colors.red.shade100,
+                Theme.of(ctx).colorScheme.errorContainer,
                 Icons.arrow_upward,
               ),
               const SizedBox(height: 8),
@@ -418,20 +419,20 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
                 'You Get',
                 requestingPlayerNames,
                 requestingPickNames,
-                Colors.green.shade100,
+                Theme.of(ctx).colorScheme.primaryContainer,
                 Icons.arrow_downward,
               ),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.amber.shade200),
+                  color: Theme.of(ctx).colorScheme.tertiaryContainer,
+                  borderRadius: AppSpacing.buttonRadius,
+                  border: Border.all(color: Theme.of(ctx).colorScheme.tertiary.withValues(alpha: 0.3)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.info_outline, size: 20, color: Colors.amber),
+                    Icon(Icons.info_outline, size: 20, color: Theme.of(ctx).colorScheme.tertiary),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -476,7 +477,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppSpacing.buttonRadius,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

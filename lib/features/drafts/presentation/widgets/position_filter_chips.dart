@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/semantic_colors.dart';
 
 class PositionFilterChips extends StatelessWidget {
@@ -27,13 +28,15 @@ class PositionFilterChips extends StatelessWidget {
           final position = positions[index];
           final isSelected = (position == 'ALL' && selectedPosition == null) ||
               position == selectedPosition;
-          final color = position == 'ALL' ? Colors.grey : getPositionColor(position);
+          final color = position == 'ALL'
+              ? Theme.of(context).colorScheme.onSurfaceVariant
+              : getPositionColor(position);
 
           return FilterChip(
             label: Text(
               position,
               style: TextStyle(
-                color: isSelected ? Colors.white : color,
+                color: isSelected ? Theme.of(context).colorScheme.onPrimary : color,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
@@ -44,11 +47,11 @@ class PositionFilterChips extends StatelessWidget {
             },
             backgroundColor: color.withValues(alpha: 0.1),
             selectedColor: color,
-            checkmarkColor: Colors.white,
+            checkmarkColor: Theme.of(context).colorScheme.onPrimary,
             showCheckmark: false,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
               side: BorderSide(color: color, width: 1.5),
             ),
           );

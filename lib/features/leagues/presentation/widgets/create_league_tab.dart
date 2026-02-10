@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../home/presentation/widgets/scoring_settings_editor.dart';
 import '../../../home/presentation/widgets/roster_config_editor.dart';
 import '../../data/league_repository.dart';
@@ -244,7 +245,7 @@ class _CreateLeagueTabState extends ConsumerState<CreateLeagueTab>
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
       ),
       padding: const EdgeInsets.all(16),
@@ -310,7 +311,7 @@ class _CreateLeagueTabState extends ConsumerState<CreateLeagueTab>
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

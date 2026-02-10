@@ -70,6 +70,49 @@ String? _validateParams(Map<String, String> pathParams, List<String> required) {
   return null;
 }
 
+/// Slide-from-right transition for push navigation (detail screens).
+Page<T> _slideTransition<T>(GoRouterState state, Widget child) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 250),
+    reverseTransitionDuration: const Duration(milliseconds: 250),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final tween = Tween(begin: const Offset(1, 0), end: Offset.zero)
+          .chain(CurveTween(curve: Curves.easeInOut));
+      return SlideTransition(position: animation.drive(tween), child: child);
+    },
+  );
+}
+
+/// Slide-from-bottom transition for modal-style routes.
+Page<T> _modalTransition<T>(GoRouterState state, Widget child) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 200),
+    reverseTransitionDuration: const Duration(milliseconds: 200),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final tween = Tween(begin: const Offset(0, 1), end: Offset.zero)
+          .chain(CurveTween(curve: Curves.easeOut));
+      return SlideTransition(position: animation.drive(tween), child: child);
+    },
+  );
+}
+
+/// Fade transition for top-level tab-like navigation.
+Page<T> _fadeTransition<T>(GoRouterState state, Widget child) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 300),
+    reverseTransitionDuration: const Duration(milliseconds: 300),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(opacity: animation, child: child);
+    },
+  );
+}
+
 /// Simple error screen widget for invalid routes
 class _ErrorScreen extends StatelessWidget {
   final String message;
@@ -214,7 +257,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/',
-        builder: (context, state) => const HomeScreen(),
+        pageBuilder: (context, state) => _fadeTransition(state, const HomeScreen()),
       ),
       GoRoute(
         path: '/error',
@@ -225,39 +268,39 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/notifications',
-        builder: (context, state) => const NotificationsScreen(),
+        pageBuilder: (context, state) => _slideTransition(state, const NotificationsScreen()),
       ),
       GoRoute(
         path: '/transactions',
-        builder: (context, state) => const TransactionsScreen(),
+        pageBuilder: (context, state) => _slideTransition(state, const TransactionsScreen()),
       ),
       GoRoute(
         path: '/drafts',
-        builder: (context, state) => const DraftsListScreen(),
+        pageBuilder: (context, state) => _fadeTransition(state, const DraftsListScreen()),
       ),
       GoRoute(
         path: '/messages',
-        builder: (context, state) => const DmInboxScreen(),
+        pageBuilder: (context, state) => _fadeTransition(state, const DmInboxScreen()),
       ),
       GoRoute(
         path: '/messages/:conversationId',
         redirect: (context, state) => _validateParams(state.pathParameters, ['conversationId']),
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final conversationId = _parseIntParam(state.pathParameters['conversationId'])!;
-          return DmConversationScreen(conversationId: conversationId);
+          return _slideTransition(state, DmConversationScreen(conversationId: conversationId));
         },
       ),
       GoRoute(
         path: '/leagues',
-        builder: (context, state) => const LeaguesScreen(),
+        pageBuilder: (context, state) => _fadeTransition(state, const LeaguesScreen()),
       ),
       GoRoute(
         path: '/leagues/add',
-        builder: (context, state) => const AddLeagueScreen(),
+        pageBuilder: (context, state) => _modalTransition(state, const AddLeagueScreen()),
       ),
       GoRoute(
         path: '/leagues/discover',
-        builder: (context, state) => const PublicLeaguesScreen(),
+        pageBuilder: (context, state) => _slideTransition(state, const PublicLeaguesScreen()),
       ),
       // League shell with bottom navigation - parent route captures :leagueId
       GoRoute(
@@ -306,13 +349,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                       GoRoute(
                         path: ':rosterId',
                         redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'rosterId']),
-                        builder: (context, state) {
+                        pageBuilder: (context, state) {
                           final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
                           final rosterId = _parseIntParam(state.pathParameters['rosterId'])!;
-                          return TeamScreen(
-                            key: ValueKey('team-$leagueId-$rosterId'),
-                            leagueId: leagueId,
-                            rosterId: rosterId,
+                          return _slideTransition(
+                            state,
+                            TeamScreen(
+                              key: ValueKey('team-$leagueId-$rosterId'),
+                              leagueId: leagueId,
+                              rosterId: rosterId,
+                            ),
                           );
                         },
                       ),
@@ -333,10 +379,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                       GoRoute(
                         path: ':matchupId',
                         redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'matchupId']),
-                        builder: (context, state) {
+                        pageBuilder: (context, state) {
                           final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
                           final matchupId = _parseIntParam(state.pathParameters['matchupId'])!;
-                          return MatchupDetailScreen(leagueId: leagueId, matchupId: matchupId);
+                          return _slideTransition(state, MatchupDetailScreen(leagueId: leagueId, matchupId: matchupId));
                         },
                       ),
                     ],
@@ -355,29 +401,32 @@ final routerProvider = Provider<GoRouter>((ref) {
                     routes: [
                       GoRoute(
                         path: 'propose',
-                        builder: (context, state) {
+                        pageBuilder: (context, state) {
                           final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-                          return ProposeTradeScreen(leagueId: leagueId);
+                          return _modalTransition(state, ProposeTradeScreen(leagueId: leagueId));
                         },
                       ),
                       GoRoute(
                         path: ':tradeId',
                         redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'tradeId']),
-                        builder: (context, state) {
+                        pageBuilder: (context, state) {
                           final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
                           final tradeId = _parseIntParam(state.pathParameters['tradeId'])!;
-                          return TradeDetailScreen(leagueId: leagueId, tradeId: tradeId);
+                          return _slideTransition(state, TradeDetailScreen(leagueId: leagueId, tradeId: tradeId));
                         },
                         routes: [
                           GoRoute(
                             path: 'counter',
                             redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'tradeId']),
-                            builder: (context, state) {
+                            pageBuilder: (context, state) {
                               final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
                               final tradeId = _parseIntParam(state.pathParameters['tradeId'])!;
-                              return CounterTradeScreen(
-                                leagueId: leagueId,
-                                originalTradeId: tradeId,
+                              return _modalTransition(
+                                state,
+                                CounterTradeScreen(
+                                  leagueId: leagueId,
+                                  originalTradeId: tradeId,
+                                ),
                               );
                             },
                           ),
@@ -424,40 +473,40 @@ final routerProvider = Provider<GoRouter>((ref) {
           // These preserve existing navigation paths like /leagues/:leagueId/commissioner
           GoRoute(
             path: 'commissioner',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-              return CommissionerScreen(leagueId: leagueId);
+              return _slideTransition(state, CommissionerScreen(leagueId: leagueId));
             },
           ),
           GoRoute(
             path: 'playoffs',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-              return PlayoffBracketScreen(leagueId: leagueId);
+              return _slideTransition(state, PlayoffBracketScreen(leagueId: leagueId));
             },
           ),
           GoRoute(
             path: 'standings',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-              return StandingsScreen(leagueId: leagueId);
+              return _slideTransition(state, StandingsScreen(leagueId: leagueId));
             },
           ),
           GoRoute(
             path: 'free-agents',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
               final rosterId = _extractIntExtra(state.extra);
-              return FreeAgentsScreen(leagueId: leagueId, rosterId: rosterId);
+              return _slideTransition(state, FreeAgentsScreen(leagueId: leagueId, rosterId: rosterId));
             },
           ),
           GoRoute(
             path: 'drafts/:draftId',
             redirect: (context, state) => _validateParams(state.pathParameters, ['leagueId', 'draftId']),
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
               final draftId = _parseIntParam(state.pathParameters['draftId'])!;
-              return DraftRoomScreen(leagueId: leagueId, draftId: draftId);
+              return _slideTransition(state, DraftRoomScreen(leagueId: leagueId, draftId: draftId));
             },
           ),
         ],

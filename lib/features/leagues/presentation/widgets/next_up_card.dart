@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../providers/league_dashboard_provider.dart';
 import 'countdown_timer_widget.dart';
 
@@ -27,10 +29,10 @@ class NextUpCard extends StatelessWidget {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: AppSpacing.cardRadius),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -39,7 +41,7 @@ class NextUpCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: _getHeaderColor(nextUpType, colorScheme),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
               ),
               child: Row(
                 children: [
@@ -60,7 +62,7 @@ class NextUpCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (nextUpType == NextUpType.draftLive)
-                    _PulsingDot(color: Colors.red.shade400),
+                    _PulsingDot(color: AppTheme.draftUrgent),
                 ],
               ),
             ),
@@ -122,7 +124,7 @@ class NextUpCard extends StatelessWidget {
           icon: const Icon(Icons.play_arrow, size: 18),
           label: const Text('View Draft'),
           style: FilledButton.styleFrom(
-            backgroundColor: Colors.red.shade600,
+            backgroundColor: colorScheme.error,
           ),
         ),
       ],
@@ -136,7 +138,7 @@ class NextUpCard extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.pause_circle, color: Colors.amber.shade600, size: 20),
+            Icon(Icons.pause_circle, color: AppTheme.draftWarning, size: 20),
             const SizedBox(width: 8),
             Text(
               'Draft is paused',
@@ -241,7 +243,7 @@ class NextUpCard extends StatelessWidget {
               _InfoChip(
                 icon: Icons.timer,
                 label: '${auction.endingSoonCount} ending soon',
-                color: Colors.orange.shade100,
+                color: AppTheme.auctionPrimary.withValues(alpha: 0.15),
               ),
             ],
           ],
@@ -358,17 +360,17 @@ class NextUpCard extends StatelessWidget {
   Color _getHeaderColor(NextUpType type, ColorScheme colorScheme) {
     switch (type) {
       case NextUpType.draftLive:
-        return Colors.red.shade100;
+        return colorScheme.errorContainer;
       case NextUpType.draftPaused:
-        return Colors.amber.shade100;
+        return AppTheme.draftWarning.withValues(alpha: 0.15);
       case NextUpType.draftScheduled:
         return colorScheme.primaryContainer;
       case NextUpType.auctionActive:
-        return Colors.orange.shade100;
+        return AppTheme.auctionPrimary.withValues(alpha: 0.15);
       case NextUpType.waiversSoon:
         return colorScheme.surfaceContainerHighest;
       case NextUpType.inSeason:
-        return Colors.green.shade100;
+        return AppTheme.draftActionPrimary.withValues(alpha: 0.15);
       case NextUpType.none:
         return colorScheme.surfaceContainerHighest;
     }
@@ -377,17 +379,17 @@ class NextUpCard extends StatelessWidget {
   Color _getHeaderTextColor(NextUpType type, ColorScheme colorScheme) {
     switch (type) {
       case NextUpType.draftLive:
-        return Colors.red.shade800;
+        return colorScheme.error;
       case NextUpType.draftPaused:
-        return Colors.amber.shade800;
+        return AppTheme.draftWarning;
       case NextUpType.draftScheduled:
         return colorScheme.onPrimaryContainer;
       case NextUpType.auctionActive:
-        return Colors.orange.shade800;
+        return AppTheme.auctionPrimary;
       case NextUpType.waiversSoon:
         return colorScheme.onSurface;
       case NextUpType.inSeason:
-        return Colors.green.shade800;
+        return AppTheme.draftActionPrimary;
       case NextUpType.none:
         return colorScheme.onSurface;
     }
@@ -496,7 +498,7 @@ class _InfoChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppSpacing.buttonRadius,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

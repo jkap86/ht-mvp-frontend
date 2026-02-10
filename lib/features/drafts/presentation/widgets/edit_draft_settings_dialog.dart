@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../leagues/domain/league.dart';
 import '../../domain/draft_status.dart';
 import 'draft_auction_settings.dart';
@@ -616,7 +617,7 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: theme.colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppSpacing.buttonRadius,
       ),
       child: Row(
         children: [
@@ -638,7 +639,7 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppSpacing.buttonRadius,
       ),
       child: Row(
         children: [

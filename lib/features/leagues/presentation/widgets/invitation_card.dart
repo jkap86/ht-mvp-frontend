@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/invitation.dart';
 
 class InvitationCard extends StatelessWidget {
@@ -45,7 +46,7 @@ class InvitationCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSpacing.cardRadius,
                   ),
                   child: Text(
                     invitation.leagueSeason,
@@ -105,7 +106,7 @@ class InvitationCard extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSpacing.buttonRadius,
                 ),
                 child: Text(
                   invitation.message!,

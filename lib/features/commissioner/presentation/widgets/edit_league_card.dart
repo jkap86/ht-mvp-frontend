@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../home/presentation/widgets/scoring_settings_editor.dart';
 import '../../../home/presentation/widgets/roster_config_editor.dart';
 import '../../../leagues/domain/league.dart';
@@ -329,7 +330,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
       ),
       padding: const EdgeInsets.all(16),
@@ -407,7 +408,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(
           color: willBenchMembers
               ? colorScheme.error.withAlpha(128)
@@ -488,7 +489,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: colorScheme.errorContainer.withAlpha(77),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppSpacing.buttonRadius,
               ),
               child: Row(
                 children: [
@@ -516,7 +517,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -571,7 +572,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -629,7 +630,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: AppSpacing.badgeRadius,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -663,7 +664,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -721,7 +722,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: AppSpacing.badgeRadius,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

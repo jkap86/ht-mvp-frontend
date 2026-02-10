@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/api/api_client.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../data/dm_repository.dart';
 import '../providers/dm_inbox_provider.dart';
@@ -128,7 +129,7 @@ class _DmUserSearchSheetState extends ConsumerState<DmUserSearchSheet> {
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusXl)),
       ),
       child: Column(
         children: [
@@ -140,7 +141,7 @@ class _DmUserSearchSheetState extends ConsumerState<DmUserSearchSheet> {
               height: 4,
               decoration: BoxDecoration(
                 color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXs),
               ),
             ),
           ),
@@ -173,7 +174,7 @@ class _DmUserSearchSheetState extends ConsumerState<DmUserSearchSheet> {
                       )
                     : null,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppSpacing.cardRadius,
                 ),
               ),
               onChanged: (query) {

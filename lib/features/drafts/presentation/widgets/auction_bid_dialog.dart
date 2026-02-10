@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
 import '../../domain/auction_settings.dart';
@@ -245,7 +246,7 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.error,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppSpacing.buttonRadius,
                   ),
                   child: Row(
                     children: [
@@ -279,7 +280,7 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
                           : _timeRemaining.inMinutes < 5
                               ? theme.colorScheme.errorContainer.withAlpha(128)
                               : theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSpacing.buttonRadius,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

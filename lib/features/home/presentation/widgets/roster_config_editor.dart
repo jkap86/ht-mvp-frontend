@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_spacing.dart';
 
 /// Model class to hold roster configuration
 class RosterConfig {
@@ -133,7 +134,7 @@ class _RosterConfigEditorState extends State<RosterConfigEditor> {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
       ),
       child: Theme(
@@ -366,7 +367,7 @@ class _RosterConfigEditorState extends State<RosterConfigEditor> {
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: colorScheme.primaryContainer.withAlpha(128),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppSpacing.buttonRadius,
                     ),
                     child: Text(
                       'Total: ${widget.config.totalSlots} roster spots (${widget.config.starterSlots} starters)',
@@ -430,7 +431,7 @@ class _CollapsibleSection extends StatelessWidget {
       children: [
         InkWell(
           onTap: onToggle,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: AppSpacing.badgeRadius,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(

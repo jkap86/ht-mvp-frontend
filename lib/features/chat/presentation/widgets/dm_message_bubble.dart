@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/user_avatar.dart';
 
 /// A message bubble for DM conversations with mine/theirs alignment.
@@ -53,10 +54,10 @@ class DmMessageBubble extends StatelessWidget {
                     ? theme.colorScheme.primary
                     : theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(isMe ? 16 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 16),
+                  topLeft: const Radius.circular(AppSpacing.radiusXl),
+                  topRight: const Radius.circular(AppSpacing.radiusXl),
+                  bottomLeft: Radius.circular(isMe ? AppSpacing.radiusXl : AppSpacing.radiusSm),
+                  bottomRight: Radius.circular(isMe ? AppSpacing.radiusSm : AppSpacing.radiusXl),
                 ),
               ),
               child: Column(

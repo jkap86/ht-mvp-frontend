@@ -61,7 +61,7 @@ class _StatColumn extends StatelessWidget {
         ),
         Text(
           label,
-          style: const TextStyle(color: Colors.grey),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       ],
     );

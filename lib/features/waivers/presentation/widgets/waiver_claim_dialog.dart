@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/semantic_colors.dart';
 import '../../../rosters/domain/roster_player.dart';
 import '../../domain/faab_budget.dart';
 
@@ -110,11 +112,13 @@ class _WaiverClaimDialogState extends ConsumerState<WaiverClaimDialog> {
   }
 
   Widget _buildPlayerInfo() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: AppSpacing.buttonRadius,
       ),
       child: Row(
         children: [
@@ -122,13 +126,13 @@ class _WaiverClaimDialogState extends ConsumerState<WaiverClaimDialog> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _getPositionColor(widget.playerPosition!),
-                borderRadius: BorderRadius.circular(4),
+                color: getPositionColor(widget.playerPosition!),
+                borderRadius: AppSpacing.badgeRadius,
               ),
               child: Text(
                 widget.playerPosition!,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -219,7 +223,9 @@ class _WaiverClaimDialogState extends ConsumerState<WaiverClaimDialog> {
             Text(
               _needsDropPlayer ? '(Required)' : '(Optional)',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: _needsDropPlayer ? Colors.red : Colors.grey,
+                    color: _needsDropPlayer
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
           ],
@@ -296,25 +302,6 @@ class _WaiverClaimDialogState extends ConsumerState<WaiverClaimDialog> {
     }
   }
 
-  Color _getPositionColor(String position) {
-    switch (position.toUpperCase()) {
-      case 'QB':
-        return Colors.red;
-      case 'RB':
-        return Colors.green;
-      case 'WR':
-        return Colors.blue;
-      case 'TE':
-        return Colors.orange;
-      case 'K':
-        return Colors.purple;
-      case 'DEF':
-      case 'DST':
-        return Colors.brown;
-      default:
-        return Colors.grey;
-    }
-  }
 }
 
 /// Show the waiver claim dialog

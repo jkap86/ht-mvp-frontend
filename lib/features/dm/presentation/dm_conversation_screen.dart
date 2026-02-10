@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/presentation/auth_provider.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../domain/direct_message.dart';
@@ -160,7 +161,7 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
                 decoration: InputDecoration(
                   hintText: 'Type a message...',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusXxl),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -224,10 +225,10 @@ class _MessageBubble extends StatelessWidget {
                     ? theme.colorScheme.primary
                     : theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(isMe ? 16 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 16),
+                  topLeft: const Radius.circular(AppSpacing.radiusXl),
+                  topRight: const Radius.circular(AppSpacing.radiusXl),
+                  bottomLeft: Radius.circular(isMe ? AppSpacing.radiusXl : AppSpacing.radiusSm),
+                  bottomRight: Radius.circular(isMe ? AppSpacing.radiusSm : AppSpacing.radiusXl),
                 ),
               ),
               child: Column(

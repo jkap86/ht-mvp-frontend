@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/draft_order_entry.dart';
 import '../providers/draft_room_provider.dart';
 
@@ -145,13 +146,13 @@ class DerbySlotCard extends StatelessWidget {
 
     return Material(
       color: backgroundColor,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppSpacing.cardRadius,
       child: InkWell(
         onTap: canSelect ? onSelect : null,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppSpacing.cardRadius,
             border: Border.all(color: borderColor, width: 2),
           ),
           child: Stack(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../providers/home_dashboard_provider.dart';
 
 /// Card showing user's matchups across all leagues
@@ -80,7 +81,7 @@ class _MatchupItem extends StatelessWidget {
                     : isLosing
                         ? colorScheme.error
                         : colorScheme.outline,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXs),
               ),
             ),
             const SizedBox(width: 12),
@@ -137,7 +138,7 @@ class _MatchupItem extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: AppSpacing.badgeRadius,
                     ),
                     child: Text(
                       'Final',

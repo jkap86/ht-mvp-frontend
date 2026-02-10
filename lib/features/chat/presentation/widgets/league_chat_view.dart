@@ -147,7 +147,7 @@ class _LeagueChatBubble extends StatelessWidget {
             name: username,
             size: 28,
             backgroundColor: theme.colorScheme.primary,
-            textColor: Colors.white,
+            textColor: theme.colorScheme.onPrimary,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -168,7 +168,7 @@ class _LeagueChatBubble extends StatelessWidget {
                       _formatTime(message.createdAt),
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.grey[500],
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],

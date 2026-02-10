@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_spacing.dart';
+
 /// Card showing leagues summary with navigation to leagues page
 class HomeLeaguesCard extends StatelessWidget {
   final int leagueCount;
@@ -17,7 +19,7 @@ class HomeLeaguesCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: () => context.go('/leagues'),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -27,7 +29,7 @@ class HomeLeaguesCard extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppSpacing.cardRadius,
                 ),
                 child: Icon(
                   Icons.emoji_events,

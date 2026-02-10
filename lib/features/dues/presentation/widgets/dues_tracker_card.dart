@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../providers/dues_provider.dart';
 
 /// Card for tracking payment status (commissioner only)
@@ -67,7 +68,7 @@ class DuesTrackerCard extends ConsumerWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSpacing.buttonRadius,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,7 +90,7 @@ class DuesTrackerCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: AppSpacing.badgeRadius,
                       child: LinearProgressIndicator(
                         value: summary.progressPercent,
                         minHeight: 8,

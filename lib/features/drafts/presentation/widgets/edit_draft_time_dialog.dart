@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../leagues/domain/league.dart';
 
 /// Simple dialog for editing a draft's scheduled start time.
@@ -132,7 +133,7 @@ class _EditDraftTimeDialogState extends State<EditDraftTimeDialog> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: colorScheme.errorContainer,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppSpacing.buttonRadius,
               ),
               child: Row(
                 children: [
@@ -159,12 +160,12 @@ class _EditDraftTimeDialogState extends State<EditDraftTimeDialog> {
           const SizedBox(height: 16),
           InkWell(
             onTap: _selectDateTime,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppSpacing.buttonRadius,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 border: Border.all(color: colorScheme.outline),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppSpacing.buttonRadius,
               ),
               child: Row(
                 children: [

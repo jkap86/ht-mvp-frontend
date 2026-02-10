@@ -67,7 +67,7 @@ class _MovePlayerSheetContent extends StatelessWidget {
               ),
               title: Text(slot.displayName),
               trailing: isCurrentSlot
-                  ? const Icon(Icons.check, color: Colors.green)
+                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                   : null,
               onTap: isCurrentSlot
                   ? null

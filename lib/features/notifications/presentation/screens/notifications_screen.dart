@@ -150,7 +150,7 @@ class NotificationsScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
             onPressed: () {
               ref.read(notificationsProvider.notifier).clearAll();
               Navigator.pop(context);

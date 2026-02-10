@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../leagues/domain/league.dart';
 import '../providers/commissioner_provider.dart';
 
@@ -51,9 +52,9 @@ class _SeasonResetCardState extends State<SeasonResetCard> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'This will clear all season data including drafts, matchups, trades, waivers, and rosters. League settings will be preserved.',
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
                 const SizedBox(height: 16),
                 SwitchListTile(
@@ -97,7 +98,7 @@ class _SeasonResetCardState extends State<SeasonResetCard> {
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.orange,
+                backgroundColor: Theme.of(context).colorScheme.tertiary,
               ),
               onPressed: () async {
                 Navigator.pop(context);
@@ -120,8 +121,10 @@ class _SeasonResetCardState extends State<SeasonResetCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
-      color: Colors.orange.shade50,
+      color: colorScheme.tertiaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -129,13 +132,13 @@ class _SeasonResetCardState extends State<SeasonResetCard> {
           children: [
             Row(
               children: [
-                Icon(Icons.refresh, color: Colors.orange.shade700),
+                Icon(Icons.refresh, color: colorScheme.tertiary),
                 const SizedBox(width: 8),
                 Text(
                   'Season Reset',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.orange.shade700,
+                    color: colorScheme.tertiary,
                   ),
                 ),
               ],
@@ -146,17 +149,17 @@ class _SeasonResetCardState extends State<SeasonResetCard> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(8),
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: AppSpacing.buttonRadius,
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.grey.shade600),
+                    Icon(Icons.info_outline, color: colorScheme.onSurfaceVariant),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'League can only be reset during pre-season or offseason. Current status: ${widget.state.league?.seasonStatus.displayName ?? "Unknown"}',
-                        style: TextStyle(color: Colors.grey.shade600),
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                     ),
                   ],
@@ -172,9 +175,9 @@ class _SeasonResetCardState extends State<SeasonResetCard> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey.shade300,
+                  backgroundColor: colorScheme.tertiary,
+                  foregroundColor: colorScheme.onTertiary,
+                  disabledBackgroundColor: colorScheme.surfaceContainerHighest,
                 ),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Reset for New Season'),

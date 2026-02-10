@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../domain/conversation.dart';
 import 'providers/dm_inbox_provider.dart';
@@ -150,7 +151,7 @@ class _ConversationTile extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: theme.colorScheme.primary,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppSpacing.cardRadius,
               ),
               child: Text(
                 '${conversation.unreadCount}',

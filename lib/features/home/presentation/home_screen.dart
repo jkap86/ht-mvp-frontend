@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/theme_provider.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/providers/league_context_provider.dart';
 import '../../../core/widgets/skeletons/skeletons.dart';
 import '../../auth/presentation/auth_provider.dart';
@@ -125,7 +126,7 @@ class HomeScreen extends ConsumerWidget {
                 _buildUrgencyBanner(
                   context,
                   icon: Icons.swap_horiz,
-                  color: Colors.orange,
+                  color: Theme.of(context).colorScheme.tertiary,
                   title: 'Trade Pending',
                   subtitle: '${pendingTrades.length} trade${pendingTrades.length > 1 ? 's' : ''} awaiting response',
                   onTap: () => context.push(
@@ -215,10 +216,10 @@ class HomeScreen extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppSpacing.cardRadius,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(

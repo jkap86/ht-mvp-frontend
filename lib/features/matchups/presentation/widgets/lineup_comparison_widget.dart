@@ -138,7 +138,7 @@ class LineupComparisonWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
       width: double.infinity,
-      color: isDark ? AppTheme.darkCardColor : Colors.grey.shade200,
+      color: isDark ? AppTheme.darkCardColor : theme.colorScheme.surfaceContainerHighest,
       child: Text(
         title,
         style: AppTypography.label.copyWith(
@@ -164,7 +164,7 @@ class LineupComparisonWidget extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: isDark ? AppTheme.darkCardColor : Colors.grey.shade200,
+            color: isDark ? AppTheme.darkCardColor : theme.colorScheme.surfaceContainerHighest,
             width: 1,
           ),
         ),
@@ -303,7 +303,7 @@ class _PointsDisplay extends StatelessWidget {
       decoration: BoxDecoration(
         color: isWinning
             ? SelectionColors.success.withAlpha(isDark ? 50 : 30)
-            : (isDark ? AppTheme.darkCardColor : Colors.grey.shade100),
+            : (isDark ? AppTheme.darkCardColor : theme.colorScheme.surfaceContainerHighest),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       ),
       child: Text(

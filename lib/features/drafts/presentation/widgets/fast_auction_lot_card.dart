@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../players/domain/player.dart';
 import '../../domain/auction_lot.dart';
 import '../mixins/countdown_mixin.dart';
@@ -141,7 +142,7 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: timerColor.withAlpha(100), width: 1),
       ),
       child: Row(

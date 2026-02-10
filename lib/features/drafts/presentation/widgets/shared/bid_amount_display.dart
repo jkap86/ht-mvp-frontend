@@ -36,7 +36,7 @@ class BidAmountDisplay extends StatelessWidget {
           fontWeight: FontWeight.bold,
           fontSize: fontSize,
           fontFamily: 'monospace',
-          color: isWinning ? Colors.white : theme.colorScheme.onSurface,
+          color: isWinning ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
         ),
       ),
     );

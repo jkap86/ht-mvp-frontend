@@ -20,8 +20,8 @@ class LeagueCard extends StatelessWidget {
           backgroundColor: Theme.of(context).colorScheme.primary,
           child: Text(
             league.name.substring(0, 1).toUpperCase(),
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
           ),
         ),
         title: Row(

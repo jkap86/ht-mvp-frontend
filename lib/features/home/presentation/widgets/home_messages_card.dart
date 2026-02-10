@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_spacing.dart';
+
 /// Card showing messages summary with navigation to DM inbox
 class HomeMessagesCard extends StatelessWidget {
   final int unreadCount;
@@ -19,7 +21,7 @@ class HomeMessagesCard extends StatelessWidget {
       color: hasUnread ? colorScheme.primaryContainer : null,
       child: InkWell(
         onTap: () => context.go('/messages'),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -31,7 +33,7 @@ class HomeMessagesCard extends StatelessWidget {
                   color: hasUnread
                       ? colorScheme.primary
                       : colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppSpacing.cardRadius,
                 ),
                 child: Icon(
                   hasUnread ? Icons.mark_chat_unread : Icons.chat_bubble_outline,
@@ -72,7 +74,7 @@ class HomeMessagesCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: colorScheme.primary,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSpacing.cardRadius,
                   ),
                   child: Text(
                     '$unreadCount',

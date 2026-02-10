@@ -101,7 +101,7 @@ class _ScoringCardState extends State<ScoringCard> {
               'Lock in scores and update standings for a completed week.',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],

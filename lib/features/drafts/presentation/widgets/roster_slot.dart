@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/draft_pick.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/semantic_colors.dart';
 
 /// Individual roster slot showing a drafted player or empty slot.
@@ -16,26 +17,27 @@ class RosterSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final color = pick != null
         ? getPositionColor(pick!.playerPosition ?? position)
-        : Colors.grey.shade300;
+        : theme.colorScheme.outlineVariant;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: pick != null ? color.withValues(alpha: 0.08) : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
+        color: pick != null ? color.withValues(alpha: 0.08) : theme.colorScheme.surfaceContainerHighest,
+        borderRadius: AppSpacing.buttonRadius,
         border: Border.all(
-          color: pick != null ? color.withValues(alpha: 0.3) : Colors.grey.shade200,
+          color: pick != null ? color.withValues(alpha: 0.3) : theme.colorScheme.outlineVariant,
           width: 1,
         ),
       ),
-      child: pick != null ? _buildFilledSlot(color) : _buildEmptySlot(),
+      child: pick != null ? _buildFilledSlot(color, context) : _buildEmptySlot(context),
     );
   }
 
-  Widget _buildFilledSlot(Color color) {
+  Widget _buildFilledSlot(Color color, BuildContext context) {
     return Row(
       children: [
         Container(
@@ -72,7 +74,7 @@ class RosterSlot extends StatelessWidget {
               Text(
                 '${pick!.playerTeam ?? 'FA'} • Pick #${pick!.pickNumber}',
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 11,
                 ),
               ),
@@ -83,7 +85,7 @@ class RosterSlot extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptySlot() {
+  Widget _buildEmptySlot(BuildContext context) {
     return Row(
       children: [
         Expanded(
@@ -91,7 +93,7 @@ class RosterSlot extends StatelessWidget {
             child: Text(
               'Empty',
               style: TextStyle(
-                color: Colors.grey.shade400,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontStyle: FontStyle.italic,
                 fontSize: 13,
               ),

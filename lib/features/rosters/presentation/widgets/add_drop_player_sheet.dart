@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/semantic_colors.dart';
 import '../../../players/domain/player.dart';
 import '../../domain/roster_player.dart';
 
@@ -41,6 +43,8 @@ class _AddDropPlayerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.5,
@@ -64,7 +68,7 @@ class _AddDropPlayerSheet extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Your roster is full. Select a player to drop to add ${addPlayer.fullName}.',
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -81,14 +85,14 @@ class _AddDropPlayerSheet extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: _getPositionColor(dropPlayer.position),
-                        borderRadius: BorderRadius.circular(8),
+                        color: getPositionColor(dropPlayer.position),
+                        borderRadius: AppSpacing.buttonRadius,
                       ),
                       child: Center(
                         child: Text(
                           dropPlayer.position ?? '?',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -115,22 +119,4 @@ class _AddDropPlayerSheet extends StatelessWidget {
     );
   }
 
-  Color _getPositionColor(String? position) {
-    switch (position?.toUpperCase()) {
-      case 'QB':
-        return Colors.red;
-      case 'RB':
-        return Colors.green;
-      case 'WR':
-        return Colors.blue;
-      case 'TE':
-        return Colors.orange;
-      case 'K':
-        return Colors.purple;
-      case 'DEF':
-        return Colors.brown;
-      default:
-        return Colors.grey;
-    }
-  }
 }

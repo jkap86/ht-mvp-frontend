@@ -115,9 +115,9 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     final order = await notifier.randomizeDraftOrder(draft.id);
     if (order == null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error randomizing draft order'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Error randomizing draft order'),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -129,9 +129,9 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     final order = await notifier.setOrderFromPickOwnership(draft.id);
     if (order == null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error setting order from vet draft results'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Error setting order from vet draft results'),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }

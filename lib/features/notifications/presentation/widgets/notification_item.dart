@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/notification_model.dart';
 
 /// Widget displaying a single notification in a list
@@ -41,24 +42,24 @@ class NotificationItem extends StatelessWidget {
   Color _getIconColor(ColorScheme colorScheme) {
     switch (notification.type) {
       case NotificationType.tradePending:
-        return Colors.orange;
+        return colorScheme.tertiary;
       case NotificationType.tradeAccepted:
       case NotificationType.tradeCompleted:
-        return Colors.green;
+        return colorScheme.primary;
       case NotificationType.tradeRejected:
-        return Colors.red;
+        return colorScheme.error;
       case NotificationType.draftStarting:
       case NotificationType.draftStarted:
       case NotificationType.draftPick:
-        return Colors.purple;
+        return colorScheme.secondary;
       case NotificationType.waiverProcessed:
-        return Colors.blue;
+        return colorScheme.primary;
       case NotificationType.messageReceived:
         return colorScheme.primary;
       case NotificationType.leagueInvite:
-        return Colors.teal;
+        return colorScheme.tertiary;
       case NotificationType.matchupResult:
-        return Colors.brown;
+        return colorScheme.onSurfaceVariant;
     }
   }
 
@@ -112,7 +113,7 @@ class NotificationItem extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: _getIconColor(colorScheme).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSpacing.buttonRadius,
                 ),
                 child: Icon(
                   _getIcon(),

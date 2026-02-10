@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/playoff.dart';
 
 class PlayoffMatchupCard extends StatelessWidget {
@@ -14,16 +16,16 @@ class PlayoffMatchupCard extends StatelessWidget {
 
   bool _isUserTeam(int? rosterId) => rosterId != null && rosterId == userRosterId;
 
-  Color _getSeedColor(int seed) {
+  Color _getSeedColor(BuildContext context, int seed) {
     switch (seed) {
       case 1:
-        return Colors.amber;
+        return AppTheme.draftWarning;
       case 2:
-        return Colors.grey.shade400;
+        return Theme.of(context).colorScheme.outline;
       case 3:
-        return Colors.brown.shade300;
+        return Theme.of(context).colorScheme.tertiary;
       default:
-        return Colors.blueGrey.shade200;
+        return Theme.of(context).colorScheme.outlineVariant;
     }
   }
 
@@ -42,9 +44,9 @@ class PlayoffMatchupCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 margin: const EdgeInsets.only(bottom: 4),
                 decoration: BoxDecoration(
-                  color: Colors.indigo.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.indigo.shade200),
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: AppSpacing.buttonRadius,
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -52,7 +54,7 @@ class PlayoffMatchupCard extends StatelessWidget {
                     Icon(
                       Icons.sports_score,
                       size: 12,
-                      color: Colors.indigo.shade600,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -60,7 +62,7 @@ class PlayoffMatchupCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: Colors.indigo.shade700,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ],
@@ -92,15 +94,15 @@ class PlayoffMatchupCard extends StatelessWidget {
           height: 24,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: _getSeedColor(team.seed),
+            color: _getSeedColor(context, team.seed),
           ),
           child: Center(
             child: Text(
               '${team.seed}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
           ),
@@ -131,7 +133,7 @@ class PlayoffMatchupCard extends StatelessWidget {
         // Winner indicator
         if (isWinner) ...[
           const SizedBox(width: 4),
-          const Icon(Icons.check_circle, color: Colors.green, size: 16),
+          const Icon(Icons.check_circle, color: AppTheme.draftSuccess, size: 16),
         ],
       ],
     );
@@ -145,15 +147,15 @@ class PlayoffMatchupCard extends StatelessWidget {
           height: 24,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.grey.shade300,
+            color: Theme.of(context).colorScheme.outlineVariant,
           ),
-          child: const Center(
+          child: Center(
             child: Text(
               '-',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
           ),
@@ -162,7 +164,7 @@ class PlayoffMatchupCard extends StatelessWidget {
         Text(
           'BYE',
           style: TextStyle(
-            color: Colors.grey.shade500,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontStyle: FontStyle.italic,
           ),
         ),

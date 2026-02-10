@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 
 class DraftTimerWidget extends StatefulWidget {
   final DateTime? pickDeadline;
@@ -139,7 +140,7 @@ class _DraftTimerWidgetState extends State<DraftTimerWidget>
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: color.withAlpha(isDark ? 40 : 30),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXxl),
         border: Border.all(color: color, width: 2),
       ),
       child: Row(

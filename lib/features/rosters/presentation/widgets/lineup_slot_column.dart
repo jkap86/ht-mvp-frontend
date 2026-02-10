@@ -41,14 +41,14 @@ class LineupSlotColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Text(
             'STARTERS',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.grey,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../drafts/domain/draft_type.dart';
 
 class CreateDraftDialog extends StatefulWidget {
@@ -125,7 +126,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
               height: 36,
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest.withAlpha(128),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppSpacing.buttonRadius,
               ),
               child: Row(
                 children: options.map((option) {
@@ -141,8 +142,8 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                         decoration: BoxDecoration(
                           color: isSelected ? colorScheme.primary : Colors.transparent,
                           borderRadius: BorderRadius.horizontal(
-                            left: isFirst ? const Radius.circular(8) : Radius.zero,
-                            right: isLast ? const Radius.circular(8) : Radius.zero,
+                            left: isFirst ? const Radius.circular(AppSpacing.radiusMd) : Radius.zero,
+                            right: isLast ? const Radius.circular(AppSpacing.radiusMd) : Radius.zero,
                           ),
                         ),
                         child: Text(
@@ -233,7 +234,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppSpacing.buttonRadius,
                       ),
                     ),
                     onChanged: (value) {
@@ -276,7 +277,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
       ),
       child: Column(
@@ -331,7 +332,7 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
               height: 36,
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest.withAlpha(128),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppSpacing.buttonRadius,
               ),
               child: Row(
                 children: [
@@ -358,8 +359,8 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
           decoration: BoxDecoration(
             color: isSelected ? colorScheme.primary : Colors.transparent,
             borderRadius: BorderRadius.horizontal(
-              left: isFirst ? const Radius.circular(8) : Radius.zero,
-              right: isLast ? const Radius.circular(8) : Radius.zero,
+              left: isFirst ? const Radius.circular(AppSpacing.radiusMd) : Radius.zero,
+              right: isLast ? const Radius.circular(AppSpacing.radiusMd) : Radius.zero,
             ),
           ),
           child: Text(
@@ -507,12 +508,12 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                         }
                       }
                     },
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppSpacing.buttonRadius,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         border: Border.all(color: colorScheme.outline),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppSpacing.buttonRadius,
                       ),
                       child: Row(
                         children: [
@@ -593,14 +594,14 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: InkWell(
                         onTap: () => setState(() => _selectedDraftType = type),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppSpacing.buttonRadius,
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? colorScheme.primaryContainer
                                 : colorScheme.surface,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppSpacing.buttonRadius,
                             border: Border.all(
                               color: isSelected
                                   ? colorScheme.primary

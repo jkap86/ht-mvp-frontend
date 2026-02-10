@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/theme/app_spacing.dart';
+import '../../../../../core/theme/semantic_colors.dart';
 import '../../../../players/domain/player.dart';
 import '../../../domain/auction_budget.dart';
 import '../../../domain/auction_lot.dart';
@@ -170,14 +172,14 @@ class SlowAuctionScreen extends ConsumerWidget {
 
                 // Active auctions list
                 if (sortedLots.isEmpty)
-                  const SliverToBoxAdapter(
+                  SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.all(32),
+                      padding: const EdgeInsets.all(32),
                       child: Center(
                         child: Text(
                           'No active auctions.\nNominate a player to start bidding!',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ),
                     ),
@@ -376,7 +378,7 @@ class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusXl)),
       ),
       child: Column(
         children: [
@@ -386,8 +388,8 @@ class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey[400],
-              borderRadius: BorderRadius.circular(2),
+              color: Theme.of(context).colorScheme.outlineVariant,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusXs),
             ),
           ),
 
@@ -495,11 +497,11 @@ class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
                 final projPts = player.remainingProjectedPts?.toStringAsFixed(1);
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: _getPositionColor(player.primaryPosition),
+                    backgroundColor: getPositionColor(player.primaryPosition),
                     child: Text(
                       player.primaryPosition,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary, // text on position-colored badge
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -540,22 +542,4 @@ class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
     }
   }
 
-  Color _getPositionColor(String position) {
-    switch (position) {
-      case 'QB':
-        return Colors.red;
-      case 'RB':
-        return Colors.green;
-      case 'WR':
-        return Colors.blue;
-      case 'TE':
-        return Colors.orange;
-      case 'K':
-        return Colors.purple;
-      case 'DEF':
-        return Colors.brown;
-      default:
-        return Colors.grey;
-    }
-  }
 }

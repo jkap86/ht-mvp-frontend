@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/draft_pick.dart';
 import 'roster_position_section.dart';
 
@@ -116,7 +117,7 @@ class MyRosterWidget extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: theme.colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppSpacing.cardRadius,
             ),
             child: Text(
               '${myPicks.length} picks',

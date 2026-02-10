@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/status_badge.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../domain/roster_lineup.dart';
 import '../../domain/roster_player.dart';
@@ -66,7 +67,7 @@ class RosterPlayerCard extends StatelessWidget {
                   child: Text(
                     player.position ?? '?',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: AppTypography.fontSm,
                     ),
@@ -92,21 +93,9 @@ class RosterPlayerCard extends StatelessWidget {
                           ),
                         ),
                         if (player.injuryStatus != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: getInjuryColor(player.injuryStatus),
-                              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                            ),
-                            child: Text(
-                              player.injuryStatus!,
-                              style: AppTypography.labelBold.copyWith(
-                                color: Colors.white,
-                              ),
-                            ),
+                          StatusBadge(
+                            label: player.injuryStatus!,
+                            backgroundColor: getInjuryColor(player.injuryStatus),
                           ),
                       ],
                     ),
@@ -134,9 +123,7 @@ class RosterPlayerCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                             decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppTheme.darkCardColor
-                                  : Colors.grey.shade200,
+                              color: theme.colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                             ),
                             child: Text(
@@ -191,15 +178,15 @@ class RosterPlayerCard extends StatelessWidget {
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: AppSpacing.lg),
           color: AppTheme.errorColor,
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Icon(Icons.delete, color: Colors.white),
-              SizedBox(width: AppSpacing.sm),
+              Icon(Icons.delete, color: theme.colorScheme.onError),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 'Drop',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: theme.colorScheme.onError,
                   fontWeight: FontWeight.bold,
                 ),
               ),

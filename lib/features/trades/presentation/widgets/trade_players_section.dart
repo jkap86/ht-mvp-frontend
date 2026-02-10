@@ -62,7 +62,7 @@ class TradePlayersSection extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
             const Divider(),
@@ -106,7 +106,7 @@ class TradePlayersSection extends StatelessWidget {
                         Text(
                           item.displayTeam,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                         ),
                     ],
@@ -127,7 +127,7 @@ class TradePlayersSection extends StatelessWidget {
                         Text(
                           item.displayTeam,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                         ),
                     ],

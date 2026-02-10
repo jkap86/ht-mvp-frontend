@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../rosters/domain/roster_player.dart';
 
 /// Types of action alerts that can be displayed
@@ -45,15 +47,15 @@ class ActionAlert {
   Color get color {
     switch (type) {
       case ActionAlertType.injuredStarter:
-        return Colors.red;
+        return AppTheme.draftUrgent;
       case ActionAlertType.byeWeekConflict:
-        return Colors.orange;
+        return AppTheme.draftWarning;
       case ActionAlertType.emptySlot:
-        return Colors.amber.shade700;
+        return AppTheme.draftWarning;
       case ActionAlertType.pendingTrade:
-        return Colors.blue;
+        return AppTheme.draftNormal;
       case ActionAlertType.lineupNotSet:
-        return Colors.orange;
+        return AppTheme.draftWarning;
     }
   }
 
@@ -91,13 +93,14 @@ class ActionAlertsBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     if (alerts.isEmpty) return const SizedBox.shrink();
 
+    final colorScheme = Theme.of(context).colorScheme;
     final visibleAlerts = alerts.take(maxVisible).toList();
     final remainingCount = alerts.length - maxVisible;
 
     return Card(
-      color: Colors.red.shade50,
+      color: colorScheme.errorContainer,
       elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: AppSpacing.cardRadius),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -105,15 +108,15 @@ class ActionAlertsBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.red.shade100,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              color: colorScheme.errorContainer,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.notification_important,
                   size: 18,
-                  color: Colors.red.shade700,
+                  color: colorScheme.error,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -121,7 +124,7 @@ class ActionAlertsBanner extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
-                    color: Colors.red.shade700,
+                    color: colorScheme.error,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -129,13 +132,13 @@ class ActionAlertsBanner extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade600,
+                    color: colorScheme.error,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     '${alerts.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colorScheme.onError,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -150,7 +153,7 @@ class ActionAlertsBanner extends StatelessWidget {
           if (remainingCount > 0 || onViewAll != null)
             InkWell(
               onTap: onViewAll,
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(AppSpacing.radiusLg)),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
@@ -161,7 +164,7 @@ class ActionAlertsBanner extends StatelessWidget {
                           ? '+$remainingCount more alerts'
                           : 'View all alerts',
                       style: TextStyle(
-                        color: Colors.red.shade700,
+                        color: colorScheme.error,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
@@ -170,7 +173,7 @@ class ActionAlertsBanner extends StatelessWidget {
                     Icon(
                       Icons.chevron_right,
                       size: 18,
-                      color: Colors.red.shade700,
+                      color: colorScheme.error,
                     ),
                   ],
                 ),
@@ -200,7 +203,7 @@ class _AlertRow extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 color: alert.color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppSpacing.buttonRadius,
               ),
               child: Icon(
                 alert.icon,
@@ -224,7 +227,7 @@ class _AlertRow extends StatelessWidget {
                     Text(
                       alert.subtitle!,
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
                     ),
@@ -235,7 +238,7 @@ class _AlertRow extends StatelessWidget {
               Icon(
                 Icons.chevron_right,
                 size: 20,
-                color: Colors.grey.shade400,
+                color: Theme.of(context).colorScheme.outlineVariant,
               ),
           ],
         ),

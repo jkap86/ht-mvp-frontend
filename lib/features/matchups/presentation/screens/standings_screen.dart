@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../providers/standings_provider.dart';
@@ -115,8 +117,8 @@ class StandingsScreen extends ConsumerWidget {
                           height: 24,
                           margin: const EdgeInsets.only(right: 8),
                           decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(2),
+                            color: AppTheme.draftActionPrimary,
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusXs),
                           ),
                         ),
                       Text(
@@ -189,14 +191,14 @@ class StandingsScreen extends ConsumerWidget {
                     style: TextStyle(
                       fontWeight: isMyTeam ? FontWeight.bold : FontWeight.normal,
                       color: standing.pointDifferential > 0
-                          ? Colors.green
+                          ? AppTheme.draftActionPrimary
                           : standing.pointDifferential < 0
-                              ? Colors.red
+                              ? Theme.of(context).colorScheme.error
                               : null,
                     ),
                   ),
                 ),
-                DataCell(_buildStreak(standing.streak)),
+                DataCell(_buildStreak(context, standing.streak)),
               ],
             );
           }).toList(),
@@ -212,17 +214,17 @@ class StandingsScreen extends ConsumerWidget {
     return diff.toStringAsFixed(1);
   }
 
-  Widget _buildStreak(String streak) {
+  Widget _buildStreak(BuildContext context, String streak) {
     if (streak.isEmpty) return const Text('-');
 
     final isWinStreak = streak.startsWith('W');
-    final color = isWinStreak ? Colors.green : Colors.red;
+    final color = isWinStreak ? AppTheme.draftActionPrimary : Theme.of(context).colorScheme.error;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppSpacing.badgeRadius,
       ),
       child: Text(
         streak,

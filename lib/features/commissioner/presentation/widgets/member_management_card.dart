@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../providers/commissioner_provider.dart';
 
 /// Card for managing league members
@@ -39,7 +40,7 @@ class MemberManagementCard extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             onPressed: () {
               Navigator.pop(context);
               onKickMember(rosterId, teamName, username);
@@ -132,7 +133,7 @@ class MemberManagementCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSpacing.buttonRadius,
                 ),
                 child: Row(
                   children: [
@@ -177,21 +178,21 @@ class MemberManagementCard extends StatelessWidget {
     final teamName = (member['team_name'] as String?) ?? 'Team $rosterId';
     final username = (member['username'] as String?) ?? 'Unknown';
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Opacity(
       opacity: isBenched ? 0.6 : 1.0,
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: CircleAvatar(
           backgroundColor: isCommissioner
-              ? Theme.of(context).colorScheme.primaryContainer
-              : isBenched
-                  ? Colors.grey.shade300
-                  : Colors.grey.shade200,
+              ? colorScheme.primaryContainer
+              : colorScheme.surfaceContainerHighest,
           child: Icon(
             isCommissioner ? Icons.star : (isBenched ? Icons.pause : Icons.person),
             color: isCommissioner
-                ? Theme.of(context).colorScheme.onPrimaryContainer
-                : Colors.grey.shade600,
+                ? colorScheme.onPrimaryContainer
+                : colorScheme.onSurfaceVariant,
           ),
         ),
         title: Text(
@@ -224,7 +225,7 @@ class MemberManagementCard extends StatelessWidget {
                   )
                 : memberId != null
                     ? IconButton(
-                        icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                        icon: Icon(Icons.remove_circle_outline, color: colorScheme.error),
                         onPressed: () => _showKickConfirmation(
                           context,
                           memberId,

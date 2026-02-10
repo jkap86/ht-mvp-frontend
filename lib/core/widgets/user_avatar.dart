@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/app_theme.dart';
 
 /// A reusable avatar widget that displays a user's initial.
 /// Supports optional badges like commissioner badge.
@@ -50,14 +51,14 @@ class UserAvatar extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
-                color: Colors.amber,
+                color: AppTheme.draftWarning,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1),
+                border: Border.all(color: colorScheme.surface, width: 1),
               ),
               child: Icon(
                 Icons.star,
                 size: size * 0.3,
-                color: Colors.white,
+                color: colorScheme.onPrimary,
               ),
             ),
           ),

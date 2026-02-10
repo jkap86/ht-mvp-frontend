@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../rosters/data/roster_repository.dart';
 import '../../../rosters/domain/roster_player.dart';
 import '../../../../core/widgets/position_badge.dart';
 import '../../../../core/theme/semantic_colors.dart';
+import '../../../../core/widgets/status_badge.dart';
 
 /// Provider for roster players used in trade player selection
 final tradeRosterPlayersProvider =
@@ -64,8 +66,8 @@ class PlayerSelectorWidget extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        borderRadius: AppSpacing.buttonRadius,
       ),
       child: ListView.separated(
         shrinkWrap: true,
@@ -102,21 +104,9 @@ class PlayerSelectorWidget extends ConsumerWidget {
                     Text(player.team ?? 'FA'),
                     if (player.injuryStatus != null) ...[
                       const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: getInjuryColor(player.injuryStatus),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          player.injuryStatus!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                      StatusBadge(
+                        label: player.injuryStatus!,
+                        backgroundColor: getInjuryColor(player.injuryStatus),
                       ),
                     ],
                   ],

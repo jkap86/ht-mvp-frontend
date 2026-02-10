@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/trade.dart';
 
 class TradeVotesSection extends StatelessWidget {
@@ -25,13 +26,13 @@ class TradeVotesSection extends StatelessWidget {
                 _VoteChip(
                   label: 'Approve',
                   count: trade.approveCount,
-                  color: Colors.green,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 12),
                 _VoteChip(
                   label: 'Veto',
                   count: trade.vetoCount,
-                  color: Colors.red,
+                  color: Theme.of(context).colorScheme.error,
                 ),
               ],
             ),
@@ -41,7 +42,7 @@ class TradeVotesSection extends StatelessWidget {
                 'No votes yet',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontStyle: FontStyle.italic,
-                      color: Colors.grey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               )
             else
@@ -52,7 +53,9 @@ class TradeVotesSection extends StatelessWidget {
                         Icon(
                           vote.isApprove ? Icons.thumb_up : Icons.thumb_down,
                           size: 16,
-                          color: vote.isApprove ? Colors.green : Colors.red,
+                          color: vote.isApprove
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.error,
                         ),
                         const SizedBox(width: 8),
                         Text('${vote.teamName} (@${vote.username})'),
@@ -83,7 +86,7 @@ class _VoteChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -100,8 +103,8 @@ class _VoteChip extends StatelessWidget {
             ),
             child: Text(
               count.toString(),
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
             ),
           ),
         ],

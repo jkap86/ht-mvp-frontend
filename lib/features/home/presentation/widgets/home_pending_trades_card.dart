@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../providers/home_dashboard_provider.dart';
 
 /// Card showing pending trades requiring user action
@@ -88,7 +89,7 @@ class _TradeItem extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: colorScheme.tertiary,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXs),
               ),
             ),
             const SizedBox(width: 12),
@@ -117,7 +118,7 @@ class _TradeItem extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: colorScheme.tertiaryContainer,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: AppSpacing.badgeRadius,
                 border: Border.all(color: colorScheme.tertiary.withValues(alpha: 0.3)),
               ),
               child: Text(

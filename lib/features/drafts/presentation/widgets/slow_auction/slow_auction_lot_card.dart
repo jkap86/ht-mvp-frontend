@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../config/app_theme.dart';
+import '../../../../../core/theme/app_spacing.dart';
 import '../../../../../core/api/api_client.dart';
 import '../../../../players/domain/player.dart';
 import '../../../data/draft_repository.dart';
@@ -139,8 +140,8 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
           InkWell(
             onTap: isExpired ? null : _toggleExpanded,
             borderRadius: BorderRadius.vertical(
-              top: const Radius.circular(12),
-              bottom: _isExpanded ? Radius.zero : const Radius.circular(12),
+              top: const Radius.circular(AppSpacing.radiusLg),
+              bottom: _isExpanded ? Radius.zero : const Radius.circular(AppSpacing.radiusLg),
             ),
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -303,7 +304,7 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
               if (!_isLoadingHistory && !_historyLoadError)
                 InkWell(
                   onTap: _loadBidHistory,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppSpacing.cardRadius,
                   child: Padding(
                     padding: const EdgeInsets.all(4),
                     child: Icon(
@@ -386,7 +387,7 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
               foregroundColor: theme.colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppSpacing.buttonRadius,
               ),
             ),
           ),

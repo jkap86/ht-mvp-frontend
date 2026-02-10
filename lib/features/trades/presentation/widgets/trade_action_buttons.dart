@@ -23,6 +23,7 @@ class TradeActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final List<Widget> buttons = [];
 
     if (trade.canRespond) {
@@ -32,7 +33,7 @@ class TradeActionButtons extends StatelessWidget {
             onPressed: onAccept,
             icon: const Icon(Icons.check),
             label: const Text('Accept'),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary),
           ),
         ),
         const SizedBox(width: 8),
@@ -41,7 +42,7 @@ class TradeActionButtons extends StatelessWidget {
             onPressed: onReject,
             icon: const Icon(Icons.close),
             label: const Text('Reject'),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+            style: OutlinedButton.styleFrom(foregroundColor: colorScheme.error),
           ),
         ),
         const SizedBox(width: 8),
@@ -65,7 +66,7 @@ class TradeActionButtons extends StatelessWidget {
             onPressed: onCancel,
             icon: const Icon(Icons.cancel),
             label: const Text('Cancel Trade'),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.orange),
+            style: OutlinedButton.styleFrom(foregroundColor: colorScheme.tertiary),
           ),
         ),
       );
@@ -78,7 +79,7 @@ class TradeActionButtons extends StatelessWidget {
             onPressed: () => onVote('approve'),
             icon: const Icon(Icons.thumb_up),
             label: const Text('Approve'),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary),
           ),
         ),
         const SizedBox(width: 12),
@@ -87,7 +88,7 @@ class TradeActionButtons extends StatelessWidget {
             onPressed: () => onVote('veto'),
             icon: const Icon(Icons.thumb_down),
             label: const Text('Veto'),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+            style: OutlinedButton.styleFrom(foregroundColor: colorScheme.error),
           ),
         ),
       ]);

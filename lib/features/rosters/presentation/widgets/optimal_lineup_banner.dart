@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../providers/team_provider.dart';
 
 /// Banner that shows when the lineup is not optimal and offers to auto-set
@@ -30,7 +31,7 @@ class OptimalLineupBanner extends StatelessWidget {
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer.withAlpha(128),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.primary.withAlpha(77)),
       ),
       child: Column(
@@ -101,7 +102,7 @@ class OptimalLineupBanner extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppSpacing.buttonRadius,
       ),
       child: Row(
         children: [
@@ -119,7 +120,7 @@ class OptimalLineupBanner extends StatelessWidget {
                   '${(issue.currentPlayer.projectedPoints ?? 0).toStringAsFixed(1)} pts',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey.shade600,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -131,12 +132,12 @@ class OptimalLineupBanner extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Column(
               children: [
-                const Icon(Icons.arrow_forward, size: 16, color: Colors.green),
+                Icon(Icons.arrow_forward, size: 16, color: colorScheme.primary),
                 Text(
                   '+${issue.projectionDiff.toStringAsFixed(1)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
-                    color: Colors.green,
+                    color: colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -159,9 +160,9 @@ class OptimalLineupBanner extends StatelessWidget {
                 ),
                 Text(
                   '${(issue.suggestedPlayer.projectedPoints ?? 0).toStringAsFixed(1)} pts',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Colors.green,
+                    color: colorScheme.primary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

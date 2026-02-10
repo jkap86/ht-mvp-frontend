@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/status_badge.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../domain/roster_lineup.dart';
 import '../../domain/roster_player.dart';
@@ -69,7 +70,7 @@ class LineupSlotWidget extends StatelessWidget {
                   child: Text(
                     slot.code,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: AppTypography.fontSm,
                     ),
@@ -120,7 +121,6 @@ class LineupSlotWidget extends StatelessWidget {
 
   Widget _buildPlayerInfo(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,18 +137,9 @@ class LineupSlotWidget extends StatelessWidget {
               ),
             ),
             if (player!.injuryStatus != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: getInjuryColor(player!.injuryStatus),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                ),
-                child: Text(
-                  player!.injuryStatus!,
-                  style: AppTypography.labelBold.copyWith(
-                    color: Colors.white,
-                  ),
-                ),
+              StatusBadge(
+                label: player!.injuryStatus!,
+                backgroundColor: getInjuryColor(player!.injuryStatus),
               ),
           ],
         ),
@@ -166,9 +157,7 @@ class LineupSlotWidget extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? AppTheme.darkCardColor
-                      : Colors.grey.shade200,
+                  color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
                 child: Text(

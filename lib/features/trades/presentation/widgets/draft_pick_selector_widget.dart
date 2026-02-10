@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../drafts/data/draft_pick_asset_repository.dart';
 import '../../../drafts/domain/draft_pick_asset.dart';
 
@@ -87,19 +88,21 @@ class DraftPickSelectorWidget extends ConsumerWidget {
   }
 
   Widget _buildPickList(BuildContext context, List<DraftPickAsset> picks) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (picks.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(8),
-          color: Colors.grey.shade50,
+          border: Border.all(color: colorScheme.outlineVariant),
+          borderRadius: AppSpacing.buttonRadius,
+          color: colorScheme.surfaceContainerLowest,
         ),
         child: Center(
           child: Text(
             'No draft picks available',
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: colorScheme.onSurfaceVariant,
               fontStyle: FontStyle.italic,
               fontSize: 13,
             ),
@@ -117,8 +120,8 @@ class DraftPickSelectorWidget extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: AppSpacing.buttonRadius,
       ),
       child: Column(
         children: [
@@ -146,12 +149,12 @@ class DraftPickSelectorWidget extends ConsumerWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          color: Colors.grey.shade100,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           child: Text(
             '$season Draft',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
         ),
@@ -188,8 +191,8 @@ class DraftPickSelectorWidget extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary
-                    : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(4),
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: AppSpacing.badgeRadius,
               ),
               child: Center(
                 child: Text(
@@ -197,7 +200,9 @@ class DraftPickSelectorWidget extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.white : Colors.grey.shade700,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -218,7 +223,7 @@ class DraftPickSelectorWidget extends ConsumerWidget {
                     Text(
                       pick.originDescription!,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey.shade600,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontSize: 11,
                           ),
                     ),

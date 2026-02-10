@@ -35,10 +35,11 @@ class FastAuctionPanel extends StatelessWidget {
     final playersMap = {for (var p in state.players) p.id: p};
     final budgetsMap = {for (var b in state.budgets) b.rosterId: b};
 
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.deepPurple[50],
-        border: Border(top: BorderSide(color: Colors.deepPurple[200]!)),
+        color: theme.colorScheme.primaryContainer,
+        border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

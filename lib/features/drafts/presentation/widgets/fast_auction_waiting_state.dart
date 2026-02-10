@@ -106,7 +106,7 @@ class _FastAuctionWaitingStateState extends State<FastAuctionWaitingState> {
           Icon(
             widget.isMyNomination ? Icons.person_add : Icons.hourglass_empty,
             size: 32,
-            color: Colors.deepPurple[300],
+            color: theme.colorScheme.primary,
           ),
           const SizedBox(height: 8),
           Text(
@@ -114,7 +114,7 @@ class _FastAuctionWaitingStateState extends State<FastAuctionWaitingState> {
                 ? 'Select a player to nominate'
                 : 'Waiting for nomination...',
             style: TextStyle(
-              color: Colors.deepPurple[400],
+              color: theme.colorScheme.primary,
               fontSize: 14,
             ),
           ),
@@ -127,8 +127,8 @@ class _FastAuctionWaitingStateState extends State<FastAuctionWaitingState> {
               icon: const Icon(Icons.add),
               label: const Text('Nominate Player'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
                 disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest,
                 disabledForegroundColor: theme.colorScheme.onSurfaceVariant,
               ),

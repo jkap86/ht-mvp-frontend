@@ -40,7 +40,7 @@ class DraftBoardGridView extends ConsumerWidget {
             children: [
               Text(
                 'Teams: ',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               SegmentedButton<bool>(
                 segments: const [

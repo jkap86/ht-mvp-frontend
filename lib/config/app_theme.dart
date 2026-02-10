@@ -115,6 +115,41 @@ class AppTheme {
           foregroundColor: primaryColor,
         ),
       ),
+      dialogTheme: DialogTheme(
+        backgroundColor: surfaceColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: surfaceColor,
+      ),
+      dividerTheme: DividerThemeData(
+        color: Colors.grey.shade300,
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: Colors.grey.shade100,
+        selectedColor: primaryColor.withAlpha(30),
+        labelStyle: const TextStyle(color: textPrimary),
+      ),
+      listTileTheme: const ListTileThemeData(
+        textColor: textPrimary,
+        iconColor: textSecondary,
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: surfaceColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: textPrimary,
+        contentTextStyle: const TextStyle(color: surfaceColor),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 

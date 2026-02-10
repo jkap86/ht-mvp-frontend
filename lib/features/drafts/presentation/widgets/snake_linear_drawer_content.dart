@@ -6,6 +6,7 @@ import '../../domain/draft_pick_asset.dart';
 import '../providers/draft_room_provider.dart';
 import '../providers/draft_queue_provider.dart';
 import '../utils/player_filtering.dart';
+import '../../../../config/app_theme.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import 'draft_queue_widget.dart';
 import 'player_search_filter_panel.dart';
@@ -151,6 +152,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
             final item = unifiedItems[index];
             if (item.pickAsset != null) {
               return _buildPickAssetTile(
+                context,
                 item.pickAsset!,
                 isDraftInProgress: isDraftInProgress,
                 isMyTurn: isMyTurn,
@@ -159,6 +161,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
               );
             } else {
               return _buildPlayerTile(
+                context,
                 item.player!,
                 isDraftInProgress: isDraftInProgress,
                 isMyTurn: isMyTurn,
@@ -190,6 +193,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
   }
 
   Widget _buildPickAssetTile(
+    BuildContext context,
     DraftPickAsset pickAsset, {
     required bool isDraftInProgress,
     required bool isMyTurn,
@@ -199,9 +203,9 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: getPositionColor('PICK'),
-        child: const Icon(
+        child: Icon(
           Icons.how_to_vote_outlined,
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.onPrimary, // text on position-colored badge
           size: 20,
         ),
       ),
@@ -233,7 +237,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
       return IconButton(
         icon: Icon(
           isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
-          color: isInQueue ? Colors.green : null,
+          color: isInQueue ? AppTheme.draftActionPrimary : null,
         ),
         onPressed: (isInQueue || isPickAssetQueueSubmitting || onAddPickAssetToQueue == null)
             ? null
@@ -249,7 +253,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
         IconButton(
           icon: Icon(
             isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
-            color: isInQueue ? Colors.green : null,
+            color: isInQueue ? AppTheme.draftActionPrimary : null,
           ),
           onPressed: (isInQueue || isPickAssetQueueSubmitting || onAddPickAssetToQueue == null)
               ? null
@@ -273,6 +277,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
   }
 
   Widget _buildPlayerTile(
+    BuildContext context,
     Player player, {
     required bool isDraftInProgress,
     required bool isMyTurn,
@@ -284,8 +289,8 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
         backgroundColor: getPositionColor(player.primaryPosition),
         child: Text(
           player.primaryPosition,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onPrimary,
             fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
@@ -315,7 +320,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
       return IconButton(
         icon: Icon(
           isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
-          color: isInQueue ? Colors.green : null,
+          color: isInQueue ? AppTheme.draftActionPrimary : null,
         ),
         onPressed: (isInQueue || isQueueSubmitting) ? null : () => onAddToQueue(player.id),
         tooltip: isInQueue ? 'In queue' : 'Add to queue',
@@ -329,7 +334,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
         IconButton(
           icon: Icon(
             isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
-            color: isInQueue ? Colors.green : null,
+            color: isInQueue ? AppTheme.draftActionPrimary : null,
           ),
           onPressed: (isInQueue || isQueueSubmitting) ? null : () => onAddToQueue(player.id),
           tooltip: isInQueue ? 'In queue' : 'Add to queue',

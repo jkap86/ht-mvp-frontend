@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/derby_state.dart';
 import '../../domain/draft_order_entry.dart';
 import '../providers/draft_room_provider.dart';
@@ -86,7 +87,7 @@ class _DerbyTurnIndicatorState extends ConsumerState<DerbyTurnIndicator> {
         color: isMyTurn
             ? Theme.of(context).colorScheme.primaryContainer
             : Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -135,7 +136,7 @@ class _DerbyTurnIndicatorState extends ConsumerState<DerbyTurnIndicator> {
     if (isVeryLow) {
       timerColor = Theme.of(context).colorScheme.error;
     } else if (isLow) {
-      timerColor = Colors.orange;
+      timerColor = Theme.of(context).colorScheme.tertiary;
     } else {
       timerColor = Theme.of(context).colorScheme.onSurface;
     }
@@ -180,7 +181,7 @@ class _DerbyTurnIndicatorState extends ConsumerState<DerbyTurnIndicator> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

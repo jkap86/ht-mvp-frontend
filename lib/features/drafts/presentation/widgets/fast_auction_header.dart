@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/draft_order_entry.dart';
 
 /// Header widget for the fast auction panel showing nominator info and budget.
@@ -19,18 +21,24 @@ class FastAuctionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isMyNomination ? Colors.deepPurple[100] : Colors.deepPurple[50],
-        border: Border(bottom: BorderSide(color: Colors.deepPurple[200]!)),
+        color: isMyNomination
+            ? theme.colorScheme.primaryContainer
+            : theme.colorScheme.surfaceContainerHighest,
+        border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
       ),
       child: Row(
         children: [
           Icon(
             Icons.gavel,
             size: 20,
-            color: isMyNomination ? Colors.deepPurple : Colors.deepPurple[400],
+            color: isMyNomination
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -44,15 +52,16 @@ class FastAuctionHeader extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color:
-                        isMyNomination ? Colors.deepPurple : Colors.deepPurple[700],
+                    color: isMyNomination
+                        ? theme.colorScheme.onPrimaryContainer
+                        : theme.colorScheme.onSurface,
                   ),
                 ),
                 Text(
                   'Nomination #$nominationNumber',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.deepPurple[400],
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -62,14 +71,14 @@ class FastAuctionHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.green[100],
-                borderRadius: BorderRadius.circular(12),
+                color: AppTheme.draftActionPrimary.withAlpha(25),
+                borderRadius: AppSpacing.cardRadius,
               ),
               child: Text(
                 '\$$myBudgetAvailable',
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.green[800],
+                  color: AppTheme.draftActionPrimary,
                   fontSize: 12,
                 ),
               ),

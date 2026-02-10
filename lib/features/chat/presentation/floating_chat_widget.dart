@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/theme/app_spacing.dart';
 import '../../dm/presentation/providers/dm_inbox_provider.dart';
 import 'providers/unified_chat_provider.dart';
 import 'widgets/dm_conversation_list.dart';
@@ -220,7 +221,7 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
           alignment: Alignment.bottomRight,
           child: Material(
             elevation: 8,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppSpacing.cardRadius,
             clipBehavior: Clip.antiAlias,
             child: Container(
               width: _size.width,
@@ -228,7 +229,7 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 border: Border.all(color: colorScheme.outlineVariant),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppSpacing.cardRadius,
               ),
               child: Overlay(
                 initialEntries: [
@@ -270,7 +271,7 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
       child: Container(
         decoration: BoxDecoration(
           color: colorScheme.primaryContainer,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

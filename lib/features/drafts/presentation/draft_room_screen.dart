@@ -302,10 +302,10 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('You were outbid on $playerName! New bid: \$${next.newBid}'),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppTheme.draftWarning,
               action: SnackBarAction(
                 label: 'View',
-                textColor: Colors.white,
+                textColor: Theme.of(context).colorScheme.onPrimary,
                 onPressed: () {
                   // Find the lot user was outbid on and open bid dialog
                   final currentState = ref.read(draftRoomProvider(_providerKey));
@@ -370,8 +370,8 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
               child: Chip(
                 avatar: const Icon(Icons.attach_money, size: 16),
                 label: Text('\$${myBudget.available}'),
-                backgroundColor: Colors.green[100],
-                labelStyle: TextStyle(color: Colors.green[800], fontWeight: FontWeight.bold),
+                backgroundColor: AppTheme.draftActionPrimary.withAlpha(25),
+                labelStyle: const TextStyle(color: AppTheme.draftActionPrimary, fontWeight: FontWeight.bold),
               ),
             ),
           // Pick chip for active drafts (not applicable to slow auctions)
@@ -380,8 +380,8 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
               padding: const EdgeInsets.all(8.0),
               child: Chip(
                 label: Text('Pick $currentPick'),
-                backgroundColor: Colors.green,
-                labelStyle: const TextStyle(color: Colors.white),
+                backgroundColor: AppTheme.draftActionPrimary,
+                labelStyle: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
               ),
             ),
           // Team rosters button for slow auctions
@@ -618,7 +618,7 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
                 final error = await notifier.toggleAutodraft(!isAutodraftEnabled);
                 if (error != null && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(error), backgroundColor: Colors.red),
+                    SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
                   );
                 }
               },

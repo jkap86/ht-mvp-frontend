@@ -32,7 +32,7 @@ class CommissionerScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.successMessage!),
-            backgroundColor: Colors.green,
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       }
@@ -40,7 +40,7 @@ class CommissionerScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.error!),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -187,7 +187,7 @@ class CommissionerScreen extends ConsumerWidget {
                             case 12:
                               // Danger Zone Card
                               return wrapWithSpacing(Card(
-                                color: Colors.red.shade50,
+                                color: Theme.of(context).colorScheme.errorContainer,
                                 child: Padding(
                                   padding: const EdgeInsets.all(16),
                                   child: Column(
@@ -195,14 +195,14 @@ class CommissionerScreen extends ConsumerWidget {
                                     children: [
                                       Row(
                                         children: [
-                                          Icon(Icons.warning, color: Colors.red.shade700),
+                                          Icon(Icons.warning, color: Theme.of(context).colorScheme.error),
                                           const SizedBox(width: 8),
                                           Text(
                                             'Danger Zone',
                                             style: TextStyle(
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.red.shade700,
+                                              color: Theme.of(context).colorScheme.error,
                                             ),
                                           ),
                                         ],
@@ -216,8 +216,8 @@ class CommissionerScreen extends ConsumerWidget {
                                         width: double.infinity,
                                         child: ElevatedButton.icon(
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red,
-                                            foregroundColor: Colors.white,
+                                            backgroundColor: Theme.of(context).colorScheme.error,
+                                            foregroundColor: Theme.of(context).colorScheme.onError,
                                           ),
                                           icon: const Icon(Icons.delete_forever),
                                           label: const Text('Delete League'),
@@ -238,7 +238,7 @@ class CommissionerScreen extends ConsumerWidget {
                 ),
                 if (state.isProcessing)
                   Container(
-                    color: Colors.black26,
+                    color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.26),
                     child: const Center(
                       child: CircularProgressIndicator(),
                     ),
@@ -282,8 +282,8 @@ class CommissionerScreen extends ConsumerWidget {
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
                 ),
                 onPressed: matches
                     ? () async {

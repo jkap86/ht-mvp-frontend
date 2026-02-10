@@ -10,6 +10,7 @@ import '../providers/team_provider.dart';
 import '../widgets/lineup_locked_banner.dart';
 import '../widgets/lineup_slot_widget.dart';
 import '../widgets/move_player_sheet.dart';
+import '../widgets/optimal_lineup_banner.dart';
 import '../widgets/roster_player_card.dart';
 import '../widgets/team_points_summary.dart';
 
@@ -325,6 +326,16 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
       onRefresh: () => ref.read(teamProvider(_key).notifier).loadData(),
       child: Column(
         children: [
+          // Optimal lineup banner (self-hides when lineup is optimal)
+          OptimalLineupBanner(
+            issues: state.lineupIssues,
+            currentProjected: state.projectedStarterPoints,
+            optimalProjected: state.optimalProjectedPoints,
+            isSaving: state.isSaving,
+            onSetOptimal: () {
+              ref.read(teamProvider(_key).notifier).setOptimalLineup();
+            },
+          ),
           // Points summary at top (not scrollable)
           Padding(
             padding: const EdgeInsets.all(16),
@@ -533,12 +544,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
     if (benchPlayers.isEmpty) {
       return [
-        const Card(
+        Card(
           child: Padding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Text(
               'No players on bench',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ),
         ),
@@ -553,12 +564,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
       if (benchPlayers.isEmpty) {
         return [
-          const Card(
+          Card(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Text(
                 'No eligible players for this slot',
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
           ),
@@ -645,7 +656,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
               child: const Text('Cancel'),
             ),
             TextButton(
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
               onPressed: () {
                 Navigator.of(context).pop();
                 ref

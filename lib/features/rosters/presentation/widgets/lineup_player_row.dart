@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/position_badge.dart';
 import '../../../../core/theme/semantic_colors.dart';
+import '../../../../core/widgets/status_badge.dart';
 import '../../domain/roster_lineup.dart';
 import '../../domain/roster_player.dart';
 
@@ -25,12 +27,14 @@ class LineupPlayerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEmpty = player == null;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppSpacing.buttonRadius,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -45,7 +49,7 @@ class LineupPlayerRow extends StatelessWidget {
                     ? Text(
                         'Empty ${slot.displayName}',
                         style: TextStyle(
-                          color: Colors.grey.shade500,
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontStyle: FontStyle.italic,
                         ),
                       )
@@ -65,23 +69,11 @@ class LineupPlayerRow extends StatelessWidget {
                                 ),
                               ),
                               if (player!.injuryStatus != null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  margin: const EdgeInsets.only(left: 8),
-                                  decoration: BoxDecoration(
-                                    color: getInjuryColor(player!.injuryStatus),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    player!.injuryStatus!,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: StatusBadge(
+                                    label: player!.injuryStatus!,
+                                    backgroundColor: getInjuryColor(player!.injuryStatus),
                                   ),
                                 ),
                             ],
@@ -92,7 +84,7 @@ class LineupPlayerRow extends StatelessWidget {
                               Text(
                                 '${player!.position ?? ''} - ${player!.team ?? 'FA'}',
                                 style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                   fontSize: 12,
                                 ),
                               ),
@@ -101,13 +93,15 @@ class LineupPlayerRow extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey.shade200,
-                                    borderRadius: BorderRadius.circular(4),
+                                    color: isDark
+                                        ? theme.colorScheme.surfaceContainerHighest
+                                        : theme.colorScheme.surfaceContainerHighest,
+                                    borderRadius: AppSpacing.badgeRadius,
                                   ),
                                   child: Text(
                                     'BYE ${player!.byeWeek}',
                                     style: TextStyle(
-                                      color: Colors.grey.shade600,
+                                      color: theme.colorScheme.onSurfaceVariant,
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -126,8 +120,8 @@ class LineupPlayerRow extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: theme.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: AppSpacing.buttonRadius,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -138,7 +132,7 @@ class LineupPlayerRow extends StatelessWidget {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
-                          color: Theme.of(context).primaryColor,
+                          color: theme.primaryColor,
                         ),
                       ),
                       Text(
@@ -146,7 +140,7 @@ class LineupPlayerRow extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
-                          color: Theme.of(context).primaryColor.withValues(alpha: 0.7),
+                          color: theme.primaryColor.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -158,7 +152,7 @@ class LineupPlayerRow extends StatelessWidget {
               if (!isLocked)
                 Icon(
                   Icons.swap_horiz,
-                  color: Colors.grey.shade400,
+                  color: theme.colorScheme.outline,
                 ),
             ],
           ),

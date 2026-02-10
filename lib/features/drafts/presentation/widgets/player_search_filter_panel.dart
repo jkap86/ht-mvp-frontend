@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../utils/player_filtering.dart';
 
 /// Combined search bar and position filter chips panel.
@@ -54,7 +55,7 @@ class PlayerSearchFilterPanel extends StatelessWidget {
               hintText: hintText,
               prefixIcon: const Icon(Icons.search, size: 20),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppSpacing.buttonRadius,
               ),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
+
 /// A toggle switch for enabling/disabling autodraft.
 /// When enabled, the system will automatically make picks from the user's queue
 /// (or best available player) when their turn timer expires.
@@ -17,6 +20,8 @@ class AutodraftToggleWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Tooltip(
       message: isEnabled
           ? 'Autodraft is ON: Picks will be made automatically when timer expires'
@@ -24,10 +29,14 @@ class AutodraftToggleWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isEnabled ? Colors.green[50] : Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
+          color: isEnabled
+              ? AppTheme.draftActionPrimary.withAlpha(25)
+              : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: AppSpacing.pillRadius,
           border: Border.all(
-            color: isEnabled ? Colors.green : Colors.grey[300]!,
+            color: isEnabled
+                ? AppTheme.draftActionPrimary
+                : theme.colorScheme.outlineVariant,
           ),
         ),
         child: Row(
@@ -36,7 +45,9 @@ class AutodraftToggleWidget extends StatelessWidget {
             Icon(
               Icons.flash_auto,
               size: 18,
-              color: isEnabled ? Colors.green[700] : Colors.grey[600],
+              color: isEnabled
+                  ? AppTheme.draftActionPrimary
+                  : theme.colorScheme.onSurfaceVariant,
             ),
             if (isLoading)
               const Padding(
@@ -53,7 +64,7 @@ class AutodraftToggleWidget extends StatelessWidget {
                 child: Switch(
                   value: isEnabled,
                   onChanged: onToggle != null ? (_) => onToggle!() : null,
-                  activeColor: Colors.green,
+                  activeColor: AppTheme.draftActionPrimary,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),

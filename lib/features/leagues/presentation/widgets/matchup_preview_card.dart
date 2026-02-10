@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../matchups/domain/matchup.dart';
 import 'countdown_timer_widget.dart';
 
@@ -36,7 +38,7 @@ class MatchupPreviewCard extends StatelessWidget {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: AppSpacing.cardRadius),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -45,7 +47,7 @@ class MatchupPreviewCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: colorScheme.primaryContainer,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
             ),
             child: Row(
               children: [
@@ -69,13 +71,13 @@ class MatchupPreviewCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.amber.shade600,
-                      borderRadius: BorderRadius.circular(4),
+                      color: AppTheme.draftWarning,
+                      borderRadius: AppSpacing.badgeRadius,
                     ),
-                    child: const Text(
+                    child: Text(
                       'PLAYOFF',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colorScheme.onPrimary,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -102,18 +104,18 @@ class MatchupPreviewCard extends StatelessWidget {
                 // VS divider
                 Row(
                   children: [
-                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Expanded(child: Divider(color: colorScheme.outlineVariant)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
                         'vs',
                         style: TextStyle(
-                          color: Colors.grey.shade500,
+                          color: colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Expanded(child: Divider(color: colorScheme.outlineVariant)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -139,7 +141,7 @@ class MatchupPreviewCard extends StatelessWidget {
                   Text(
                     'Projected: ',
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: colorScheme.onSurfaceVariant,
                       fontSize: 13,
                     ),
                   ),
@@ -165,7 +167,7 @@ class MatchupPreviewCard extends StatelessWidget {
                       Text(
                         'Lineup locks in: ',
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: colorScheme.onSurfaceVariant,
                           fontSize: 13,
                         ),
                       ),
@@ -233,6 +235,7 @@ class _TeamRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         // Avatar placeholder
@@ -240,12 +243,12 @@ class _TeamRow extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: isUser ? Colors.indigo.shade100 : Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(8),
+            color: isUser ? colorScheme.primaryContainer : colorScheme.surfaceContainerHighest,
+            borderRadius: AppSpacing.buttonRadius,
           ),
           child: Icon(
             Icons.person,
-            color: isUser ? Colors.indigo.shade400 : Colors.grey.shade400,
+            color: isUser ? colorScheme.primary : colorScheme.outlineVariant,
             size: 24,
           ),
         ),
@@ -263,7 +266,7 @@ class _TeamRow extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: isUser ? Colors.indigo.shade700 : null,
+                        color: isUser ? colorScheme.primary : null,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -273,7 +276,7 @@ class _TeamRow extends StatelessWidget {
                     Icon(
                       Icons.emoji_events,
                       size: 16,
-                      color: Colors.amber.shade600,
+                      color: AppTheme.draftWarning,
                     ),
                   ],
                 ],
@@ -281,7 +284,7 @@ class _TeamRow extends StatelessWidget {
               Text(
                 record,
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: colorScheme.onSurfaceVariant,
                   fontSize: 13,
                 ),
               ),
@@ -295,7 +298,7 @@ class _TeamRow extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 20,
-              color: isWinner ? Colors.green.shade600 : null,
+              color: isWinner ? AppTheme.draftActionPrimary : null,
             ),
           ),
       ],

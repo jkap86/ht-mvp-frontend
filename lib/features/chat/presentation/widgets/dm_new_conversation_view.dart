@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/api/api_client.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../../dm/data/dm_repository.dart';
 import '../../../dm/presentation/providers/dm_inbox_provider.dart';
@@ -170,7 +171,7 @@ class _DmNewConversationViewState extends ConsumerState<DmNewConversationView> {
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppSpacing.buttonRadius,
               ),
             ),
             onChanged: (query) {

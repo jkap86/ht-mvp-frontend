@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../../core/widgets/states/app_error_view.dart';
 import '../../../../core/widgets/states/app_empty_view.dart';
@@ -136,9 +138,9 @@ class MyClaimsScreen extends ConsumerWidget {
             .reorderClaims(ids);
         if (!success && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to reorder claims. Please try again.'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: const Text('Failed to reorder claims. Please try again.'),
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -160,9 +162,9 @@ class MyClaimsScreen extends ConsumerWidget {
                         .moveClaimUp(claim.id);
                     if (!success && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Failed to reorder claims. Please try again.'),
-                          backgroundColor: Colors.red,
+                        SnackBar(
+                          content: const Text('Failed to reorder claims. Please try again.'),
+                          backgroundColor: Theme.of(context).colorScheme.error,
                         ),
                       );
                     }
@@ -175,9 +177,9 @@ class MyClaimsScreen extends ConsumerWidget {
                         .moveClaimDown(claim.id);
                     if (!success && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Failed to reorder claims. Please try again.'),
-                          backgroundColor: Colors.red,
+                        SnackBar(
+                          content: const Text('Failed to reorder claims. Please try again.'),
+                          backgroundColor: Theme.of(context).colorScheme.error,
                         ),
                       );
                     }
@@ -203,7 +205,7 @@ class MyClaimsScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Cancel Claim'),
           ),
         ],
@@ -257,6 +259,8 @@ class _ClaimCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -270,13 +274,13 @@ class _ClaimCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(4),
+                      color: colorScheme.primary,
+                      borderRadius: AppSpacing.badgeRadius,
                     ),
                     child: Text(
                       '#$claimOrder',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colorScheme.onPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -301,13 +305,13 @@ class _ClaimCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _getPositionColor(claim.playerPosition!),
-                      borderRadius: BorderRadius.circular(4),
+                      color: getPositionColor(claim.playerPosition!),
+                      borderRadius: AppSpacing.badgeRadius,
                     ),
                     child: Text(
                       claim.playerPosition!,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colorScheme.onPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -341,14 +345,14 @@ class _ClaimCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: AppSpacing.badgeRadius,
+                  border: Border.all(color: colorScheme.primary.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   'Bid: \$${claim.bidAmount}',
                   style: TextStyle(
-                    color: Colors.green.shade700,
+                    color: colorScheme.primary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -386,18 +390,18 @@ class _ClaimCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
+                  color: colorScheme.errorContainer,
+                  borderRadius: AppSpacing.badgeRadius,
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, size: 16, color: Colors.red),
+                    Icon(Icons.error_outline, size: 16, color: colorScheme.error),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         claim.failureReason!,
                         style: TextStyle(
-                          color: Colors.red.shade700,
+                          color: colorScheme.error,
                           fontSize: 12,
                         ),
                       ),
@@ -412,7 +416,7 @@ class _ClaimCard extends StatelessWidget {
             Text(
               'Created ${DateFormat.MMMd().add_jm().format(claim.createdAt)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
+                    color: colorScheme.onSurfaceVariant,
                   ),
             ),
 
@@ -426,7 +430,7 @@ class _ClaimCard extends StatelessWidget {
                   icon: const Icon(Icons.cancel, size: 18),
                   label: const Text('Cancel Claim'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
+                    foregroundColor: colorScheme.error,
                   ),
                 ),
               ),
@@ -438,29 +442,30 @@ class _ClaimCard extends StatelessWidget {
   }
 
   Widget _buildStatusBadge(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     Color color;
     switch (claim.status.value) {
       case 'pending':
-        color = Colors.orange;
+        color = colorScheme.tertiary;
         break;
       case 'successful':
-        color = Colors.green;
+        color = colorScheme.primary;
         break;
       case 'failed':
-        color = Colors.red;
+        color = colorScheme.error;
         break;
       case 'cancelled':
-        color = Colors.grey;
+        color = colorScheme.outline;
         break;
       default:
-        color = Colors.grey;
+        color = colorScheme.outline;
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppSpacing.badgeRadius,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
@@ -474,25 +479,6 @@ class _ClaimCard extends StatelessWidget {
     );
   }
 
-  Color _getPositionColor(String position) {
-    switch (position.toUpperCase()) {
-      case 'QB':
-        return Colors.red;
-      case 'RB':
-        return Colors.green;
-      case 'WR':
-        return Colors.blue;
-      case 'TE':
-        return Colors.orange;
-      case 'K':
-        return Colors.purple;
-      case 'DEF':
-      case 'DST':
-        return Colors.brown;
-      default:
-        return Colors.grey;
-    }
-  }
 }
 
 /// Reorderable claim card with drag handle and up/down buttons
@@ -517,6 +503,8 @@ class _ReorderableClaimCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       child: Row(
         children: [
@@ -527,7 +515,7 @@ class _ReorderableClaimCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
               child: Icon(
                 Icons.drag_handle,
-                color: Theme.of(context).colorScheme.outline,
+                color: colorScheme.outline,
               ),
             ),
           ),
@@ -536,14 +524,14 @@ class _ReorderableClaimCard extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
+              color: colorScheme.primary,
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 '#$claimOrder',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -564,13 +552,13 @@ class _ReorderableClaimCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: _getPositionColor(claim.playerPosition!),
-                            borderRadius: BorderRadius.circular(4),
+                            color: getPositionColor(claim.playerPosition!),
+                            borderRadius: AppSpacing.badgeRadius,
                           ),
                           child: Text(
                             claim.playerPosition!,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colorScheme.onPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 10,
                             ),
@@ -603,13 +591,13 @@ class _ReorderableClaimCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.green.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
+                            color: colorScheme.primary.withValues(alpha: 0.1),
+                            borderRadius: AppSpacing.badgeRadius,
                           ),
                           child: Text(
                             '\$${claim.bidAmount}',
                             style: TextStyle(
-                              color: Colors.green.shade700,
+                              color: colorScheme.primary,
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
                             ),
@@ -620,7 +608,7 @@ class _ReorderableClaimCard extends StatelessWidget {
                         Icon(
                           Icons.swap_horiz,
                           size: 12,
-                          color: Theme.of(context).colorScheme.secondary,
+                          color: colorScheme.secondary,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
@@ -646,16 +634,16 @@ class _ReorderableClaimCard extends StatelessWidget {
                 onPressed: onMoveUp,
                 visualDensity: VisualDensity.compact,
                 color: onMoveUp != null
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                    ? colorScheme.primary
+                    : colorScheme.outline.withValues(alpha: 0.3),
               ),
               IconButton(
                 icon: const Icon(Icons.arrow_downward, size: 18),
                 onPressed: onMoveDown,
                 visualDensity: VisualDensity.compact,
                 color: onMoveDown != null
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                    ? colorScheme.primary
+                    : colorScheme.outline.withValues(alpha: 0.3),
               ),
             ],
           ),
@@ -663,32 +651,12 @@ class _ReorderableClaimCard extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.close, size: 18),
             onPressed: onCancel,
-            color: Colors.red,
+            color: colorScheme.error,
             visualDensity: VisualDensity.compact,
           ),
           const SizedBox(width: 4),
         ],
       ),
     );
-  }
-
-  Color _getPositionColor(String position) {
-    switch (position.toUpperCase()) {
-      case 'QB':
-        return Colors.red;
-      case 'RB':
-        return Colors.green;
-      case 'WR':
-        return Colors.blue;
-      case 'TE':
-        return Colors.orange;
-      case 'K':
-        return Colors.purple;
-      case 'DEF':
-      case 'DST':
-        return Colors.brown;
-      default:
-        return Colors.grey;
-    }
   }
 }

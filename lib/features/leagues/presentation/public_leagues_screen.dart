@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/states/states.dart';
 import '../data/public_leagues_provider.dart';
 import '../domain/league.dart';
@@ -196,7 +197,7 @@ class _PublicLeagueCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSpacing.cardRadius,
                   ),
                   child: Text(
                     league.season,

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../players/domain/player.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/widgets/position_badge.dart';
+import '../../../../core/widgets/status_badge.dart';
 
 class PlayerCard extends StatelessWidget {
   final Player player;
@@ -42,7 +44,7 @@ class PlayerCard extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: InkWell(
           onTap: isDrafted ? null : onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppSpacing.cardRadius,
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -70,23 +72,11 @@ class PlayerCard extends StatelessWidget {
                             ),
                           ),
                           if (player.injuryStatus != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              margin: const EdgeInsets.only(left: 8),
-                              decoration: BoxDecoration(
-                                color: getInjuryColor(player.injuryStatus),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                player.injuryStatus!,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: StatusBadge(
+                                label: player.injuryStatus!,
+                                backgroundColor: getInjuryColor(player.injuryStatus),
                               ),
                             ),
                         ],
@@ -192,22 +182,22 @@ class PlayerCard extends StatelessWidget {
               onPressed: isSubmitting ? null : onDraft,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.draftActionPrimary,
-                foregroundColor: Colors.white,
+                foregroundColor: theme.colorScheme.onPrimary,
                 disabledBackgroundColor: AppTheme.draftActionPrimary.withAlpha(153),
-                disabledForegroundColor: Colors.white70,
+                disabledForegroundColor: theme.colorScheme.onPrimary.withAlpha(178),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppSpacing.pillRadius,
                 ),
                 elevation: 0,
               ),
               child: isSubmitting
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.onPrimary),
                       ),
                     )
                   : const Text(

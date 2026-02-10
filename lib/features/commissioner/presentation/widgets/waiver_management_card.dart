@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_spacing.dart';
 
 class WaiverManagementCard extends StatefulWidget {
   final bool waiversInitialized;
@@ -93,25 +94,28 @@ class _WaiverManagementCardState extends State<WaiverManagementCard> {
 
             if (widget.waiversInitialized) ...[
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.green.withAlpha(30),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.withAlpha(100)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 16),
-                    SizedBox(width: 8),
-                    Text(
-                      'Waivers initialized',
-                      style: TextStyle(color: Colors.green, fontWeight: FontWeight.w500),
-                    ),
-                  ],
-                ),
-              ),
+              Builder(builder: (context) {
+                final colorScheme = Theme.of(context).colorScheme;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withAlpha(30),
+                    borderRadius: AppSpacing.buttonRadius,
+                    border: Border.all(color: colorScheme.primary.withAlpha(100)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle, color: colorScheme.primary, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Waivers initialized',
+                        style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ],
           ],
         ),

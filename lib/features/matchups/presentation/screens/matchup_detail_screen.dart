@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../domain/matchup.dart';
@@ -92,17 +94,17 @@ class MatchupDetailScreen extends ConsumerWidget {
             if (isTie)
               Container(
                 padding: const EdgeInsets.all(8),
-                color: Colors.orange.shade100,
-                child: const Row(
+                color: Theme.of(context).colorScheme.tertiary.withAlpha(30),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.balance, size: 16, color: Colors.orange),
-                    SizedBox(width: 4),
+                    Icon(Icons.balance, size: 16, color: Theme.of(context).colorScheme.tertiary),
+                    const SizedBox(width: 4),
                     Text(
                       'TIE',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.orange,
+                        color: Theme.of(context).colorScheme.tertiary,
                       ),
                     ),
                   ],
@@ -158,6 +160,8 @@ class _ScoreHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -180,7 +184,7 @@ class _ScoreHeader extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppSpacing.cardRadius,
                 ),
                 child: Text(
                   'Week $week',
@@ -196,8 +200,8 @@ class _ScoreHeader extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
-                    borderRadius: BorderRadius.circular(12),
+                    color: colorScheme.primary.withAlpha(30),
+                    borderRadius: AppSpacing.cardRadius,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -205,8 +209,8 @@ class _ScoreHeader extends StatelessWidget {
                       Container(
                         width: 6,
                         height: 6,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
+                        decoration: BoxDecoration(
+                          color: colorScheme.error,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -216,7 +220,7 @@ class _ScoreHeader extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade700,
+                          color: colorScheme.primary,
                         ),
                       ),
                     ],
@@ -241,7 +245,7 @@ class _ScoreHeader extends StatelessWidget {
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: isTeam1Winner && isFinal
-                            ? Colors.green.shade700
+                            ? AppTheme.draftActionPrimary
                             : null,
                       ),
                       textAlign: TextAlign.center,
@@ -255,7 +259,7 @@ class _ScoreHeader extends StatelessWidget {
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
                         color: isTeam1Winner && isFinal
-                            ? Colors.green.shade700
+                            ? AppTheme.draftActionPrimary
                             : null,
                       ),
                     ),
@@ -265,11 +269,11 @@ class _ScoreHeader extends StatelessWidget {
                         'Proj: ${team1ProjectedPoints!.toStringAsFixed(1)}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     if (isTeam1Winner && isFinal)
-                      const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+                      Icon(Icons.emoji_events, color: colorScheme.tertiary, size: 20),
                   ],
                 ),
               ),
@@ -279,12 +283,12 @@ class _ScoreHeader extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    const Text(
+                    Text(
                       'VS',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                     if (isFinal)
@@ -292,15 +296,15 @@ class _ScoreHeader extends StatelessWidget {
                         margin: const EdgeInsets.only(top: 4),
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(4),
+                          color: AppTheme.draftActionPrimary.withAlpha(30),
+                          borderRadius: AppSpacing.badgeRadius,
                         ),
-                        child: Text(
+                        child: const Text(
                           'FINAL',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
+                            color: AppTheme.draftActionPrimary,
                           ),
                         ),
                       ),
@@ -318,7 +322,7 @@ class _ScoreHeader extends StatelessWidget {
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: isTeam2Winner && isFinal
-                            ? Colors.green.shade700
+                            ? AppTheme.draftActionPrimary
                             : null,
                       ),
                       textAlign: TextAlign.center,
@@ -332,7 +336,7 @@ class _ScoreHeader extends StatelessWidget {
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
                         color: isTeam2Winner && isFinal
-                            ? Colors.green.shade700
+                            ? AppTheme.draftActionPrimary
                             : null,
                       ),
                     ),
@@ -342,11 +346,11 @@ class _ScoreHeader extends StatelessWidget {
                         'Proj: ${team2ProjectedPoints!.toStringAsFixed(1)}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     if (isTeam2Winner && isFinal)
-                      const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+                      Icon(Icons.emoji_events, color: colorScheme.tertiary, size: 20),
                   ],
                 ),
               ),

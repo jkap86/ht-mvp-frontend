@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../providers/dues_provider.dart';
 
 /// Represents a single payout entry with a key and percentage
@@ -422,7 +423,7 @@ class _DuesConfigCardState extends ConsumerState<DuesConfigCard> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppSpacing.buttonRadius,
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

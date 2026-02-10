@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../config/app_theme.dart';
+import '../theme/app_spacing.dart';
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/leagues/data/league_repository.dart';
 import '../../features/leagues/presentation/providers/league_detail_provider.dart';
@@ -102,8 +104,8 @@ class _DevConsoleState extends ConsumerState<DevConsole> {
       right: 16,
       child: Material(
         elevation: 8,
-        borderRadius: BorderRadius.circular(8),
-        color: Colors.red.shade900,
+        borderRadius: AppSpacing.buttonRadius,
+        color: Theme.of(context).colorScheme.error,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           width: _isExpanded ? 220 : 48,
@@ -115,14 +117,20 @@ class _DevConsoleState extends ConsumerState<DevConsole> {
   }
 
   Widget _buildCollapsed() {
+    final colorScheme = Theme.of(context).colorScheme;
     return IconButton(
-      icon: const Icon(Icons.developer_mode, color: Colors.white),
+      icon: Icon(Icons.developer_mode, color: colorScheme.onError),
       onPressed: () => setState(() => _isExpanded = true),
       tooltip: 'Dev Console',
     );
   }
 
   Widget _buildExpanded() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final onError = colorScheme.onError;
+    final onErrorMuted = colorScheme.onError.withAlpha(179);
+    final onErrorSubtle = colorScheme.onError.withAlpha(61);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -130,22 +138,22 @@ class _DevConsoleState extends ConsumerState<DevConsole> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.red.shade800,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            color: colorScheme.error,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusMd)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Dev Console',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: onError,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                icon: Icon(Icons.close, color: onError, size: 16),
                 onPressed: () => setState(() => _isExpanded = false),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -164,15 +172,15 @@ class _DevConsoleState extends ConsumerState<DevConsole> {
                 if (widget.leagueId != null) ...[
                   _buildAddUsersSection(),
                   const SizedBox(height: 8),
-                  const Divider(color: Colors.white24),
+                  Divider(color: onErrorSubtle),
                   const SizedBox(height: 8),
                 ],
 
                 // Quick Login section
-                const Text(
+                Text(
                   'Quick Login',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: onError,
                     fontWeight: FontWeight.bold,
                     fontSize: 10,
                   ),
@@ -189,18 +197,18 @@ class _DevConsoleState extends ConsumerState<DevConsole> {
                   const SizedBox(height: 8),
                   Text(
                     _statusMessage!,
-                    style: const TextStyle(color: Colors.white70, fontSize: 10),
+                    style: TextStyle(color: onErrorMuted, fontSize: 10),
                   ),
                 ],
                 if (_isLoading) ...[
                   const SizedBox(height: 8),
-                  const Center(
+                  Center(
                     child: SizedBox(
                       height: 16,
                       width: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: onError,
                       ),
                     ),
                   ),
@@ -214,16 +222,19 @@ class _DevConsoleState extends ConsumerState<DevConsole> {
   }
 
   Widget _buildAddUsersSection() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final onError = colorScheme.onError;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Add to League',
               style: TextStyle(
-                color: Colors.white,
+                color: onError,
                 fontWeight: FontWeight.bold,
                 fontSize: 10,
               ),
@@ -240,7 +251,7 @@ class _DevConsoleState extends ConsumerState<DevConsole> {
               },
               child: Text(
                 _selectedUsers.length == _testUsers.length ? 'Clear' : 'All',
-                style: const TextStyle(color: Colors.white54, fontSize: 10),
+                style: TextStyle(color: onError.withAlpha(138), fontSize: 10),
               ),
             ),
           ],
@@ -259,8 +270,8 @@ class _DevConsoleState extends ConsumerState<DevConsole> {
                 ? null
                 : _addSelectedUsersToLeague,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
+              backgroundColor: AppTheme.draftWarning,
+              foregroundColor: onError,
               padding: const EdgeInsets.symmetric(horizontal: 8),
             ),
             child: Text(
@@ -275,6 +286,9 @@ class _DevConsoleState extends ConsumerState<DevConsole> {
 
   Widget _buildSelectableUser(String username) {
     final isSelected = _selectedUsers.contains(username);
+    final colorScheme = Theme.of(context).colorScheme;
+    final onError = colorScheme.onError;
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -289,17 +303,17 @@ class _DevConsoleState extends ConsumerState<DevConsole> {
         width: 48,
         height: 24,
         decoration: BoxDecoration(
-          color: isSelected ? Colors.orange : Colors.transparent,
+          color: isSelected ? AppTheme.draftWarning : Colors.transparent,
           border: Border.all(
-            color: isSelected ? Colors.orange : Colors.white24,
+            color: isSelected ? AppTheme.draftWarning : onError.withAlpha(61),
           ),
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: AppSpacing.badgeRadius,
         ),
         alignment: Alignment.center,
         child: Text(
           username.replaceFirst('test', ''),
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white70,
+            color: isSelected ? onError : onError.withAlpha(179),
             fontSize: 10,
           ),
         ),
@@ -308,14 +322,17 @@ class _DevConsoleState extends ConsumerState<DevConsole> {
   }
 
   Widget _buildLoginButton(String username) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final onError = colorScheme.onError;
+
     return SizedBox(
       width: 48,
       height: 24,
       child: OutlinedButton(
         onPressed: _isLoading ? null : () => _quickLogin(username),
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Colors.white24),
+          foregroundColor: onError,
+          side: BorderSide(color: onError.withAlpha(61)),
           padding: EdgeInsets.zero,
         ),
         child: Text(

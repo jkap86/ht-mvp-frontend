@@ -25,7 +25,7 @@ class SlowAuctionBudgetCard extends StatelessWidget {
         color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(20),
+            color: theme.colorScheme.shadow.withAlpha(20),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),

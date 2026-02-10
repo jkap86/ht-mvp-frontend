@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_spacing.dart';
 
 /// Model class to hold all scoring settings
 class ScoringSettings {
@@ -88,7 +89,7 @@ class ScoringSettingsEditor extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
       ),
       child: Theme(
@@ -327,7 +328,7 @@ class _ScoringInputRow extends StatelessWidget {
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSpacing.buttonRadius,
                 ),
                 isDense: true,
               ),

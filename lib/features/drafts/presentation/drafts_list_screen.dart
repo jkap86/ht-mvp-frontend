@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_spacing.dart';
 import '../domain/draft_status.dart';
 import '../domain/draft_type.dart';
 import 'providers/drafts_list_provider.dart';
@@ -184,7 +185,7 @@ class _DraftCard extends StatelessWidget {
         onTap: () {
           context.push('/leagues/${draft.leagueId}/drafts/${draft.draft.id}');
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -195,7 +196,7 @@ class _DraftCard extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   color: _getStatusColor(context, draft.draft.status),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: AppSpacing.badgeRadius,
                 ),
               ),
               const SizedBox(width: 16),
@@ -287,7 +288,7 @@ class _DraftCard extends StatelessWidget {
       case DraftStatus.inProgress:
         return colorScheme.error;
       case DraftStatus.paused:
-        return Colors.orange;
+        return colorScheme.tertiary;
       case DraftStatus.notStarted:
         return colorScheme.primary;
       case DraftStatus.completed:

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
+
 /// A reusable message input widget for chat interfaces.
 /// Used by both league chat and DM conversations.
 class ChatMessageInput extends StatelessWidget {
@@ -36,7 +38,7 @@ class ChatMessageInput extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: hintText,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppSpacing.pillRadius,
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,

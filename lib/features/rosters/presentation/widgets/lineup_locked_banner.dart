@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
+
 class LineupLockedBanner extends StatelessWidget {
   final String message;
 
@@ -10,21 +12,23 @@ class LineupLockedBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.orange.shade100,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange),
+        color: colorScheme.tertiary.withValues(alpha: 0.15),
+        borderRadius: AppSpacing.buttonRadius,
+        border: Border.all(color: colorScheme.tertiary),
       ),
       child: Row(
         children: [
-          const Icon(Icons.lock, color: Colors.orange),
+          Icon(Icons.lock, color: colorScheme.tertiary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(color: Colors.orange),
+              style: TextStyle(color: colorScheme.tertiary),
             ),
           ),
         ],

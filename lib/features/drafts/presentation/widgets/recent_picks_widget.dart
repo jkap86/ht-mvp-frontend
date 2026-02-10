@@ -13,9 +13,10 @@ class RecentPicksWidget extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final theme = Theme.of(context);
     return Container(
       height: 100,
-      color: Colors.grey[100],
+      color: theme.colorScheme.surfaceContainerHighest,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -64,7 +65,7 @@ class _PickCard extends StatelessWidget {
               'R${pick.round}P${pick.pickInRound}',
               style: TextStyle(
                 fontSize: 10,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],

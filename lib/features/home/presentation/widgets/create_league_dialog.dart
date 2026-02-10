@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import 'scoring_settings_editor.dart';
 import 'roster_config_editor.dart';
 import '../../../leagues/presentation/widgets/draft_structure_selector.dart';
@@ -211,7 +212,7 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
       ),
       padding: const EdgeInsets.all(16),
@@ -277,7 +278,7 @@ class _CreateLeagueDialogState extends State<CreateLeagueDialog> {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

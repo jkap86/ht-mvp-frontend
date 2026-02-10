@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../../core/theme/app_spacing.dart';
 import '../../../../players/domain/player.dart';
 import '../../../domain/auction_lot.dart';
 import '../../../domain/draft_order_entry.dart';
@@ -70,7 +71,7 @@ class SlowAuctionActionSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: theme.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppSpacing.buttonRadius,
             ),
             child: Row(
               children: [
@@ -167,7 +168,7 @@ class SlowAuctionActionSection extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: InkWell(
         onTap: isBlocked ? null : onNominate,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -178,7 +179,7 @@ class SlowAuctionActionSection extends StatelessWidget {
                   color: isBlocked
                       ? theme.colorScheme.surfaceContainerHighest
                       : theme.colorScheme.primary.withAlpha(30),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSpacing.buttonRadius,
                 ),
                 child: Icon(
                   isBlocked ? Icons.block : Icons.person_add,
@@ -235,7 +236,7 @@ class SlowAuctionActionSection extends StatelessWidget {
       color: theme.colorScheme.errorContainer.withAlpha(50),
       child: InkWell(
         onTap: () => onViewLot(lot),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -244,7 +245,7 @@ class SlowAuctionActionSection extends StatelessWidget {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.error.withAlpha(30),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSpacing.buttonRadius,
                 ),
                 child: Icon(
                   Icons.trending_down,
@@ -265,7 +266,7 @@ class SlowAuctionActionSection extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.error,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: AppSpacing.badgeRadius,
                           ),
                           child: Text(
                             'OUTBID',
@@ -325,7 +326,7 @@ class SlowAuctionActionSection extends StatelessWidget {
       color: theme.colorScheme.tertiaryContainer.withAlpha(50),
       child: InkWell(
         onTap: () => onViewLot(lot),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -334,7 +335,7 @@ class SlowAuctionActionSection extends StatelessWidget {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.tertiary.withAlpha(30),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSpacing.buttonRadius,
                 ),
                 child: Icon(
                   Icons.timer,
@@ -355,7 +356,7 @@ class SlowAuctionActionSection extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.tertiary,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: AppSpacing.badgeRadius,
                           ),
                           child: Text(
                             'ENDING SOON',

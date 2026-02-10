@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_spacing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/invitation.dart';
@@ -155,7 +157,7 @@ class _InviteMemberSheetState extends ConsumerState<InviteMemberSheet> {
                 constraints: const BoxConstraints(maxHeight: 200),
                 decoration: BoxDecoration(
                   border: Border.all(color: colorScheme.outline),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSpacing.buttonRadius,
                 ),
                 child: ListView.builder(
                   shrinkWrap: true,
@@ -221,7 +223,7 @@ class _InviteMemberSheetState extends ConsumerState<InviteMemberSheet> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: colorScheme.primaryContainer.withAlpha(51),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppSpacing.buttonRadius,
                   border: Border.all(color: colorScheme.primaryContainer),
                 ),
                 child: Column(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_spacing.dart';
 
 class PlayerSearchBar extends StatelessWidget {
   final ValueChanged<String> onSearchChanged;
@@ -14,7 +15,7 @@ class PlayerSearchBar extends StatelessWidget {
           hintText: 'Search players...',
           prefixIcon: const Icon(Icons.search),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppSpacing.buttonRadius,
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../domain/chat_message.dart';
@@ -106,10 +107,10 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),
@@ -123,7 +124,7 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
               decoration: InputDecoration(
                 hintText: 'Type a message...',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusXxl),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -169,7 +170,7 @@ class _MessageBubble extends StatelessWidget {
             name: username,
             size: 32,
             backgroundColor: Theme.of(context).colorScheme.primary,
-            textColor: Colors.white,
+            textColor: Theme.of(context).colorScheme.onPrimary,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -187,7 +188,7 @@ class _MessageBubble extends StatelessWidget {
                       _formatTime(message.createdAt),
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.grey[500],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],

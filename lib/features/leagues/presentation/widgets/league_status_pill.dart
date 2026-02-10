@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../providers/league_dashboard_provider.dart';
 
 /// Status variants for the league status pill
@@ -60,13 +62,13 @@ class LeagueStatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final config = _getConfig();
+    final config = _getConfig(Theme.of(context).colorScheme);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: config.backgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -133,48 +135,48 @@ class LeagueStatusPill extends StatelessWidget {
     }
   }
 
-  _PillConfig _getConfig() {
+  _PillConfig _getConfig(ColorScheme colorScheme) {
     switch (type) {
       case LeagueStatusType.draftLive:
         return _PillConfig(
-          backgroundColor: Colors.red.shade100,
-          textColor: Colors.red.shade800,
+          backgroundColor: colorScheme.errorContainer,
+          textColor: colorScheme.error,
           showPulse: true,
         );
       case LeagueStatusType.draftPaused:
         return _PillConfig(
-          backgroundColor: Colors.amber.shade100,
-          textColor: Colors.amber.shade800,
+          backgroundColor: AppTheme.draftWarning.withValues(alpha: 0.15),
+          textColor: AppTheme.draftWarning,
           icon: Icons.pause,
         );
       case LeagueStatusType.draftScheduled:
         return _PillConfig(
-          backgroundColor: Colors.blue.shade100,
-          textColor: Colors.blue.shade800,
+          backgroundColor: colorScheme.primaryContainer,
+          textColor: colorScheme.onPrimaryContainer,
           icon: Icons.schedule,
         );
       case LeagueStatusType.auctionActive:
         return _PillConfig(
-          backgroundColor: Colors.orange.shade100,
-          textColor: Colors.orange.shade800,
+          backgroundColor: AppTheme.auctionPrimary.withValues(alpha: 0.15),
+          textColor: AppTheme.auctionPrimary,
           icon: Icons.gavel,
         );
       case LeagueStatusType.waiversSoon:
         return _PillConfig(
-          backgroundColor: Colors.grey.shade200,
-          textColor: Colors.grey.shade700,
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          textColor: colorScheme.onSurfaceVariant,
           icon: Icons.schedule,
         );
       case LeagueStatusType.inSeason:
         return _PillConfig(
-          backgroundColor: Colors.green.shade100,
-          textColor: Colors.green.shade800,
+          backgroundColor: AppTheme.draftActionPrimary.withValues(alpha: 0.15),
+          textColor: AppTheme.draftActionPrimary,
           icon: Icons.sports_football,
         );
       case LeagueStatusType.preSeason:
         return _PillConfig(
-          backgroundColor: Colors.grey.shade200,
-          textColor: Colors.grey.shade600,
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          textColor: colorScheme.onSurfaceVariant,
         );
     }
   }

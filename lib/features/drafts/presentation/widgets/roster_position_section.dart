@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/draft_pick.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import 'roster_slot.dart';
@@ -37,7 +38,7 @@ class RosterPositionSection extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: AppSpacing.badgeRadius,
                   ),
                   child: Text(
                     position,
@@ -53,7 +54,7 @@ class RosterPositionSection extends StatelessWidget {
                   Text(
                     '(${flexPositions!.join('/')})',
                     style: TextStyle(
-                      color: Colors.grey.shade500,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 10,
                     ),
                   ),
@@ -102,13 +103,13 @@ class RosterBenchSection extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(4),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: AppSpacing.badgeRadius,
               ),
-              child: const Text(
+              child: Text(
                 'BENCH',
                 style: TextStyle(
-                  color: Colors.grey,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),

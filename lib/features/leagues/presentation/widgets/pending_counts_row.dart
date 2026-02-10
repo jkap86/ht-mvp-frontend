@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
+
 /// A row of tappable count indicators for pending trades, waivers, and messages.
 class PendingCountsRow extends StatelessWidget {
   final int pendingTrades;
@@ -35,7 +38,7 @@ class PendingCountsRow extends StatelessWidget {
                 icon: Icons.swap_horiz,
                 count: pendingTrades,
                 label: 'Trade${pendingTrades == 1 ? '' : 's'}',
-                color: Colors.orange,
+                color: AppTheme.draftWarning,
                 onTap: onTradesTap,
               ),
             ),
@@ -48,7 +51,7 @@ class PendingCountsRow extends StatelessWidget {
                 icon: Icons.person_add,
                 count: activeWaiverClaims,
                 label: 'Waiver${activeWaiverClaims == 1 ? '' : 's'}',
-                color: Colors.blue,
+                color: AppTheme.draftNormal,
                 onTap: onWaiversTap,
               ),
             ),
@@ -61,7 +64,7 @@ class PendingCountsRow extends StatelessWidget {
                 icon: Icons.chat_bubble_outline,
                 count: unreadChatMessages,
                 label: 'Message${unreadChatMessages == 1 ? '' : 's'}',
-                color: Colors.green,
+                color: AppTheme.draftActionPrimary,
                 onTap: onChatTap,
               ),
             ),
@@ -94,10 +97,10 @@ class _CountChip extends StatelessWidget {
 
     return Material(
       color: color.withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppSpacing.cardRadius,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
@@ -111,8 +114,8 @@ class _CountChip extends StatelessWidget {
                 ),
                 child: Text(
                   count.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colorScheme.onPrimary,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),

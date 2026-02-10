@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_spacing.dart';
+
 /// Card showing drafts summary with navigation to drafts page
 class HomeDraftsCard extends StatelessWidget {
   final int activeCount;
@@ -19,7 +21,7 @@ class HomeDraftsCard extends StatelessWidget {
       color: hasActive ? colorScheme.errorContainer : null,
       child: InkWell(
         onTap: () => context.go('/drafts'),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppSpacing.cardRadius,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -31,7 +33,7 @@ class HomeDraftsCard extends StatelessWidget {
                   color: hasActive
                       ? colorScheme.error
                       : colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppSpacing.cardRadius,
                 ),
                 child: Icon(
                   Icons.assignment,

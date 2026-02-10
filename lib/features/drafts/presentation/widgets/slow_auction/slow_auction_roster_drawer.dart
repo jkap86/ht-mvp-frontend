@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../config/app_theme.dart';
+import '../../../../../core/theme/app_spacing.dart';
 import '../../../../players/domain/player.dart';
 import '../../../domain/auction_lot.dart';
 import '../../../domain/draft_order_entry.dart';
@@ -180,7 +181,7 @@ class _SlowAuctionRosterDrawerState
                   : '?',
               style: TextStyle(
                 color: isMyTeam
-                    ? Colors.white
+                    ? theme.colorScheme.onPrimary
                     : theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
@@ -206,12 +207,12 @@ class _SlowAuctionRosterDrawerState
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppTheme.draftActionPrimary,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSpacing.cardRadius,
                   ),
-                  child: const Text(
+                  child: Text(
                     'YOU',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),

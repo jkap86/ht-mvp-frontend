@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+
 /// A countdown timer widget that displays time remaining until a deadline.
 /// Changes color based on urgency: red <24h, yellow/orange <3 days.
 class CountdownTimerWidget extends StatefulWidget {
@@ -58,11 +60,11 @@ class _CountdownTimerWidgetState extends State<CountdownTimerWidget> {
 
   Color _getUrgencyColor() {
     if (_remaining.inHours < 24) {
-      return Colors.red.shade600;
+      return AppTheme.draftUrgent;
     } else if (_remaining.inHours < 72) {
-      return Colors.orange.shade600;
+      return AppTheme.draftWarning;
     }
-    return Colors.grey.shade600;
+    return AppTheme.auctionTextMuted;
   }
 
   String _formatDuration() {

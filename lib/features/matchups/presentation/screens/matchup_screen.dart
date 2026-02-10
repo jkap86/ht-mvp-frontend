@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../domain/matchup.dart';
@@ -232,6 +234,7 @@ class _MatchupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isMyTeam1 = myRosterId == matchup.roster1Id;
     final isMyTeam2 = myRosterId == matchup.roster2Id;
 
@@ -247,7 +250,7 @@ class _MatchupCard extends StatelessWidget {
       elevation: isFeatured ? 4 : 1,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppSpacing.buttonRadius,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -261,12 +264,12 @@ class _MatchupCard extends StatelessWidget {
                 isMyTeam: isMyTeam1,
                 showProjection: !matchup.isFinal,
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   'vs',
                   style: TextStyle(
-                    color: Colors.grey,
+                    color: colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -289,13 +292,13 @@ class _MatchupCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade100,
-                        borderRadius: BorderRadius.circular(4),
+                        color: AppTheme.draftActionPrimary.withAlpha(30),
+                        borderRadius: AppSpacing.badgeRadius,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Final',
                         style: TextStyle(
-                          color: Colors.green,
+                          color: AppTheme.draftActionPrimary,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -305,8 +308,8 @@ class _MatchupCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade100,
-                        borderRadius: BorderRadius.circular(4),
+                        color: colorScheme.primary.withAlpha(30),
+                        borderRadius: AppSpacing.badgeRadius,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -314,16 +317,16 @@ class _MatchupCard extends StatelessWidget {
                           Container(
                             width: 6,
                             height: 6,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
+                            decoration: BoxDecoration(
+                              color: colorScheme.error,
                               shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Text(
+                          Text(
                             'LIVE',
                             style: TextStyle(
-                              color: Colors.blue,
+                              color: colorScheme.primary,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -336,13 +339,13 @@ class _MatchupCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.orange.shade100,
-                        borderRadius: BorderRadius.circular(4),
+                        color: colorScheme.tertiary.withAlpha(30),
+                        borderRadius: AppSpacing.badgeRadius,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Playoff',
                         style: TextStyle(
-                          color: Colors.orange,
+                          color: colorScheme.tertiary,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -378,15 +381,17 @@ class _TeamRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         Expanded(
           child: Row(
             children: [
               if (isWinner)
-                const Padding(
-                  padding: EdgeInsets.only(right: 8),
-                  child: Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Icon(Icons.emoji_events, color: colorScheme.tertiary, size: 20),
                 ),
               Expanded(
                 child: Text(
@@ -411,7 +416,7 @@ class _TeamRow extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
-                color: isWinner ? Colors.green : null,
+                color: isWinner ? AppTheme.draftActionPrimary : null,
               ),
             ),
             // Projected points (smaller, secondary)
@@ -420,7 +425,7 @@ class _TeamRow extends StatelessWidget {
                 'Proj: ${projectedPoints!.toStringAsFixed(1)}',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey.shade600,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
           ],
@@ -435,6 +440,8 @@ class _ByeWeekCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       elevation: 4,
       child: Padding(
@@ -444,7 +451,7 @@ class _ByeWeekCard extends StatelessWidget {
             Icon(
               Icons.beach_access,
               size: 48,
-              color: Colors.blue.shade300,
+              color: colorScheme.primary,
             ),
             const SizedBox(height: 12),
             const Text(
@@ -459,7 +466,7 @@ class _ByeWeekCard extends StatelessWidget {
               'No matchup scheduled this week. Take a break!',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),

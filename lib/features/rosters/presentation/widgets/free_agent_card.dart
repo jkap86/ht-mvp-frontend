@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/semantic_colors.dart';
+import '../../../../core/widgets/status_badge.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../players/domain/player.dart';
@@ -22,6 +23,7 @@ class FreeAgentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final positionColor = getPositionColor(player.position);
 
     return Card(
@@ -41,7 +43,7 @@ class FreeAgentCard extends StatelessWidget {
                 child: Text(
                   player.position ?? '?',
                   style: AppTypography.bodySmall.copyWith(
-                    color: Colors.white,
+                    color: colorScheme.onPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -66,21 +68,9 @@ class FreeAgentCard extends StatelessWidget {
                         ),
                       ),
                       if (player.injuryStatus != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: getInjuryColor(player.injuryStatus),
-                            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                          ),
-                          child: Text(
-                            player.injuryStatus!,
-                            style: AppTypography.labelBold.copyWith(
-                              color: Colors.white,
-                            ),
-                          ),
+                        StatusBadge(
+                          label: player.injuryStatus!,
+                          backgroundColor: getInjuryColor(player.injuryStatus),
                         ),
                     ],
                   ),

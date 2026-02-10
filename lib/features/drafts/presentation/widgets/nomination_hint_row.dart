@@ -8,17 +8,18 @@ class NominationHintRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hintColor = Theme.of(context).colorScheme.onSurfaceVariant;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Row(
         children: [
-          Icon(Icons.person_add, size: 16, color: Colors.grey[600]),
+          Icon(Icons.person_add, size: 16, color: hintColor),
           const SizedBox(width: 4),
           Text(
             'Tap a player to nominate',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey[600],
+              color: hintColor,
               fontStyle: FontStyle.italic,
             ),
           ),

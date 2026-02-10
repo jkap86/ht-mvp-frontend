@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../playoffs/domain/playoff.dart';
 import '../providers/commissioner_provider.dart';
 
@@ -156,7 +157,7 @@ class _PlayoffManagementCardState extends State<PlayoffManagementCard> {
                 const SizedBox(height: 4),
                 Text(
                   'Choose 1 or 2 weeks per round. Multi-week rounds use aggregate scoring.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 12),
                 // Round week selectors
@@ -207,16 +208,19 @@ class _PlayoffManagementCardState extends State<PlayoffManagementCard> {
                   final totalRounds = _getTotalRounds(_playoffTeams);
                   final championshipWeek = _getChampionshipWeek(_playoffStartWeek, totalRounds);
                   final isValid = championshipWeek <= 18;
+                  final colorScheme = Theme.of(context).colorScheme;
+                  final validColor = colorScheme.primary;
+                  final invalidColor = colorScheme.error;
 
                   return Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: isValid
-                        ? Colors.green.withValues(alpha: 0.1)
-                        : Colors.red.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                        ? validColor.withValues(alpha: 0.1)
+                        : invalidColor.withValues(alpha: 0.1),
+                      borderRadius: AppSpacing.buttonRadius,
                       border: Border.all(
-                        color: isValid ? Colors.green : Colors.red,
+                        color: isValid ? validColor : invalidColor,
                         width: 1,
                       ),
                     ),
@@ -224,7 +228,7 @@ class _PlayoffManagementCardState extends State<PlayoffManagementCard> {
                       children: [
                         Icon(
                           isValid ? Icons.check_circle : Icons.error,
-                          color: isValid ? Colors.green : Colors.red,
+                          color: isValid ? validColor : invalidColor,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -234,7 +238,7 @@ class _PlayoffManagementCardState extends State<PlayoffManagementCard> {
                               ? 'Playoffs: Week $_playoffStartWeek - $championshipWeek'
                               : 'Championship Week $championshipWeek exceeds Week 18',
                             style: TextStyle(
-                              color: isValid ? Colors.green.shade700 : Colors.red.shade700,
+                              color: isValid ? validColor : invalidColor,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -388,20 +392,21 @@ class _PlayoffManagementCardState extends State<PlayoffManagementCard> {
   }
 
   Widget _buildPlayoffStatusChip(PlayoffStatus status) {
+    final colorScheme = Theme.of(context).colorScheme;
     Color color;
     String label;
 
     switch (status) {
       case PlayoffStatus.active:
-        color = Colors.green;
+        color = colorScheme.primary;
         label = 'Active';
         break;
       case PlayoffStatus.completed:
-        color = Colors.blue;
+        color = colorScheme.primary;
         label = 'Completed';
         break;
       case PlayoffStatus.pending:
-        color = Colors.orange;
+        color = colorScheme.tertiary;
         label = 'Pending';
         break;
     }
@@ -426,7 +431,7 @@ class _PlayoffManagementCardState extends State<PlayoffManagementCard> {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey.shade600,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -528,7 +533,7 @@ class _PlayoffManagementCardState extends State<PlayoffManagementCard> {
                     : 'Advance winners after finalizing each playoff week.',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ] else ...[
@@ -546,7 +551,7 @@ class _PlayoffManagementCardState extends State<PlayoffManagementCard> {
                 'Create a playoff bracket based on current standings. Top seeds are determined by win-loss record.',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

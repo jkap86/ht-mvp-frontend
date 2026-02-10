@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_type.dart';
 
@@ -74,12 +76,13 @@ class DraftOrderPanel extends StatelessWidget {
   }
 
   Widget _buildSnakeIndicator(BuildContext context) {
+    final theme = Theme.of(context);
     final isReversed = currentRound % 2 == 0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: AppSpacing.cardRadius,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -87,7 +90,7 @@ class DraftOrderPanel extends StatelessWidget {
           Icon(
             isReversed ? Icons.arrow_upward : Icons.arrow_downward,
             size: 14,
-            color: Colors.grey.shade700,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 4),
           Text(
@@ -95,7 +98,7 @@ class DraftOrderPanel extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -125,13 +128,13 @@ class _DraftOrderTile extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       decoration: BoxDecoration(
         color: isCurrentPicker
-            ? Colors.green.shade100
+            ? AppTheme.draftActionPrimary.withAlpha(25)
             : isMyTeam
-                ? Colors.blue.shade50
+                ? theme.colorScheme.primaryContainer
                 : null,
         border: isCurrentPicker
-            ? Border(
-                left: BorderSide(color: Colors.green, width: 4),
+            ? const Border(
+                left: BorderSide(color: AppTheme.draftActionPrimary, width: 4),
               )
             : null,
       ),
@@ -140,16 +143,18 @@ class _DraftOrderTile extends StatelessWidget {
         leading: CircleAvatar(
           radius: 14,
           backgroundColor: isCurrentPicker
-              ? Colors.green
+              ? AppTheme.draftActionPrimary
               : isMyTeam
                   ? theme.colorScheme.primary
-                  : Colors.grey.shade300,
+                  : theme.colorScheme.surfaceContainerHighest,
           child: Text(
             '$position',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: isCurrentPicker || isMyTeam ? Colors.white : Colors.grey.shade700,
+              color: isCurrentPicker || isMyTeam
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -169,7 +174,7 @@ class _DraftOrderTile extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: AppSpacing.badgeRadius,
                 ),
                 child: Text(
                   'YOU',
@@ -188,15 +193,15 @@ class _DraftOrderTile extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.green,
-                      borderRadius: BorderRadius.circular(4),
+                      color: AppTheme.draftActionPrimary,
+                      borderRadius: AppSpacing.badgeRadius,
                     ),
-                    child: const Text(
+                    child: Text(
                       'ON THE CLOCK',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: theme.colorScheme.onPrimary,
                       ),
                     ),
                   ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../players/domain/player.dart';
@@ -123,7 +124,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
                 )
               : null,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppSpacing.buttonRadius,
           ),
           filled: true,
           fillColor: Theme.of(context).colorScheme.surface,

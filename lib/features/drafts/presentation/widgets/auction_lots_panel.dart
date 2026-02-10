@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../players/domain/player.dart';
 import '../../domain/auction_lot.dart';
 import '../providers/draft_room_provider.dart';
@@ -24,24 +25,25 @@ class AuctionLotsPanel extends StatelessWidget {
     final activeLots = state.activeLots;
 
     if (activeLots.isEmpty) {
+      final emptyTheme = Theme.of(context);
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
-          border: Border(top: BorderSide(color: Colors.grey[300]!)),
+          color: emptyTheme.colorScheme.surfaceContainerHighest,
+          border: Border(top: BorderSide(color: emptyTheme.colorScheme.outlineVariant)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.gavel, color: Colors.grey),
+            Icon(Icons.gavel, color: emptyTheme.colorScheme.onSurfaceVariant),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'No active lots',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: emptyTheme.colorScheme.onSurfaceVariant),
             ),
-            const Text(
+            Text(
               'Nominate a player to start an auction',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+              style: TextStyle(color: emptyTheme.colorScheme.onSurfaceVariant, fontSize: 12),
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
@@ -227,7 +229,7 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
             // Position and team
             Text(
               '$position - $team',
-              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -240,14 +242,14 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                    color: AppTheme.draftActionPrimary,
                   ),
                 ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     widget.leadingBidderName ?? 'No bids',
-                    style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -256,44 +258,44 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
             ),
             const SizedBox(height: 4),
             // Countdown timer
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: isExpired
-                    ? Colors.grey[300]
-                    : isUrgent
-                        ? Colors.red[100]
-                        : Colors.blue[100],
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.timer,
-                    size: 12,
-                    color: isExpired
-                        ? Colors.grey
-                        : isUrgent
-                            ? Colors.red
-                            : Colors.blue,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    isExpired ? 'Expired' : _formatDuration(_remaining),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: isExpired
-                          ? Colors.grey
-                          : isUrgent
-                              ? Colors.red
-                              : Colors.blue,
+            Builder(builder: (context) {
+              final timerColor = isExpired
+                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                  : isUrgent
+                      ? AppTheme.draftUrgent
+                      : AppTheme.draftNormal;
+              final timerBgColor = isExpired
+                  ? Theme.of(context).colorScheme.surfaceContainerHighest
+                  : isUrgent
+                      ? AppTheme.draftUrgent.withAlpha(25)
+                      : AppTheme.draftNormal.withAlpha(25);
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: timerBgColor,
+                  borderRadius: AppSpacing.badgeRadius,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.timer,
+                      size: 12,
+                      color: timerColor,
                     ),
-                  ),
-                ],
-              ),
-            ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isExpired ? 'Expired' : _formatDuration(_remaining),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: timerColor,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
             const Spacer(),
             // Bid button
             SizedBox(
@@ -302,7 +304,7 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
                 onPressed: isExpired ? null : widget.onBidTap,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.auctionPrimary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   minimumSize: const Size(0, 28),
                 ),

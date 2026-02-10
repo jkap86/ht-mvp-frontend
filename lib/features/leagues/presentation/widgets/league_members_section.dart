@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/league.dart';
 import '../../../dues/presentation/providers/dues_provider.dart';
@@ -121,7 +123,7 @@ class _DuesSummaryHeader extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppSpacing.buttonRadius,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -178,8 +180,9 @@ class _MemberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: isCurrentUser ? Colors.indigo.withValues(alpha: 0.12) : null,
+      color: isCurrentUser ? colorScheme.primary.withValues(alpha: 0.12) : null,
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: UserAvatar(
@@ -193,22 +196,22 @@ class _MemberTile extends StatelessWidget {
         ),
         subtitle: Text(
           member.username,
-          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
         ),
         trailing: isPaid != null
             ? Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: isPaid!
-                      ? Colors.green.withValues(alpha: 0.1)
-                      : Colors.orange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
+                      ? AppTheme.draftActionPrimary.withValues(alpha: 0.1)
+                      : AppTheme.draftWarning.withValues(alpha: 0.1),
+                  borderRadius: AppSpacing.badgeRadius,
                 ),
                 child: Text(
                   isPaid! ? 'PAID' : 'UNPAID',
                   style: TextStyle(
                     fontSize: 11,
-                    color: isPaid! ? Colors.green : Colors.orange,
+                    color: isPaid! ? AppTheme.draftActionPrimary : AppTheme.draftWarning,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -226,29 +229,30 @@ class _EmptySlotTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
-        backgroundColor: Colors.grey[200],
-        child: Icon(Icons.person_add, color: Colors.grey[400], size: 20),
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        child: Icon(Icons.person_add, color: colorScheme.outlineVariant, size: 20),
       ),
       title: Text(
         'Open Slot',
         style: TextStyle(
-          color: Colors.grey[500],
+          color: colorScheme.onSurfaceVariant,
           fontStyle: FontStyle.italic,
         ),
       ),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(4),
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: AppSpacing.badgeRadius,
         ),
         child: Text(
           '#$slotNumber',
           style: TextStyle(
-            color: Colors.grey[400],
+            color: colorScheme.outlineVariant,
             fontSize: 12,
           ),
         ),
@@ -266,26 +270,27 @@ class _EmptyRosterTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
-        backgroundColor: Colors.grey[200],
-        child: Icon(Icons.people, color: Colors.grey[400], size: 20),
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        child: Icon(Icons.people, color: colorScheme.outlineVariant, size: 20),
       ),
       title: Text(
         'Team $rosterId',
-        style: TextStyle(color: Colors.grey[600]),
+        style: TextStyle(color: colorScheme.onSurfaceVariant),
       ),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(4),
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: AppSpacing.badgeRadius,
         ),
         child: Text(
           '#$rosterId',
           style: TextStyle(
-            color: Colors.grey[400],
+            color: colorScheme.outlineVariant,
             fontSize: 12,
           ),
         ),
