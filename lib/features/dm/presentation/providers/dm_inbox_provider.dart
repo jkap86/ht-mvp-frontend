@@ -1,6 +1,7 @@
-import 'dart:ui';
-
+import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/utils/error_sanitizer.dart';
 
 import '../../../../core/socket/socket_service.dart';
 import '../../../chat/presentation/providers/unified_chat_provider.dart';
@@ -150,7 +151,7 @@ class DmInboxNotifier extends StateNotifier<DmInboxState> {
     } catch (e) {
       if (!mounted) return;
 
-      state = state.copyWith(error: e.toString(), isLoading: false);
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
     }
   }
 

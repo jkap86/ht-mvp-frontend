@@ -31,3 +31,22 @@ void showSuccessWithContext(BuildContext context, String message) {
 void showInfo(WidgetRef ref, String message) {
   ref.read(snackBarServiceProvider).showInfo(message);
 }
+
+/// Standardized mutation error handler with action-specific prefix.
+///
+/// Handles rollback, displays a user-friendly error message, and optionally
+/// triggers a refetch to resync state.
+void handleMutationError(
+  WidgetRef ref,
+  Object error, {
+  String? action,
+  VoidCallback? onRollback,
+  VoidCallback? onRefetch,
+}) {
+  onRollback?.call();
+  final message = action != null
+      ? '$action: ${error.toUserMessage()}'
+      : error.toUserMessage();
+  ref.read(snackBarServiceProvider).showError(message);
+  onRefetch?.call();
+}

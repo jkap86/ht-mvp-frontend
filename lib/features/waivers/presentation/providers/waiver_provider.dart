@@ -1,8 +1,10 @@
 import 'dart:async';
-import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/services/invalidation_service.dart';
+import '../../../../core/services/sync_service.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/waiver_repository.dart';
 import '../../domain/waiver_claim.dart';
 import '../../domain/waiver_priority.dart';
@@ -97,6 +99,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
   final WaiverRepository _waiverRepo;
   final SocketService _socketService;
   final InvalidationService _invalidationService;
+  final SyncService _syncService;
   final int leagueId;
   final int? userRosterId;
 
@@ -112,6 +115,8 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
   VoidCallback? _budgetUpdatedDisposer;
   VoidCallback? _memberKickedDisposer;
   VoidCallback? _invalidationDisposer;
+  VoidCallback? _reconnectDisposer;
+  VoidCallback? _syncDisposer;
 
   // Debounce timer for reload operations
   Timer? _loadWaiverDataDebounceTimer;
@@ -121,11 +126,13 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
     this._waiverRepo,
     this._socketService,
     this._invalidationService,
+    this._syncService,
     this.leagueId,
     this.userRosterId,
   ) : super(WaiversState()) {
     _setupSocketListeners();
     _registerInvalidationCallback();
+    _syncDisposer = _syncService.registerLeagueSync(leagueId, loadWaiverData);
     loadWaiverData();
   }
 
@@ -224,10 +231,14 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
       if (!mounted) return;
       // Reload all waiver data after processing
       _debouncedLoadWaiverData();
+      // Trigger cross-provider invalidation (rosters, free agents, matchups changed)
+      _invalidationService.invalidate(InvalidationEvent.waiverProcessed, leagueId);
     });
 
     _claimSuccessfulDisposer = _socketService.onWaiverClaimSuccessful((data) {
       handleClaimEvent(data);
+      // Trigger cross-provider invalidation (roster changed)
+      _invalidationService.invalidate(InvalidationEvent.waiverClaimSuccessful, leagueId);
     });
 
     _claimFailedDisposer = _socketService.onWaiverClaimFailed((data) {
@@ -279,6 +290,15 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
       if (!mounted) return;
       // Reload waiver data as kicked member's claims may have been affected
       _debouncedLoadWaiverData();
+    });
+
+    // Resync waivers on socket reconnection
+    _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
+      if (!mounted) return;
+      if (needsFullRefresh) {
+        if (kDebugMode) debugPrint('Waivers: Socket reconnected after long disconnect, reloading');
+        loadWaiverData();
+      }
     });
   }
 
@@ -333,7 +353,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
       );
     } catch (e) {
       if (!mounted) return;
-      state = state.copyWith(error: e.toString(), isLoading: false);
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
     }
   }
 
@@ -360,7 +380,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
       _addOrUpdateClaim(claim);
       return claim;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return null;
     }
   }
@@ -383,7 +403,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
       _addOrUpdateClaim(claim);
       return claim;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return null;
     }
   }
@@ -395,7 +415,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
       _removeClaim(claimId);
       return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }
@@ -403,9 +423,23 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
   /// Reorder waiver claims
   /// Takes a list of claim IDs in the desired order
   Future<bool> reorderClaims(List<int> claimIds, {String? idempotencyKey}) async {
+    // Save previous claims for rollback on error
+    final previousClaims = [...state.claims];
+
+    // Apply optimistic reorder: update claim_order based on position in claimIds
+    final optimisticClaims = [...state.claims];
+    for (int i = 0; i < claimIds.length; i++) {
+      final index = optimisticClaims.indexWhere((c) => c.id == claimIds[i]);
+      if (index >= 0) {
+        optimisticClaims[index] = optimisticClaims[index].copyWith(claimOrder: i + 1);
+      }
+    }
+    state = state.copyWith(claims: optimisticClaims);
+
     try {
       final updatedClaims = await _waiverRepo.reorderClaims(leagueId, claimIds, idempotencyKey: idempotencyKey);
-      // Update local state with new claim orders
+      if (!mounted) return true;
+      // Update local state with server-confirmed claim orders
       final currentClaims = [...state.claims];
       for (final updated in updatedClaims) {
         final index = currentClaims.indexWhere((c) => c.id == updated.id);
@@ -416,7 +450,9 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
       state = state.copyWith(claims: currentClaims);
       return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      if (!mounted) return false;
+      // Rollback to previous claim order on error
+      state = state.copyWith(claims: previousClaims, error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }
@@ -471,6 +507,8 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
     _budgetUpdatedDisposer?.call();
     _memberKickedDisposer?.call();
     _invalidationDisposer?.call();
+    _reconnectDisposer?.call();
+    _syncDisposer?.call();
     super.dispose();
   }
 }
@@ -482,6 +520,7 @@ final waiversProvider =
     ref.watch(waiverRepositoryProvider),
     ref.watch(socketServiceProvider),
     ref.watch(invalidationServiceProvider),
+    ref.watch(syncServiceProvider),
     params.leagueId,
     params.userRosterId,
   ),

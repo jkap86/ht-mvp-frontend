@@ -1,7 +1,9 @@
 import 'dart:async';
-import 'dart:ui';
 
+import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/utils/error_sanitizer.dart';
 
 import '../../../../core/socket/socket_service.dart';
 import '../../data/dm_repository.dart';
@@ -131,7 +133,7 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
     } catch (e) {
       if (!mounted) return;
 
-      state = state.copyWith(error: e.toString(), isLoading: false);
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
     }
   }
 
@@ -165,7 +167,7 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
     } catch (e) {
       if (!mounted) return;
 
-      state = state.copyWith(isLoadingMore: false, error: e.toString());
+      state = state.copyWith(isLoadingMore: false, error: ErrorSanitizer.sanitize(e));
     }
   }
 
@@ -188,7 +190,7 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
     } catch (e) {
       if (!mounted) return false;
 
-      state = state.copyWith(isSending: false, error: e.toString());
+      state = state.copyWith(isSending: false, error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }

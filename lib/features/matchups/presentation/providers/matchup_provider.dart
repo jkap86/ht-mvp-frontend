@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/services/invalidation_service.dart';
+import '../../../../core/services/sync_service.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../../leagues/data/league_repository.dart';
 import '../../../leagues/domain/league.dart';
 import '../../data/matchup_repository.dart';
@@ -77,20 +79,25 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
   final LeagueRepository _leagueRepo;
   final SocketService _socketService;
   final InvalidationService _invalidationService;
+  final SyncService _syncService;
   final int leagueId;
 
   final List<VoidCallback> _socketDisposers = [];
   VoidCallback? _invalidationDisposer;
+  VoidCallback? _reconnectDisposer;
+  VoidCallback? _syncDisposer;
 
   MatchupNotifier(
     this._matchupRepo,
     this._leagueRepo,
     this._socketService,
     this._invalidationService,
+    this._syncService,
     this.leagueId,
   ) : super(MatchupState()) {
     _setupSocketListeners();
     _registerInvalidationCallback();
+    _syncDisposer = _syncService.registerLeagueSync(leagueId, loadData);
     loadData();
   }
 
@@ -119,6 +126,18 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
         _refreshMatchups();
       }
     }));
+
+    // Resync matchups on socket reconnection
+    _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
+      if (!mounted) return;
+      if (needsFullRefresh) {
+        if (kDebugMode) debugPrint('Matchups: Socket reconnected after long disconnect, reloading');
+        loadData();
+      } else {
+        // Short disconnect - scores may have changed, do background refresh
+        _refreshMatchups();
+      }
+    });
   }
 
   /// Refresh matchups without showing loading state (background refresh)
@@ -141,6 +160,8 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
     }
     _socketDisposers.clear();
     _invalidationDisposer?.call();
+    _reconnectDisposer?.call();
+    _syncDisposer?.call();
     super.dispose();
   }
 
@@ -171,7 +192,7 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
       );
     } catch (e) {
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isLoading: false,
       );
     }
@@ -190,7 +211,7 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
       );
     } catch (e) {
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isLoading: false,
       );
     }
@@ -207,6 +228,7 @@ final matchupProvider = StateNotifierProvider.autoDispose.family<MatchupNotifier
     ref.watch(leagueRepositoryProvider),
     ref.watch(socketServiceProvider),
     ref.watch(invalidationServiceProvider),
+    ref.watch(syncServiceProvider),
     leagueId,
   ),
 );

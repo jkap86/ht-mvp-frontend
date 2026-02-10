@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/sync_service.dart';
 import '../../../../core/socket/socket_service.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../../auth/presentation/auth_provider.dart';
 import '../../data/chat_repository.dart';
 import '../../domain/chat_message.dart';
@@ -46,16 +48,20 @@ class ChatState {
 class ChatNotifier extends StateNotifier<ChatState> {
   final ChatRepository _chatRepo;
   final SocketService _socketService;
+  final SyncService _syncService;
   final int leagueId;
   final String? _currentUserId;
   final String? _currentUsername;
 
-  // Store disposer for proper cleanup - removes only this listener, not all listeners
+  // Store disposers for proper cleanup
   VoidCallback? _chatMessageDisposer;
+  VoidCallback? _reconnectDisposer;
+  VoidCallback? _syncDisposer;
 
   ChatNotifier(
     this._chatRepo,
     this._socketService,
+    this._syncService,
     this.leagueId, {
     String? currentUserId,
     String? currentUsername,
@@ -63,6 +69,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
         _currentUsername = currentUsername,
         super(ChatState()) {
     _setupSocketListeners();
+    _syncDisposer = _syncService.registerLeagueSync(leagueId, loadMessages);
     loadMessages();
   }
 
@@ -79,6 +86,15 @@ class ChatNotifier extends StateNotifier<ChatState> {
         if (kDebugMode) {
           debugPrint('Failed to parse chat message from socket: $e');
         }
+      }
+    });
+
+    // Resync messages on socket reconnection
+    _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
+      if (!mounted) return;
+      if (needsFullRefresh) {
+        if (kDebugMode) debugPrint('Chat: Socket reconnected after long disconnect, reloading messages');
+        loadMessages();
       }
     });
   }
@@ -134,7 +150,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       // Check if disposed during async operations
       if (!mounted) return;
 
-      state = state.copyWith(error: e.toString(), isLoading: false);
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
     }
   }
 
@@ -167,7 +183,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       // Check if disposed during async operations
       if (!mounted) return;
 
-      state = state.copyWith(isLoadingMore: false, error: e.toString());
+      state = state.copyWith(isLoadingMore: false, error: ErrorSanitizer.sanitize(e));
     }
   }
 
@@ -247,7 +263,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
   @override
   void dispose() {
     _socketService.leaveLeague(leagueId);
-    _chatMessageDisposer?.call(); // Remove only this listener, not all chat listeners
+    _chatMessageDisposer?.call();
+    _reconnectDisposer?.call();
+    _syncDisposer?.call();
     super.dispose();
   }
 }
@@ -258,6 +276,7 @@ final chatProvider = StateNotifierProvider.autoDispose.family<ChatNotifier, Chat
     return ChatNotifier(
       ref.watch(chatRepositoryProvider),
       ref.watch(socketServiceProvider),
+      ref.watch(syncServiceProvider),
       leagueId,
       currentUserId: authState.user?.id,
       currentUsername: authState.user?.username,

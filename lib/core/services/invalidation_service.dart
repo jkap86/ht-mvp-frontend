@@ -10,6 +10,7 @@ enum InvalidationType {
   waivers,
   leagueDetail,
   matchups,
+  picks,
 }
 
 /// Events that can trigger invalidation.
@@ -49,11 +50,15 @@ class InvalidationService {
       InvalidationType.team,
       InvalidationType.freeAgents,
       InvalidationType.standings,
+      InvalidationType.matchups,
+      InvalidationType.picks,
     ],
     InvalidationEvent.tradeCompleted: [
       InvalidationType.team,
       InvalidationType.freeAgents,
       InvalidationType.standings,
+      InvalidationType.matchups,
+      InvalidationType.picks,
     ],
     InvalidationEvent.playerAdded: [
       InvalidationType.team,
@@ -68,6 +73,7 @@ class InvalidationService {
       InvalidationType.freeAgents,
       InvalidationType.standings,
       InvalidationType.waivers,
+      InvalidationType.matchups,
     ],
     InvalidationEvent.waiverClaimSuccessful: [
       InvalidationType.team,
@@ -78,6 +84,7 @@ class InvalidationService {
     ],
     InvalidationEvent.draftCompleted: [
       InvalidationType.team,
+      InvalidationType.freeAgents,
       InvalidationType.leagueDetail,
     ],
     InvalidationEvent.memberJoined: [

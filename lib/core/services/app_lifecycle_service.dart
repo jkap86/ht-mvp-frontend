@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../socket/socket_service.dart';
+import 'sync_service.dart';
 
 /// Callback type for providers that can refresh on app resume.
 typedef RefreshCallback = Future<void> Function();
@@ -15,6 +16,7 @@ typedef RefreshCallback = Future<void> Function();
 /// - Notifies registered providers to refresh their data
 class AppLifecycleService with WidgetsBindingObserver {
   final SocketService _socketService;
+  final SyncService _syncService;
   final Ref _ref;
 
   DateTime? _backgroundedAt;
@@ -24,7 +26,7 @@ class AppLifecycleService with WidgetsBindingObserver {
   /// If app was backgrounded longer than this, trigger refresh on resume.
   static const staleThreshold = Duration(seconds: 30);
 
-  AppLifecycleService(this._socketService, this._ref) {
+  AppLifecycleService(this._socketService, this._syncService, this._ref) {
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -87,6 +89,7 @@ class AppLifecycleService with WidgetsBindingObserver {
 
     // Only refresh if we were backgrounded long enough
     if (wasStale) {
+      _syncService.syncAll();
       _triggerRefreshCallbacks();
     }
   }
@@ -116,7 +119,8 @@ class AppLifecycleService with WidgetsBindingObserver {
 /// Provider for the app lifecycle service.
 final appLifecycleServiceProvider = Provider<AppLifecycleService>((ref) {
   final socketService = ref.watch(socketServiceProvider);
-  final service = AppLifecycleService(socketService, ref);
+  final syncService = ref.watch(syncServiceProvider);
+  final service = AppLifecycleService(socketService, syncService, ref);
   ref.onDispose(() => service.dispose());
   return service;
 });

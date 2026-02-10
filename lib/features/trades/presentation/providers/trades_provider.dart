@@ -1,8 +1,10 @@
 import 'dart:async';
-import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/services/invalidation_service.dart';
+import '../../../../core/services/sync_service.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/trade_repository.dart';
 import '../../domain/trade.dart';
 import '../../domain/trade_status.dart';
@@ -82,6 +84,7 @@ class TradesNotifier extends StateNotifier<TradesState> {
   final TradeRepository _tradeRepo;
   final SocketService _socketService;
   final InvalidationService _invalidationService;
+  final SyncService _syncService;
   final int leagueId;
 
   // Socket listener disposers
@@ -97,6 +100,8 @@ class TradesNotifier extends StateNotifier<TradesState> {
   VoidCallback? _invalidatedDisposer;
   VoidCallback? _memberKickedDisposer;
   VoidCallback? _invalidationDisposer;
+  VoidCallback? _reconnectDisposer;
+  VoidCallback? _syncDisposer;
 
   // Debounce timer for socket events that trigger loadTrades
   Timer? _loadTradesDebounceTimer;
@@ -106,10 +111,12 @@ class TradesNotifier extends StateNotifier<TradesState> {
     this._tradeRepo,
     this._socketService,
     this._invalidationService,
+    this._syncService,
     this.leagueId,
   ) : super(TradesState()) {
     _setupSocketListeners();
     _registerInvalidationCallback();
+    _syncDisposer = _syncService.registerLeagueSync(leagueId, loadTrades);
     loadTrades();
   }
 
@@ -159,8 +166,9 @@ class TradesNotifier extends StateNotifier<TradesState> {
     });
 
     _acceptedDisposer = _socketService.onTradeAccepted((data) {
-      // Backend sends { tradeId, reviewEndsAt } - reload for full data
       handleTradeEvent(data);
+      // Trigger cross-provider invalidation for socket-delivered trade acceptance
+      _invalidationService.invalidate(InvalidationEvent.tradeAccepted, leagueId);
     });
 
     _rejectedDisposer = _socketService.onTradeRejected((data) {
@@ -207,8 +215,9 @@ class TradesNotifier extends StateNotifier<TradesState> {
     });
 
     _completedDisposer = _socketService.onTradeCompleted((data) {
-      // Backend sends { tradeId } - reload for full data
       handleTradeEvent(data);
+      // Trigger cross-provider invalidation for socket-delivered trade completion
+      _invalidationService.invalidate(InvalidationEvent.tradeCompleted, leagueId);
     });
 
     _vetoedDisposer = _socketService.onTradeVetoed((data) {
@@ -248,9 +257,18 @@ class TradesNotifier extends StateNotifier<TradesState> {
       // Reload to get updated trade statuses (with debounce)
       _debouncedLoadTrades();
     });
+
+    // Resync trades on socket reconnection
+    _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
+      if (!mounted) return;
+      if (needsFullRefresh) {
+        if (kDebugMode) debugPrint('Trades: Socket reconnected after long disconnect, reloading');
+        loadTrades();
+      }
+    });
   }
 
-  /// Add or update a trade in the list
+  /// Add or update a trade in the list, maintaining deterministic sort order.
   void _addOrUpdateTrade(Trade trade) {
     final existing = state.trades.indexWhere((t) => t.id == trade.id);
     List<Trade> updated;
@@ -258,9 +276,10 @@ class TradesNotifier extends StateNotifier<TradesState> {
       updated = [...state.trades];
       updated[existing] = trade;
     } else {
-      // New trade - add to beginning of list
       updated = [trade, ...state.trades];
     }
+    // Sort by most recently updated to prevent ordering regressions from socket events
+    updated.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     state = state.copyWith(trades: updated);
   }
 
@@ -274,7 +293,7 @@ class TradesNotifier extends StateNotifier<TradesState> {
       state = state.copyWith(trades: trades, isLoading: false, lastUpdated: DateTime.now());
     } catch (e) {
       if (!mounted) return;
-      state = state.copyWith(error: e.toString(), isLoading: false);
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
     }
   }
 
@@ -301,7 +320,7 @@ class TradesNotifier extends StateNotifier<TradesState> {
 
       return trade;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return null;
     }
   }
@@ -313,7 +332,7 @@ class TradesNotifier extends StateNotifier<TradesState> {
       _addOrUpdateTrade(trade);
       return trade;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return null;
     }
   }
@@ -325,7 +344,7 @@ class TradesNotifier extends StateNotifier<TradesState> {
       _addOrUpdateTrade(trade);
       return trade;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return null;
     }
   }
@@ -342,7 +361,7 @@ class TradesNotifier extends StateNotifier<TradesState> {
       _addOrUpdateTrade(trade);
       return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }
@@ -368,6 +387,8 @@ class TradesNotifier extends StateNotifier<TradesState> {
     _invalidatedDisposer?.call();
     _memberKickedDisposer?.call();
     _invalidationDisposer?.call();
+    _reconnectDisposer?.call();
+    _syncDisposer?.call();
     super.dispose();
   }
 }
@@ -379,6 +400,7 @@ final tradesProvider =
     ref.watch(tradeRepositoryProvider),
     ref.watch(socketServiceProvider),
     ref.watch(invalidationServiceProvider),
+    ref.watch(syncServiceProvider),
     leagueId,
   ),
 );
