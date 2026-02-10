@@ -29,10 +29,16 @@ class NotificationItem extends StatelessWidget {
       case NotificationType.draftPick:
         return Icons.timer;
       case NotificationType.waiverProcessed:
+      case NotificationType.waiverSuccess:
+      case NotificationType.waiverFailed:
         return Icons.assignment;
+      case NotificationType.scoresUpdated:
+      case NotificationType.weekFinalized:
+        return Icons.sports_score;
       case NotificationType.messageReceived:
         return Icons.chat_bubble_outline;
       case NotificationType.leagueInvite:
+      case NotificationType.invitationReceived:
         return Icons.person_add;
       case NotificationType.matchupResult:
         return Icons.sports_football;
@@ -54,9 +60,17 @@ class NotificationItem extends StatelessWidget {
         return colorScheme.secondary;
       case NotificationType.waiverProcessed:
         return colorScheme.primary;
+      case NotificationType.waiverSuccess:
+        return colorScheme.primary;
+      case NotificationType.waiverFailed:
+        return colorScheme.error;
+      case NotificationType.scoresUpdated:
+      case NotificationType.weekFinalized:
+        return colorScheme.primary;
       case NotificationType.messageReceived:
         return colorScheme.primary;
       case NotificationType.leagueInvite:
+      case NotificationType.invitationReceived:
         return colorScheme.tertiary;
       case NotificationType.matchupResult:
         return colorScheme.onSurfaceVariant;

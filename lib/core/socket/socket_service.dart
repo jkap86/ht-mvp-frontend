@@ -306,31 +306,103 @@ class SocketService {
     }
   }
 
+  /// Validate that a socket payload is a Map with expected structure
+  bool _isValidPayload(dynamic data, {List<String>? requiredFields}) {
+    if (data == null) return false;
+    if (data is! Map<String, dynamic>) return false;
+
+    // Check required fields if specified
+    if (requiredFields != null) {
+      for (final field in requiredFields) {
+        if (!data.containsKey(field)) return false;
+      }
+    }
+
+    return true;
+  }
+
+  /// Wrap callback with payload validation and context filtering
+  void Function(dynamic) _wrapCallback(
+    void Function(dynamic) callback, {
+    int? expectedLeagueId,
+    int? expectedDraftId,
+    List<String>? requiredFields,
+  }) {
+    return (dynamic data) {
+      // Validate payload structure
+      if (!_isValidPayload(data, requiredFields: requiredFields)) {
+        if (kDebugMode) {
+          debugPrint('Socket: Invalid payload received, ignoring event');
+        }
+        return;
+      }
+
+      final payload = data as Map<String, dynamic>;
+
+      // Filter by league context if specified
+      if (expectedLeagueId != null) {
+        final eventLeagueId = payload['league_id'] as int? ?? payload['leagueId'] as int?;
+        if (eventLeagueId != null && eventLeagueId != expectedLeagueId) {
+          if (kDebugMode) {
+            debugPrint('Socket: Event from wrong league (expected $expectedLeagueId, got $eventLeagueId), ignoring');
+          }
+          return;
+        }
+      }
+
+      // Filter by draft context if specified
+      if (expectedDraftId != null) {
+        final eventDraftId = payload['draft_id'] as int? ?? payload['draftId'] as int?;
+        if (eventDraftId != null && eventDraftId != expectedDraftId) {
+          if (kDebugMode) {
+            debugPrint('Socket: Event from wrong draft (expected $expectedDraftId, got $eventDraftId), ignoring');
+          }
+          return;
+        }
+      }
+
+      // Payload is valid and matches context, invoke callback
+      callback(data);
+    };
+  }
+
   /// Generic event listener that returns a disposer function.
   /// If socket is not connected, queues the subscription for when it connects.
   /// Call the returned function to remove only this specific listener.
-  VoidCallback on(String event, void Function(dynamic) callback) {
+  VoidCallback on(String event, void Function(dynamic) callback, {
+    int? expectedLeagueId,
+    int? expectedDraftId,
+    List<String>? requiredFields,
+  }) {
+    // Wrap callback with validation and context filtering
+    final wrappedCallback = _wrapCallback(
+      callback,
+      expectedLeagueId: expectedLeagueId,
+      expectedDraftId: expectedDraftId,
+      requiredFields: requiredFields,
+    );
+
     if (_socket != null && _socket!.connected) {
       // Socket is connected, register immediately
-      _socket!.on(event, callback);
-      _activeSubscriptions.putIfAbsent(event, () => []).add(callback);
+      _socket!.on(event, wrappedCallback);
+      _activeSubscriptions.putIfAbsent(event, () => []).add(wrappedCallback);
     } else {
       // Socket not connected, queue for later
-      _pendingSubscriptions.add(_PendingSubscription(event, callback));
+      _pendingSubscriptions.add(_PendingSubscription(event, wrappedCallback));
     }
 
     // Return a disposer that removes only this specific callback
     return () {
       // Remove from active subscriptions
-      _activeSubscriptions[event]?.remove(callback);
+      _activeSubscriptions[event]?.remove(wrappedCallback);
       // Remove from socket if connected
-      _socket?.off(event, callback);
+      _socket?.off(event, wrappedCallback);
       // Remove from pending queue if still there
       _pendingSubscriptions.removeWhere(
-        (p) => p.event == event && p.callback == callback,
+        (p) => p.event == event && p.callback == wrappedCallback,
       );
       // Also remove from listeners to restore (prevents restoring disposed callbacks during reconnect)
-      _listenersToRestore?[event]?.remove(callback);
+      _listenersToRestore?[event]?.remove(wrappedCallback);
     };
   }
 

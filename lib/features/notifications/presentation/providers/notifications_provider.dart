@@ -144,6 +144,63 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
         );
       }
     }));
+
+    // Listen for invitation events
+    _disposers.add(_socketService.onInvitationReceived((data) {
+      _addNotificationFromSocket(
+        type: NotificationType.invitationReceived,
+        title: 'League Invitation',
+        body: 'You have been invited to join a league',
+        data: data,
+      );
+    }));
+
+    // Listen for waiver events
+    _disposers.add(_socketService.onWaiverClaimSuccessful((data) {
+      _addNotificationFromSocket(
+        type: NotificationType.waiverSuccess,
+        title: 'Waiver Claim Successful',
+        body: 'Your waiver claim was successful',
+        data: data,
+      );
+    }));
+
+    _disposers.add(_socketService.onWaiverClaimFailed((data) {
+      _addNotificationFromSocket(
+        type: NotificationType.waiverFailed,
+        title: 'Waiver Claim Failed',
+        body: 'Your waiver claim was not successful',
+        data: data,
+      );
+    }));
+
+    _disposers.add(_socketService.onWaiverProcessed((data) {
+      _addNotificationFromSocket(
+        type: NotificationType.waiverProcessed,
+        title: 'Waivers Processed',
+        body: 'Waiver claims have been processed',
+        data: data,
+      );
+    }));
+
+    // Listen for scoring events
+    _disposers.add(_socketService.onScoresUpdated((data) {
+      _addNotificationFromSocket(
+        type: NotificationType.scoresUpdated,
+        title: 'Scores Updated',
+        body: 'Player scores have been updated',
+        data: data,
+      );
+    }));
+
+    _disposers.add(_socketService.onWeekFinalized((data) {
+      _addNotificationFromSocket(
+        type: NotificationType.weekFinalized,
+        title: 'Week Finalized',
+        body: 'The weekly matchups have been finalized',
+        data: data,
+      );
+    }));
   }
 
   void _addNotificationFromSocket({

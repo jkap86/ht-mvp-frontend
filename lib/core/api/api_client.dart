@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -99,9 +98,6 @@ class ApiClient {
 
     if (auth) {
       final token = await _getAccessToken();
-      if (kDebugMode) {
-        debugPrint('API: Token present: ${token != null}, length: ${token?.length ?? 0}');
-      }
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       }
@@ -270,7 +266,18 @@ class ApiClient {
   }
 
   dynamic _handleResponse(http.Response response) {
-    final body = response.body.isNotEmpty ? jsonDecode(response.body) : null;
+    dynamic body;
+    try {
+      body = response.body.isNotEmpty ? jsonDecode(response.body) : null;
+    } catch (e) {
+      // Non-JSON response body (e.g., HTML error page from proxy/LB)
+      // For successful responses, this is a critical error - we expected JSON
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        throw ServerException('Invalid JSON response from server', 'INVALID_JSON');
+      }
+      // For error responses, set body to null and continue to error handling
+      body = null;
+    }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return body;

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../../core/services/invalidation_service.dart';
 import '../../../leagues/data/league_repository.dart';
@@ -179,6 +180,11 @@ class TeamNotifier extends StateNotifier<TeamState> {
 
   VoidCallback? _invalidationDisposer;
 
+  // Idempotency keys for retry safety
+  String? _lineupIdempotencyKey;
+  String? _movePlayerIdempotencyKey;
+  String? _dropPlayerIdempotencyKey;
+
   TeamNotifier(
     this._rosterRepo,
     this._leagueRepo,
@@ -279,6 +285,9 @@ class TeamNotifier extends StateNotifier<TeamState> {
       return false;
     }
 
+    // Generate or reuse idempotency key for retry safety
+    _movePlayerIdempotencyKey ??= idempotencyKey ?? const Uuid().v4();
+
     state = state.copyWith(isSaving: true);
 
     try {
@@ -288,9 +297,12 @@ class TeamNotifier extends StateNotifier<TeamState> {
         state.currentWeek,
         playerId,
         toSlot,
-        idempotencyKey: idempotencyKey,
+        idempotencyKey: _movePlayerIdempotencyKey,
       );
       if (!mounted) return false;
+
+      // Clear key on success
+      _movePlayerIdempotencyKey = null;
 
       state = state.copyWith(
         lineup: updatedLineup,
@@ -299,6 +311,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       return true;
     } catch (e) {
       if (!mounted) return false;
+      // Keep key for retry
       state = state.copyWith(
         error: e.toString(),
         isSaving: false,
@@ -308,11 +321,14 @@ class TeamNotifier extends StateNotifier<TeamState> {
   }
 
   /// Save the entire lineup
-  Future<bool> saveLineup(LineupSlots lineup) async {
+  Future<bool> saveLineup(LineupSlots lineup, {String? idempotencyKey}) async {
     if (state.lineup?.isLocked == true) {
       state = state.copyWith(error: 'Lineup is locked for this week');
       return false;
     }
+
+    // Generate or reuse idempotency key for retry safety
+    _lineupIdempotencyKey ??= idempotencyKey ?? const Uuid().v4();
 
     state = state.copyWith(isSaving: true);
 
@@ -322,8 +338,12 @@ class TeamNotifier extends StateNotifier<TeamState> {
         rosterId,
         state.currentWeek,
         lineup,
+        idempotencyKey: _lineupIdempotencyKey,
       );
       if (!mounted) return false;
+
+      // Clear key on success
+      _lineupIdempotencyKey = null;
 
       state = state.copyWith(
         lineup: updatedLineup,
@@ -332,6 +352,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       return true;
     } catch (e) {
       if (!mounted) return false;
+      // Keep key for retry
       state = state.copyWith(
         error: e.toString(),
         isSaving: false,
@@ -342,11 +363,22 @@ class TeamNotifier extends StateNotifier<TeamState> {
 
   /// Drop a player from the roster
   Future<bool> dropPlayer(int playerId, {String? idempotencyKey}) async {
+    // Generate or reuse idempotency key for retry safety
+    _dropPlayerIdempotencyKey ??= idempotencyKey ?? const Uuid().v4();
+
     state = state.copyWith(isSaving: true);
 
     try {
-      await _rosterRepo.dropPlayer(leagueId, rosterId, playerId, idempotencyKey: idempotencyKey);
+      await _rosterRepo.dropPlayer(
+        leagueId,
+        rosterId,
+        playerId,
+        idempotencyKey: _dropPlayerIdempotencyKey,
+      );
       if (!mounted) return false;
+
+      // Clear key on success
+      _dropPlayerIdempotencyKey = null;
 
       // Remove from local state
       state = state.copyWith(
@@ -356,6 +388,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       return true;
     } catch (e) {
       if (!mounted) return false;
+      // Keep key for retry
       state = state.copyWith(
         error: e.toString(),
         isSaving: false,
@@ -381,6 +414,9 @@ class TeamNotifier extends StateNotifier<TeamState> {
       return false;
     }
 
+    // Generate or reuse idempotency key for retry safety
+    _lineupIdempotencyKey ??= idempotencyKey ?? const Uuid().v4();
+
     state = state.copyWith(isSaving: true);
 
     try {
@@ -392,9 +428,12 @@ class TeamNotifier extends StateNotifier<TeamState> {
         rosterId,
         state.currentWeek,
         optimized.slots,
-        idempotencyKey: idempotencyKey,
+        idempotencyKey: _lineupIdempotencyKey,
       );
       if (!mounted) return false;
+
+      // Clear key on success
+      _lineupIdempotencyKey = null;
 
       state = state.copyWith(
         lineup: updatedLineup,
@@ -403,6 +442,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       return true;
     } catch (e) {
       if (!mounted) return false;
+      // Keep key for retry
       state = state.copyWith(
         error: e.toString(),
         isSaving: false,

@@ -28,7 +28,7 @@ class RosterRepository {
       body: {'playerId': playerId},
       idempotencyKey: idempotencyKey,
     );
-    return RosterPlayer.fromJson(response);
+    return RosterPlayer.fromJson(response['player'] as Map<String, dynamic>);
   }
 
   /// Drop a player from roster
@@ -52,7 +52,7 @@ class RosterRepository {
       },
       idempotencyKey: idempotencyKey,
     );
-    return RosterPlayer.fromJson(response);
+    return RosterPlayer.fromJson(response['player'] as Map<String, dynamic>);
   }
 
   /// Get free agents (players not on any roster in the league)

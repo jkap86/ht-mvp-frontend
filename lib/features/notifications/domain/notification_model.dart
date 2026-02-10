@@ -8,8 +8,13 @@ enum NotificationType {
   draftStarted('draft_started', 'Draft has started'),
   draftPick('draft_pick', 'Your pick in draft'),
   waiverProcessed('waiver_processed', 'Waiver results available'),
+  waiverSuccess('waiver_success', 'Waiver claim successful'),
+  waiverFailed('waiver_failed', 'Waiver claim failed'),
+  scoresUpdated('scores_updated', 'Player scores updated'),
+  weekFinalized('week_finalized', 'Week finalized'),
   messageReceived('message_received', 'New league chat message'),
   leagueInvite('league_invite', 'League invitation received'),
+  invitationReceived('invitation_received', 'League invitation received'),
   matchupResult('matchup_result', 'Matchup result');
 
   final String value;
@@ -126,12 +131,19 @@ class AppNotification {
         return '/leagues/$leagueId';
 
       case NotificationType.waiverProcessed:
+      case NotificationType.waiverSuccess:
+      case NotificationType.waiverFailed:
         return '/leagues/$leagueId/team';
+
+      case NotificationType.scoresUpdated:
+      case NotificationType.weekFinalized:
+        return '/leagues/$leagueId/matchups';
 
       case NotificationType.messageReceived:
         return '/leagues/$leagueId';
 
       case NotificationType.leagueInvite:
+      case NotificationType.invitationReceived:
         return '/leagues';
 
       case NotificationType.matchupResult:
