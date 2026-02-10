@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/error_display.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../../auth/presentation/auth_provider.dart';
@@ -65,9 +66,7 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
     if (success) {
       _messageController.clear();
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error sending message')),
-      );
+      'Error sending message'.showAsError(ref);
     }
   }
 

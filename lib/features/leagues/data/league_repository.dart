@@ -38,6 +38,7 @@ class LeagueRepository {
     Map<String, dynamic>? settings,
     bool isPublic = false,
     String? draftStructure,
+    String? idempotencyKey,
   }) async {
     final response = await _apiClient.post('/leagues', body: {
       'name': name,
@@ -48,7 +49,7 @@ class LeagueRepository {
       if (mode != null) 'mode': mode,
       if (settings != null) 'settings': settings,
       if (draftStructure != null) 'draft_structure': draftStructure,
-    });
+    }, idempotencyKey: idempotencyKey);
     return League.fromJson(response);
   }
 
@@ -62,8 +63,8 @@ class LeagueRepository {
   }
 
   /// Join a public league by its ID
-  Future<League> joinPublicLeague(int leagueId) async {
-    final response = await _apiClient.post('/leagues/$leagueId/join');
+  Future<League> joinPublicLeague(int leagueId, {String? idempotencyKey}) async {
+    final response = await _apiClient.post('/leagues/$leagueId/join', idempotencyKey: idempotencyKey);
     return League.fromJson(response);
   }
 
@@ -91,6 +92,7 @@ class LeagueRepository {
     Map<String, dynamic>? settings,
     List<String>? playerPool,
     DateTime? scheduledStart,
+    String? idempotencyKey,
   }) async {
     final response = await _apiClient.post('/leagues/$leagueId/drafts', body: {
       'draft_type': draftType,
@@ -99,12 +101,12 @@ class LeagueRepository {
       if (settings != null) 'auction_settings': settings,
       if (playerPool != null) 'player_pool': playerPool,
       if (scheduledStart != null) 'scheduled_start': scheduledStart.toUtc().toIso8601String(),
-    });
+    }, idempotencyKey: idempotencyKey);
     return Draft.fromJson(response);
   }
 
-  Future<Draft> startDraft(int leagueId, int draftId) async {
-    final response = await _apiClient.post('/leagues/$leagueId/drafts/$draftId/start');
+  Future<Draft> startDraft(int leagueId, int draftId, {String? idempotencyKey}) async {
+    final response = await _apiClient.post('/leagues/$leagueId/drafts/$draftId/start', idempotencyKey: idempotencyKey);
     return Draft.fromJson(response);
   }
 
@@ -129,16 +131,16 @@ class LeagueRepository {
   }
 
   /// Kick a member from the league (commissioner only)
-  Future<void> kickMember(int leagueId, int rosterId) async {
-    await _apiClient.delete('/leagues/$leagueId/members/$rosterId');
+  Future<void> kickMember(int leagueId, int rosterId, {String? idempotencyKey}) async {
+    await _apiClient.delete('/leagues/$leagueId/members/$rosterId', idempotencyKey: idempotencyKey);
   }
 
   /// Delete league (commissioner only)
   /// Requires confirmationName to match the league name (case-insensitive)
-  Future<void> deleteLeague(int leagueId, {required String confirmationName}) async {
+  Future<void> deleteLeague(int leagueId, {required String confirmationName, String? idempotencyKey}) async {
     await _apiClient.delete('/leagues/$leagueId', body: {
       'confirmationName': confirmationName,
-    });
+    }, idempotencyKey: idempotencyKey);
   }
 
   /// Update season controls (commissioner only)
@@ -147,11 +149,12 @@ class LeagueRepository {
     int leagueId, {
     String? seasonStatus,
     int? currentWeek,
+    String? idempotencyKey,
   }) async {
     final response = await _apiClient.post('/leagues/$leagueId/season-controls', body: {
       if (seasonStatus != null) 'seasonStatus': seasonStatus,
       if (currentWeek != null) 'currentWeek': currentWeek,
-    });
+    }, idempotencyKey: idempotencyKey);
     return League.fromJson(response);
   }
 
@@ -162,13 +165,14 @@ class LeagueRepository {
     required String confirmationName,
     bool keepMembers = false,
     bool clearChat = true,
+    String? idempotencyKey,
   }) async {
     final response = await _apiClient.post('/leagues/$leagueId/reset', body: {
       'new_season': newSeason,
       'keep_members': keepMembers,
       'clear_chat': clearChat,
       'confirmation_name': confirmationName,
-    });
+    }, idempotencyKey: idempotencyKey);
     return League.fromJson(response);
   }
 
@@ -182,6 +186,7 @@ class LeagueRepository {
     Map<String, dynamic>? leagueSettings,
     Map<String, dynamic>? scoringSettings,
     int? totalRosters,
+    String? idempotencyKey,
   }) async {
     final response = await _apiClient.put('/leagues/$leagueId', body: {
       if (name != null) 'name': name,
@@ -191,13 +196,13 @@ class LeagueRepository {
       if (leagueSettings != null) 'league_settings': leagueSettings,
       if (scoringSettings != null) 'scoring_settings': scoringSettings,
       if (totalRosters != null) 'total_rosters': totalRosters,
-    });
+    }, idempotencyKey: idempotencyKey);
     return League.fromJson(response);
   }
 
   /// Reinstate a benched member (commissioner only)
-  Future<void> reinstateMember(int leagueId, int rosterId) async {
-    await _apiClient.post('/leagues/$leagueId/members/$rosterId/reinstate');
+  Future<void> reinstateMember(int leagueId, int rosterId, {String? idempotencyKey}) async {
+    await _apiClient.post('/leagues/$leagueId/members/$rosterId/reinstate', idempotencyKey: idempotencyKey);
   }
 
   // ============= Invitation Methods =============
@@ -212,14 +217,14 @@ class LeagueRepository {
   }
 
   /// Accept an invitation and join the league
-  Future<League> acceptInvitation(int invitationId) async {
-    final response = await _apiClient.post('/invitations/$invitationId/accept');
+  Future<League> acceptInvitation(int invitationId, {String? idempotencyKey}) async {
+    final response = await _apiClient.post('/invitations/$invitationId/accept', idempotencyKey: idempotencyKey);
     return League.fromJson(response['league']);
   }
 
   /// Decline an invitation
-  Future<void> declineInvitation(int invitationId) async {
-    await _apiClient.post('/invitations/$invitationId/decline');
+  Future<void> declineInvitation(int invitationId, {String? idempotencyKey}) async {
+    await _apiClient.post('/invitations/$invitationId/decline', idempotencyKey: idempotencyKey);
   }
 
   /// Send an invitation (commissioner only)
@@ -227,11 +232,12 @@ class LeagueRepository {
     int leagueId,
     String username, {
     String? message,
+    String? idempotencyKey,
   }) async {
     final response = await _apiClient.post('/leagues/$leagueId/invitations', body: {
       'username': username,
       if (message != null && message.isNotEmpty) 'message': message,
-    });
+    }, idempotencyKey: idempotencyKey);
     return LeagueInvitation.fromJson(response);
   }
 
@@ -245,8 +251,8 @@ class LeagueRepository {
   }
 
   /// Cancel an invitation (commissioner only)
-  Future<void> cancelInvitation(int invitationId) async {
-    await _apiClient.delete('/invitations/$invitationId');
+  Future<void> cancelInvitation(int invitationId, {String? idempotencyKey}) async {
+    await _apiClient.delete('/invitations/$invitationId', idempotencyKey: idempotencyKey);
   }
 
   /// Search users for inviting (commissioner only)
@@ -321,6 +327,7 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
     Map<String, dynamic>? settings,
     bool isPublic = false,
     String? draftStructure,
+    String? idempotencyKey,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -333,6 +340,7 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
         settings: settings,
         isPublic: isPublic,
         draftStructure: draftStructure,
+        idempotencyKey: idempotencyKey,
       );
       state = state.copyWith(
         leagues: [...state.leagues, league],

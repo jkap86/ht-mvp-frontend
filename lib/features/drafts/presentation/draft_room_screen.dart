@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../core/utils/error_display.dart';
+import '../../../core/utils/idempotency.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../players/domain/player.dart';
 import '../domain/auction_settings.dart';
@@ -60,18 +62,10 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       final error = await notifier.makePick(playerId);
       if (context.mounted) {
         if (error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
-          );
+          error.showAsError(ref);
         } else {
           // Success feedback with player name
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Drafted: $playerName'),
-              duration: const Duration(seconds: 2),
-              backgroundColor: AppTheme.draftActionPrimary,
-            ),
-          );
+          showSuccess(ref, 'Drafted: $playerName');
         }
       }
     } finally {
@@ -84,12 +78,11 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     if (_isQueueSubmitting) return; // Prevent double-tap
     setState(() => _isQueueSubmitting = true);
     try {
+      final key = newIdempotencyKey();
       final notifier = ref.read(draftQueueProvider(_queueKey).notifier);
-      final success = await notifier.addToQueue(playerId);
+      final success = await notifier.addToQueue(playerId, idempotencyKey: key);
       if (!success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text('Failed to add player to queue'), backgroundColor: Theme.of(context).colorScheme.error),
-        );
+        'Failed to add player to queue'.showAsError(ref);
       }
     } finally {
       _isQueueSubmitting = false; // Always reset flag
@@ -101,12 +94,11 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     if (_isPickAssetQueueSubmitting) return; // Prevent double-tap
     setState(() => _isPickAssetQueueSubmitting = true);
     try {
+      final key = newIdempotencyKey();
       final notifier = ref.read(draftQueueProvider(_queueKey).notifier);
-      final success = await notifier.addPickAssetToQueue(pickAssetId);
+      final success = await notifier.addPickAssetToQueue(pickAssetId, idempotencyKey: key);
       if (!success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text('Failed to add pick to queue'), backgroundColor: Theme.of(context).colorScheme.error),
-        );
+        'Failed to add pick to queue'.showAsError(ref);
       }
     } finally {
       _isPickAssetQueueSubmitting = false; // Always reset flag
@@ -121,9 +113,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
       final error = await notifier.nominate(playerId);
       if (error != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
-        );
+        error.showAsError(ref);
       }
     } finally {
       _isNominateSubmitting = false; // Always reset flag
@@ -138,9 +128,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
       final error = await notifier.setMaxBid(lotId, maxBid);
       if (error != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
-        );
+        error.showAsError(ref);
       }
     } finally {
       _isMaxBidSubmitting = false; // Always reset flag
@@ -152,12 +140,11 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     if (_isStartingDraft) return; // Prevent double-tap
     setState(() => _isStartingDraft = true);
     try {
+      final key = newIdempotencyKey();
       final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
-      final error = await notifier.startDraft();
+      final error = await notifier.startDraft(idempotencyKey: key);
       if (error != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
-        );
+        error.showAsError(ref);
       }
     } finally {
       _isStartingDraft = false; // Always reset flag
@@ -172,9 +159,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
       final error = await notifier.confirmDraftOrder();
       if (error != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
-        );
+        error.showAsError(ref);
       }
     } finally {
       _isConfirmingOrder = false; // Always reset flag
@@ -189,9 +174,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
       final error = await notifier.makePickAssetSelection(pickAssetId);
       if (error != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
-        );
+        error.showAsError(ref);
       }
     } finally {
       _isPickAssetSubmitting = false; // Always reset flag
@@ -614,12 +597,11 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
               isMyTurn: isMyTurn,
               isAutodraftEnabled: isAutodraftEnabled,
               onToggleAutodraft: () async {
+                final key = newIdempotencyKey();
                 final notifier = ref.read(draftRoomProvider(widget.providerKey).notifier);
-                final error = await notifier.toggleAutodraft(!isAutodraftEnabled);
+                final error = await notifier.toggleAutodraft(!isAutodraftEnabled, idempotencyKey: key);
                 if (error != null && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
-                  );
+                  error.showAsError(ref);
                 }
               },
               topQueuedPlayerName: topQueuedPlayerName,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/error_display.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../../core/widgets/states/app_error_view.dart';
 import '../../../leagues/presentation/providers/league_detail_provider.dart';
@@ -359,6 +361,7 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
     setState(() => _isSubmitting = true);
 
     try {
+      final key = newIdempotencyKey();
       final tradeRepo = ref.read(tradeRepositoryProvider);
       await tradeRepo.counterTrade(
         leagueId: widget.leagueId,
@@ -372,29 +375,17 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
         leagueChatMode: _leagueChatMode,
         offeringPickAssetIds: _offeringPickAssetIds.toList(),
         requestingPickAssetIds: _requestingPickAssetIds.toList(),
+        idempotencyKey: key,
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Counter offer sent!')),
-        );
+        showSuccess(ref, 'Counter offer sent!');
         // Pop back to trade detail, then pop again to trades list
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        final errorMsg = e.toString().toLowerCase();
-        String displayMessage;
-        if (errorMsg.contains('pending trade') ||
-            errorMsg.contains('already in another trade')) {
-          displayMessage =
-              'One or more selected players are already in another pending trade. Remove them and try again.';
-        } else {
-          displayMessage = 'Error: ${e.toString()}';
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(displayMessage)),
-        );
+        e.showAsError(ref);
       }
     } finally {
       if (mounted) {

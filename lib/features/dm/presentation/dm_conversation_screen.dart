@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/error_display.dart';
+import '../../../core/utils/idempotency.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/states/states.dart';
@@ -55,14 +57,13 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
+    final key = newIdempotencyKey();
     final notifier = ref.read(dmConversationProvider(widget.conversationId).notifier);
-    final success = await notifier.sendMessage(text);
+    final success = await notifier.sendMessage(text, idempotencyKey: key);
     if (success) {
       _messageController.clear();
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error sending message')),
-      );
+      'Error sending message'.showAsError(ref);
     }
   }
 

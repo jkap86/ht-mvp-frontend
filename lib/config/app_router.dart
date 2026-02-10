@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/home/presentation/home_screen.dart';
@@ -23,6 +24,7 @@ import '../features/trades/presentation/screens/trade_detail_screen.dart';
 import '../features/trades/presentation/screens/propose_trade_screen.dart';
 import '../features/trades/presentation/screens/counter_trade_screen.dart';
 import '../features/commissioner/presentation/screens/commissioner_screen.dart';
+import '../features/commissioner/presentation/screens/season_summary_screen.dart';
 import '../features/playoffs/presentation/screens/playoff_bracket_screen.dart';
 import '../features/notifications/presentation/screens/notifications_screen.dart';
 import '../features/transactions/presentation/transactions_screen.dart';
@@ -254,6 +256,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
       GoRoute(
         path: '/',
@@ -490,6 +496,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) {
               final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
               return _slideTransition(state, StandingsScreen(leagueId: leagueId));
+            },
+          ),
+          GoRoute(
+            path: 'season-summary',
+            pageBuilder: (context, state) {
+              final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+              return _slideTransition(state, SeasonSummaryScreen(leagueId: leagueId));
             },
           ),
           GoRoute(

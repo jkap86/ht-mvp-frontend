@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/error_display.dart';
 import '../../../drafts/domain/draft_type.dart';
 
 class CreateDraftDialog extends StatefulWidget {
@@ -801,15 +802,11 @@ class _CreateDraftDialogState extends State<CreateDraftDialog> {
             final timer = int.tryParse(_timerController.text) ?? _pickTimeSeconds;
 
             if (rounds < 1 || rounds > 30) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Rounds must be between 1 and 30')),
-              );
+              'Rounds must be between 1 and 30'.showAsErrorWithContext(context);
               return;
             }
             if (timer < 30 || timer > 600) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Timer must be between 30 and 600 seconds')),
-              );
+              'Timer must be between 30 and 600 seconds'.showAsErrorWithContext(context);
               return;
             }
 

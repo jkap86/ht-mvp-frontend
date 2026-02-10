@@ -51,18 +51,20 @@ class MatchupRepository {
   }
 
   /// Generate season schedule (commissioner only)
-  Future<void> generateSchedule(int leagueId, {int weeks = 14}) async {
+  Future<void> generateSchedule(int leagueId, {int weeks = 14, String? idempotencyKey}) async {
     await _apiClient.post(
       '/leagues/$leagueId/schedule/generate',
       body: {'weeks': weeks},
+      idempotencyKey: idempotencyKey,
     );
   }
 
   /// Finalize matchups for a week (commissioner only)
-  Future<void> finalizeMatchups(int leagueId, int week) async {
+  Future<void> finalizeMatchups(int leagueId, int week, {String? idempotencyKey}) async {
     await _apiClient.post(
       '/leagues/$leagueId/matchups/finalize',
       body: {'week': week},
+      idempotencyKey: idempotencyKey,
     );
   }
 

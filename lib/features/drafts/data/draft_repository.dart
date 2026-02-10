@@ -25,9 +25,9 @@ class DraftRepository {
     return Draft.fromJson(response);
   }
 
-  Future<Draft> startDraft(int leagueId, int draftId) async {
+  Future<Draft> startDraft(int leagueId, int draftId, {String? idempotencyKey}) async {
     final response =
-        await _apiClient.post('/leagues/$leagueId/drafts/$draftId/start');
+        await _apiClient.post('/leagues/$leagueId/drafts/$draftId/start', idempotencyKey: idempotencyKey);
     return Draft.fromJson(response);
   }
 
@@ -61,24 +61,24 @@ class DraftRepository {
     return pickData;
   }
 
-  Future<List<DraftOrderEntry>> randomizeDraftOrder(int leagueId, int draftId) async {
-    final response = await _apiClient.post('/leagues/$leagueId/drafts/$draftId/randomize');
+  Future<List<DraftOrderEntry>> randomizeDraftOrder(int leagueId, int draftId, {String? idempotencyKey}) async {
+    final response = await _apiClient.post('/leagues/$leagueId/drafts/$draftId/randomize', idempotencyKey: idempotencyKey);
     final order = (response as List?) ?? [];
     return order
         .map((json) => DraftOrderEntry.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 
-  Future<List<DraftOrderEntry>> confirmDraftOrder(int leagueId, int draftId) async {
-    final response = await _apiClient.post('/leagues/$leagueId/drafts/$draftId/order/confirm');
+  Future<List<DraftOrderEntry>> confirmDraftOrder(int leagueId, int draftId, {String? idempotencyKey}) async {
+    final response = await _apiClient.post('/leagues/$leagueId/drafts/$draftId/order/confirm', idempotencyKey: idempotencyKey);
     final order = (response as List?) ?? [];
     return order
         .map((json) => DraftOrderEntry.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 
-  Future<List<DraftOrderEntry>> setOrderFromPickOwnership(int leagueId, int draftId) async {
-    final response = await _apiClient.post('/leagues/$leagueId/drafts/$draftId/order/from-pick-ownership');
+  Future<List<DraftOrderEntry>> setOrderFromPickOwnership(int leagueId, int draftId, {String? idempotencyKey}) async {
+    final response = await _apiClient.post('/leagues/$leagueId/drafts/$draftId/order/from-pick-ownership', idempotencyKey: idempotencyKey);
     final order = (response as List?) ?? [];
     return order
         .map((json) => DraftOrderEntry.fromJson(json as Map<String, dynamic>))
@@ -95,10 +95,11 @@ class DraftRepository {
   }
 
   Future<Map<String, dynamic>> addToQueue(
-      int leagueId, int draftId, int playerId) async {
+      int leagueId, int draftId, int playerId, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/queue',
       body: {'player_id': playerId},
+      idempotencyKey: idempotencyKey,
     );
     final queueData = response as Map<String, dynamic>?;
     if (queueData == null) throw Exception('Invalid response: missing queue data');
@@ -106,29 +107,31 @@ class DraftRepository {
   }
 
   Future<Map<String, dynamic>> addPickAssetToQueue(
-      int leagueId, int draftId, int pickAssetId) async {
+      int leagueId, int draftId, int pickAssetId, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/queue',
       body: {'pick_asset_id': pickAssetId},
+      idempotencyKey: idempotencyKey,
     );
     final queueData = response as Map<String, dynamic>?;
     if (queueData == null) throw Exception('Invalid response: missing queue data');
     return queueData;
   }
 
-  Future<void> removeFromQueue(int leagueId, int draftId, int playerId) async {
-    await _apiClient.delete('/leagues/$leagueId/drafts/$draftId/queue/$playerId');
+  Future<void> removeFromQueue(int leagueId, int draftId, int playerId, {String? idempotencyKey}) async {
+    await _apiClient.delete('/leagues/$leagueId/drafts/$draftId/queue/$playerId', idempotencyKey: idempotencyKey);
   }
 
-  Future<void> removePickAssetFromQueue(int leagueId, int draftId, int pickAssetId) async {
-    await _apiClient.delete('/leagues/$leagueId/drafts/$draftId/queue/pick-asset/$pickAssetId');
+  Future<void> removePickAssetFromQueue(int leagueId, int draftId, int pickAssetId, {String? idempotencyKey}) async {
+    await _apiClient.delete('/leagues/$leagueId/drafts/$draftId/queue/pick-asset/$pickAssetId', idempotencyKey: idempotencyKey);
   }
 
   Future<List<Map<String, dynamic>>> reorderQueue(
-      int leagueId, int draftId, List<int> playerIds) async {
+      int leagueId, int draftId, List<int> playerIds, {String? idempotencyKey}) async {
     final response = await _apiClient.put(
       '/leagues/$leagueId/drafts/$draftId/queue',
       body: {'player_ids': playerIds},
+      idempotencyKey: idempotencyKey,
     );
     final reordered = (response as List?) ?? [];
     // Safe cast: filter out any non-Map elements to prevent runtime crashes
@@ -136,10 +139,11 @@ class DraftRepository {
   }
 
   Future<List<Map<String, dynamic>>> reorderQueueByEntryIds(
-      int leagueId, int draftId, List<int> entryIds) async {
+      int leagueId, int draftId, List<int> entryIds, {String? idempotencyKey}) async {
     final response = await _apiClient.put(
       '/leagues/$leagueId/drafts/$draftId/queue',
       body: {'queue_entry_ids': entryIds},
+      idempotencyKey: idempotencyKey,
     );
     final reordered = (response as List?) ?? [];
     // Safe cast: filter out any non-Map elements to prevent runtime crashes
@@ -215,10 +219,11 @@ class DraftRepository {
 
   /// Toggle autodraft for the current user
   Future<Map<String, dynamic>> toggleAutodraft(
-      int leagueId, int draftId, bool enabled) async {
+      int leagueId, int draftId, bool enabled, {String? idempotencyKey}) async {
     final response = await _apiClient.patch(
       '/leagues/$leagueId/drafts/$draftId/autodraft',
       body: {'enabled': enabled},
+      idempotencyKey: idempotencyKey,
     );
     return response as Map<String, dynamic>;
   }
@@ -237,6 +242,7 @@ class DraftRepository {
     bool? includeRookiePicks,
     int? rookiePicksSeason,
     int? rookiePicksRounds,
+    String? idempotencyKey,
   }) async {
     final body = <String, dynamic>{};
     if (draftType != null) body['draft_type'] = draftType;
@@ -256,6 +262,7 @@ class DraftRepository {
     final response = await _apiClient.patch(
       '/leagues/$leagueId/drafts/$draftId/settings',
       body: body,
+      idempotencyKey: idempotencyKey,
     );
     return Draft.fromJson(response as Map<String, dynamic>);
   }
@@ -304,9 +311,10 @@ class DraftRepository {
   }
 
   /// Start derby phase (commissioner only)
-  Future<DerbyState> startDerby(int leagueId, int draftId) async {
+  Future<DerbyState> startDerby(int leagueId, int draftId, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/derby/start',
+      idempotencyKey: idempotencyKey,
     );
     return DerbyState.fromJson(response as Map<String, dynamic>);
   }

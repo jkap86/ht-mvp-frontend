@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/error_display.dart';
+import '../../../core/utils/idempotency.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/dev_console.dart';
 import '../../../core/widgets/states/states.dart';
@@ -82,6 +84,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         List<String>? playerPool,
         DateTime? scheduledStart,
       }) async {
+        final key = newIdempotencyKey();
         final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
         final success = await notifier.createDraft(
           draftType: draftType.value,
@@ -90,50 +93,40 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           settings: auctionSettings,
           playerPool: playerPool,
           scheduledStart: scheduledStart,
+          idempotencyKey: key,
         );
         if (!success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error creating draft')),
-          );
+          'Error creating draft'.showAsError(ref);
         }
       },
     );
   }
 
   Future<void> _startDraft(Draft draft) async {
+    final key = newIdempotencyKey();
     final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
-    final success = await notifier.startDraft(draft.id);
+    final success = await notifier.startDraft(draft.id, idempotencyKey: key);
     if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error starting draft')),
-      );
+      'Error starting draft'.showAsError(ref);
     }
   }
 
   Future<List<DraftOrderEntry>?> _randomizeDraftOrder(Draft draft) async {
+    final key = newIdempotencyKey();
     final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
-    final order = await notifier.randomizeDraftOrder(draft.id);
+    final order = await notifier.randomizeDraftOrder(draft.id, idempotencyKey: key);
     if (order == null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Error randomizing draft order'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      'Error randomizing draft order'.showAsError(ref);
     }
     return order;
   }
 
   Future<List<DraftOrderEntry>?> _setOrderFromVetDraft(Draft draft) async {
+    final key = newIdempotencyKey();
     final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
-    final order = await notifier.setOrderFromPickOwnership(draft.id);
+    final order = await notifier.setOrderFromPickOwnership(draft.id, idempotencyKey: key);
     if (order == null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Error setting order from vet draft results'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      'Error setting order from vet draft results'.showAsError(ref);
     }
     return order;
   }
@@ -156,6 +149,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         int? rookiePicksSeason,
         int? rookiePicksRounds,
       }) async {
+        final key = newIdempotencyKey();
         final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
         await notifier.updateDraftSettings(
           draft.id,
@@ -167,6 +161,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           includeRookiePicks: includeRookiePicks,
           rookiePicksSeason: rookiePicksSeason,
           rookiePicksRounds: rookiePicksRounds,
+          idempotencyKey: key,
         );
       },
     );
@@ -184,17 +179,17 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     final includeRookiePicks = rawSettings?['includeRookiePicks'] as bool?;
     final rookiePicksSeason = rawSettings?['rookiePicksSeason'] as int?;
 
+    final key = newIdempotencyKey();
     final success = await notifier.updateDraftSettings(
       draft.id,
       scheduledStart: scheduledStart,
       playerPool: playerPool,
       includeRookiePicks: includeRookiePicks,
       rookiePicksSeason: rookiePicksSeason,
+      idempotencyKey: key,
     );
     if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error updating draft schedule')),
-      );
+      'Error updating draft schedule'.showAsError(ref);
     }
   }
 
@@ -299,7 +294,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         unreadChatMessages: dashboardState.unreadChatMessages,
         onTradesTap: () => context.go('/leagues/${widget.leagueId}/trades'),
         onWaiversTap: () => context.go('/leagues/${widget.leagueId}/players'),
-        onChatTap: null, // TODO: Navigate to chat when implemented
+        onChatTap: () => context.push('/messages'),
       ));
       items.add(const SizedBox(height: 16));
     }
@@ -407,7 +402,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     final alerts = ActionAlertsBuilder.buildAlerts(
       starters: state.starters,
       currentWeek: state.league!.currentWeek,
-      pendingTradeCount: state.pendingTradesCount,
+      pendingTradeCount: ref.watch(leagueDashboardProvider(widget.leagueId)).pendingTrades,
       lineupSet: state.currentLineup != null,
       lineupLockingSoon: _isLineupLockingSoon(state),
       onInjuredPlayerTap: state.league!.userRosterId != null

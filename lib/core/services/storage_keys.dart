@@ -40,4 +40,11 @@ class StorageKeys {
 
   /// Chat widget height
   static const String chatHeight = 'floating_chat_height';
+
+  // ============================================================
+  // Onboarding (SharedPreferences - per-league UI state)
+  // ============================================================
+
+  /// Prefix for league onboarding seen flag (append league ID)
+  static const String onboardingSeenPrefix = 'onboarding_seen_';
 }

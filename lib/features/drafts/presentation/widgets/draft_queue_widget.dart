@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../providers/draft_queue_provider.dart';
 
@@ -87,7 +88,8 @@ class DraftQueueWidget extends ConsumerWidget {
 
                 final item = entryIds.removeAt(oldIndex);
                 entryIds.insert(newIndex, item);
-                ref.read(draftQueueProvider(_providerKey).notifier).reorderQueueByEntryIds(entryIds);
+                final key = newIdempotencyKey();
+                ref.read(draftQueueProvider(_providerKey).notifier).reorderQueueByEntryIds(entryIds, idempotencyKey: key);
               },
               itemBuilder: (context, index) {
                 final entry = availableQueue[index];
@@ -104,8 +106,9 @@ class DraftQueueWidget extends ConsumerWidget {
                         ? () => onDraftPlayer!(entry.playerId!)
                         : null,
                     onRemove: () {
+                      final key = newIdempotencyKey();
                       ref.read(draftQueueProvider(_providerKey).notifier)
-                          .removeFromQueue(entry.playerId!);
+                          .removeFromQueue(entry.playerId!, idempotencyKey: key);
                     },
                   );
                 } else {
@@ -120,8 +123,9 @@ class DraftQueueWidget extends ConsumerWidget {
                         ? () => onDraftPickAsset!(entry.pickAssetId!)
                         : null,
                     onRemove: () {
+                      final key = newIdempotencyKey();
                       ref.read(draftQueueProvider(_providerKey).notifier)
-                          .removePickAssetFromQueue(entry.pickAssetId!);
+                          .removePickAssetFromQueue(entry.pickAssetId!, idempotencyKey: key);
                     },
                   );
                 }

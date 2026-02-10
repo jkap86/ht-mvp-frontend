@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/error_display.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../players/domain/player.dart';
@@ -12,6 +14,8 @@ import '../providers/team_provider.dart';
 import '../widgets/free_agent_card.dart';
 import '../widgets/position_filter_chips.dart';
 import '../widgets/add_drop_player_sheet.dart';
+
+enum _PlayerTab { freeAgents, myClaims }
 
 class FreeAgentsScreen extends ConsumerStatefulWidget {
   final int leagueId;
@@ -29,6 +33,7 @@ class FreeAgentsScreen extends ConsumerStatefulWidget {
 
 class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
   final _searchController = TextEditingController();
+  _PlayerTab _selectedTab = _PlayerTab.freeAgents;
 
   FreeAgentsKey get _key => (leagueId: widget.leagueId, rosterId: widget.rosterId);
   TeamKey get _teamKey => (leagueId: widget.leagueId, rosterId: widget.rosterId);
@@ -74,36 +79,172 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
       }
     });
 
+    final showTabs = waiversEnabled;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => navigateBack(context, fallback: '/leagues/${widget.leagueId}'),
         ),
-        title: const Text('Free Agents'),
+        title: Text(_selectedTab == _PlayerTab.freeAgents ? 'Free Agents' : 'My Claims'),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(110),
+          preferredSize: Size.fromHeight(showTabs ? 150 : 110),
           child: Column(
             children: [
-              _buildSearchBar(state),
-              PositionFilterChips(
-                selectedPosition: state.selectedPosition,
-                onPositionSelected: (pos) {
-                  ref.read(freeAgentsProvider(_key).notifier).setPosition(pos);
-                },
-              ),
-              const SizedBox(height: 8),
+              if (showTabs)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: SegmentedButton<_PlayerTab>(
+                    segments: [
+                      ButtonSegment(
+                        value: _PlayerTab.freeAgents,
+                        label: const Text('Free Agents'),
+                        icon: const Icon(Icons.person_search, size: 18),
+                      ),
+                      ButtonSegment(
+                        value: _PlayerTab.myClaims,
+                        label: Text('My Claims${waiversState.pendingClaims.isNotEmpty ? ' (${waiversState.pendingClaims.length})' : ''}'),
+                        icon: const Icon(Icons.access_time, size: 18),
+                      ),
+                    ],
+                    selected: {_selectedTab},
+                    onSelectionChanged: (selected) {
+                      setState(() => _selectedTab = selected.first);
+                    },
+                  ),
+                ),
+              if (_selectedTab == _PlayerTab.freeAgents) ...[
+                _buildSearchBar(state),
+                PositionFilterChips(
+                  selectedPosition: state.selectedPosition,
+                  onPositionSelected: (pos) {
+                    ref.read(freeAgentsProvider(_key).notifier).setPosition(pos);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
             ],
           ),
         ),
       ),
-      body: _buildBody(
-        state,
-        waiversState: waiversState,
-        waiversEnabled: waiversEnabled,
-        isFaabLeague: isFaabLeague,
+      body: _selectedTab == _PlayerTab.myClaims
+          ? _buildMyClaimsBody()
+          : _buildBody(
+              state,
+              waiversState: waiversState,
+              waiversEnabled: waiversEnabled,
+              isFaabLeague: isFaabLeague,
+            ),
+    );
+  }
+
+  Widget _buildMyClaimsBody() {
+    final waiversKey = (leagueId: widget.leagueId, userRosterId: widget.rosterId);
+    final state = ref.watch(waiversProvider(waiversKey));
+
+    if (state.isLoading) {
+      return const AppLoadingView();
+    }
+
+    if (state.error != null) {
+      return AppErrorView(
+        message: state.error!,
+        onRetry: () => ref.read(waiversProvider(waiversKey).notifier).loadWaiverData(),
+      );
+    }
+
+    final claims = state.sortedPendingClaims;
+
+    if (claims.isEmpty) {
+      return const AppEmptyView(
+        icon: Icons.access_time,
+        title: 'No Pending Claims',
+        subtitle: 'Submit a waiver claim from the Free Agents tab.',
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => ref.read(waiversProvider(waiversKey).notifier).loadWaiverData(),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: claims.length,
+        itemBuilder: (context, index) {
+          final claim = claims[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Card(
+              child: ListTile(
+                leading: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '#${index + 1}',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                title: Text(
+                  claim.playerName,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  [
+                    if (claim.playerPosition != null) claim.playerPosition!,
+                    if (claim.playerTeam != null) claim.playerTeam!,
+                    if (claim.bidAmount > 0) '\$${claim.bidAmount}',
+                    if (claim.dropPlayerName != null) 'Drop: ${claim.dropPlayerName}',
+                  ].join(' - '),
+                ),
+                trailing: IconButton(
+                  icon: Icon(Icons.cancel, color: Theme.of(context).colorScheme.error, size: 20),
+                  onPressed: () => _handleCancelClaim(claim.id, claim.playerName),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
+  }
+
+  Future<void> _handleCancelClaim(int claimId, String playerName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Claim?'),
+        content: Text('Cancel your claim for $playerName?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Cancel Claim'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final key = newIdempotencyKey();
+      final waiversKey = (leagueId: widget.leagueId, userRosterId: widget.rosterId);
+      final success = await ref.read(waiversProvider(waiversKey).notifier).cancelClaim(claimId, idempotencyKey: key);
+      if (success && mounted) {
+        showSuccess(ref, 'Claim cancelled');
+      }
+    }
   }
 
   Widget _buildSearchBar(FreeAgentsState state) {
@@ -242,13 +383,11 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
             ),
             FilledButton(
               onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
                 Navigator.of(context).pop();
-                final success = await ref.read(freeAgentsProvider(_key).notifier).addPlayer(player.id);
+                final key = newIdempotencyKey();
+                final success = await ref.read(freeAgentsProvider(_key).notifier).addPlayer(player.id, idempotencyKey: key);
                 if (success && mounted) {
-                  messenger.showSnackBar(
-                    SnackBar(content: Text('${player.fullName} added to roster')),
-                  );
+                  showSuccess(ref, '${player.fullName} added to roster');
                   ref.read(teamProvider(_teamKey).notifier).loadData();
                 }
               },
@@ -263,13 +402,12 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         addPlayer: player,
         rosterPlayers: rosterPlayers,
         onDropSelected: (dropPlayerId) async {
-          return await ref.read(freeAgentsProvider(_key).notifier).addDropPlayer(player.id, dropPlayerId);
+          final key = newIdempotencyKey();
+          return await ref.read(freeAgentsProvider(_key).notifier).addDropPlayer(player.id, dropPlayerId, idempotencyKey: key);
         },
         onSuccess: () {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${player.fullName} added to roster')),
-            );
+            showSuccess(ref, '${player.fullName} added to roster');
             ref.read(teamProvider(_teamKey).notifier).loadData();
           }
         },
@@ -303,16 +441,16 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         int? dropPlayerId,
         int bidAmount = 0,
       }) async {
+        final key = newIdempotencyKey();
         final waiversKey = (leagueId: widget.leagueId, userRosterId: widget.rosterId);
         final claim = await ref.read(waiversProvider(waiversKey).notifier).submitClaim(
           playerId: playerId,
           dropPlayerId: dropPlayerId,
           bidAmount: bidAmount,
+          idempotencyKey: key,
         );
         if (claim != null && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Waiver claim submitted for ${player.fullName}')),
-          );
+          showSuccess(ref, 'Waiver claim submitted for ${player.fullName}');
         }
       },
     );

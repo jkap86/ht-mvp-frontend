@@ -6,9 +6,12 @@ import '../providers/draft_room_provider.dart';
 import '../providers/draft_queue_provider.dart';
 import '../../domain/auction_lot.dart';
 import 'auction_drawer_content.dart';
+import 'draft_activity_feed.dart';
 import 'drawer_drag_handle.dart';
 import 'fast_auction_panel.dart';
 import 'snake_linear_drawer_content.dart';
+
+enum _DrawerTab { players, activity }
 
 /// Unified bottom drawer for the draft room.
 /// Adapts content based on draft type:
@@ -58,6 +61,7 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
   String _searchQuery = '';
   String? _selectedPosition;
   DraggableScrollableController? _ownedController;
+  _DrawerTab _selectedTab = _DrawerTab.players;
 
   DraggableScrollableController get _sheetController =>
       widget.sheetController ?? (_ownedController ??= DraggableScrollableController());
@@ -157,24 +161,73 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
               children: [
                 // Drag handle (tap to toggle) - stays outside scrollable
                 DrawerDragHandle(onTap: _toggleDrawer),
-                // ALL content inside one scrollable for proper drag gestures
+                // Tab toggle: Players | Activity
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
+                  child: SegmentedButton<_DrawerTab>(
+                    segments: const [
+                      ButtonSegment(
+                        value: _DrawerTab.players,
+                        label: Text('Players'),
+                        icon: Icon(Icons.people, size: 16),
+                      ),
+                      ButtonSegment(
+                        value: _DrawerTab.activity,
+                        label: Text('Activity'),
+                        icon: Icon(Icons.history, size: 16),
+                      ),
+                    ],
+                    selected: {_selectedTab},
+                    onSelectionChanged: (selected) {
+                      setState(() => _selectedTab = selected.first);
+                    },
+                    showSelectedIcon: false,
+                    style: ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ),
+                // Content based on selected tab
                 Expanded(
-                  child: widget.isAuction
-                      ? (isFastAuction
-                          ? FastAuctionPanel(
-                              state: draftState,
-                              onBidTap: (lot) => _showBidDialog(context, lot),
-                              onNominateTap: () {
-                                // Expand drawer to show player search
-                                _sheetController.animateTo(
-                                  _expandedSize,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              },
-                            )
-                          : AuctionDrawerContent(
+                  child: _selectedTab == _DrawerTab.activity
+                      ? DraftActivityFeed(providerKey: widget.providerKey)
+                      : widget.isAuction
+                          ? (isFastAuction
+                              ? FastAuctionPanel(
+                                  state: draftState,
+                                  onBidTap: (lot) => _showBidDialog(context, lot),
+                                  onNominateTap: () {
+                                    // Expand drawer to show player search
+                                    _sheetController.animateTo(
+                                      _expandedSize,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  },
+                                )
+                              : AuctionDrawerContent(
+                                  providerKey: widget.providerKey,
+                                  scrollController: scrollController,
+                                  searchQuery: _searchQuery,
+                                  selectedPosition: _selectedPosition,
+                                  onSearchChanged: (value) =>
+                                      setState(() => _searchQuery = value),
+                                  onPositionChanged: (pos) =>
+                                      setState(() => _selectedPosition = pos),
+                                  onNominate: widget.onNominate,
+                                  onSetMaxBid: widget.onSetMaxBid,
+                                ))
+                          : SnakeLinearDrawerContent(
                               providerKey: widget.providerKey,
+                              queueKey: widget.queueKey,
+                              leagueId: widget.leagueId,
+                              draftId: widget.draftId,
+                              draftedPlayerIds: draftedPlayerIds,
+                              draftedPickAssetIds: draftedPickAssetIds,
                               scrollController: scrollController,
                               searchQuery: _searchQuery,
                               selectedPosition: _selectedPosition,
@@ -182,31 +235,14 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
                                   setState(() => _searchQuery = value),
                               onPositionChanged: (pos) =>
                                   setState(() => _selectedPosition = pos),
-                              onNominate: widget.onNominate,
-                              onSetMaxBid: widget.onSetMaxBid,
-                            ))
-                      : SnakeLinearDrawerContent(
-                          providerKey: widget.providerKey,
-                          queueKey: widget.queueKey,
-                          leagueId: widget.leagueId,
-                          draftId: widget.draftId,
-                          draftedPlayerIds: draftedPlayerIds,
-                          draftedPickAssetIds: draftedPickAssetIds,
-                          scrollController: scrollController,
-                          searchQuery: _searchQuery,
-                          selectedPosition: _selectedPosition,
-                          onSearchChanged: (value) =>
-                              setState(() => _searchQuery = value),
-                          onPositionChanged: (pos) =>
-                              setState(() => _selectedPosition = pos),
-                          onMakePick: widget.onMakePick,
-                          onAddToQueue: widget.onAddToQueue,
-                          onMakePickAssetSelection: widget.onMakePickAssetSelection,
-                          onAddPickAssetToQueue: widget.onAddPickAssetToQueue,
-                          isPickSubmitting: widget.isPickSubmitting,
-                          isQueueSubmitting: widget.isQueueSubmitting,
-                          isPickAssetQueueSubmitting: widget.isPickAssetQueueSubmitting,
-                        ),
+                              onMakePick: widget.onMakePick,
+                              onAddToQueue: widget.onAddToQueue,
+                              onMakePickAssetSelection: widget.onMakePickAssetSelection,
+                              onAddPickAssetToQueue: widget.onAddPickAssetToQueue,
+                              isPickSubmitting: widget.isPickSubmitting,
+                              isQueueSubmitting: widget.isQueueSubmitting,
+                              isPickAssetQueueSubmitting: widget.isPickAssetQueueSubmitting,
+                            ),
                 ),
               ],
             ),

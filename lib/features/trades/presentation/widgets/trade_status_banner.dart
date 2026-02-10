@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -7,13 +8,64 @@ import '../../../../core/theme/app_typography.dart';
 import '../../domain/trade.dart';
 import '../../domain/trade_status.dart';
 
-class TradeStatusBanner extends StatelessWidget {
+class TradeStatusBanner extends StatefulWidget {
   final Trade trade;
 
   const TradeStatusBanner({super.key, required this.trade});
 
   @override
+  State<TradeStatusBanner> createState() => _TradeStatusBannerState();
+}
+
+class _TradeStatusBannerState extends State<TradeStatusBanner> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_needsCountdown) {
+      _timer = Timer.periodic(const Duration(seconds: 60), (_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(TradeStatusBanner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_needsCountdown && _timer == null) {
+      _timer = Timer.periodic(const Duration(seconds: 60), (_) {
+        if (mounted) setState(() {});
+      });
+    } else if (!_needsCountdown && _timer != null) {
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  bool get _needsCountdown =>
+      widget.trade.status.isPending || widget.trade.isInReviewPeriod;
+
+  String _formatCountdown(DateTime target) {
+    final diff = target.difference(DateTime.now());
+    if (diff.isNegative) return 'Expired';
+    final days = diff.inDays;
+    final hours = diff.inHours % 24;
+    final minutes = diff.inMinutes % 60;
+    if (days > 0) return '${days}d ${hours}h';
+    if (hours > 0) return '${hours}h ${minutes}m';
+    return '${minutes}m';
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final trade = widget.trade;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -71,7 +123,7 @@ class TradeStatusBanner extends StatelessWidget {
                 if (trade.status.isPending) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'Expires ${DateFormat.yMMMd().add_jm().format(trade.expiresAt)}',
+                    'Expires in ${_formatCountdown(trade.expiresAt)}',
                     style: AppTypography.bodySmall.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -80,7 +132,7 @@ class TradeStatusBanner extends StatelessWidget {
                 if (trade.isInReviewPeriod) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'Review ends ${DateFormat.yMMMd().add_jm().format(trade.reviewEndsAt!)}',
+                    'Review ends in ${_formatCountdown(trade.reviewEndsAt!)}',
                     style: AppTypography.bodySmall.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

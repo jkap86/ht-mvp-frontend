@@ -149,7 +149,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
   }
 
-  Future<bool> sendMessage(String text) async {
+  Future<bool> sendMessage(String text, {String? idempotencyKey}) async {
     final trimmedText = text.trim();
     if (trimmedText.isEmpty || state.isSending) return false;
 
@@ -180,7 +180,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
 
     try {
-      await _chatRepo.sendMessage(leagueId, trimmedText);
+      await _chatRepo.sendMessage(leagueId, trimmedText, idempotencyKey: idempotencyKey);
 
       // Check if disposed during async operations
       if (!mounted) return false;

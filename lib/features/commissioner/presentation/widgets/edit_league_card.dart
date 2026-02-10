@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../../../home/presentation/widgets/scoring_settings_editor.dart';
 import '../../../home/presentation/widgets/roster_config_editor.dart';
 import '../../../leagues/domain/league.dart';
@@ -150,6 +151,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
       updatedLeagueSettings['rosterType'] = _isBestball ? 'bestball' : 'lineup';
     }
 
+    final key = newIdempotencyKey();
     final success = await ref.read(commissionerProvider(widget.leagueId).notifier).updateLeague(
       name: _nameController.text != league.name ? _nameController.text : null,
       mode: _selectedMode != league.mode ? _selectedMode : null,
@@ -158,6 +160,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
       leagueSettings: updatedLeagueSettings,
       scoringSettings: _scoringSettings.toJson(),
       totalRosters: _totalRosters != league.totalRosters ? _totalRosters : null,
+      idempotencyKey: key,
     );
 
     if (success) {

@@ -169,13 +169,13 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
     }
   }
 
-  Future<bool> sendMessage(String text) async {
+  Future<bool> sendMessage(String text, {String? idempotencyKey}) async {
     if (text.trim().isEmpty || state.isSending) return false;
 
     state = state.copyWith(isSending: true);
 
     try {
-      final message = await _dmRepo.sendMessage(conversationId, text.trim());
+      final message = await _dmRepo.sendMessage(conversationId, text.trim(), idempotencyKey: idempotencyKey);
 
       if (!mounted) return false;
 

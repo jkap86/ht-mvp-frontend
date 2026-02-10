@@ -121,6 +121,22 @@ class StorageService {
     await p.setDouble(StorageKeys.chatHeight, height);
   }
 
+  // ============================================================
+  // Onboarding (Per-league UI state)
+  // ============================================================
+
+  /// Check if league onboarding has been seen for a given league
+  Future<bool> hasSeenOnboarding(int leagueId) async {
+    final p = await prefs;
+    return p.getBool('${StorageKeys.onboardingSeenPrefix}$leagueId') ?? false;
+  }
+
+  /// Mark league onboarding as seen for a given league
+  Future<void> markOnboardingSeen(int leagueId) async {
+    final p = await prefs;
+    await p.setBool('${StorageKeys.onboardingSeenPrefix}$leagueId', true);
+  }
+
   /// Clear all preferences (but not secure storage)
   Future<void> clearPreferences() async {
     final p = await prefs;

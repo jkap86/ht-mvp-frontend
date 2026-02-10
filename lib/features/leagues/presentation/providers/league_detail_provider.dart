@@ -58,12 +58,6 @@ class LeagueDetailState {
     return drafts.first.draftType.label;
   }
 
-  /// Count of pending trades requiring user's attention (for badge)
-  int get pendingTradesCount => 0; // TODO: Implement when trades data is added to state
-
-  /// Count of unread messages (for badge)
-  int get unreadMessagesCount => 0; // TODO: Implement when chat data is added to state
-
   /// Get the user's standing from the standings list
   Standing? get userStanding {
     if (league?.userRosterId == null || standings.isEmpty) return null;
@@ -276,6 +270,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     Map<String, dynamic>? settings,
     List<String>? playerPool,
     DateTime? scheduledStart,
+    String? idempotencyKey,
   }) async {
     try {
       final draft = await _leagueRepo.createDraft(
@@ -286,6 +281,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
         settings: settings,
         playerPool: playerPool,
         scheduledStart: scheduledStart,
+        idempotencyKey: idempotencyKey,
       );
       state = state.copyWith(drafts: [...state.drafts, draft]);
       return true;
@@ -294,9 +290,9 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     }
   }
 
-  Future<bool> startDraft(int draftId) async {
+  Future<bool> startDraft(int draftId, {String? idempotencyKey}) async {
     try {
-      final updatedDraft = await _leagueRepo.startDraft(leagueId, draftId);
+      final updatedDraft = await _leagueRepo.startDraft(leagueId, draftId, idempotencyKey: idempotencyKey);
       final index = state.drafts.indexWhere((d) => d.id == draftId);
       if (index != -1) {
         final updatedDrafts = [...state.drafts];
@@ -309,9 +305,9 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     }
   }
 
-  Future<List<DraftOrderEntry>?> randomizeDraftOrder(int draftId) async {
+  Future<List<DraftOrderEntry>?> randomizeDraftOrder(int draftId, {String? idempotencyKey}) async {
     try {
-      final order = await _draftRepo.randomizeDraftOrder(leagueId, draftId);
+      final order = await _draftRepo.randomizeDraftOrder(leagueId, draftId, idempotencyKey: idempotencyKey);
       // Update the draft to mark orderConfirmed as true
       final index = state.drafts.indexWhere((d) => d.id == draftId);
       if (index != -1) {
@@ -325,9 +321,9 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     }
   }
 
-  Future<List<DraftOrderEntry>?> setOrderFromPickOwnership(int draftId) async {
+  Future<List<DraftOrderEntry>?> setOrderFromPickOwnership(int draftId, {String? idempotencyKey}) async {
     try {
-      final order = await _draftRepo.setOrderFromPickOwnership(leagueId, draftId);
+      final order = await _draftRepo.setOrderFromPickOwnership(leagueId, draftId, idempotencyKey: idempotencyKey);
       // Update the draft to mark orderConfirmed as true
       final index = state.drafts.indexWhere((d) => d.id == draftId);
       if (index != -1) {
@@ -353,6 +349,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     bool? includeRookiePicks,
     int? rookiePicksSeason,
     int? rookiePicksRounds,
+    String? idempotencyKey,
   }) async {
     try {
       final updatedDraft = await _draftRepo.updateDraftSettings(
@@ -368,6 +365,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
         includeRookiePicks: includeRookiePicks,
         rookiePicksSeason: rookiePicksSeason,
         rookiePicksRounds: rookiePicksRounds,
+        idempotencyKey: idempotencyKey,
       );
       // Update the draft in state
       final index = state.drafts.indexWhere((d) => d.id == draftId);

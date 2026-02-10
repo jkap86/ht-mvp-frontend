@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../leagues/domain/league.dart';
@@ -6,6 +7,7 @@ import '../providers/commissioner_provider.dart';
 
 /// Card for resetting the league for a new season
 class SeasonResetCard extends StatefulWidget {
+  final int leagueId;
   final CommissionerState state;
   final Future<bool> Function({
     required String newSeason,
@@ -16,6 +18,7 @@ class SeasonResetCard extends StatefulWidget {
 
   const SeasonResetCard({
     super.key,
+    required this.leagueId,
     required this.state,
     required this.onReset,
   });
@@ -171,6 +174,17 @@ class _SeasonResetCardState extends State<SeasonResetCard> {
               'Clear all season data (drafts, matchups, trades, waivers, rosters) and start fresh for a new season. League configuration is preserved.',
             ),
             const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.emoji_events),
+                label: const Text('View Season Summary'),
+                onPressed: () {
+                  context.push('/leagues/${widget.leagueId}/season-summary');
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(

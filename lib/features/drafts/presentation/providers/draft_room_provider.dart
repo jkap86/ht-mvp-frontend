@@ -16,6 +16,7 @@ import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
 import '../../domain/auction_settings.dart';
 import '../../domain/derby_state.dart';
+import '../../domain/draft_activity_event.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_pick.dart';
 import '../../domain/draft_pick_asset.dart';
@@ -70,6 +71,8 @@ class DraftRoomState {
   // Server clock offset in milliseconds (serverTime - localTime)
   // Used to correct countdown timers for client clock drift
   final int? serverClockOffsetMs;
+  // Activity feed for the draft room log
+  final List<DraftActivityEvent> activityFeed;
 
   DraftRoomState({
     this.draft,
@@ -100,6 +103,7 @@ class DraftRoomState {
     this.isDerbySubmitting = false,
     this.rosterNames = const {},
     this.serverClockOffsetMs,
+    this.activityFeed = const [],
   });
 
   bool get isAuction => draft?.draftType == DraftType.auction;
@@ -241,6 +245,7 @@ class DraftRoomState {
     bool? isDerbySubmitting,
     Map<int, String>? rosterNames,
     int? serverClockOffsetMs,
+    List<DraftActivityEvent>? activityFeed,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -275,6 +280,7 @@ class DraftRoomState {
       isDerbySubmitting: isDerbySubmitting ?? this.isDerbySubmitting,
       rosterNames: rosterNames ?? this.rosterNames,
       serverClockOffsetMs: serverClockOffsetMs ?? this.serverClockOffsetMs,
+      activityFeed: activityFeed ?? this.activityFeed,
     );
   }
 }
@@ -347,6 +353,28 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     }
   }
 
+  /// Helper to resolve a roster ID to a team/username for activity messages.
+  String _teamNameForRoster(int rosterId) {
+    final entry = state.draftOrder
+        .where((e) => e.rosterId == rosterId)
+        .firstOrNull;
+    if (entry != null) return entry.username;
+    return state.rosterNames[rosterId] ?? 'Team';
+  }
+
+  /// Add an activity event to the feed (prepends, capped at 50).
+  void _addActivityEvent(DraftActivityType type, String message) {
+    final event = DraftActivityEvent(
+      type: type,
+      message: message,
+      timestamp: DateTime.now(),
+    );
+    final updated = [event, ...state.activityFeed];
+    state = state.copyWith(
+      activityFeed: updated.length > 50 ? updated.sublist(0, 50) : updated,
+    );
+  }
+
   // Socket callback implementations
   @override
   void onPickReceived(DraftPick pick) {
@@ -369,6 +397,17 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     final updatedPicks = [...state.picks, pick]
       ..sort((a, b) => a.pickNumber.compareTo(b.pickNumber));
     state = state.copyWith(picks: updatedPicks);
+
+    // Add activity event
+    final teamName = _teamNameForRoster(pick.rosterId);
+    final pickLabel = pick.isPickAsset
+        ? '${pick.pickAssetSeason} Rd ${pick.pickAssetRound} pick (${pick.pickAssetOriginalTeam ?? 'unknown'})'
+        : (pick.playerName ?? 'unknown');
+    if (pick.isAutoPick) {
+      _addActivityEvent(DraftActivityType.autoPick, '$teamName autopicked $pickLabel');
+    } else {
+      _addActivityEvent(DraftActivityType.pickMade, '$teamName picked $pickLabel');
+    }
   }
 
   @override
@@ -396,6 +435,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   void onDraftCompletedReceived(Map<String, dynamic> data) {
     if (!mounted) return;
     state = state.copyWith(draft: Draft.fromJson(data));
+    _addActivityEvent(DraftActivityType.draftCompleted, 'Draft completed');
   }
 
   @override
@@ -416,6 +456,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     if (draftData != null) {
       state = state.copyWith(draft: Draft.fromJson(draftData));
     }
+
+    _addActivityEvent(DraftActivityType.pickUndone, 'Last pick undone by commissioner');
   }
 
   @override
@@ -427,6 +469,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         draft: currentDraft.copyWith(status: DraftStatus.paused),
       );
     }
+    _addActivityEvent(DraftActivityType.draftPaused, 'Draft paused by commissioner');
   }
 
   @override
@@ -438,6 +481,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         draft: currentDraft.copyWith(status: DraftStatus.inProgress),
       );
     }
+    _addActivityEvent(DraftActivityType.draftResumed, 'Draft resumed');
   }
 
   /// Update server clock offset based on serverTime from socket events.
@@ -783,9 +827,9 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   }
 
   /// Toggle autodraft for the current user
-  Future<String?> toggleAutodraft(bool enabled) async {
+  Future<String?> toggleAutodraft(bool enabled, {String? idempotencyKey}) async {
     try {
-      await _draftRepo.toggleAutodraft(leagueId, draftId, enabled);
+      await _draftRepo.toggleAutodraft(leagueId, draftId, enabled, idempotencyKey: idempotencyKey);
       return null;
     } catch (e) {
       return e.toString();
@@ -793,11 +837,12 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   }
 
   /// Start the draft (commissioner only)
-  Future<String?> startDraft() async {
+  Future<String?> startDraft({String? idempotencyKey}) async {
     try {
-      final updatedDraft = await _draftRepo.startDraft(leagueId, draftId);
+      final updatedDraft = await _draftRepo.startDraft(leagueId, draftId, idempotencyKey: idempotencyKey);
       if (mounted) {
         state = state.copyWith(draft: updatedDraft);
+        _addActivityEvent(DraftActivityType.draftStarted, 'Draft started');
       }
       return null;
     } catch (e) {
@@ -857,6 +902,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         return entry;
       }).toList(),
     );
+
+    final teamName = _teamNameForRoster(rosterId);
+    final toggle = enabled ? 'on' : 'off';
+    _addActivityEvent(DraftActivityType.autodraftToggled, '$teamName turned autodraft $toggle');
   }
 
   @override
@@ -994,10 +1043,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   // Derby action methods
 
   /// Start the derby phase (commissioner only)
-  Future<String?> startDerby() async {
+  Future<String?> startDerby({String? idempotencyKey}) async {
     try {
       state = state.copyWith(isDerbySubmitting: true);
-      final derbyState = await _draftRepo.startDerby(leagueId, draftId);
+      final derbyState = await _draftRepo.startDerby(leagueId, draftId, idempotencyKey: idempotencyKey);
       if (mounted) {
         // Update draft phase and derby state
         final currentDraft = state.draft;

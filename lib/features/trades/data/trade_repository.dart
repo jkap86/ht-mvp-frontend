@@ -47,6 +47,7 @@ class TradeRepository {
     String leagueChatMode = 'summary',
     List<int>? offeringPickAssetIds,
     List<int>? requestingPickAssetIds,
+    String? idempotencyKey,
   }) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/trades',
@@ -62,30 +63,34 @@ class TradeRepository {
         if (requestingPickAssetIds != null && requestingPickAssetIds.isNotEmpty)
           'requesting_pick_asset_ids': requestingPickAssetIds,
       },
+      idempotencyKey: idempotencyKey,
     );
     return Trade.fromJson(response);
   }
 
   /// Accept a trade
-  Future<Trade> acceptTrade(int leagueId, int tradeId) async {
+  Future<Trade> acceptTrade(int leagueId, int tradeId, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/trades/$tradeId/accept',
+      idempotencyKey: idempotencyKey,
     );
     return Trade.fromJson(response);
   }
 
   /// Reject a trade
-  Future<Trade> rejectTrade(int leagueId, int tradeId) async {
+  Future<Trade> rejectTrade(int leagueId, int tradeId, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/trades/$tradeId/reject',
+      idempotencyKey: idempotencyKey,
     );
     return Trade.fromJson(response);
   }
 
   /// Cancel a trade (proposer only)
-  Future<Trade> cancelTrade(int leagueId, int tradeId) async {
+  Future<Trade> cancelTrade(int leagueId, int tradeId, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/trades/$tradeId/cancel',
+      idempotencyKey: idempotencyKey,
     );
     return Trade.fromJson(response);
   }
@@ -101,6 +106,7 @@ class TradeRepository {
     String leagueChatMode = 'summary',
     List<int>? offeringPickAssetIds,
     List<int>? requestingPickAssetIds,
+    String? idempotencyKey,
   }) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/trades/$tradeId/counter',
@@ -115,6 +121,7 @@ class TradeRepository {
         if (requestingPickAssetIds != null && requestingPickAssetIds.isNotEmpty)
           'requesting_pick_asset_ids': requestingPickAssetIds,
       },
+      idempotencyKey: idempotencyKey,
     );
     return Trade.fromJson(response);
   }
@@ -123,13 +130,15 @@ class TradeRepository {
   Future<Map<String, dynamic>> voteTrade(
     int leagueId,
     int tradeId,
-    String vote,
-  ) async {
+    String vote, {
+    String? idempotencyKey,
+  }) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/trades/$tradeId/vote',
       body: {
         'vote': vote, // 'approve' or 'veto'
       },
+      idempotencyKey: idempotencyKey,
     );
     final tradeData = response['trade'] as Map<String, dynamic>?;
     if (tradeData == null) {

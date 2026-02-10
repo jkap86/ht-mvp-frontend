@@ -28,6 +28,7 @@ class PlayoffRepository {
     bool? enableThirdPlaceGame,
     String? consolationType,
     int? consolationTeams,
+    String? idempotencyKey,
   }) async {
     final body = <String, dynamic>{
       'playoff_teams': playoffTeams,
@@ -50,6 +51,7 @@ class PlayoffRepository {
     final response = await _apiClient.post(
       '/leagues/$leagueId/playoffs/generate',
       body: body,
+      idempotencyKey: idempotencyKey,
     );
     return PlayoffBracketView.fromJson(response);
   }
@@ -61,10 +63,11 @@ class PlayoffRepository {
   }
 
   /// Advance winners (commissioner only)
-  Future<PlayoffBracketView> advanceWinners(int leagueId, int week) async {
+  Future<PlayoffBracketView> advanceWinners(int leagueId, int week, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/playoffs/advance',
       body: {'week': week},
+      idempotencyKey: idempotencyKey,
     );
     return PlayoffBracketView.fromJson(response);
   }

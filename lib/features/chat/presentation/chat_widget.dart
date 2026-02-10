@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/error_display.dart';
+import '../../../core/utils/idempotency.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../domain/chat_message.dart';
@@ -47,14 +49,13 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
+    final key = newIdempotencyKey();
     final notifier = ref.read(chatProvider(widget.leagueId).notifier);
-    final success = await notifier.sendMessage(text);
+    final success = await notifier.sendMessage(text, idempotencyKey: key);
     if (success) {
       _messageController.clear();
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error sending message')),
-      );
+      'Error sending message'.showAsError(ref);
     }
   }
 

@@ -127,16 +127,41 @@ class StandingsScreen extends ConsumerWidget {
                           fontWeight: isMyTeam ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
+                      if (standing.rank == playoffLine)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Icon(
+                            Icons.horizontal_rule,
+                            size: 12,
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                        ),
                     ],
                   ),
                 ),
                 DataCell(
-                  Text(
-                    standing.teamName,
-                    style: TextStyle(
-                      fontWeight: isMyTeam ? FontWeight.bold : FontWeight.normal,
-                      color: isMyTeam ? Theme.of(context).primaryColor : null,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          standing.teamName,
+                          style: TextStyle(
+                            fontWeight: isMyTeam ? FontWeight.bold : FontWeight.normal,
+                            color: isMyTeam ? Theme.of(context).primaryColor : null,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isPlayoffSpot) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.emoji_events,
+                          size: 14,
+                          color: AppTheme.draftActionPrimary.withValues(alpha: 0.6),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 DataCell(

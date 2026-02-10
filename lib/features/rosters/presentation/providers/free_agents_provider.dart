@@ -159,7 +159,7 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
   }
 
   /// Add a player to the roster with optimistic update and rollback on failure
-  Future<bool> addPlayer(int playerId) async {
+  Future<bool> addPlayer(int playerId, {String? idempotencyKey}) async {
     // Save state for rollback
     final previousState = state;
 
@@ -171,7 +171,7 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
     );
 
     try {
-      await _rosterRepo.addPlayer(leagueId, rosterId, playerId);
+      await _rosterRepo.addPlayer(leagueId, rosterId, playerId, idempotencyKey: idempotencyKey);
 
       // Success - just clear loading state
       state = state.copyWith(
@@ -195,7 +195,7 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
   }
 
   /// Add a player and drop another in the same transaction with optimistic update
-  Future<bool> addDropPlayer(int addPlayerId, int dropPlayerId) async {
+  Future<bool> addDropPlayer(int addPlayerId, int dropPlayerId, {String? idempotencyKey}) async {
     // Save state for rollback
     final previousState = state;
 
@@ -207,7 +207,7 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
     );
 
     try {
-      await _rosterRepo.addDropPlayer(leagueId, rosterId, addPlayerId, dropPlayerId);
+      await _rosterRepo.addDropPlayer(leagueId, rosterId, addPlayerId, dropPlayerId, idempotencyKey: idempotencyKey);
 
       // Success - just clear loading state
       state = state.copyWith(

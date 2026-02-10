@@ -74,8 +74,8 @@ class CommissionerRepository {
   // ============================================================
 
   /// Kick a member from the league
-  Future<void> kickMember(int leagueId, int rosterId) {
-    return _leagueRepo.kickMember(leagueId, rosterId);
+  Future<void> kickMember(int leagueId, int rosterId, {String? idempotencyKey}) {
+    return _leagueRepo.kickMember(leagueId, rosterId, idempotencyKey: idempotencyKey);
   }
 
   // ============================================================
@@ -83,8 +83,8 @@ class CommissionerRepository {
   // ============================================================
 
   /// Delete the league (requires confirmationName to match league name)
-  Future<void> deleteLeague(int leagueId, {required String confirmationName}) {
-    return _leagueRepo.deleteLeague(leagueId, confirmationName: confirmationName);
+  Future<void> deleteLeague(int leagueId, {required String confirmationName, String? idempotencyKey}) {
+    return _leagueRepo.deleteLeague(leagueId, confirmationName: confirmationName, idempotencyKey: idempotencyKey);
   }
 
   /// Update season controls (season status and/or current week)
@@ -92,11 +92,13 @@ class CommissionerRepository {
     int leagueId, {
     String? seasonStatus,
     int? currentWeek,
+    String? idempotencyKey,
   }) {
     return _leagueRepo.updateSeasonControls(
       leagueId,
       seasonStatus: seasonStatus,
       currentWeek: currentWeek,
+      idempotencyKey: idempotencyKey,
     );
   }
 
@@ -107,6 +109,7 @@ class CommissionerRepository {
     required String confirmationName,
     bool keepMembers = false,
     bool clearChat = true,
+    String? idempotencyKey,
   }) {
     return _leagueRepo.resetLeague(
       leagueId,
@@ -114,6 +117,7 @@ class CommissionerRepository {
       confirmationName: confirmationName,
       keepMembers: keepMembers,
       clearChat: clearChat,
+      idempotencyKey: idempotencyKey,
     );
   }
 
@@ -127,6 +131,7 @@ class CommissionerRepository {
     Map<String, dynamic>? leagueSettings,
     Map<String, dynamic>? scoringSettings,
     int? totalRosters,
+    String? idempotencyKey,
   }) {
     return _leagueRepo.updateLeague(
       leagueId,
@@ -137,12 +142,13 @@ class CommissionerRepository {
       leagueSettings: leagueSettings,
       scoringSettings: scoringSettings,
       totalRosters: totalRosters,
+      idempotencyKey: idempotencyKey,
     );
   }
 
   /// Reinstate a benched member
-  Future<void> reinstateMember(int leagueId, int rosterId) {
-    return _leagueRepo.reinstateMember(leagueId, rosterId);
+  Future<void> reinstateMember(int leagueId, int rosterId, {String? idempotencyKey}) {
+    return _leagueRepo.reinstateMember(leagueId, rosterId, idempotencyKey: idempotencyKey);
   }
 
   // ============================================================
@@ -150,13 +156,13 @@ class CommissionerRepository {
   // ============================================================
 
   /// Generate regular season schedule
-  Future<void> generateSchedule(int leagueId, {required int weeks}) {
-    return _matchupRepo.generateSchedule(leagueId, weeks: weeks);
+  Future<void> generateSchedule(int leagueId, {required int weeks, String? idempotencyKey}) {
+    return _matchupRepo.generateSchedule(leagueId, weeks: weeks, idempotencyKey: idempotencyKey);
   }
 
   /// Finalize matchups for a week
-  Future<void> finalizeMatchups(int leagueId, int week) {
-    return _matchupRepo.finalizeMatchups(leagueId, week);
+  Future<void> finalizeMatchups(int leagueId, int week, {String? idempotencyKey}) {
+    return _matchupRepo.finalizeMatchups(leagueId, week, idempotencyKey: idempotencyKey);
   }
 
   // ============================================================
@@ -178,6 +184,7 @@ class CommissionerRepository {
     bool? enableThirdPlaceGame,
     String? consolationType,
     int? consolationTeams,
+    String? idempotencyKey,
   }) {
     return _playoffRepo.generateBracket(
       leagueId,
@@ -187,12 +194,13 @@ class CommissionerRepository {
       enableThirdPlaceGame: enableThirdPlaceGame,
       consolationType: consolationType,
       consolationTeams: consolationTeams,
+      idempotencyKey: idempotencyKey,
     );
   }
 
   /// Advance playoff winners to next round
-  Future<PlayoffBracketView> advanceWinners(int leagueId, int week) {
-    return _playoffRepo.advanceWinners(leagueId, week);
+  Future<PlayoffBracketView> advanceWinners(int leagueId, int week, {String? idempotencyKey}) {
+    return _playoffRepo.advanceWinners(leagueId, week, idempotencyKey: idempotencyKey);
   }
 
   /// Get current playoff bracket
@@ -205,13 +213,13 @@ class CommissionerRepository {
   // ============================================================
 
   /// Initialize waiver system for the league
-  Future<void> initializeWaivers(int leagueId, {int? faabBudget}) {
-    return _waiverRepo.initializeWaivers(leagueId, faabBudget: faabBudget);
+  Future<void> initializeWaivers(int leagueId, {int? faabBudget, String? idempotencyKey}) {
+    return _waiverRepo.initializeWaivers(leagueId, faabBudget: faabBudget, idempotencyKey: idempotencyKey);
   }
 
   /// Process pending waiver claims
-  Future<Map<String, dynamic>> processWaivers(int leagueId) {
-    return _waiverRepo.processWaivers(leagueId);
+  Future<Map<String, dynamic>> processWaivers(int leagueId, {String? idempotencyKey}) {
+    return _waiverRepo.processWaivers(leagueId, idempotencyKey: idempotencyKey);
   }
 }
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/error_display.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/invitation.dart';
@@ -63,22 +64,11 @@ class _InviteMemberSheetState extends ConsumerState<InviteMemberSheet> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Invitation sent to ${_selectedUser!.username}'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      showSuccess(ref, 'Invitation sent to ${_selectedUser!.username}');
       Navigator.pop(context);
     } else {
       final error = ref.read(leagueInvitationsProvider(widget.leagueId)).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Failed to send invitation'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      (error ?? 'Failed to send invitation').showAsError(ref);
     }
   }
 

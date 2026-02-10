@@ -30,10 +30,11 @@ class ChatRepository {
         .toList();
   }
 
-  Future<void> sendMessage(int leagueId, String message) async {
+  Future<void> sendMessage(int leagueId, String message, {String? idempotencyKey}) async {
     await _apiClient.post(
       '/leagues/$leagueId/chat',
       body: {'message': message},
+      idempotencyKey: idempotencyKey,
     );
   }
 }

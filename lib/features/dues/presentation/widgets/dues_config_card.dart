@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/error_display.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../providers/dues_provider.dart';
 
 /// Represents a single payout entry with a key and percentage
@@ -168,30 +170,25 @@ class _DuesConfigCardState extends ConsumerState<DuesConfigCard> {
     final totalPercentage = _totalPercentage;
 
     if (totalPercentage > 100) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Payout percentages cannot exceed 100%'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      'Payout percentages cannot exceed 100%'.showAsError(ref);
       return;
     }
 
+    final key = newIdempotencyKey();
     final success = await ref.read(duesProvider(widget.leagueId).notifier).saveDuesConfig(
           buyInAmount: buyIn,
           payoutStructure: _buildPayoutStructure(),
           notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+          idempotencyKey: key,
         );
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(success ? 'Dues configuration saved' : 'Failed to save configuration'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: success ? null : Theme.of(context).colorScheme.error,
-      ),
-    );
+    if (success) {
+      showSuccess(ref, 'Dues configuration saved');
+    } else {
+      'Failed to save configuration'.showAsError(ref);
+    }
   }
 
   Future<void> _disableDues() async {
@@ -220,7 +217,8 @@ class _DuesConfigCardState extends ConsumerState<DuesConfigCard> {
 
     if (confirmed != true || !mounted) return;
 
-    final success = await ref.read(duesProvider(widget.leagueId).notifier).deleteDuesConfig();
+    final key = newIdempotencyKey();
+    final success = await ref.read(duesProvider(widget.leagueId).notifier).deleteDuesConfig(idempotencyKey: key);
 
     if (!mounted) return;
 
@@ -237,12 +235,7 @@ class _DuesConfigCardState extends ConsumerState<DuesConfigCard> {
         _payouts.clear();
         _payouts.add(PayoutEntry(key: '1st', label: '1st Place', initialValue: '100'));
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Dues tracking disabled'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      showSuccess(ref, 'Dues tracking disabled');
     }
   }
 

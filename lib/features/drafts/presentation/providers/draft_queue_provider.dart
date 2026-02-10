@@ -160,9 +160,9 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
     }
   }
 
-  Future<bool> addToQueue(int playerId) async {
+  Future<bool> addToQueue(int playerId, {String? idempotencyKey}) async {
     try {
-      await _draftRepo.addToQueue(leagueId, draftId, playerId);
+      await _draftRepo.addToQueue(leagueId, draftId, playerId, idempotencyKey: idempotencyKey);
       // Reload queue to get the full entry with player info
       await loadQueue();
       return true;
@@ -172,9 +172,9 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
     }
   }
 
-  Future<bool> addPickAssetToQueue(int pickAssetId) async {
+  Future<bool> addPickAssetToQueue(int pickAssetId, {String? idempotencyKey}) async {
     try {
-      await _draftRepo.addPickAssetToQueue(leagueId, draftId, pickAssetId);
+      await _draftRepo.addPickAssetToQueue(leagueId, draftId, pickAssetId, idempotencyKey: idempotencyKey);
       // Reload queue to get the full entry with pick asset info
       await loadQueue();
       return true;
@@ -184,9 +184,9 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
     }
   }
 
-  Future<bool> removeFromQueue(int playerId) async {
+  Future<bool> removeFromQueue(int playerId, {String? idempotencyKey}) async {
     try {
-      await _draftRepo.removeFromQueue(leagueId, draftId, playerId);
+      await _draftRepo.removeFromQueue(leagueId, draftId, playerId, idempotencyKey: idempotencyKey);
       // Optimistically remove from local state
       state = state.copyWith(
         queue: state.queue.where((e) => e.playerId != playerId).toList(),
@@ -198,9 +198,9 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
     }
   }
 
-  Future<bool> removePickAssetFromQueue(int pickAssetId) async {
+  Future<bool> removePickAssetFromQueue(int pickAssetId, {String? idempotencyKey}) async {
     try {
-      await _draftRepo.removePickAssetFromQueue(leagueId, draftId, pickAssetId);
+      await _draftRepo.removePickAssetFromQueue(leagueId, draftId, pickAssetId, idempotencyKey: idempotencyKey);
       // Optimistically remove from local state
       state = state.copyWith(
         queue: state.queue.where((e) => e.pickAssetId != pickAssetId).toList(),
@@ -213,9 +213,9 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
   }
 
   /// Reorder queue using entry IDs (supports mixed player + pick asset queues)
-  Future<bool> reorderQueueByEntryIds(List<int> entryIds) async {
+  Future<bool> reorderQueueByEntryIds(List<int> entryIds, {String? idempotencyKey}) async {
     try {
-      final queueData = await _draftRepo.reorderQueueByEntryIds(leagueId, draftId, entryIds);
+      final queueData = await _draftRepo.reorderQueueByEntryIds(leagueId, draftId, entryIds, idempotencyKey: idempotencyKey);
       final queue = queueData.map((e) => QueueEntry.fromJson(e)).toList();
       state = state.copyWith(queue: queue);
       return true;
@@ -226,9 +226,9 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
   }
 
   /// Legacy reorder using player IDs (for backwards compatibility)
-  Future<bool> reorderQueue(List<int> playerIds) async {
+  Future<bool> reorderQueue(List<int> playerIds, {String? idempotencyKey}) async {
     try {
-      final queueData = await _draftRepo.reorderQueue(leagueId, draftId, playerIds);
+      final queueData = await _draftRepo.reorderQueue(leagueId, draftId, playerIds, idempotencyKey: idempotencyKey);
       final queue = queueData.map((e) => QueueEntry.fromJson(e)).toList();
       state = state.copyWith(queue: queue);
       return true;

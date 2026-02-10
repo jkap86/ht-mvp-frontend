@@ -69,6 +69,7 @@ class PlayoffBracketNotifier extends StateNotifier<PlayoffBracketState> {
   Future<bool> generateBracket({
     required int playoffTeams,
     required int startWeek,
+    String? idempotencyKey,
   }) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
@@ -77,6 +78,7 @@ class PlayoffBracketNotifier extends StateNotifier<PlayoffBracketState> {
         leagueId,
         playoffTeams: playoffTeams,
         startWeek: startWeek,
+        idempotencyKey: idempotencyKey,
       );
       state = state.copyWith(
         bracketView: bracketView,
@@ -93,11 +95,11 @@ class PlayoffBracketNotifier extends StateNotifier<PlayoffBracketState> {
     }
   }
 
-  Future<bool> advanceWinners(int week) async {
+  Future<bool> advanceWinners(int week, {String? idempotencyKey}) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      final bracketView = await _playoffRepo.advanceWinners(leagueId, week);
+      final bracketView = await _playoffRepo.advanceWinners(leagueId, week, idempotencyKey: idempotencyKey);
       state = state.copyWith(
         bracketView: bracketView,
         isProcessing: false,

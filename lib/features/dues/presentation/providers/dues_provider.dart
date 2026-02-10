@@ -68,6 +68,7 @@ class DuesNotifier extends StateNotifier<DuesState> {
     Map<String, num>? payoutStructure,
     String? currency,
     String? notes,
+    String? idempotencyKey,
   }) async {
     state = state.copyWith(isSaving: true, clearError: true);
     try {
@@ -77,6 +78,7 @@ class DuesNotifier extends StateNotifier<DuesState> {
         payoutStructure: payoutStructure,
         currency: currency,
         notes: notes,
+        idempotencyKey: idempotencyKey,
       );
       // Reload to get updated data
       await loadDues();
@@ -89,10 +91,10 @@ class DuesNotifier extends StateNotifier<DuesState> {
   }
 
   /// Disable dues tracking
-  Future<bool> deleteDuesConfig() async {
+  Future<bool> deleteDuesConfig({String? idempotencyKey}) async {
     state = state.copyWith(isSaving: true, clearError: true);
     try {
-      await _repository.deleteDuesConfig(leagueId);
+      await _repository.deleteDuesConfig(leagueId, idempotencyKey: idempotencyKey);
       // Clear the overview to show disabled state
       state = state.copyWith(
         isSaving: false,
@@ -111,7 +113,7 @@ class DuesNotifier extends StateNotifier<DuesState> {
   }
 
   /// Mark payment status for a roster
-  Future<bool> markPayment(int rosterId, bool isPaid, {String? notes}) async {
+  Future<bool> markPayment(int rosterId, bool isPaid, {String? notes, String? idempotencyKey}) async {
     state = state.copyWith(updatingRosterId: rosterId, clearError: true);
     try {
       await _repository.markPaymentStatus(
@@ -119,6 +121,7 @@ class DuesNotifier extends StateNotifier<DuesState> {
         rosterId,
         isPaid: isPaid,
         notes: notes,
+        idempotencyKey: idempotencyKey,
       );
       // Reload to get updated data
       await loadDues();

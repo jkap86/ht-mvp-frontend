@@ -52,10 +52,10 @@ class InvitationsNotifier extends StateNotifier<InvitationsState> {
   }
 
   /// Accept an invitation and join the league
-  Future<League?> acceptInvitation(int invitationId) async {
+  Future<League?> acceptInvitation(int invitationId, {String? idempotencyKey}) async {
     state = state.copyWith(processingId: invitationId, error: null);
     try {
-      final league = await _repository.acceptInvitation(invitationId);
+      final league = await _repository.acceptInvitation(invitationId, idempotencyKey: idempotencyKey);
       // Remove the accepted invitation from the list
       final updatedInvitations = state.invitations
           .where((inv) => inv.id != invitationId)
@@ -72,10 +72,10 @@ class InvitationsNotifier extends StateNotifier<InvitationsState> {
   }
 
   /// Decline an invitation
-  Future<bool> declineInvitation(int invitationId) async {
+  Future<bool> declineInvitation(int invitationId, {String? idempotencyKey}) async {
     state = state.copyWith(processingId: invitationId, error: null);
     try {
-      await _repository.declineInvitation(invitationId);
+      await _repository.declineInvitation(invitationId, idempotencyKey: idempotencyKey);
       // Remove the declined invitation from the list
       final updatedInvitations = state.invitations
           .where((inv) => inv.id != invitationId)

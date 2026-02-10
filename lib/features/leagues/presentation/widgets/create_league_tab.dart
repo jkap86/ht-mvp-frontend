@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/error_display.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../../../home/presentation/widgets/scoring_settings_editor.dart';
 import '../../../home/presentation/widgets/roster_config_editor.dart';
 import '../../data/league_repository.dart';
 import 'draft_structure_selector.dart';
+import 'league_onboarding_sheet.dart';
 
 class CreateLeagueTab extends ConsumerStatefulWidget {
   const CreateLeagueTab({super.key});
@@ -363,6 +367,7 @@ class _CreateLeagueTabState extends ConsumerState<CreateLeagueTab>
     setState(() => _isCreating = true);
 
     try {
+      final key = newIdempotencyKey();
       await ref.read(myLeaguesProvider.notifier).createLeague(
             name: _nameController.text,
             season: _leagueCreateSeason!,
@@ -376,6 +381,7 @@ class _CreateLeagueTabState extends ConsumerState<CreateLeagueTab>
             },
             isPublic: _isPublic,
             draftStructure: _draftStructure,
+            idempotencyKey: key,
           );
 
       if (!mounted) return;
@@ -383,22 +389,31 @@ class _CreateLeagueTabState extends ConsumerState<CreateLeagueTab>
       // Get the created league from state
       final leaguesState = ref.read(myLeaguesProvider);
       if (leaguesState.error == null && leaguesState.leagues.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('League created successfully!'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        final createdLeague = leaguesState.leagues.last;
+        showSuccess(ref, 'League created successfully!');
         // Navigate back to leagues screen
         context.pop();
+
+        // Show onboarding sheet if not seen before
+        final storageService = ref.read(storageServiceProvider);
+        final hasSeenOnboarding =
+            await storageService.hasSeenOnboarding(createdLeague.id);
+        if (!hasSeenOnboarding && mounted) {
+          await Future.delayed(const Duration(milliseconds: 300));
+          if (!mounted) return;
+          showLeagueOnboardingSheet(
+            context,
+            leagueName: createdLeague.name,
+            leagueId: createdLeague.id,
+            hasDraftScheduled: false,
+            onViewMyTeam: () {
+              context.push('/leagues/${createdLeague.id}/team');
+            },
+          );
+          await storageService.markOnboardingSeen(createdLeague.id);
+        }
       } else if (leaguesState.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(leaguesState.error!),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        leaguesState.error!.showAsError(ref);
       }
     } finally {
       if (mounted) {

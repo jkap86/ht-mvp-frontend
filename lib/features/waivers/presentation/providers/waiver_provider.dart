@@ -347,6 +347,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
     required int playerId,
     int? dropPlayerId,
     int bidAmount = 0,
+    String? idempotencyKey,
   }) async {
     try {
       final claim = await _waiverRepo.submitClaim(
@@ -354,6 +355,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
         playerId: playerId,
         dropPlayerId: dropPlayerId,
         bidAmount: bidAmount,
+        idempotencyKey: idempotencyKey,
       );
       _addOrUpdateClaim(claim);
       return claim;
@@ -368,6 +370,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
     int claimId, {
     int? dropPlayerId,
     int? bidAmount,
+    String? idempotencyKey,
   }) async {
     try {
       final claim = await _waiverRepo.updateClaim(
@@ -375,6 +378,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
         claimId,
         dropPlayerId: dropPlayerId,
         bidAmount: bidAmount,
+        idempotencyKey: idempotencyKey,
       );
       _addOrUpdateClaim(claim);
       return claim;
@@ -385,9 +389,9 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
   }
 
   /// Cancel a waiver claim
-  Future<bool> cancelClaim(int claimId) async {
+  Future<bool> cancelClaim(int claimId, {String? idempotencyKey}) async {
     try {
-      await _waiverRepo.cancelClaim(leagueId, claimId);
+      await _waiverRepo.cancelClaim(leagueId, claimId, idempotencyKey: idempotencyKey);
       _removeClaim(claimId);
       return true;
     } catch (e) {
@@ -398,9 +402,9 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
 
   /// Reorder waiver claims
   /// Takes a list of claim IDs in the desired order
-  Future<bool> reorderClaims(List<int> claimIds) async {
+  Future<bool> reorderClaims(List<int> claimIds, {String? idempotencyKey}) async {
     try {
-      final updatedClaims = await _waiverRepo.reorderClaims(leagueId, claimIds);
+      final updatedClaims = await _waiverRepo.reorderClaims(leagueId, claimIds, idempotencyKey: idempotencyKey);
       // Update local state with new claim orders
       final currentClaims = [...state.claims];
       for (final updated in updatedClaims) {

@@ -51,10 +51,10 @@ class PublicLeaguesNotifier extends StateNotifier<PublicLeaguesState> {
   }
 
   /// Join a public league
-  Future<League?> joinLeague(int leagueId) async {
+  Future<League?> joinLeague(int leagueId, {String? idempotencyKey}) async {
     state = state.copyWith(joiningLeagueId: leagueId, error: null);
     try {
-      final league = await _repository.joinPublicLeague(leagueId);
+      final league = await _repository.joinPublicLeague(leagueId, idempotencyKey: idempotencyKey);
       // Remove the joined league from the list
       final updatedLeagues = state.leagues.where((l) => l.id != leagueId).toList();
       state = state.copyWith(

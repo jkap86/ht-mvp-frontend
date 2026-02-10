@@ -22,17 +22,18 @@ class RosterRepository {
   }
 
   /// Add a player to roster (free agency pickup)
-  Future<RosterPlayer> addPlayer(int leagueId, int rosterId, int playerId) async {
+  Future<RosterPlayer> addPlayer(int leagueId, int rosterId, int playerId, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/rosters/$rosterId/players',
       body: {'playerId': playerId},
+      idempotencyKey: idempotencyKey,
     );
     return RosterPlayer.fromJson(response);
   }
 
   /// Drop a player from roster
-  Future<void> dropPlayer(int leagueId, int rosterId, int playerId) async {
-    await _apiClient.delete('/leagues/$leagueId/rosters/$rosterId/players/$playerId');
+  Future<void> dropPlayer(int leagueId, int rosterId, int playerId, {String? idempotencyKey}) async {
+    await _apiClient.delete('/leagues/$leagueId/rosters/$rosterId/players/$playerId', idempotencyKey: idempotencyKey);
   }
 
   /// Add/drop players in a single transaction
@@ -40,14 +41,16 @@ class RosterRepository {
     int leagueId,
     int rosterId,
     int addPlayerId,
-    int dropPlayerId,
-  ) async {
+    int dropPlayerId, {
+    String? idempotencyKey,
+  }) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/rosters/$rosterId/players/add-drop',
       body: {
         'addPlayerId': addPlayerId,
         'dropPlayerId': dropPlayerId,
       },
+      idempotencyKey: idempotencyKey,
     );
     return RosterPlayer.fromJson(response);
   }
@@ -97,14 +100,16 @@ class RosterRepository {
     int leagueId,
     int rosterId,
     int week,
-    LineupSlots lineup,
-  ) async {
+    LineupSlots lineup, {
+    String? idempotencyKey,
+  }) async {
     final response = await _apiClient.put(
       '/leagues/$leagueId/rosters/$rosterId/lineup',
       body: {
         'week': week,
         'lineup': lineup.toJson(),
       },
+      idempotencyKey: idempotencyKey,
     );
     return RosterLineup.fromJson(response['lineup']);
   }
@@ -115,8 +120,9 @@ class RosterRepository {
     int rosterId,
     int week,
     int playerId,
-    String toSlot,
-  ) async {
+    String toSlot, {
+    String? idempotencyKey,
+  }) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/rosters/$rosterId/lineup/move',
       body: {
@@ -124,6 +130,7 @@ class RosterRepository {
         'playerId': playerId,
         'toSlot': toSlot,
       },
+      idempotencyKey: idempotencyKey,
     );
     return RosterLineup.fromJson(response['lineup']);
   }

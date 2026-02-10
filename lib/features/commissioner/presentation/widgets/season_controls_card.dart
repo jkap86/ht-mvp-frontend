@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../../../leagues/domain/league.dart';
 import '../providers/commissioner_provider.dart';
 
@@ -74,9 +75,11 @@ class _SeasonControlsCardState extends ConsumerState<SeasonControlsCard> {
   }
 
   Future<void> _saveChanges() async {
+    final key = newIdempotencyKey();
     final success = await ref.read(commissionerProvider(widget.leagueId).notifier).updateSeasonControls(
           seasonStatus: _statusToApiValue(_selectedStatus),
           currentWeek: _selectedWeek,
+          idempotencyKey: key,
         );
     if (success) {
       setState(() => _hasChanges = false);

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/error_display.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../../core/widgets/states/app_error_view.dart';
 import '../../data/trade_repository.dart';
@@ -137,23 +139,17 @@ class TradeDetailScreen extends ConsumerWidget {
     );
 
     if (confirmed == true) {
+      final key = newIdempotencyKey();
       final result =
-          await ref.read(tradesProvider(leagueId).notifier).acceptTrade(trade.id);
+          await ref.read(tradesProvider(leagueId).notifier).acceptTrade(trade.id, idempotencyKey: key);
       if (context.mounted) {
         if (result != null) {
           ref.invalidate(
               tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Trade accepted!')),
-          );
+          showSuccess(ref, 'Trade accepted!');
         } else {
           final error = ref.read(tradesProvider(leagueId)).error;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error ?? 'Failed to accept trade'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          (error ?? 'Failed to accept trade').showAsError(ref);
         }
       }
     }
@@ -181,23 +177,17 @@ class TradeDetailScreen extends ConsumerWidget {
     );
 
     if (confirmed == true) {
+      final key = newIdempotencyKey();
       final result =
-          await ref.read(tradesProvider(leagueId).notifier).rejectTrade(trade.id);
+          await ref.read(tradesProvider(leagueId).notifier).rejectTrade(trade.id, idempotencyKey: key);
       if (context.mounted) {
         if (result != null) {
           ref.invalidate(
               tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Trade rejected')),
-          );
+          showSuccess(ref, 'Trade rejected');
         } else {
           final error = ref.read(tradesProvider(leagueId)).error;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error ?? 'Failed to reject trade'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          (error ?? 'Failed to reject trade').showAsError(ref);
         }
       }
     }
@@ -225,23 +215,17 @@ class TradeDetailScreen extends ConsumerWidget {
     );
 
     if (confirmed == true) {
+      final key = newIdempotencyKey();
       final result =
-          await ref.read(tradesProvider(leagueId).notifier).cancelTrade(trade.id);
+          await ref.read(tradesProvider(leagueId).notifier).cancelTrade(trade.id, idempotencyKey: key);
       if (context.mounted) {
         if (result != null) {
           ref.invalidate(
               tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Trade cancelled')),
-          );
+          showSuccess(ref, 'Trade cancelled');
         } else {
           final error = ref.read(tradesProvider(leagueId)).error;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error ?? 'Failed to cancel trade'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          (error ?? 'Failed to cancel trade').showAsError(ref);
         }
       }
     }
@@ -249,26 +233,18 @@ class TradeDetailScreen extends ConsumerWidget {
 
   Future<void> _handleVote(
       BuildContext context, WidgetRef ref, Trade trade, String vote) async {
+    final key = newIdempotencyKey();
     final success = await ref
         .read(tradesProvider(leagueId).notifier)
-        .voteTrade(trade.id, vote);
+        .voteTrade(trade.id, vote, idempotencyKey: key);
     if (context.mounted) {
       if (success) {
         ref.invalidate(
             tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text('Vote recorded: ${vote == 'approve' ? 'Approved' : 'Vetoed'}')),
-        );
+        showSuccess(ref, 'Vote recorded: ${vote == 'approve' ? 'Approved' : 'Vetoed'}');
       } else {
         final error = ref.read(tradesProvider(leagueId)).error;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error ?? 'Failed to record vote'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        (error ?? 'Failed to record vote').showAsError(ref);
       }
     }
   }

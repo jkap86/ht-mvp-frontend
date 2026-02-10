@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/error_display.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../rosters/domain/roster_player.dart';
 import '../../domain/faab_budget.dart';
@@ -291,9 +292,7 @@ class _WaiverClaimDialogState extends ConsumerState<WaiverClaimDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        e.showAsError(ref);
       }
     } finally {
       if (mounted) {

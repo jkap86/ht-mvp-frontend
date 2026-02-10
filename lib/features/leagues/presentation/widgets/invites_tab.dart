@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/error_display.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../data/invitations_provider.dart';
 import '../../data/league_repository.dart';
@@ -68,7 +70,8 @@ class _InvitesTabState extends ConsumerState<InvitesTab>
   }
 
   Future<void> _acceptInvitation(LeagueInvitation invitation) async {
-    final league = await ref.read(invitationsProvider.notifier).acceptInvitation(invitation.id);
+    final key = newIdempotencyKey();
+    final league = await ref.read(invitationsProvider.notifier).acceptInvitation(invitation.id, idempotencyKey: key);
 
     if (!mounted) return;
 
@@ -76,23 +79,12 @@ class _InvitesTabState extends ConsumerState<InvitesTab>
       // Refresh my leagues list
       ref.read(myLeaguesProvider.notifier).loadLeagues();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Successfully joined ${invitation.leagueName}!'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      showSuccess(ref, 'Successfully joined ${invitation.leagueName}!');
       // Navigate to the league
       context.push('/leagues/${league.id}');
     } else {
       final error = ref.read(invitationsProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Failed to accept invitation'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      (error ?? 'Failed to accept invitation').showAsError(ref);
     }
   }
 
@@ -117,26 +109,16 @@ class _InvitesTabState extends ConsumerState<InvitesTab>
 
     if (confirmed != true || !mounted) return;
 
-    final success = await ref.read(invitationsProvider.notifier).declineInvitation(invitation.id);
+    final key = newIdempotencyKey();
+    final success = await ref.read(invitationsProvider.notifier).declineInvitation(invitation.id, idempotencyKey: key);
 
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invitation declined'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      showSuccess(ref, 'Invitation declined');
     } else {
       final error = ref.read(invitationsProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Failed to decline invitation'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      (error ?? 'Failed to decline invitation').showAsError(ref);
     }
   }
 }

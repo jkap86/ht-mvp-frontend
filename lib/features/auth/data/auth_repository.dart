@@ -86,6 +86,19 @@ class AuthRepository {
     await _apiClient.clearTokens();
   }
 
+  /// Request a password reset email.
+  /// Always succeeds from the user's perspective to avoid leaking whether
+  /// an email exists (fire-and-forget UX).
+  Future<void> requestPasswordReset(String email) async {
+    try {
+      await _apiClient.post('/auth/forgot-password', body: {
+        'email': email,
+      }, auth: false);
+    } on NotFoundException {
+      // Silently succeed — don't reveal whether the email exists
+    }
+  }
+
   /// Attempts to refresh tokens using the stored refresh token.
   /// Uses raw HTTP to avoid triggering the retry logic in ApiClient.
   /// Returns true if successful, false otherwise.

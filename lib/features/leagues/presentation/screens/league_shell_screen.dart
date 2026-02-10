@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../providers/league_detail_provider.dart';
+import '../providers/league_dashboard_provider.dart';
 
 /// Shell screen that provides bottom navigation for league sub-screens.
 /// Uses StatefulShellRoute to preserve state across tab navigation.
@@ -23,11 +23,11 @@ class LeagueShellScreen extends ConsumerStatefulWidget {
 class _LeagueShellScreenState extends ConsumerState<LeagueShellScreen> {
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(leagueDetailProvider(widget.leagueId));
+    final dashboardState = ref.watch(leagueDashboardProvider(widget.leagueId));
 
-    // Calculate badge counts for notification indicators
-    final pendingTradesCount = state.pendingTradesCount;
-    final unreadMessagesCount = state.unreadMessagesCount;
+    // Calculate badge counts from dashboard data
+    final pendingTradesCount = dashboardState.pendingTrades;
+    final unreadMessagesCount = dashboardState.unreadChatMessages;
 
     return Scaffold(
       body: widget.navigationShell,

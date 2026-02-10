@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../providers/commissioner_provider.dart';
 import '../widgets/edit_league_card.dart';
@@ -96,10 +97,12 @@ class CommissionerScreen extends ConsumerWidget {
                               return wrapWithSpacing(MemberManagementCard(
                                 state: state,
                                 onKickMember: (rosterId, teamName, username) {
-                                  ref.read(commissionerProvider(leagueId).notifier).kickMember(rosterId, teamName);
+                                  final key = newIdempotencyKey();
+                                  ref.read(commissionerProvider(leagueId).notifier).kickMember(rosterId, teamName, idempotencyKey: key);
                                 },
                                 onReinstateMember: (rosterId, teamName) {
-                                  ref.read(commissionerProvider(leagueId).notifier).reinstateMember(rosterId, teamName);
+                                  final key = newIdempotencyKey();
+                                  ref.read(commissionerProvider(leagueId).notifier).reinstateMember(rosterId, teamName, idempotencyKey: key);
                                 },
                               ));
                             case 3:
@@ -107,24 +110,28 @@ class CommissionerScreen extends ConsumerWidget {
                             case 4:
                               return wrapWithSpacing(ScheduleManagementCard(
                                 onGenerateSchedule: (weeks) {
-                                  ref.read(commissionerProvider(leagueId).notifier).generateSchedule(weeks);
+                                  final key = newIdempotencyKey();
+                                  ref.read(commissionerProvider(leagueId).notifier).generateSchedule(weeks, idempotencyKey: key);
                                 },
                               ));
                             case 5:
                               return wrapWithSpacing(ScoringCard(
                                 currentWeek: state.league?.currentWeek ?? 1,
                                 onFinalizeWeek: (week) {
-                                  ref.read(commissionerProvider(leagueId).notifier).finalizeWeek(week);
+                                  final key = newIdempotencyKey();
+                                  ref.read(commissionerProvider(leagueId).notifier).finalizeWeek(week, idempotencyKey: key);
                                 },
                               ));
                             case 6:
                               return wrapWithSpacing(WaiverManagementCard(
                                 waiversInitialized: state.waiversInitialized,
                                 onInitializeWaivers: ({int? faabBudget}) {
-                                  ref.read(commissionerProvider(leagueId).notifier).initializeWaivers(faabBudget: faabBudget);
+                                  final key = newIdempotencyKey();
+                                  ref.read(commissionerProvider(leagueId).notifier).initializeWaivers(faabBudget: faabBudget, idempotencyKey: key);
                                 },
                                 onProcessWaivers: () {
-                                  ref.read(commissionerProvider(leagueId).notifier).processWaivers();
+                                  final key = newIdempotencyKey();
+                                  ref.read(commissionerProvider(leagueId).notifier).processWaivers(idempotencyKey: key);
                                 },
                               ));
                             case 7:
@@ -146,6 +153,7 @@ class CommissionerScreen extends ConsumerWidget {
                                   String? consolationType,
                                   int? consolationTeams,
                                 }) {
+                                  final key = newIdempotencyKey();
                                   ref.read(commissionerProvider(leagueId).notifier).generatePlayoffBracket(
                                     playoffTeams: playoffTeams,
                                     startWeek: startWeek,
@@ -153,10 +161,12 @@ class CommissionerScreen extends ConsumerWidget {
                                     enableThirdPlaceGame: enableThirdPlaceGame,
                                     consolationType: consolationType,
                                     consolationTeams: consolationTeams,
+                                    idempotencyKey: key,
                                   );
                                 },
                                 onAdvanceWinners: (week) {
-                                  ref.read(commissionerProvider(leagueId).notifier).advanceWinners(week);
+                                  final key = newIdempotencyKey();
+                                  ref.read(commissionerProvider(leagueId).notifier).advanceWinners(week, idempotencyKey: key);
                                 },
                                 onViewBracket: () {
                                   context.push('/leagues/$leagueId/playoffs');
@@ -169,6 +179,7 @@ class CommissionerScreen extends ConsumerWidget {
                               ));
                             case 11:
                               return wrapWithSpacing(SeasonResetCard(
+                                leagueId: leagueId,
                                 state: state,
                                 onReset: ({
                                   required String newSeason,
@@ -176,11 +187,13 @@ class CommissionerScreen extends ConsumerWidget {
                                   bool keepMembers = false,
                                   bool clearChat = true,
                                 }) {
+                                  final key = newIdempotencyKey();
                                   return ref.read(commissionerProvider(leagueId).notifier).resetLeague(
                                     newSeason: newSeason,
                                     confirmationName: confirmationName,
                                     keepMembers: keepMembers,
                                     clearChat: clearChat,
+                                    idempotencyKey: key,
                                   );
                                 },
                               ));
@@ -288,9 +301,10 @@ class CommissionerScreen extends ConsumerWidget {
                 onPressed: matches
                     ? () async {
                         Navigator.of(dialogContext).pop();
+                        final key = newIdempotencyKey();
                         final success = await ref
                             .read(commissionerProvider(leagueId).notifier)
-                            .deleteLeague(confirmationName: controller.text.trim());
+                            .deleteLeague(confirmationName: controller.text.trim(), idempotencyKey: key);
                         if (success && context.mounted) {
                           context.go('/');
                         }

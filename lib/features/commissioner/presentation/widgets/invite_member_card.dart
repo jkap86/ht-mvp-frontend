@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/error_display.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../../../leagues/domain/invitation.dart';
 import '../providers/league_invitations_provider.dart';
 
@@ -49,22 +51,19 @@ class _InviteMemberCardState extends ConsumerState<InviteMemberCard> {
   Future<void> _sendInvitation() async {
     if (_selectedUser == null) return;
 
+    final key = newIdempotencyKey();
     final success = await ref
         .read(leagueInvitationsProvider(widget.leagueId).notifier)
         .sendInvitation(
           _selectedUser!.username,
           message: _messageController.text.isNotEmpty ? _messageController.text : null,
+          idempotencyKey: key,
         );
 
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Invitation sent to ${_selectedUser!.username}'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      showSuccess(ref, 'Invitation sent to ${_selectedUser!.username}');
       _searchController.clear();
       _messageController.clear();
       setState(() {
@@ -73,13 +72,7 @@ class _InviteMemberCardState extends ConsumerState<InviteMemberCard> {
       });
     } else {
       final error = ref.read(leagueInvitationsProvider(widget.leagueId)).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Failed to send invitation'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      (error ?? 'Failed to send invitation').showAsError(ref);
     }
   }
 
@@ -104,19 +97,15 @@ class _InviteMemberCardState extends ConsumerState<InviteMemberCard> {
 
     if (confirmed != true || !mounted) return;
 
+    final key = newIdempotencyKey();
     final success = await ref
         .read(leagueInvitationsProvider(widget.leagueId).notifier)
-        .cancelInvitation(invitationId);
+        .cancelInvitation(invitationId, idempotencyKey: key);
 
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invitation cancelled'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      showSuccess(ref, 'Invitation cancelled');
     }
   }
 

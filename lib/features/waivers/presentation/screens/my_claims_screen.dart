@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/error_display.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../../core/widgets/states/app_error_view.dart';
@@ -137,12 +138,7 @@ class MyClaimsScreen extends ConsumerWidget {
             .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
             .reorderClaims(ids);
         if (!success && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Failed to reorder claims. Please try again.'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          'Failed to reorder claims. Please try again.'.showAsError(ref);
         }
       },
       itemBuilder: (context, index) {
@@ -161,12 +157,7 @@ class MyClaimsScreen extends ConsumerWidget {
                         .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
                         .moveClaimUp(claim.id);
                     if (!success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Failed to reorder claims. Please try again.'),
-                          backgroundColor: Theme.of(context).colorScheme.error,
-                        ),
-                      );
+                      'Failed to reorder claims. Please try again.'.showAsError(ref);
                     }
                   }
                 : null,
@@ -176,12 +167,7 @@ class MyClaimsScreen extends ConsumerWidget {
                         .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
                         .moveClaimDown(claim.id);
                     if (!success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Failed to reorder claims. Please try again.'),
-                          backgroundColor: Theme.of(context).colorScheme.error,
-                        ),
-                      );
+                      'Failed to reorder claims. Please try again.'.showAsError(ref);
                     }
                   }
                 : null,
@@ -217,9 +203,7 @@ class MyClaimsScreen extends ConsumerWidget {
           .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
           .cancelClaim(claim.id);
       if (success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Claim cancelled')),
-        );
+        showSuccess(ref, 'Claim cancelled');
       }
     }
   }

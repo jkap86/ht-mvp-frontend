@@ -56,9 +56,9 @@ class PendingCountsRow extends StatelessWidget {
               ),
             ),
           ],
-          if (activeWaiverClaims > 0 && unreadChatMessages > 0)
+          if (activeWaiverClaims > 0 && unreadChatMessages > 0 && onChatTap != null)
             const SizedBox(width: 12),
-          if (unreadChatMessages > 0) ...[
+          if (unreadChatMessages > 0 && onChatTap != null) ...[
             Expanded(
               child: _CountChip(
                 icon: Icons.chat_bubble_outline,

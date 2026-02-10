@@ -23,8 +23,8 @@ class DmRepository {
   }
 
   /// Get or create a conversation with another user
-  Future<Conversation> getOrCreateConversation(String otherUserId) async {
-    final response = await _apiClient.post('/dm/user/$otherUserId');
+  Future<Conversation> getOrCreateConversation(String otherUserId, {String? idempotencyKey}) async {
+    final response = await _apiClient.post('/dm/user/$otherUserId', idempotencyKey: idempotencyKey);
     return Conversation.fromJson(response as Map<String, dynamic>);
   }
 
@@ -45,10 +45,11 @@ class DmRepository {
   }
 
   /// Send a message in a conversation
-  Future<DirectMessage> sendMessage(int conversationId, String message) async {
+  Future<DirectMessage> sendMessage(int conversationId, String message, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/dm/$conversationId/messages',
       body: {'message': message},
+      idempotencyKey: idempotencyKey,
     );
     return DirectMessage.fromJson(response as Map<String, dynamic>);
   }

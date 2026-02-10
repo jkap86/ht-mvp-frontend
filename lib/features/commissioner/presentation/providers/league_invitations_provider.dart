@@ -82,10 +82,10 @@ class LeagueInvitationsNotifier extends StateNotifier<LeagueInvitationsState> {
   }
 
   /// Send an invitation to a user
-  Future<bool> sendInvitation(String username, {String? message}) async {
+  Future<bool> sendInvitation(String username, {String? message, String? idempotencyKey}) async {
     state = state.copyWith(isSending: true, clearError: true);
     try {
-      await _repository.sendInvitation(leagueId, username, message: message);
+      await _repository.sendInvitation(leagueId, username, message: message, idempotencyKey: idempotencyKey);
       // Refresh pending invitations
       await loadPendingInvitations();
       // Clear search results to update "already invited" status
@@ -98,10 +98,10 @@ class LeagueInvitationsNotifier extends StateNotifier<LeagueInvitationsState> {
   }
 
   /// Cancel a pending invitation
-  Future<bool> cancelInvitation(int invitationId) async {
+  Future<bool> cancelInvitation(int invitationId, {String? idempotencyKey}) async {
     state = state.copyWith(cancellingId: invitationId, clearError: true);
     try {
-      await _repository.cancelInvitation(invitationId);
+      await _repository.cancelInvitation(invitationId, idempotencyKey: idempotencyKey);
       // Remove from local state
       final updatedInvitations = state.pendingInvitations
           .where((inv) => inv['id'] != invitationId)

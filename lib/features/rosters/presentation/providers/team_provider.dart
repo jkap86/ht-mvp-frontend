@@ -273,7 +273,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
   }
 
   /// Move a player to a different lineup slot
-  Future<bool> movePlayer(int playerId, String toSlot) async {
+  Future<bool> movePlayer(int playerId, String toSlot, {String? idempotencyKey}) async {
     if (state.lineup?.isLocked == true) {
       state = state.copyWith(error: 'Lineup is locked for this week');
       return false;
@@ -288,6 +288,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
         state.currentWeek,
         playerId,
         toSlot,
+        idempotencyKey: idempotencyKey,
       );
       if (!mounted) return false;
 
@@ -340,11 +341,11 @@ class TeamNotifier extends StateNotifier<TeamState> {
   }
 
   /// Drop a player from the roster
-  Future<bool> dropPlayer(int playerId) async {
+  Future<bool> dropPlayer(int playerId, {String? idempotencyKey}) async {
     state = state.copyWith(isSaving: true);
 
     try {
-      await _rosterRepo.dropPlayer(leagueId, rosterId, playerId);
+      await _rosterRepo.dropPlayer(leagueId, rosterId, playerId, idempotencyKey: idempotencyKey);
       if (!mounted) return false;
 
       // Remove from local state
@@ -369,7 +370,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
   }
 
   /// Set the optimal lineup automatically based on projections
-  Future<bool> setOptimalLineup() async {
+  Future<bool> setOptimalLineup({String? idempotencyKey}) async {
     if (state.lineup?.isLocked == true) {
       state = state.copyWith(error: 'Lineup is locked for this week');
       return false;
@@ -391,6 +392,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
         rosterId,
         state.currentWeek,
         optimized.slots,
+        idempotencyKey: idempotencyKey,
       );
       if (!mounted) return false;
 

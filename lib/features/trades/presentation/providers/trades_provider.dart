@@ -274,9 +274,9 @@ class TradesNotifier extends StateNotifier<TradesState> {
   }
 
   /// Accept a trade
-  Future<Trade?> acceptTrade(int tradeId) async {
+  Future<Trade?> acceptTrade(int tradeId, {String? idempotencyKey}) async {
     try {
-      final trade = await _tradeRepo.acceptTrade(leagueId, tradeId);
+      final trade = await _tradeRepo.acceptTrade(leagueId, tradeId, idempotencyKey: idempotencyKey);
       _addOrUpdateTrade(trade);
 
       // Trigger cross-provider invalidation when trade is accepted
@@ -290,9 +290,9 @@ class TradesNotifier extends StateNotifier<TradesState> {
   }
 
   /// Reject a trade
-  Future<Trade?> rejectTrade(int tradeId) async {
+  Future<Trade?> rejectTrade(int tradeId, {String? idempotencyKey}) async {
     try {
-      final trade = await _tradeRepo.rejectTrade(leagueId, tradeId);
+      final trade = await _tradeRepo.rejectTrade(leagueId, tradeId, idempotencyKey: idempotencyKey);
       _addOrUpdateTrade(trade);
       return trade;
     } catch (e) {
@@ -302,9 +302,9 @@ class TradesNotifier extends StateNotifier<TradesState> {
   }
 
   /// Cancel a trade (proposer only)
-  Future<Trade?> cancelTrade(int tradeId) async {
+  Future<Trade?> cancelTrade(int tradeId, {String? idempotencyKey}) async {
     try {
-      final trade = await _tradeRepo.cancelTrade(leagueId, tradeId);
+      final trade = await _tradeRepo.cancelTrade(leagueId, tradeId, idempotencyKey: idempotencyKey);
       _addOrUpdateTrade(trade);
       return trade;
     } catch (e) {
@@ -314,9 +314,9 @@ class TradesNotifier extends StateNotifier<TradesState> {
   }
 
   /// Vote on a trade during review period
-  Future<bool> voteTrade(int tradeId, String vote) async {
+  Future<bool> voteTrade(int tradeId, String vote, {String? idempotencyKey}) async {
     try {
-      final result = await _tradeRepo.voteTrade(leagueId, tradeId, vote);
+      final result = await _tradeRepo.voteTrade(leagueId, tradeId, vote, idempotencyKey: idempotencyKey);
       final tradeData = result['trade'];
       if (tradeData == null) {
         throw Exception('Vote response missing trade data');

@@ -91,11 +91,11 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     }
   }
 
-  Future<bool> kickMember(int rosterId, String teamName) async {
+  Future<bool> kickMember(int rosterId, String teamName, {String? idempotencyKey}) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _repo.kickMember(leagueId, rosterId);
+      await _repo.kickMember(leagueId, rosterId, idempotencyKey: idempotencyKey);
       if (!mounted) return false;
       // Reload members
       final members = await _repo.getMembers(leagueId);
@@ -116,11 +116,11 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     }
   }
 
-  Future<bool> generateSchedule(int weeks) async {
+  Future<bool> generateSchedule(int weeks, {String? idempotencyKey}) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _repo.generateSchedule(leagueId, weeks: weeks);
+      await _repo.generateSchedule(leagueId, weeks: weeks, idempotencyKey: idempotencyKey);
       if (!mounted) return false;
       state = state.copyWith(
         isProcessing: false,
@@ -137,11 +137,11 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     }
   }
 
-  Future<bool> finalizeWeek(int week) async {
+  Future<bool> finalizeWeek(int week, {String? idempotencyKey}) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _repo.finalizeMatchups(leagueId, week);
+      await _repo.finalizeMatchups(leagueId, week, idempotencyKey: idempotencyKey);
       if (!mounted) return false;
       state = state.copyWith(
         isProcessing: false,
@@ -165,6 +165,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     bool? enableThirdPlaceGame,
     String? consolationType,
     int? consolationTeams,
+    String? idempotencyKey,
   }) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
@@ -177,6 +178,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
         enableThirdPlaceGame: enableThirdPlaceGame,
         consolationType: consolationType,
         consolationTeams: consolationTeams,
+        idempotencyKey: idempotencyKey,
       );
       if (!mounted) return false;
       state = state.copyWith(
@@ -195,11 +197,11 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     }
   }
 
-  Future<bool> advanceWinners(int week) async {
+  Future<bool> advanceWinners(int week, {String? idempotencyKey}) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      final bracketView = await _repo.advanceWinners(leagueId, week);
+      final bracketView = await _repo.advanceWinners(leagueId, week, idempotencyKey: idempotencyKey);
       if (!mounted) return false;
       state = state.copyWith(
         bracketView: bracketView,
@@ -217,11 +219,11 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     }
   }
 
-  Future<bool> deleteLeague({required String confirmationName}) async {
+  Future<bool> deleteLeague({required String confirmationName, String? idempotencyKey}) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _repo.deleteLeague(leagueId, confirmationName: confirmationName);
+      await _repo.deleteLeague(leagueId, confirmationName: confirmationName, idempotencyKey: idempotencyKey);
       if (!mounted) return false;
       state = state.copyWith(
         isProcessing: false,
@@ -238,7 +240,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     }
   }
 
-  Future<bool> updateSeasonControls({String? seasonStatus, int? currentWeek}) async {
+  Future<bool> updateSeasonControls({String? seasonStatus, int? currentWeek, String? idempotencyKey}) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
@@ -246,6 +248,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
         leagueId,
         seasonStatus: seasonStatus,
         currentWeek: currentWeek,
+        idempotencyKey: idempotencyKey,
       );
       if (!mounted) return false;
       state = state.copyWith(
@@ -277,6 +280,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     Map<String, dynamic>? leagueSettings,
     Map<String, dynamic>? scoringSettings,
     int? totalRosters,
+    String? idempotencyKey,
   }) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
@@ -290,6 +294,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
         leagueSettings: leagueSettings,
         scoringSettings: scoringSettings,
         totalRosters: totalRosters,
+        idempotencyKey: idempotencyKey,
       );
       if (!mounted) return false;
       // Reload members to reflect benching changes
@@ -314,11 +319,11 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     }
   }
 
-  Future<bool> reinstateMember(int rosterId, String teamName) async {
+  Future<bool> reinstateMember(int rosterId, String teamName, {String? idempotencyKey}) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _repo.reinstateMember(leagueId, rosterId);
+      await _repo.reinstateMember(leagueId, rosterId, idempotencyKey: idempotencyKey);
       if (!mounted) return false;
       // Reload members
       final members = await _repo.getMembers(leagueId);
@@ -344,6 +349,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     required String confirmationName,
     bool keepMembers = false,
     bool clearChat = true,
+    String? idempotencyKey,
   }) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
@@ -354,6 +360,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
         confirmationName: confirmationName,
         keepMembers: keepMembers,
         clearChat: clearChat,
+        idempotencyKey: idempotencyKey,
       );
       if (!mounted) return false;
       state = state.copyWith(
@@ -372,11 +379,11 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     }
   }
 
-  Future<bool> initializeWaivers({int? faabBudget}) async {
+  Future<bool> initializeWaivers({int? faabBudget, String? idempotencyKey}) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      await _repo.initializeWaivers(leagueId, faabBudget: faabBudget);
+      await _repo.initializeWaivers(leagueId, faabBudget: faabBudget, idempotencyKey: idempotencyKey);
       if (!mounted) return false;
       state = state.copyWith(
         waiversInitialized: true,
@@ -394,11 +401,11 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     }
   }
 
-  Future<bool> processWaivers() async {
+  Future<bool> processWaivers({String? idempotencyKey}) async {
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      final result = await _repo.processWaivers(leagueId);
+      final result = await _repo.processWaivers(leagueId, idempotencyKey: idempotencyKey);
       if (!mounted) return false;
       final processed = result['processed'] ?? 0;
       final successful = result['successful'] ?? 0;

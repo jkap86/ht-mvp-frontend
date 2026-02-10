@@ -21,6 +21,7 @@ class WaiverRepository {
     required int playerId,
     int? dropPlayerId,
     int bidAmount = 0,
+    String? idempotencyKey,
   }) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/waivers/claims',
@@ -29,6 +30,7 @@ class WaiverRepository {
         if (dropPlayerId != null) 'drop_player_id': dropPlayerId,
         'bid_amount': bidAmount,
       },
+      idempotencyKey: idempotencyKey,
     );
     return WaiverClaim.fromJson(response);
   }
@@ -64,6 +66,7 @@ class WaiverRepository {
     int claimId, {
     int? dropPlayerId,
     int? bidAmount,
+    String? idempotencyKey,
   }) async {
     final response = await _apiClient.put(
       '/leagues/$leagueId/waivers/claims/$claimId',
@@ -71,24 +74,27 @@ class WaiverRepository {
         if (dropPlayerId != null) 'drop_player_id': dropPlayerId,
         if (bidAmount != null) 'bid_amount': bidAmount,
       },
+      idempotencyKey: idempotencyKey,
     );
     return WaiverClaim.fromJson(response);
   }
 
   /// Cancel a waiver claim
-  Future<void> cancelClaim(int leagueId, int claimId) async {
-    await _apiClient.delete('/leagues/$leagueId/waivers/claims/$claimId');
+  Future<void> cancelClaim(int leagueId, int claimId, {String? idempotencyKey}) async {
+    await _apiClient.delete('/leagues/$leagueId/waivers/claims/$claimId', idempotencyKey: idempotencyKey);
   }
 
   /// Reorder waiver claims
   /// Takes a list of claim IDs in the desired order
   Future<List<WaiverClaim>> reorderClaims(
     int leagueId,
-    List<int> claimIds,
-  ) async {
+    List<int> claimIds, {
+    String? idempotencyKey,
+  }) async {
     final response = await _apiClient.patch(
       '/leagues/$leagueId/waivers/claims/reorder',
       body: {'claim_ids': claimIds},
+      idempotencyKey: idempotencyKey,
     );
     final claimsList =
         (response['claims'] as List?)?.cast<Map<String, dynamic>>() ?? [];
@@ -120,18 +126,19 @@ class WaiverRepository {
   }
 
   /// Initialize waivers for a league (commissioner only)
-  Future<void> initializeWaivers(int leagueId, {int? faabBudget}) async {
+  Future<void> initializeWaivers(int leagueId, {int? faabBudget, String? idempotencyKey}) async {
     await _apiClient.post(
       '/leagues/$leagueId/waivers/initialize',
       body: {
         if (faabBudget != null) 'faab_budget': faabBudget,
       },
+      idempotencyKey: idempotencyKey,
     );
   }
 
   /// Manually process waivers (commissioner only)
-  Future<Map<String, dynamic>> processWaivers(int leagueId) async {
-    final response = await _apiClient.post('/leagues/$leagueId/waivers/process');
+  Future<Map<String, dynamic>> processWaivers(int leagueId, {String? idempotencyKey}) async {
+    final response = await _apiClient.post('/leagues/$leagueId/waivers/process', idempotencyKey: idempotencyKey);
     return {
       'processed': response['processed'] as int? ?? 0,
       'successful': response['successful'] as int? ?? 0,

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/services/storage_service.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/error_display.dart';
 import '../../../core/widgets/states/states.dart';
 import '../data/public_leagues_provider.dart';
 import '../domain/league.dart';
+import 'widgets/league_onboarding_sheet.dart';
 
 class PublicLeaguesScreen extends ConsumerStatefulWidget {
   const PublicLeaguesScreen({super.key});
@@ -94,23 +97,30 @@ class _PublicLeaguesScreenState extends ConsumerState<PublicLeaguesScreen> {
       final message = league.canJoinAsBench
           ? 'Joined ${league.name} as bench member'
           : 'Successfully joined ${league.name}!';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      showSuccess(ref, message);
       // Navigate to the league
       context.push('/leagues/${joinedLeague.id}');
+
+      // Show onboarding sheet if not seen before
+      final storageService = ref.read(storageServiceProvider);
+      final hasSeenOnboarding = await storageService.hasSeenOnboarding(joinedLeague.id);
+      if (!hasSeenOnboarding && mounted) {
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (!mounted) return;
+        showLeagueOnboardingSheet(
+          context,
+          leagueName: league.name,
+          leagueId: joinedLeague.id,
+          hasDraftScheduled: false,
+          onViewMyTeam: () {
+            context.push('/leagues/${joinedLeague.id}/team');
+          },
+        );
+        await storageService.markOnboardingSeen(joinedLeague.id);
+      }
     } else {
       final error = ref.read(publicLeaguesProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Failed to join league'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      (error ?? 'Failed to join league').showAsError(ref);
     }
   }
 

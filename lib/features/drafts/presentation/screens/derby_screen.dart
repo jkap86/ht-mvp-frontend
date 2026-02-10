@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/idempotency.dart';
 import '../providers/draft_room_provider.dart';
 import '../widgets/derby_slot_grid.dart';
 import '../widgets/derby_turn_indicator.dart';
@@ -86,7 +87,8 @@ class DerbyScreen extends ConsumerWidget {
                   onPressed: isDerbySubmitting
                       ? null
                       : () {
-                          ref.read(draftRoomProvider(_draftKey).notifier).startDerby();
+                          final key = newIdempotencyKey();
+                          ref.read(draftRoomProvider(_draftKey).notifier).startDerby(idempotencyKey: key);
                         },
                   icon: isDerbySubmitting
                       ? const SizedBox(

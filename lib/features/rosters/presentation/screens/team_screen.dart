@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/idempotency.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../domain/roster_lineup.dart';
@@ -333,7 +334,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
             optimalProjected: state.optimalProjectedPoints,
             isSaving: state.isSaving,
             onSetOptimal: () {
-              ref.read(teamProvider(_key).notifier).setOptimalLineup();
+              final key = newIdempotencyKey();
+              ref.read(teamProvider(_key).notifier).setOptimalLineup(idempotencyKey: key);
             },
           ),
           // Points summary at top (not scrollable)
@@ -632,9 +634,11 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
       player: player,
       currentSlot: state.lineup?.lineup.getPlayerSlot(player.playerId),
       onMove: (slotCode) {
+        final key = newIdempotencyKey();
         ref.read(teamProvider(_key).notifier).movePlayer(
               player.playerId,
               slotCode,
+              idempotencyKey: key,
             );
       },
     );
@@ -659,9 +663,10 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
               style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
               onPressed: () {
                 Navigator.of(context).pop();
+                final key = newIdempotencyKey();
                 ref
                     .read(teamProvider(_key).notifier)
-                    .dropPlayer(player.playerId);
+                    .dropPlayer(player.playerId, idempotencyKey: key);
               },
               child: const Text('Drop'),
             ),
@@ -688,15 +693,19 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
       if (selectedPlayer != null && _canPlayerFitInSlot(selectedPlayer, slot)) {
         // If slot has a player, move them to bench first (await to prevent race condition)
         if (currentPlayer != null) {
+          final key1 = newIdempotencyKey();
           await ref.read(teamProvider(_key).notifier).movePlayer(
                 currentPlayer.playerId,
                 'BN',
+                idempotencyKey: key1,
               );
         }
         // Then move bench player to this slot
+        final key2 = newIdempotencyKey();
         await ref.read(teamProvider(_key).notifier).movePlayer(
               _selectedPlayerId!,
               slot.code,
+              idempotencyKey: key2,
             );
         setState(() {
           _selectedPlayerId = null;
@@ -726,25 +735,33 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
         // Check if target player can swap back
         if (currentPlayer != null && _canPlayerFitInSlot(currentPlayer, _selectedSlot!)) {
           // True swap: move each player to the other's slot
+          final key1 = newIdempotencyKey();
           await ref.read(teamProvider(_key).notifier).movePlayer(
                 currentPlayer.playerId,
                 _selectedSlot!.code,
+                idempotencyKey: key1,
               );
+          final key2 = newIdempotencyKey();
           await ref.read(teamProvider(_key).notifier).movePlayer(
                 _selectedPlayerId!,
                 slot.code,
+                idempotencyKey: key2,
               );
         } else {
           // One-way: move target to bench first (if exists), then move selected to target slot
           if (currentPlayer != null) {
+            final key1 = newIdempotencyKey();
             await ref.read(teamProvider(_key).notifier).movePlayer(
                   currentPlayer.playerId,
                   'BN',
+                  idempotencyKey: key1,
                 );
           }
+          final key2 = newIdempotencyKey();
           await ref.read(teamProvider(_key).notifier).movePlayer(
                 _selectedPlayerId!,
                 slot.code,
+                idempotencyKey: key2,
               );
         }
         setState(() {
@@ -779,15 +796,19 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
         // Find current player in the selected slot and move them to bench first (await to prevent race condition)
         final currentPlayerInSlot = state.playersBySlot[_selectedSlot]?.firstOrNull;
         if (currentPlayerInSlot != null) {
+          final key1 = newIdempotencyKey();
           await ref.read(teamProvider(_key).notifier).movePlayer(
                 currentPlayerInSlot.playerId,
                 'BN',
+                idempotencyKey: key1,
               );
         }
         // Then move this bench player to the selected slot
+        final key2 = newIdempotencyKey();
         await ref.read(teamProvider(_key).notifier).movePlayer(
               player.playerId,
               _selectedSlot!.code,
+              idempotencyKey: key2,
             );
         setState(() {
           _selectedPlayerId = null;

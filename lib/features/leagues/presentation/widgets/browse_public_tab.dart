@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/error_display.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../data/public_leagues_provider.dart';
 import '../../domain/league.dart';
@@ -79,7 +81,8 @@ class _BrowsePublicTabState extends ConsumerState<BrowsePublicTab>
       if (confirmed != true) return;
     }
 
-    final joinedLeague = await ref.read(publicLeaguesProvider.notifier).joinLeague(league.id);
+    final key = newIdempotencyKey();
+    final joinedLeague = await ref.read(publicLeaguesProvider.notifier).joinLeague(league.id, idempotencyKey: key);
 
     if (!mounted) return;
 
@@ -87,25 +90,14 @@ class _BrowsePublicTabState extends ConsumerState<BrowsePublicTab>
       final message = league.canJoinAsBench
           ? 'Joined ${league.name} as bench member'
           : 'Successfully joined ${league.name}!';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      showSuccess(ref, message);
       // Invalidate cached provider to prevent stale "not member" errors
       ref.invalidate(leagueDetailProvider(joinedLeague.id));
       // Navigate to the league
       context.push('/leagues/${joinedLeague.id}');
     } else {
       final error = ref.read(publicLeaguesProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Failed to join league'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      (error ?? 'Failed to join league').showAsError(ref);
     }
   }
 

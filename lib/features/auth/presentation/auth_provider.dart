@@ -11,11 +11,13 @@ class AuthState {
   final User? user;
   final bool isLoading;
   final String? error;
+  final bool sessionExpired;
 
   AuthState({
     this.user,
     this.isLoading = false,
     this.error,
+    this.sessionExpired = false,
   });
 
   bool get isAuthenticated => user != null;
@@ -25,11 +27,13 @@ class AuthState {
     bool? isLoading,
     String? error,
     bool clearUser = false,
+    bool? sessionExpired,
   }) {
     return AuthState(
       user: clearUser ? null : (user ?? this.user),
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      sessionExpired: sessionExpired ?? this.sessionExpired,
     );
   }
 }
@@ -80,12 +84,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _apiClient.onTokenRefresh = () => _authRepository.refreshTokens();
     // Reconnect socket with fresh token after refresh succeeds
     _apiClient.onTokenRefreshed = () => _socketService.reconnect();
+    // Handle session expiry when refresh fails
+    _apiClient.onUnauthorized = _handleSessionExpired;
   }
 
   /// Clears the token refresh callbacks
   void _clearTokenRefreshCallback() {
     _apiClient.onTokenRefresh = null;
     _apiClient.onTokenRefreshed = null;
+    _apiClient.onUnauthorized = null;
+  }
+
+  /// Handles session expiry when token refresh fails.
+  /// Clears auth state so the router redirects to login.
+  void _handleSessionExpired() {
+    _clearTokenRefreshCallback();
+    _socketService.disconnect();
+    _authRepository.logout();
+    state = AuthState(sessionExpired: true);
   }
 
   Future<void> _checkAuthStatus() async {

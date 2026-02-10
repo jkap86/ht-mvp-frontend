@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../providers/dues_provider.dart';
 
 /// Card for tracking payment status (commissioner only)
@@ -184,6 +185,7 @@ class DuesTrackerCard extends ConsumerWidget {
   }
 
   void _togglePayment(WidgetRef ref, int rosterId, bool isPaid) {
-    ref.read(duesProvider(leagueId).notifier).markPayment(rosterId, isPaid);
+    final key = newIdempotencyKey();
+    ref.read(duesProvider(leagueId).notifier).markPayment(rosterId, isPaid, idempotencyKey: key);
   }
 }

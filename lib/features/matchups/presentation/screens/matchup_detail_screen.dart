@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/app_theme.dart';
@@ -8,7 +10,7 @@ import '../../domain/matchup.dart';
 import '../providers/matchup_provider.dart';
 import '../widgets/lineup_comparison_widget.dart';
 
-class MatchupDetailScreen extends ConsumerWidget {
+class MatchupDetailScreen extends ConsumerStatefulWidget {
   final int leagueId;
   final int matchupId;
 
@@ -19,37 +21,93 @@ class MatchupDetailScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MatchupDetailScreen> createState() => _MatchupDetailScreenState();
+}
+
+class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen> {
+  DateTime? _lastFetchedAt;
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastFetchedAt = DateTime.now();
+    // Tick every 60s to update the "last updated" text
+    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  String _formatLastUpdated() {
+    if (_lastFetchedAt == null) return '';
+    final diff = DateTime.now().difference(_lastFetchedAt!);
+    if (diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final detailsAsync = ref.watch(
-      matchupDetailsProvider((leagueId: leagueId, matchupId: matchupId)),
+      matchupDetailsProvider((leagueId: widget.leagueId, matchupId: widget.matchupId)),
     );
 
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => navigateBack(context, fallback: '/leagues/$leagueId/matchups'),
+          onPressed: () => navigateBack(context, fallback: '/leagues/${widget.leagueId}/matchups'),
         ),
         title: const Text('Matchup Details'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () {
+              ref.invalidate(matchupDetailsProvider(
+                (leagueId: widget.leagueId, matchupId: widget.matchupId),
+              ));
+              setState(() => _lastFetchedAt = DateTime.now());
+            },
+          ),
+        ],
       ),
       body: detailsAsync.when(
-        data: (details) => _buildContent(context, ref, details),
+        data: (details) {
+          // Update timestamp when data arrives
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _lastFetchedAt == null) {
+              setState(() => _lastFetchedAt = DateTime.now());
+            }
+          });
+          return _buildContent(context, details);
+        },
         loading: () => const AppLoadingView(),
         error: (error, _) => AppErrorView(
           message: error.toString(),
-          onRetry: () => ref.invalidate(
-            matchupDetailsProvider((leagueId: leagueId, matchupId: matchupId)),
-          ),
+          onRetry: () {
+            ref.invalidate(matchupDetailsProvider(
+              (leagueId: widget.leagueId, matchupId: widget.matchupId),
+            ));
+            setState(() => _lastFetchedAt = DateTime.now());
+          },
         ),
       ),
     );
   }
 
-
-  Widget _buildContent(BuildContext context, WidgetRef ref, MatchupDetails details) {
+  Widget _buildContent(BuildContext context, MatchupDetails details) {
     final matchup = details.matchup;
     final team1 = details.team1;
     final team2 = details.team2;
+    final colorScheme = Theme.of(context).colorScheme;
 
     // Use live actual points if available, otherwise use team total points
     final team1ActualPoints = matchup.isFinal
@@ -65,9 +123,10 @@ class MatchupDetailScreen extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        final key = (leagueId: leagueId, matchupId: matchupId);
+        final key = (leagueId: widget.leagueId, matchupId: widget.matchupId);
         ref.invalidate(matchupDetailsProvider(key));
         await ref.read(matchupDetailsProvider(key).future);
+        if (mounted) setState(() => _lastFetchedAt = DateTime.now());
       },
       child: Center(
         child: ConstrainedBox(
@@ -75,55 +134,65 @@ class MatchupDetailScreen extends ConsumerWidget {
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
-          children: [
-            // Score header
-            _ScoreHeader(
-              team1Name: team1.teamName,
-              team2Name: team2.teamName,
-              team1Points: team1ActualPoints,
-              team2Points: team2ActualPoints,
-              team1ProjectedPoints: matchup.roster1PointsProjected,
-              team2ProjectedPoints: matchup.roster2PointsProjected,
-              isTeam1Winner: isTeam1Winner,
-              isTeam2Winner: isTeam2Winner,
-              isFinal: matchup.isFinal,
-              isLive: matchup.hasLiveData,
-              week: matchup.week,
-            ),
-
-            if (isTie)
-              Container(
-                padding: const EdgeInsets.all(8),
-                color: Theme.of(context).colorScheme.tertiary.withAlpha(30),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.balance, size: 16, color: Theme.of(context).colorScheme.tertiary),
-                    const SizedBox(width: 4),
-                    Text(
-                      'TIE',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.tertiary,
-                      ),
-                    ),
-                  ],
+              children: [
+                // Score header
+                _ScoreHeader(
+                  team1Name: team1.teamName,
+                  team2Name: team2.teamName,
+                  team1Points: team1ActualPoints,
+                  team2Points: team2ActualPoints,
+                  team1ProjectedPoints: matchup.roster1PointsProjected,
+                  team2ProjectedPoints: matchup.roster2PointsProjected,
+                  isTeam1Winner: isTeam1Winner,
+                  isTeam2Winner: isTeam2Winner,
+                  isFinal: matchup.isFinal,
+                  isLive: matchup.hasLiveData,
+                  week: matchup.week,
                 ),
-              ),
 
-            const SizedBox(height: 16),
+                if (isTie)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    color: colorScheme.tertiary.withAlpha(30),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.balance, size: 16, color: colorScheme.tertiary),
+                        const SizedBox(width: 4),
+                        Text(
+                          'TIE',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.tertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
-            // Lineup comparison
-            LineupComparisonWidget(
-              team1: team1,
-              team2: team2,
-              isTeam1Winner: isTeam1Winner,
-              isTeam2Winner: isTeam2Winner,
+                // Last updated indicator
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'Updated ${_formatLastUpdated()}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+
+                // Lineup comparison
+                LineupComparisonWidget(
+                  team1: team1,
+                  team2: team2,
+                  isTeam1Winner: isTeam1Winner,
+                  isTeam2Winner: isTeam2Winner,
+                ),
+
+                const SizedBox(height: 24),
+              ],
             ),
-
-            const SizedBox(height: 24),
-          ],
-        ),
           ),
         ),
       ),

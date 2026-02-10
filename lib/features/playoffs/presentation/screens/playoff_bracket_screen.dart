@@ -273,10 +273,49 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
         label = 'Pending';
     }
 
-    return Chip(
-      label: Text(label),
-      backgroundColor: color.withValues(alpha: 0.2),
-      labelStyle: TextStyle(color: color, fontWeight: FontWeight.bold),
+    final isActive = status.toString() == 'PlayoffStatus.active';
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isActive) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: colorScheme.error.withAlpha(30),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: colorScheme.error,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'LIVE',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+        Chip(
+          label: Text(label),
+          backgroundColor: color.withValues(alpha: 0.2),
+          labelStyle: TextStyle(color: color, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 

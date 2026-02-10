@@ -39,6 +39,10 @@ class ApiClient {
   /// Set this to ensure socket auth stays in sync with new tokens.
   void Function()? onTokenRefreshed;
 
+  /// Callback when a 401 cannot be resolved (refresh failed).
+  /// Used to trigger session-expired logout flow.
+  void Function()? onUnauthorized;
+
   /// Shared future for token refresh - allows multiple concurrent requests
   /// to await the same refresh attempt instead of triggering duplicates.
   Future<bool>? _refreshFuture;
@@ -161,6 +165,8 @@ class ApiClient {
           final response = await executeRequest(headers).timeout(requestTimeout);
           return _handleResponse(response);
         }
+        // Refresh failed — trigger session-expired callback
+        onUnauthorized?.call();
         rethrow;
       } catch (e) {
         // Convert raw network errors to our exception type
@@ -212,9 +218,15 @@ class ApiClient {
     );
   }
 
-  Future<dynamic> put(String endpoint, {dynamic body, bool auth = true}) async {
+  Future<dynamic> put(
+    String endpoint, {
+    dynamic body,
+    bool auth = true,
+    String? idempotencyKey,
+  }) async {
     return _executeWithRetry(
       auth: auth,
+      idempotencyKey: idempotencyKey,
       executeRequest: (headers) => http.put(
         Uri.parse('$baseUrl$endpoint'),
         headers: headers,
@@ -223,9 +235,15 @@ class ApiClient {
     );
   }
 
-  Future<dynamic> delete(String endpoint, {dynamic body, bool auth = true}) async {
+  Future<dynamic> delete(
+    String endpoint, {
+    dynamic body,
+    bool auth = true,
+    String? idempotencyKey,
+  }) async {
     return _executeWithRetry(
       auth: auth,
+      idempotencyKey: idempotencyKey,
       executeRequest: (headers) => http.delete(
         Uri.parse('$baseUrl$endpoint'),
         headers: headers,
@@ -234,9 +252,15 @@ class ApiClient {
     );
   }
 
-  Future<dynamic> patch(String endpoint, {dynamic body, bool auth = true}) async {
+  Future<dynamic> patch(
+    String endpoint, {
+    dynamic body,
+    bool auth = true,
+    String? idempotencyKey,
+  }) async {
     return _executeWithRetry(
       auth: auth,
+      idempotencyKey: idempotencyKey,
       executeRequest: (headers) => http.patch(
         Uri.parse('$baseUrl$endpoint'),
         headers: headers,

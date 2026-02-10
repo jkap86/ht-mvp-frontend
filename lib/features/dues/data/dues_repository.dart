@@ -26,19 +26,20 @@ class DuesRepository {
     Map<String, num>? payoutStructure,
     String? currency,
     String? notes,
+    String? idempotencyKey,
   }) async {
     final response = await _apiClient.put('/leagues/$leagueId/dues', body: {
       'buy_in_amount': buyInAmount,
       if (payoutStructure != null) 'payout_structure': payoutStructure,
       if (currency != null) 'currency': currency,
       if (notes != null) 'notes': notes,
-    });
+    }, idempotencyKey: idempotencyKey);
     return LeagueDues.fromJson(response);
   }
 
   /// Delete dues configuration
-  Future<void> deleteDuesConfig(int leagueId) async {
-    await _apiClient.delete('/leagues/$leagueId/dues');
+  Future<void> deleteDuesConfig(int leagueId, {String? idempotencyKey}) async {
+    await _apiClient.delete('/leagues/$leagueId/dues', idempotencyKey: idempotencyKey);
   }
 
   /// Mark payment status for a roster
@@ -47,10 +48,11 @@ class DuesRepository {
     int rosterId, {
     required bool isPaid,
     String? notes,
+    String? idempotencyKey,
   }) async {
     await _apiClient.patch('/leagues/$leagueId/dues/payments/$rosterId', body: {
       'is_paid': isPaid,
       if (notes != null) 'notes': notes,
-    });
+    }, idempotencyKey: idempotencyKey);
   }
 }
