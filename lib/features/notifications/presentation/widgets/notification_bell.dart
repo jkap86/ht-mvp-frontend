@@ -23,7 +23,7 @@ class NotificationBell extends ConsumerWidget {
       ),
       tooltip: 'Notifications',
       onPressed: () {
-        context.push('/notifications');
+        context.go('/notifications');
       },
     );
   }
@@ -117,7 +117,7 @@ class NotificationBellPopup extends ConsumerWidget {
       },
       onSelected: (value) {
         if (value == 'view_all') {
-          context.push('/notifications');
+          context.go('/notifications');
         } else {
           // Mark as read and navigate
           final notification = state.notifications.firstWhere((n) => n.id == value);

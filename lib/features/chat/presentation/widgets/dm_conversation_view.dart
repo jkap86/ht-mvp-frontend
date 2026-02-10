@@ -108,7 +108,7 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
             onPressed: widget.onBack,
             icon: const Icon(Icons.arrow_back, size: 20),
             padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(),
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           ),
           const SizedBox(width: 8),
           UserAvatar(

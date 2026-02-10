@@ -214,6 +214,10 @@ class _LeaguePlayersRedirect extends ConsumerWidget {
 /// Returns null when not in a league context.
 final currentLeagueIdProvider = StateProvider<int?>((ref) => null);
 
+/// Provider that tracks the last league route path.
+/// Used for back navigation from screens like notifications.
+final lastLeagueRouteProvider = StateProvider<String?>((ref) => null);
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authChangeNotifier = ref.watch(_authChangeNotifierProvider);
 
@@ -228,12 +232,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthRoute = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
 
-      // Update current league ID based on route
+      // Update current league ID and route based on navigation
       final leagueMatch = RegExp(r'/leagues/(\d+)').firstMatch(state.matchedLocation);
-      final leagueId = leagueMatch != null ? int.tryParse(leagueMatch.group(1) ?? '') : null;
-      Future.microtask(() {
-        ref.read(currentLeagueIdProvider.notifier).state = leagueId;
-      });
+      if (leagueMatch != null) {
+        // Update to the current league and save the full route path
+        final leagueId = int.tryParse(leagueMatch.group(1) ?? '');
+        Future.microtask(() {
+          ref.read(currentLeagueIdProvider.notifier).state = leagueId;
+          ref.read(lastLeagueRouteProvider.notifier).state = state.matchedLocation;
+        });
+      } else if (state.matchedLocation == '/' || state.matchedLocation == '/login' || state.matchedLocation == '/register') {
+        // Clear league context only for top-level navigation (home, auth screens)
+        Future.microtask(() {
+          ref.read(currentLeagueIdProvider.notifier).state = null;
+          ref.read(lastLeagueRouteProvider.notifier).state = null;
+        });
+      }
+      // For other routes (notifications, transactions, messages), preserve current league context
 
       // Don't redirect while loading
       if (isLoading) return null;

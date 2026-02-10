@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/time_formatter.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../../dm/domain/conversation.dart';
@@ -140,7 +141,7 @@ class _CompactConversationTile extends StatelessWidget {
                       ),
                       if (lastMessage != null)
                         Text(
-                          _formatTime(lastMessage.createdAt),
+                          formatMessageTimestamp(lastMessage.createdAt, compact: true),
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.outline,
                             fontSize: 10,
@@ -191,22 +192,5 @@ class _CompactConversationTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final diff = now.difference(time);
-
-    if (diff.inMinutes < 1) {
-      return 'Now';
-    } else if (diff.inMinutes < 60) {
-      return '${diff.inMinutes}m';
-    } else if (diff.inHours < 24) {
-      return '${diff.inHours}h';
-    } else if (diff.inDays < 7) {
-      return '${diff.inDays}d';
-    } else {
-      return '${time.month}/${time.day}';
-    }
   }
 }

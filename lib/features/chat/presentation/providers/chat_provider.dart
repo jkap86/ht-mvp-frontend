@@ -85,11 +85,33 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   /// Adds a message to state with deduplication check
   void _addMessageWithDedupe(ChatMessage message) {
+    // Check for exact ID match
     final existingIds = state.messages.map((m) => m.id).toSet();
     if (existingIds.contains(message.id)) {
       return; // Already have this message - skip duplicate
     }
-    state = state.copyWith(messages: [message, ...state.messages]);
+
+    // Check for optimistic message that should be replaced
+    // Optimistic messages have negative IDs and match on userId + content + recent timestamp
+    final hasOptimistic = message.id > 0 && // Real message from server
+        state.messages.any((m) =>
+            m.id < 0 && // Optimistic temp message
+            m.userId == message.userId &&
+            m.message == message.message &&
+            message.createdAt.difference(m.createdAt).inSeconds.abs() < 30);
+
+    if (hasOptimistic) {
+      // Replace optimistic message with real one
+      state = state.copyWith(
+        messages: [
+          message,
+          ...state.messages.where((m) => !(m.id < 0 && m.userId == message.userId && m.message == message.message))
+        ],
+      );
+    } else {
+      // Add new message normally
+      state = state.copyWith(messages: [message, ...state.messages]);
+    }
   }
 
   static const int _pageSize = 50;

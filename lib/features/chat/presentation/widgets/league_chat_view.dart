@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utils/error_display.dart';
+import '../../../../core/utils/time_formatter.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/chat_message.dart';
@@ -136,67 +137,56 @@ class _LeagueChatBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final username = message.username ?? 'Unknown';
+    final timestamp = formatMessageTimestamp(message.createdAt);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          UserAvatar(
-            name: username,
-            size: 28,
-            backgroundColor: theme.colorScheme.primary,
-            textColor: theme.colorScheme.onPrimary,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      username,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _formatTime(message.createdAt),
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                SelectableText(
-                  message.message,
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
+    return Semantics(
+      label: '$username sent: ${message.message}, at $timestamp',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            UserAvatar(
+              name: username,
+              size: 28,
+              backgroundColor: theme.colorScheme.primary,
+              textColor: theme.colorScheme.onPrimary,
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        username,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        timestamp,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  SelectableText(
+                    message.message,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
-  }
-
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final diff = now.difference(dateTime);
-
-    if (diff.inMinutes < 1) {
-      return 'Just now';
-    } else if (diff.inHours < 1) {
-      return '${diff.inMinutes}m ago';
-    } else if (diff.inDays < 1) {
-      return '${diff.inHours}h ago';
-    } else {
-      return '${dateTime.month}/${dateTime.day}';
-    }
   }
 }

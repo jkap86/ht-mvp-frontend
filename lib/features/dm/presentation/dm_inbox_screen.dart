@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/time_formatter.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../domain/conversation.dart';
 import 'providers/dm_inbox_provider.dart';
@@ -184,29 +185,12 @@ class _ConversationTile extends StatelessWidget {
             ),
       trailing: lastMessage != null
           ? Text(
-              _formatTime(lastMessage.createdAt),
+              formatMessageTimestamp(lastMessage.createdAt, compact: true),
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.outline,
               ),
             )
           : null,
     );
-  }
-
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final diff = now.difference(time);
-
-    if (diff.inMinutes < 1) {
-      return 'Now';
-    } else if (diff.inMinutes < 60) {
-      return '${diff.inMinutes}m';
-    } else if (diff.inHours < 24) {
-      return '${diff.inHours}h';
-    } else if (diff.inDays < 7) {
-      return '${diff.inDays}d';
-    } else {
-      return '${time.month}/${time.day}';
-    }
   }
 }

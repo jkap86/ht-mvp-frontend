@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../config/app_router.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/notification_item.dart';
@@ -13,9 +14,22 @@ class NotificationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(notificationsProvider);
+    final lastLeagueRoute = ref.watch(lastLeagueRouteProvider);
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate back to the exact league route (tab) the user was on, or home
+            if (lastLeagueRoute != null) {
+              context.go(lastLeagueRoute);
+            } else {
+              context.go('/');
+            }
+          },
+          tooltip: 'Back',
+        ),
         title: const Text('Notifications'),
         actions: [
           if (state.notifications.isNotEmpty)

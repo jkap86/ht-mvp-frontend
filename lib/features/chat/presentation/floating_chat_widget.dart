@@ -92,6 +92,8 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
     super.didUpdateWidget(oldWidget);
     if (widget.leagueId != oldWidget.leagueId) {
       _initTabController();
+      // Note: Position will be automatically adjusted by _clampPosition() in build()
+      // which uses the correct context (widget.leagueId) for clamping bounds
     }
   }
 
@@ -136,8 +138,9 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
   }
 
   Future<void> _saveState() async {
-    if (_position == null) return;
+    if (_position == null || !mounted) return;
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return; // Check again after async operation
     await prefs.setDouble(_keyPositionX, _position!.dx);
     await prefs.setDouble(_keyPositionY, _position!.dy);
     await prefs.setDouble(_keyWidth, _size.width);
@@ -145,16 +148,20 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
   }
 
   Offset _getDefaultPosition(Size screenSize) {
+    // Account for bottom navigation bar in league context (80dp + 16dp spacing)
+    final bottomPadding = widget.leagueId != null ? 96.0 : 16.0;
     return Offset(
       screenSize.width - _size.width - 16,
-      screenSize.height - _size.height - 16,
+      screenSize.height - _size.height - bottomPadding,
     );
   }
 
   void _clampPosition(Size screenSize) {
     if (_position == null) return;
+    // Account for bottom navigation bar in league context
+    final bottomPadding = widget.leagueId != null ? 80.0 : 0.0;
     final maxX = screenSize.width - _size.width;
-    final maxY = screenSize.height - _size.height;
+    final maxY = screenSize.height - _size.height - bottomPadding;
     _position = Offset(
       _position!.dx.clamp(0, maxX.clamp(0, double.infinity)),
       _position!.dy.clamp(0, maxY.clamp(0, double.infinity)),
@@ -193,9 +200,12 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
     final dmUnread = ref.watch(dmUnreadCountProvider);
     final totalUnread = dmUnread;
 
+    // Account for bottom navigation bar in league context (80dp + 16dp spacing)
+    final bottomPadding = widget.leagueId != null ? 96.0 : 16.0;
+
     return Positioned(
       right: 16,
-      bottom: 16,
+      bottom: bottomPadding,
       child: Badge(
         isLabelVisible: totalUnread > 0,
         label: Text('$totalUnread'),
@@ -416,10 +426,12 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
     return GestureDetector(
       onPanUpdate: (details) {
         setState(() {
+          // Account for bottom navigation bar in league context
+          final bottomPadding = widget.leagueId != null ? 80.0 : 0.0;
           final maxWidth = (availableSize.width - _position!.dx - 8)
               .clamp(_minSize.width, _maxSize.width);
-          final maxHeight = (availableSize.height - _position!.dy - 8)
-              .clamp(_minSize.height, availableSize.height - 8);
+          final maxHeight = (availableSize.height - _position!.dy - bottomPadding - 8)
+              .clamp(_minSize.height, availableSize.height - bottomPadding - 8);
 
           final newWidth = (_size.width + details.delta.dx)
               .clamp(_minSize.width, maxWidth);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/utils/time_formatter.dart';
 import '../../domain/chat_message.dart';
 
 /// A widget that displays system messages in league chat.
@@ -43,21 +44,35 @@ class SystemMessageBubble extends StatelessWidget {
 
     return Semantics(
       label: '$semanticLabel: ${message.message}',
-      child: Row(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: iconColor, semanticLabel: semanticLabel),
-          const SizedBox(width: 6),
-          Flexible(
-            child: SelectableText(
-              message.message,
-              style: TextStyle(
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-                color: colorScheme.onSurfaceVariant,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: iconColor, semanticLabel: semanticLabel),
+              const SizedBox(width: 6),
+              Flexible(
+                child: SelectableText(
+                  message.message,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
-              textAlign: TextAlign.center,
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            formatMessageTimestamp(message.createdAt),
+            style: TextStyle(
+              fontSize: 10,
+              color: colorScheme.onSurfaceVariant,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

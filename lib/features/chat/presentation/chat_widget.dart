@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/error_display.dart';
 import '../../../core/utils/idempotency.dart';
+import '../../../core/utils/time_formatter.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../domain/chat_message.dart';
@@ -186,7 +187,7 @@ class _MessageBubble extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _formatTime(message.createdAt),
+                      formatMessageTimestamp(message.createdAt),
                       style: TextStyle(
                         fontSize: 11,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -202,20 +203,5 @@ class _MessageBubble extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final diff = now.difference(dateTime);
-
-    if (diff.inMinutes < 1) {
-      return 'Just now';
-    } else if (diff.inHours < 1) {
-      return '${diff.inMinutes}m ago';
-    } else if (diff.inDays < 1) {
-      return '${diff.inHours}h ago';
-    } else {
-      return '${dateTime.month}/${dateTime.day}';
-    }
   }
 }
