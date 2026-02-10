@@ -6,6 +6,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/socket/socket_service.dart';
 import '../data/auth_repository.dart';
 import '../domain/user.dart';
+import '../../notifications/data/notifications_repository.dart';
 
 class AuthState {
   final User? user;
@@ -98,8 +99,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Handles session expiry when token refresh fails.
   /// Clears auth state so the router redirects to login.
   void _handleSessionExpired() {
+    final userId = state.user?.id;
     _clearTokenRefreshCallback();
     _socketService.disconnect();
+    if (userId != null) {
+      NotificationsRepository.clearForUser(userId);
+    }
     _authRepository.logout();
     state = AuthState(sessionExpired: true);
   }
@@ -151,10 +156,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    final userId = state.user?.id;
     state = state.copyWith(isLoading: true);
     try {
       _clearTokenRefreshCallback();
       _socketService.disconnect();
+      if (userId != null) {
+        await NotificationsRepository.clearForUser(userId);
+      }
       await _authRepository.logout();
     } finally {
       state = AuthState();

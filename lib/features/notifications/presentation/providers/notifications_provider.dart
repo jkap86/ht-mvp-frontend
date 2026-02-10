@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/notifications_repository.dart';
 import '../../domain/notification_model.dart';
 
@@ -236,7 +237,7 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
       state = state.copyWith(notifications: notifications, isLoading: false);
     } catch (e) {
       if (!mounted) return;
-      state = state.copyWith(error: e.toString(), isLoading: false);
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
     }
   }
 
