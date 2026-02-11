@@ -216,6 +216,25 @@ class _DraftCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
+                          '${draft.leagueSeason}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: isActive
+                                    ? colorScheme.onErrorContainer.withOpacity(0.8)
+                                    : colorScheme.outline,
+                              ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '•',
+                          style: TextStyle(
+                            color: isActive
+                                ? colorScheme.onErrorContainer.withOpacity(0.8)
+                                : colorScheme.outline,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
                           _getDraftTypeLabel(draft.draft.draftType),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: isActive

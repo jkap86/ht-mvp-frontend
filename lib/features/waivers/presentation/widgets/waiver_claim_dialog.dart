@@ -175,7 +175,7 @@ class _WaiverClaimDialogState extends ConsumerState<WaiverClaimDialog> {
               style: Theme.of(context).textTheme.titleSmall,
             ),
             Text(
-              'Budget: \$$_maxBid',
+              '${widget.faabBudget?.season ?? ''} Budget: \$$_maxBid',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.primary,
                   ),

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../../leagues/data/league_repository.dart';
 import '../../../leagues/domain/league.dart';
 import '../../domain/draft_status.dart';
@@ -8,11 +9,13 @@ import '../../domain/draft_status.dart';
 class DraftsListItem {
   final int leagueId;
   final String leagueName;
+  final int leagueSeason;
   final Draft draft;
 
   DraftsListItem({
     required this.leagueId,
     required this.leagueName,
+    required this.leagueSeason,
     required this.draft,
   });
 
@@ -138,7 +141,7 @@ class DraftsListNotifier extends StateNotifier<DraftsListState> {
       state = state.copyWith(drafts: allDrafts, isLoading: false);
     } catch (e) {
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isLoading: false,
       );
     }
@@ -151,6 +154,7 @@ class DraftsListNotifier extends StateNotifier<DraftsListState> {
           .map((d) => DraftsListItem(
                 leagueId: league.id,
                 leagueName: league.name,
+                leagueSeason: league.season,
                 draft: d,
               ))
           .toList();

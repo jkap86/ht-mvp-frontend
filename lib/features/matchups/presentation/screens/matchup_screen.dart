@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../../core/widgets/week_selector_strip.dart';
+import '../../../leagues/domain/league.dart';
 import '../../domain/matchup.dart';
 import '../providers/matchup_provider.dart';
 
@@ -20,6 +22,12 @@ class MatchupScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(matchupProvider(leagueId), (prev, next) {
+      if (next.isForbidden && prev?.isForbidden != true) {
+        handleForbiddenNavigation(context, ref);
+      }
+    });
+
     final state = ref.watch(matchupProvider(leagueId));
 
     if (state.isLoading && state.matchups.isEmpty) {
@@ -166,6 +174,21 @@ class MatchupScreen extends ConsumerWidget {
 
         // Empty state or matchup cards
         if (state.weekMatchups.isEmpty) {
+          final seasonStatus = state.league?.seasonStatus;
+          if (seasonStatus == SeasonStatus.offseason) {
+            return const AppEmptyView(
+              icon: Icons.beach_access,
+              title: 'Offseason',
+              subtitle: 'The season has ended. Check back when the new season begins!',
+            );
+          }
+          if (seasonStatus == SeasonStatus.preSeason) {
+            return const AppEmptyView(
+              icon: Icons.calendar_today,
+              title: 'Pre-Season',
+              subtitle: 'The schedule hasn\'t been generated yet. Matchups will appear once the season starts.',
+            );
+          }
           return const AppEmptyView(
             icon: Icons.sports_football,
             title: 'No Matchups',

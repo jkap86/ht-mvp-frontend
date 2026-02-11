@@ -4,6 +4,7 @@ import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
+import '../../../leagues/domain/league.dart';
 import '../providers/standings_provider.dart';
 
 class StandingsScreen extends ConsumerWidget {
@@ -58,16 +59,34 @@ class StandingsScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () => ref.read(standingsProvider(leagueId).notifier).loadData(),
         child: state.standings.isEmpty
-            ? const AppEmptyView(
-                icon: Icons.leaderboard,
-                title: 'No Standings Yet',
-                subtitle: 'Standings will appear once the season begins.',
-              )
+            ? _buildEmptyState(state)
             : _buildStandingsTable(context, state),
       ),
     );
   }
 
+  Widget _buildEmptyState(StandingsState state) {
+    final seasonStatus = state.league?.seasonStatus;
+    if (seasonStatus == SeasonStatus.offseason) {
+      return const AppEmptyView(
+        icon: Icons.beach_access,
+        title: 'Offseason',
+        subtitle: 'The season has ended. Final standings are no longer available.',
+      );
+    }
+    if (seasonStatus == SeasonStatus.preSeason) {
+      return const AppEmptyView(
+        icon: Icons.calendar_today,
+        title: 'Pre-Season',
+        subtitle: 'Standings will appear once the season begins.',
+      );
+    }
+    return const AppEmptyView(
+      icon: Icons.leaderboard,
+      title: 'No Standings Yet',
+      subtitle: 'Standings will appear once the season begins.',
+    );
+  }
 
   Widget _buildStandingsTable(BuildContext context, StandingsState state) {
     final playoffLine = (state.league?.totalRosters ?? 12) ~/ 2; // Top half makes playoffs
