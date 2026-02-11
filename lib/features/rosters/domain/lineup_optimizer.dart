@@ -42,6 +42,32 @@ class LineupOptimizer {
 
   const LineupOptimizer({this.slotOrder = defaultSlotOrder});
 
+  /// Build optimizer from a league's RosterConfig.
+  /// Slot order: specific positions first, then flex types from narrowest to widest.
+  factory LineupOptimizer.fromConfig(RosterConfig config) {
+    final slots = <SlotConfig>[];
+
+    // Position-specific slots first (greedy fills these before flex)
+    if (config.qb > 0) slots.add(SlotConfig(slotName: 'QB', eligiblePositions: const ['QB'], count: config.qb));
+    if (config.rb > 0) slots.add(SlotConfig(slotName: 'RB', eligiblePositions: const ['RB'], count: config.rb));
+    if (config.wr > 0) slots.add(SlotConfig(slotName: 'WR', eligiblePositions: const ['WR'], count: config.wr));
+    if (config.te > 0) slots.add(SlotConfig(slotName: 'TE', eligiblePositions: const ['TE'], count: config.te));
+    if (config.k > 0) slots.add(SlotConfig(slotName: 'K', eligiblePositions: const ['K'], count: config.k));
+    if (config.def > 0) slots.add(SlotConfig(slotName: 'DEF', eligiblePositions: const ['DEF'], count: config.def));
+    // IDP position-specific
+    if (config.dl > 0) slots.add(SlotConfig(slotName: 'DL', eligiblePositions: const ['DL'], count: config.dl));
+    if (config.lb > 0) slots.add(SlotConfig(slotName: 'LB', eligiblePositions: const ['LB'], count: config.lb));
+    if (config.db > 0) slots.add(SlotConfig(slotName: 'DB', eligiblePositions: const ['DB'], count: config.db));
+
+    // Flex slots last, narrowest to widest
+    if (config.recFlex > 0) slots.add(SlotConfig(slotName: 'REC_FLEX', eligiblePositions: const ['WR', 'TE'], count: config.recFlex));
+    if (config.idpFlex > 0) slots.add(SlotConfig(slotName: 'IDP_FLEX', eligiblePositions: const ['DL', 'LB', 'DB'], count: config.idpFlex));
+    if (config.flex > 0) slots.add(SlotConfig(slotName: 'FLEX', eligiblePositions: const ['RB', 'WR', 'TE'], count: config.flex));
+    if (config.superFlex > 0) slots.add(SlotConfig(slotName: 'SUPER_FLEX', eligiblePositions: const ['QB', 'RB', 'WR', 'TE'], count: config.superFlex));
+
+    return LineupOptimizer(slotOrder: slots);
+  }
+
   /// Calculate optimal projected points using greedy algorithm
   double calculateOptimalPoints(List<RosterPlayer> players) {
     if (players.isEmpty) return 0.0;
@@ -70,16 +96,12 @@ class LineupOptimizer {
   /// Build an optimal lineup using greedy algorithm
   OptimizedLineup buildOptimalLineup(List<RosterPlayer> players) {
     final used = <int>{};
-    final newLineup = <String, List<int>>{
-      'QB': [],
-      'RB': [],
-      'WR': [],
-      'TE': [],
-      'FLEX': [],
-      'K': [],
-      'DEF': [],
-      'BN': [],
-    };
+    final newLineup = <String, List<int>>{};
+    // Initialize all slot types from the config
+    for (final config in slotOrder) {
+      newLineup[config.slotName] = [];
+    }
+    newLineup['BN'] = [];
     var totalPoints = 0.0;
 
     // Fill starter slots
@@ -108,13 +130,19 @@ class LineupOptimizer {
 
     return OptimizedLineup(
       slots: LineupSlots(
-        qb: newLineup['QB']!,
-        rb: newLineup['RB']!,
-        wr: newLineup['WR']!,
-        te: newLineup['TE']!,
-        flex: newLineup['FLEX']!,
-        k: newLineup['K']!,
-        def: newLineup['DEF']!,
+        qb: newLineup['QB'] ?? [],
+        rb: newLineup['RB'] ?? [],
+        wr: newLineup['WR'] ?? [],
+        te: newLineup['TE'] ?? [],
+        flex: newLineup['FLEX'] ?? [],
+        superFlex: newLineup['SUPER_FLEX'] ?? [],
+        recFlex: newLineup['REC_FLEX'] ?? [],
+        k: newLineup['K'] ?? [],
+        def: newLineup['DEF'] ?? [],
+        dl: newLineup['DL'] ?? [],
+        lb: newLineup['LB'] ?? [],
+        db: newLineup['DB'] ?? [],
+        idpFlex: newLineup['IDP_FLEX'] ?? [],
         bn: newLineup['BN']!,
       ),
       projectedPoints: totalPoints,

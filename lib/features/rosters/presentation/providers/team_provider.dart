@@ -146,7 +146,16 @@ class TeamState {
   /// Calculate what the optimal lineup would score
   double get optimalProjectedPoints {
     if (players.isEmpty) return 0.0;
-    return const LineupOptimizer().calculateOptimalPoints(players);
+    return _buildOptimizer().calculateOptimalPoints(players);
+  }
+
+  /// Build a LineupOptimizer from the league's roster config, falling back to defaults
+  LineupOptimizer _buildOptimizer() {
+    final configMap = league?.settings['roster_config'];
+    if (configMap is Map<String, dynamic>) {
+      return LineupOptimizer.fromConfig(RosterConfig.fromJson(configMap));
+    }
+    return const LineupOptimizer();
   }
 
   TeamState copyWith({
@@ -429,7 +438,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
     state = state.copyWith(isSaving: true);
 
     try {
-      final optimizer = const LineupOptimizer();
+      final optimizer = state._buildOptimizer();
       final optimized = optimizer.buildOptimalLineup(state.players);
 
       final updatedLineup = await _rosterRepo.setLineup(

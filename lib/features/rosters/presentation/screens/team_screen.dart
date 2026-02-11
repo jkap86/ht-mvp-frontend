@@ -628,8 +628,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
     );
   }
 
-  void _confirmDropPlayer(RosterPlayer player) {
-    showDialog(
+  Future<bool> _confirmDropPlayer(RosterPlayer player) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -640,24 +640,25 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pop(false),
               child: const Text('Cancel'),
             ),
             TextButton(
               style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
-              onPressed: () {
-                Navigator.of(context).pop();
-                final key = newIdempotencyKey();
-                ref
-                    .read(teamProvider(_key).notifier)
-                    .dropPlayer(player.playerId, idempotencyKey: key);
-              },
+              onPressed: () => Navigator.of(context).pop(true),
               child: const Text('Drop'),
             ),
           ],
         );
       },
     );
+
+    if (confirmed == true) {
+      final key = newIdempotencyKey();
+      ref.read(teamProvider(_key).notifier).dropPlayer(player.playerId, idempotencyKey: key);
+      return true;
+    }
+    return false;
   }
 
   /// Check if a player can fit in a given lineup slot based on position
@@ -668,6 +669,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
   /// Handle tap on a starter slot
   Future<void> _handleSlotTap(TeamState state, LineupSlot slot, RosterPlayer? currentPlayer) async {
+    final currentLineup = state.lineup?.lineup;
+    if (currentLineup == null) return;
+
     // If a bench player is selected and this slot is eligible, perform swap
     if (_selectedPlayerId != null && _selectedSlot == null) {
       final selectedPlayer = state.bench
@@ -675,22 +679,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           .firstOrNull;
 
       if (selectedPlayer != null && _canPlayerFitInSlot(selectedPlayer, slot)) {
-        // If slot has a player, move them to bench first (await to prevent race condition)
+        var newSlots = currentLineup.withPlayerMoved(_selectedPlayerId!, LineupSlot.bn, slot);
         if (currentPlayer != null) {
-          final key1 = newIdempotencyKey();
-          await ref.read(teamProvider(_key).notifier).movePlayer(
-                currentPlayer.playerId,
-                'BN',
-                idempotencyKey: key1,
-              );
+          newSlots = newSlots.withPlayerMoved(currentPlayer.playerId, slot, LineupSlot.bn);
         }
-        // Then move bench player to this slot
-        final key2 = newIdempotencyKey();
-        await ref.read(teamProvider(_key).notifier).movePlayer(
-              _selectedPlayerId!,
-              slot.code,
-              idempotencyKey: key2,
-            );
+        final key = newIdempotencyKey();
+        await ref.read(teamProvider(_key).notifier).saveLineup(newSlots, idempotencyKey: key);
         setState(() {
           _selectedPlayerId = null;
           _selectedSlot = null;
@@ -716,38 +710,19 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           .firstOrNull;
 
       if (selectedPlayer != null && _canPlayerFitInSlot(selectedPlayer, slot)) {
-        // Check if target player can swap back
+        LineupSlots newSlots;
         if (currentPlayer != null && _canPlayerFitInSlot(currentPlayer, _selectedSlot!)) {
-          // True swap: move each player to the other's slot
-          final key1 = newIdempotencyKey();
-          await ref.read(teamProvider(_key).notifier).movePlayer(
-                currentPlayer.playerId,
-                _selectedSlot!.code,
-                idempotencyKey: key1,
-              );
-          final key2 = newIdempotencyKey();
-          await ref.read(teamProvider(_key).notifier).movePlayer(
-                _selectedPlayerId!,
-                slot.code,
-                idempotencyKey: key2,
-              );
+          // True swap: swap both players between their slots
+          newSlots = currentLineup.withSwap(_selectedPlayerId!, _selectedSlot!, currentPlayer.playerId, slot);
         } else {
-          // One-way: move target to bench first (if exists), then move selected to target slot
+          // One-way: move selected player to target slot, move target (if any) to bench
+          newSlots = currentLineup.withPlayerMoved(_selectedPlayerId!, _selectedSlot!, slot);
           if (currentPlayer != null) {
-            final key1 = newIdempotencyKey();
-            await ref.read(teamProvider(_key).notifier).movePlayer(
-                  currentPlayer.playerId,
-                  'BN',
-                  idempotencyKey: key1,
-                );
+            newSlots = newSlots.withPlayerMoved(currentPlayer.playerId, slot, LineupSlot.bn);
           }
-          final key2 = newIdempotencyKey();
-          await ref.read(teamProvider(_key).notifier).movePlayer(
-                _selectedPlayerId!,
-                slot.code,
-                idempotencyKey: key2,
-              );
         }
+        final key = newIdempotencyKey();
+        await ref.read(teamProvider(_key).notifier).saveLineup(newSlots, idempotencyKey: key);
         setState(() {
           _selectedPlayerId = null;
           _selectedSlot = null;
@@ -774,26 +749,19 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
   /// Handle tap on a bench player
   Future<void> _handleBenchTap(TeamState state, RosterPlayer player) async {
+    final currentLineup = state.lineup?.lineup;
+    if (currentLineup == null) return;
+
     // If a starter slot is selected and this player is eligible, perform swap
     if (_selectedSlot != null) {
       if (_canPlayerFitInSlot(player, _selectedSlot!)) {
-        // Find current player in the selected slot and move them to bench first (await to prevent race condition)
+        var newSlots = currentLineup.withPlayerMoved(player.playerId, LineupSlot.bn, _selectedSlot!);
         final currentPlayerInSlot = state.playersBySlot[_selectedSlot]?.firstOrNull;
         if (currentPlayerInSlot != null) {
-          final key1 = newIdempotencyKey();
-          await ref.read(teamProvider(_key).notifier).movePlayer(
-                currentPlayerInSlot.playerId,
-                'BN',
-                idempotencyKey: key1,
-              );
+          newSlots = newSlots.withPlayerMoved(currentPlayerInSlot.playerId, _selectedSlot!, LineupSlot.bn);
         }
-        // Then move this bench player to the selected slot
-        final key2 = newIdempotencyKey();
-        await ref.read(teamProvider(_key).notifier).movePlayer(
-              player.playerId,
-              _selectedSlot!.code,
-              idempotencyKey: key2,
-            );
+        final key = newIdempotencyKey();
+        await ref.read(teamProvider(_key).notifier).saveLineup(newSlots, idempotencyKey: key);
         setState(() {
           _selectedPlayerId = null;
           _selectedSlot = null;

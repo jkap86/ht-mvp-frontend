@@ -225,6 +225,117 @@ class LineupSlots {
     };
   }
 
+  /// Get the player list for a given slot
+  List<int> _getSlotList(LineupSlot slot) {
+    switch (slot) {
+      case LineupSlot.qb: return qb;
+      case LineupSlot.rb: return rb;
+      case LineupSlot.wr: return wr;
+      case LineupSlot.te: return te;
+      case LineupSlot.flex: return flex;
+      case LineupSlot.superFlex: return superFlex;
+      case LineupSlot.recFlex: return recFlex;
+      case LineupSlot.k: return k;
+      case LineupSlot.def: return def;
+      case LineupSlot.dl: return dl;
+      case LineupSlot.lb: return lb;
+      case LineupSlot.db: return db;
+      case LineupSlot.idpFlex: return idpFlex;
+      case LineupSlot.bn: return bn;
+      case LineupSlot.ir: return ir;
+      case LineupSlot.taxi: return taxi;
+    }
+  }
+
+  /// Return a copy of the slot list with the given update applied
+  List<int>? _updatedList(LineupSlot target, LineupSlot slot, List<int> newList) {
+    return target == slot ? newList : null;
+  }
+
+  /// Returns a new LineupSlots with [playerId] removed from [from] and added to [to].
+  LineupSlots withPlayerMoved(int playerId, LineupSlot from, LineupSlot to) {
+    final fromList = List<int>.from(_getSlotList(from))..remove(playerId);
+    final toList = List<int>.from(_getSlotList(to))..add(playerId);
+
+    return copyWith(
+      qb: _updatedList(LineupSlot.qb, from, fromList) ?? _updatedList(LineupSlot.qb, to, toList),
+      rb: _updatedList(LineupSlot.rb, from, fromList) ?? _updatedList(LineupSlot.rb, to, toList),
+      wr: _updatedList(LineupSlot.wr, from, fromList) ?? _updatedList(LineupSlot.wr, to, toList),
+      te: _updatedList(LineupSlot.te, from, fromList) ?? _updatedList(LineupSlot.te, to, toList),
+      flex: _updatedList(LineupSlot.flex, from, fromList) ?? _updatedList(LineupSlot.flex, to, toList),
+      superFlex: _updatedList(LineupSlot.superFlex, from, fromList) ?? _updatedList(LineupSlot.superFlex, to, toList),
+      recFlex: _updatedList(LineupSlot.recFlex, from, fromList) ?? _updatedList(LineupSlot.recFlex, to, toList),
+      k: _updatedList(LineupSlot.k, from, fromList) ?? _updatedList(LineupSlot.k, to, toList),
+      def: _updatedList(LineupSlot.def, from, fromList) ?? _updatedList(LineupSlot.def, to, toList),
+      dl: _updatedList(LineupSlot.dl, from, fromList) ?? _updatedList(LineupSlot.dl, to, toList),
+      lb: _updatedList(LineupSlot.lb, from, fromList) ?? _updatedList(LineupSlot.lb, to, toList),
+      db: _updatedList(LineupSlot.db, from, fromList) ?? _updatedList(LineupSlot.db, to, toList),
+      idpFlex: _updatedList(LineupSlot.idpFlex, from, fromList) ?? _updatedList(LineupSlot.idpFlex, to, toList),
+      bn: _updatedList(LineupSlot.bn, from, fromList) ?? _updatedList(LineupSlot.bn, to, toList),
+      ir: _updatedList(LineupSlot.ir, from, fromList) ?? _updatedList(LineupSlot.ir, to, toList),
+      taxi: _updatedList(LineupSlot.taxi, from, fromList) ?? _updatedList(LineupSlot.taxi, to, toList),
+    );
+  }
+
+  /// Returns a new LineupSlots with two players swapped between their slots.
+  LineupSlots withSwap(int player1Id, LineupSlot slot1, int player2Id, LineupSlot slot2) {
+    if (slot1 == slot2) {
+      // Same slot type — just swap within the list
+      final list = List<int>.from(_getSlotList(slot1));
+      final idx1 = list.indexOf(player1Id);
+      final idx2 = list.indexOf(player2Id);
+      if (idx1 != -1 && idx2 != -1) {
+        list[idx1] = player2Id;
+        list[idx2] = player1Id;
+      }
+      return copyWith(
+        qb: slot1 == LineupSlot.qb ? list : null,
+        rb: slot1 == LineupSlot.rb ? list : null,
+        wr: slot1 == LineupSlot.wr ? list : null,
+        te: slot1 == LineupSlot.te ? list : null,
+        flex: slot1 == LineupSlot.flex ? list : null,
+        superFlex: slot1 == LineupSlot.superFlex ? list : null,
+        recFlex: slot1 == LineupSlot.recFlex ? list : null,
+        k: slot1 == LineupSlot.k ? list : null,
+        def: slot1 == LineupSlot.def ? list : null,
+        dl: slot1 == LineupSlot.dl ? list : null,
+        lb: slot1 == LineupSlot.lb ? list : null,
+        db: slot1 == LineupSlot.db ? list : null,
+        idpFlex: slot1 == LineupSlot.idpFlex ? list : null,
+        bn: slot1 == LineupSlot.bn ? list : null,
+        ir: slot1 == LineupSlot.ir ? list : null,
+        taxi: slot1 == LineupSlot.taxi ? list : null,
+      );
+    }
+
+    // Different slot types — remove each from their slot, add to the other
+    var list1 = List<int>.from(_getSlotList(slot1));
+    var list2 = List<int>.from(_getSlotList(slot2));
+    list1.remove(player1Id);
+    list1.add(player2Id);
+    list2.remove(player2Id);
+    list2.add(player1Id);
+
+    return copyWith(
+      qb: _updatedList(LineupSlot.qb, slot1, list1) ?? _updatedList(LineupSlot.qb, slot2, list2),
+      rb: _updatedList(LineupSlot.rb, slot1, list1) ?? _updatedList(LineupSlot.rb, slot2, list2),
+      wr: _updatedList(LineupSlot.wr, slot1, list1) ?? _updatedList(LineupSlot.wr, slot2, list2),
+      te: _updatedList(LineupSlot.te, slot1, list1) ?? _updatedList(LineupSlot.te, slot2, list2),
+      flex: _updatedList(LineupSlot.flex, slot1, list1) ?? _updatedList(LineupSlot.flex, slot2, list2),
+      superFlex: _updatedList(LineupSlot.superFlex, slot1, list1) ?? _updatedList(LineupSlot.superFlex, slot2, list2),
+      recFlex: _updatedList(LineupSlot.recFlex, slot1, list1) ?? _updatedList(LineupSlot.recFlex, slot2, list2),
+      k: _updatedList(LineupSlot.k, slot1, list1) ?? _updatedList(LineupSlot.k, slot2, list2),
+      def: _updatedList(LineupSlot.def, slot1, list1) ?? _updatedList(LineupSlot.def, slot2, list2),
+      dl: _updatedList(LineupSlot.dl, slot1, list1) ?? _updatedList(LineupSlot.dl, slot2, list2),
+      lb: _updatedList(LineupSlot.lb, slot1, list1) ?? _updatedList(LineupSlot.lb, slot2, list2),
+      db: _updatedList(LineupSlot.db, slot1, list1) ?? _updatedList(LineupSlot.db, slot2, list2),
+      idpFlex: _updatedList(LineupSlot.idpFlex, slot1, list1) ?? _updatedList(LineupSlot.idpFlex, slot2, list2),
+      bn: _updatedList(LineupSlot.bn, slot1, list1) ?? _updatedList(LineupSlot.bn, slot2, list2),
+      ir: _updatedList(LineupSlot.ir, slot1, list1) ?? _updatedList(LineupSlot.ir, slot2, list2),
+      taxi: _updatedList(LineupSlot.taxi, slot1, list1) ?? _updatedList(LineupSlot.taxi, slot2, list2),
+    );
+  }
+
   LineupSlots copyWith({
     List<int>? qb,
     List<int>? rb,

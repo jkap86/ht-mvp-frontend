@@ -15,7 +15,7 @@ class RosterPlayerCard extends StatelessWidget {
   final bool isSelected;
   final bool isHighlighted;
   final VoidCallback? onTap;
-  final VoidCallback? onDrop;
+  final Future<bool> Function()? onDrop;
 
   const RosterPlayerCard({
     super.key,
@@ -172,8 +172,7 @@ class RosterPlayerCard extends StatelessWidget {
       return Dismissible(
         key: Key('player-${player.playerId}'),
         direction: DismissDirection.endToStart,
-        confirmDismiss: (_) async => true,
-        onDismissed: (_) => onDrop?.call(),
+        confirmDismiss: (_) => onDrop!(),
         background: Container(
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: AppSpacing.lg),
