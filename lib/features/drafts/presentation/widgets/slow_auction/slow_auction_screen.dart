@@ -68,6 +68,9 @@ class SlowAuctionScreen extends ConsumerWidget {
     final auctionSettings = ref.watch(
       draftRoomProvider(providerKey).select((s) => s.auctionSettings),
     );
+    final serverClockOffsetMs = ref.watch(
+      draftRoomProvider(providerKey).select((s) => s.serverClockOffsetMs),
+    );
     final isCommissioner = ref.watch(
       draftRoomProvider(providerKey).select((s) => s.isCommissioner),
     );
@@ -144,6 +147,7 @@ class SlowAuctionScreen extends ConsumerWidget {
                       draftOrder,
                       myBudget,
                       auctionSettings,
+                      serverClockOffsetMs,
                     ),
                     dailyNominationsRemaining: dailyNominationsRemaining,
                     dailyNominationLimit: dailyNominationLimit,
@@ -222,6 +226,7 @@ class SlowAuctionScreen extends ConsumerWidget {
                               draftOrder,
                               myBudget,
                               auctionSettings,
+                              serverClockOffsetMs,
                             ),
                           ),
                         );
@@ -256,6 +261,7 @@ class SlowAuctionScreen extends ConsumerWidget {
     List<DraftOrderEntry> draftOrder,
     AuctionBudget? myBudget,
     AuctionSettings? settings,
+    int? serverClockOffsetMs,
   ) {
     final player = players.where((p) => p.id == lot.playerId).firstOrNull;
     if (player == null) return;
@@ -270,6 +276,7 @@ class SlowAuctionScreen extends ConsumerWidget {
       draftOrder: draftOrder,
       settings: settings ?? AuctionSettings.defaults,
       onSubmit: (maxBid) => onSetMaxBid(lot.id, maxBid),
+      serverClockOffsetMs: serverClockOffsetMs,
     );
   }
 

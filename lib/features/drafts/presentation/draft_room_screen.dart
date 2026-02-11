@@ -307,6 +307,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
                       draftOrder: currentState.draftOrder,
                       settings: currentState.auctionSettings ?? AuctionSettings.defaults,
                       onSubmit: (maxBid) => _handleSetMaxBid(lot.id, maxBid),
+                      serverClockOffsetMs: currentState.serverClockOffsetMs,
                     );
                   }
                 },

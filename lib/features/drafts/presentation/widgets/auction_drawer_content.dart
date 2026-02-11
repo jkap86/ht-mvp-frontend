@@ -71,6 +71,7 @@ class AuctionDrawerContent extends ConsumerWidget {
                 draftOrder: state.draftOrder,
                 settings: auctionSettings ?? AuctionSettings.defaults,
                 onSubmit: (maxBid) => onSetMaxBid!(lot.id, maxBid),
+                serverClockOffsetMs: state.serverClockOffsetMs,
               );
             },
             onNominateTap: () {

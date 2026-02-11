@@ -21,6 +21,7 @@ class AuctionBidDialog extends StatefulWidget {
   final List<DraftOrderEntry> draftOrder;
   final AuctionSettings settings;
   final void Function(int maxBid) onSubmit;
+  final int? serverClockOffsetMs;
 
   const AuctionBidDialog({
     super.key,
@@ -32,6 +33,7 @@ class AuctionBidDialog extends StatefulWidget {
     required this.draftOrder,
     required this.settings,
     required this.onSubmit,
+    this.serverClockOffsetMs,
   });
 
   /// Shows the auction bid dialog.
@@ -45,6 +47,7 @@ class AuctionBidDialog extends StatefulWidget {
     required List<DraftOrderEntry> draftOrder,
     required AuctionSettings settings,
     required void Function(int maxBid) onSubmit,
+    int? serverClockOffsetMs,
   }) {
     return showDialog(
       context: context,
@@ -57,6 +60,7 @@ class AuctionBidDialog extends StatefulWidget {
         draftOrder: draftOrder,
         settings: settings,
         onSubmit: onSubmit,
+        serverClockOffsetMs: serverClockOffsetMs,
       ),
     );
   }
@@ -123,8 +127,8 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
   }
 
   void _updateTimeRemaining() {
-    final now = DateTime.now();
-    final remaining = widget.lot.bidDeadline.difference(now);
+    final now = DateTime.now().add(Duration(milliseconds: widget.serverClockOffsetMs ?? 0));
+    final remaining = widget.lot.bidDeadline.toUtc().difference(now.toUtc());
     setState(() {
       _timeRemaining = remaining.isNegative ? Duration.zero : remaining;
     });

@@ -638,6 +638,12 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   void onAuctionErrorReceived(String message) {
     if (!mounted) return;
     state = state.copyWith(error: message);
+
+    // If server says lot expired/ended, refresh auction state so UI isn't stuck
+    final lower = message.toLowerCase();
+    if (lower.contains('expired') || lower.contains('ended') || lower.contains('closed') || lower.contains('closing')) {
+      loadAuctionData();
+    }
   }
 
   // Data loading methods

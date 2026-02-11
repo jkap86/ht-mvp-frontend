@@ -1,3 +1,12 @@
+import 'package:flutter/foundation.dart';
+
+DateTime _parseBidDeadline(String raw) {
+  final parsed = DateTime.tryParse(raw);
+  if (parsed != null) return parsed;
+  if (kDebugMode) debugPrint('AuctionLot: failed to parse bidDeadline: "$raw"');
+  return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+}
+
 /// Represents an auction lot in a slow auction draft.
 class AuctionLot {
   final int id;
@@ -37,7 +46,7 @@ class AuctionLot {
       currentBid: json['current_bid'] as int? ?? json['currentBid'] as int? ?? 1,
       currentBidderRosterId: json['current_bidder_roster_id'] as int? ?? json['currentBidderRosterId'] as int?,
       bidCount: json['bid_count'] as int? ?? json['bidCount'] as int? ?? 0,
-      bidDeadline: DateTime.tryParse(json['bid_deadline'] as String? ?? json['bidDeadline'] as String? ?? '') ?? DateTime.now(),
+      bidDeadline: _parseBidDeadline(json['bid_deadline'] as String? ?? json['bidDeadline'] as String? ?? ''),
       status: json['status'] as String? ?? 'active',
       winningRosterId: json['winning_roster_id'] as int? ?? json['winningRosterId'] as int?,
       winningBid: json['winning_bid'] as int? ?? json['winningBid'] as int?,
