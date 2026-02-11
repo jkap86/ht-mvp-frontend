@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../services/snack_bar_service.dart';
 import 'error_sanitizer.dart';
@@ -49,4 +50,20 @@ void handleMutationError(
       : error.toUserMessage();
   ref.read(snackBarServiceProvider).showError(message);
   onRefetch?.call();
+}
+
+/// Handles a 403 Forbidden response by showing a user-facing message
+/// and navigating to the home screen (league list).
+///
+/// Call this from a `ref.listen()` callback when a provider's state
+/// indicates the user no longer has access (e.g. `state.isForbidden`).
+void handleForbiddenNavigation(
+  BuildContext context,
+  WidgetRef ref, {
+  String message = 'You no longer have access to this league.',
+}) {
+  ref.read(snackBarServiceProvider).showError(message);
+  if (context.mounted) {
+    context.go('/');
+  }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/services/sync_service.dart';
 import '../../../../core/socket/socket_service.dart';
+import '../../../../core/api/api_exceptions.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../../auth/presentation/auth_provider.dart';
 import '../../data/chat_repository.dart';
@@ -15,6 +16,7 @@ class ChatState {
   final bool isLoadingMore;
   final bool hasMore;
   final String? error;
+  final bool isForbidden;
 
   ChatState({
     this.messages = const [],
@@ -23,6 +25,7 @@ class ChatState {
     this.isLoadingMore = false,
     this.hasMore = true,
     this.error,
+    this.isForbidden = false,
   });
 
   ChatState copyWith({
@@ -32,6 +35,7 @@ class ChatState {
     bool? isLoadingMore,
     bool? hasMore,
     String? error,
+    bool? isForbidden,
     bool clearError = false,
   }) {
     return ChatState(
@@ -41,6 +45,7 @@ class ChatState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMore: hasMore ?? this.hasMore,
       error: clearError ? null : (error ?? this.error),
+      isForbidden: isForbidden ?? this.isForbidden,
     );
   }
 }
@@ -146,6 +151,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
         isLoading: false,
         hasMore: messages.length >= _pageSize,
       );
+    } on ForbiddenException {
+      if (!mounted) return;
+      state = state.copyWith(isForbidden: true, isLoading: false, messages: []);
     } catch (e) {
       // Check if disposed during async operations
       if (!mounted) return;

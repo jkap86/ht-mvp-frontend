@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/draft_repository.dart';
 
 /// Queue entry model - supports both players and pick assets
@@ -156,7 +157,7 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
       // Check if disposed during async operations
       if (!mounted) return;
 
-      state = state.copyWith(error: e.toString(), isLoading: false);
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
     }
   }
 

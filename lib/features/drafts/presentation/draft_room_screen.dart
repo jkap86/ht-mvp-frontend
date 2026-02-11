@@ -184,6 +184,12 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(draftRoomProvider(_providerKey), (prev, next) {
+      if (next.isForbidden && prev?.isForbidden != true) {
+        handleForbiddenNavigation(context, ref);
+      }
+    });
+
     // Use select() for loading state - only rebuilds when isLoading changes
     final isLoading = ref.watch(
       draftRoomProvider(_providerKey).select((s) => s.isLoading),

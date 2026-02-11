@@ -70,6 +70,12 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(dmConversationProvider(widget.conversationId), (prev, next) {
+      if (next.isForbidden && prev?.isForbidden != true) {
+        handleForbiddenNavigation(context, ref);
+      }
+    });
+
     final state = ref.watch(dmConversationProvider(widget.conversationId));
     final inboxState = ref.watch(dmInboxProvider);
     final currentUserId = ref.watch(authStateProvider).user?.id;

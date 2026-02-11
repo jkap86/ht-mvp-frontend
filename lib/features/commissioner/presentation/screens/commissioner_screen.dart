@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/providers/league_context_provider.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../providers/commissioner_provider.dart';
@@ -25,6 +26,40 @@ class CommissionerScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Commissioner access guard
+    final leagueContext = ref.watch(leagueContextProvider(leagueId));
+
+    return leagueContext.when(
+      loading: () => Scaffold(
+        appBar: AppBar(title: const Text('Commissioner Tools')),
+        body: const AppLoadingView(),
+      ),
+      error: (error, _) => Scaffold(
+        appBar: AppBar(title: const Text('Commissioner Tools')),
+        body: AppErrorView(
+          message: 'Failed to verify access.',
+          onRetry: () => ref.invalidate(leagueContextProvider(leagueId)),
+        ),
+      ),
+      data: (ctx) {
+        if (!ctx.isCommissioner) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              context.go('/leagues/$leagueId');
+            }
+          });
+          return Scaffold(
+            appBar: AppBar(title: const Text('Commissioner Tools')),
+            body: const Center(child: Text('Access denied')),
+          );
+        }
+
+        return _buildCommissionerContent(context, ref);
+      },
+    );
+  }
+
+  Widget _buildCommissionerContent(BuildContext context, WidgetRef ref) {
     final state = ref.watch(commissionerProvider(leagueId));
 
     // Show snackbar for success/error messages

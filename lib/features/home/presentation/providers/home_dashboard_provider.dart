@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../../drafts/domain/draft_status.dart';
 import '../../../leagues/data/league_repository.dart';
 import '../../../leagues/domain/league.dart';
@@ -205,7 +206,7 @@ class HomeDashboardNotifier extends StateNotifier<HomeDashboardState> {
       );
     } catch (e) {
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isLoading: false,
       );
     }

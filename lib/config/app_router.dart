@@ -31,6 +31,7 @@ import '../features/transactions/presentation/transactions_screen.dart';
 import '../features/dm/presentation/dm_inbox_screen.dart';
 import '../features/dm/presentation/dm_conversation_screen.dart';
 import '../core/providers/league_context_provider.dart';
+import '../core/utils/error_sanitizer.dart';
 
 // Listenable that notifies when auth state changes
 class AuthChangeNotifier extends ChangeNotifier {
@@ -171,15 +172,16 @@ class _LeagueTeamRedirect extends ConsumerWidget {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             context.go('/leagues/$leagueId/team/$rosterId');
           });
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
+        return const _ErrorScreen(message: 'You are not a member of this league.');
       },
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),
-      error: (error, _) => _ErrorScreen(message: 'Failed to load team: $error'),
+      error: (error, _) => _ErrorScreen(message: ErrorSanitizer.sanitize(error)),
     );
   }
 }
@@ -200,12 +202,12 @@ class _LeaguePlayersRedirect extends ConsumerWidget {
         if (rosterId != null) {
           return FreeAgentsScreen(leagueId: leagueId, rosterId: rosterId);
         }
-        return const _ErrorScreen(message: 'No roster found');
+        return const _ErrorScreen(message: 'You are not a member of this league.');
       },
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),
-      error: (error, _) => _ErrorScreen(message: 'Failed to load players: $error'),
+      error: (error, _) => _ErrorScreen(message: ErrorSanitizer.sanitize(error)),
     );
   }
 }

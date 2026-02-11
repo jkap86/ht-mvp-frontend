@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/services/invalidation_service.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/commissioner_repository.dart';
 import '../../../leagues/domain/league.dart';
 import '../../../playoffs/domain/playoff.dart';
@@ -85,7 +86,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isLoading: false,
       );
     }
@@ -109,7 +110,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return false;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;
@@ -130,7 +131,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return false;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;
@@ -151,7 +152,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return false;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;
@@ -190,7 +191,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return false;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;
@@ -212,7 +213,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return false;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;
@@ -233,7 +234,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return false;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;
@@ -261,7 +262,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return false;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;
@@ -312,7 +313,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return false;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;
@@ -337,7 +338,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return false;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;
@@ -372,7 +373,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return false;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;
@@ -394,7 +395,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return false;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;
@@ -417,7 +418,7 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     } catch (e) {
       if (!mounted) return false;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;

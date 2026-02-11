@@ -65,6 +65,12 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(chatProvider(widget.leagueId), (prev, next) {
+      if (next.isForbidden && prev?.isForbidden != true) {
+        handleForbiddenNavigation(context, ref);
+      }
+    });
+
     final state = ref.watch(chatProvider(widget.leagueId));
 
     return Column(

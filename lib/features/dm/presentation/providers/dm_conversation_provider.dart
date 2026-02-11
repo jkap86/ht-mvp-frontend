@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/api/api_exceptions.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 
 import '../../../../core/socket/socket_service.dart';
@@ -17,6 +18,7 @@ class DmConversationState {
   final bool isLoadingMore;
   final bool hasMore;
   final String? error;
+  final bool isForbidden;
 
   DmConversationState({
     this.messages = const [],
@@ -25,6 +27,7 @@ class DmConversationState {
     this.isLoadingMore = false,
     this.hasMore = true,
     this.error,
+    this.isForbidden = false,
   });
 
   DmConversationState copyWith({
@@ -34,6 +37,7 @@ class DmConversationState {
     bool? isLoadingMore,
     bool? hasMore,
     String? error,
+    bool? isForbidden,
     bool clearError = false,
   }) {
     return DmConversationState(
@@ -43,6 +47,7 @@ class DmConversationState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMore: hasMore ?? this.hasMore,
       error: clearError ? null : (error ?? this.error),
+      isForbidden: isForbidden ?? this.isForbidden,
     );
   }
 }
@@ -130,6 +135,9 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
         isLoading: false,
         hasMore: fetchedMessages.length >= _pageSize,
       );
+    } on ForbiddenException {
+      if (!mounted) return;
+      state = state.copyWith(isForbidden: true, isLoading: false, messages: []);
     } catch (e) {
       if (!mounted) return;
 

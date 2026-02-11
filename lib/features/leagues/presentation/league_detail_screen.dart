@@ -179,6 +179,12 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(leagueDetailProvider(widget.leagueId), (prev, next) {
+      if (next.isForbidden && prev?.isForbidden != true) {
+        handleForbiddenNavigation(context, ref);
+      }
+    });
+
     final state = ref.watch(leagueDetailProvider(widget.leagueId));
 
     if (state.isLoading) {

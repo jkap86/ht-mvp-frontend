@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/dues_repository.dart';
 import '../../domain/dues.dart';
 
@@ -58,7 +59,7 @@ class DuesNotifier extends StateNotifier<DuesState> {
       final overview = await _repository.getDuesOverview(leagueId);
       state = state.copyWith(overview: overview, isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorSanitizer.sanitize(e));
     }
   }
 
@@ -85,7 +86,7 @@ class DuesNotifier extends StateNotifier<DuesState> {
       state = state.copyWith(isSaving: false);
       return true;
     } catch (e) {
-      state = state.copyWith(isSaving: false, error: e.toString());
+      state = state.copyWith(isSaving: false, error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }
@@ -107,7 +108,7 @@ class DuesNotifier extends StateNotifier<DuesState> {
       );
       return true;
     } catch (e) {
-      state = state.copyWith(isSaving: false, error: e.toString());
+      state = state.copyWith(isSaving: false, error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }
@@ -128,7 +129,7 @@ class DuesNotifier extends StateNotifier<DuesState> {
       state = state.copyWith(clearUpdating: true);
       return true;
     } catch (e) {
-      state = state.copyWith(clearUpdating: true, error: e.toString());
+      state = state.copyWith(clearUpdating: true, error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }

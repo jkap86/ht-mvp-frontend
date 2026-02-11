@@ -22,6 +22,12 @@ class MyClaimsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)), (prev, next) {
+      if (next.isForbidden && prev?.isForbidden != true) {
+        handleForbiddenNavigation(context, ref);
+      }
+    });
+
     final state = ref.watch(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)));
 
     return Scaffold(

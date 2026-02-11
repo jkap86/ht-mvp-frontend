@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../../leagues/domain/league.dart';
 
 /// Simple dialog for editing a draft's scheduled start time.
@@ -100,7 +101,7 @@ class _EditDraftTimeDialogState extends State<EditDraftTimeDialog> {
       }
     } catch (e) {
       setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = ErrorSanitizer.sanitize(e);
       });
     } finally {
       if (mounted) {

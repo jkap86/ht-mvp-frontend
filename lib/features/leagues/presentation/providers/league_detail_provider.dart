@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/services/invalidation_service.dart';
+import '../../../../core/api/api_exceptions.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../../drafts/domain/draft_order_entry.dart';
 import '../../../drafts/domain/draft_status.dart';
 import '../../../drafts/data/draft_repository.dart';
@@ -24,6 +26,7 @@ class LeagueDetailState {
   final RosterLineup? currentLineup;
   final bool isLoading;
   final String? error;
+  final bool isForbidden;
 
   LeagueDetailState({
     this.league,
@@ -35,6 +38,7 @@ class LeagueDetailState {
     this.currentLineup,
     this.isLoading = true,
     this.error,
+    this.isForbidden = false,
   });
 
   bool get isCommissioner {
@@ -94,6 +98,7 @@ class LeagueDetailState {
     RosterLineup? currentLineup,
     bool? isLoading,
     String? error,
+    bool? isForbidden,
     bool clearError = false,
     bool clearMatchup = false,
     bool clearLineup = false,
@@ -108,6 +113,7 @@ class LeagueDetailState {
       currentLineup: clearLineup ? null : (currentLineup ?? this.currentLineup),
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
+      isForbidden: isForbidden ?? this.isForbidden,
     );
   }
 }
@@ -247,9 +253,11 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
         clearMatchup: currentMatchup == null,
         clearLineup: currentLineup == null,
       );
+    } on ForbiddenException {
+      state = state.copyWith(isForbidden: true, isLoading: false, members: [], drafts: [], standings: []);
     } catch (e) {
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isLoading: false,
       );
     }

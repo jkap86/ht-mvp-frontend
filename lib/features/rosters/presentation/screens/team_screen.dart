@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
@@ -89,6 +90,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(teamProvider(_key), (prev, next) {
+      if (next.isForbidden && prev?.isForbidden != true) {
+        handleForbiddenNavigation(context, ref);
+      }
+    });
+
     final state = ref.watch(teamProvider(_key));
     final isOwnTeam = _isOwnTeam(state);
 

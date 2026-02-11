@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/league_context_provider.dart';
+import '../../../../core/api/api_exceptions.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../auth/presentation/auth_provider.dart';
 import '../../../leagues/data/league_repository.dart';
@@ -73,6 +75,7 @@ class DraftRoomState {
   final int? serverClockOffsetMs;
   // Activity feed for the draft room log
   final List<DraftActivityEvent> activityFeed;
+  final bool isForbidden;
 
   DraftRoomState({
     this.draft,
@@ -104,6 +107,7 @@ class DraftRoomState {
     this.rosterNames = const {},
     this.serverClockOffsetMs,
     this.activityFeed = const [],
+    this.isForbidden = false,
   });
 
   bool get isAuction => draft?.draftType == DraftType.auction;
@@ -246,6 +250,7 @@ class DraftRoomState {
     Map<int, String>? rosterNames,
     int? serverClockOffsetMs,
     List<DraftActivityEvent>? activityFeed,
+    bool? isForbidden,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -281,6 +286,7 @@ class DraftRoomState {
       rosterNames: rosterNames ?? this.rosterNames,
       serverClockOffsetMs: serverClockOffsetMs ?? this.serverClockOffsetMs,
       activityFeed: activityFeed ?? this.activityFeed,
+      isForbidden: isForbidden ?? this.isForbidden,
     );
   }
 }
@@ -670,9 +676,12 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       if (mounted && draft.phase == DraftPhase.derby) {
         loadDerbyState();
       }
+    } on ForbiddenException {
+      if (!mounted) return;
+      state = state.copyWith(isForbidden: true, isLoading: false, players: [], picks: []);
     } catch (e) {
       if (!mounted) return;
-      state = state.copyWith(error: e.toString(), isLoading: false);
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
     }
   }
 
@@ -749,7 +758,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       if (mounted) await _refreshDraftState();
       return null;
     } catch (e) {
-      return e.toString();
+      return ErrorSanitizer.sanitize(e);
     }
   }
 
@@ -764,7 +773,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       }
       return null;
     } catch (e) {
-      return e.toString();
+      return ErrorSanitizer.sanitize(e);
     }
   }
 
@@ -778,7 +787,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       }
       return null;
     } catch (e) {
-      return e.toString();
+      return ErrorSanitizer.sanitize(e);
     }
   }
 
@@ -813,7 +822,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
           }).toList(),
         );
       }
-      return e.toString();
+      return ErrorSanitizer.sanitize(e);
     }
   }
 
@@ -832,7 +841,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       await _draftRepo.toggleAutodraft(leagueId, draftId, enabled, idempotencyKey: idempotencyKey);
       return null;
     } catch (e) {
-      return e.toString();
+      return ErrorSanitizer.sanitize(e);
     }
   }
 
@@ -846,7 +855,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       }
       return null;
     } catch (e) {
-      return e.toString();
+      return ErrorSanitizer.sanitize(e);
     }
   }
 
@@ -863,7 +872,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       }
       return null;
     } catch (e) {
-      return e.toString();
+      return ErrorSanitizer.sanitize(e);
     }
   }
 
@@ -881,7 +890,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       }
       return null;
     } catch (e) {
-      return e.toString();
+      return ErrorSanitizer.sanitize(e);
     }
   }
 
@@ -1061,7 +1070,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       if (mounted) {
         state = state.copyWith(isDerbySubmitting: false);
       }
-      return e.toString();
+      return ErrorSanitizer.sanitize(e);
     }
   }
 
@@ -1078,7 +1087,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       if (mounted) {
         state = state.copyWith(isDerbySubmitting: false);
       }
-      return e.toString();
+      return ErrorSanitizer.sanitize(e);
     }
   }
 

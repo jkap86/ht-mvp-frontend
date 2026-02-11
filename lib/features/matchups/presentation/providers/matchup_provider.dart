@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/services/invalidation_service.dart';
 import '../../../../core/services/sync_service.dart';
+import '../../../../core/api/api_exceptions.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../../leagues/data/league_repository.dart';
 import '../../../leagues/domain/league.dart';
@@ -19,6 +20,7 @@ class MatchupState {
   final String? error;
   final DateTime? lastUpdated;
   final int? maxScheduledWeek; // Maximum week with scheduled matchups
+  final bool isForbidden;
 
   MatchupState({
     this.league,
@@ -29,6 +31,7 @@ class MatchupState {
     this.error,
     this.lastUpdated,
     this.maxScheduledWeek,
+    this.isForbidden = false,
   });
 
   /// Check if data is stale (older than 5 minutes)
@@ -60,6 +63,7 @@ class MatchupState {
     bool clearError = false,
     DateTime? lastUpdated,
     int? maxScheduledWeek,
+    bool? isForbidden,
   }) {
     return MatchupState(
       league: league ?? this.league,
@@ -70,6 +74,7 @@ class MatchupState {
       error: clearError ? null : (error ?? this.error),
       lastUpdated: lastUpdated ?? this.lastUpdated,
       maxScheduledWeek: maxScheduledWeek ?? this.maxScheduledWeek,
+      isForbidden: isForbidden ?? this.isForbidden,
     );
   }
 }
@@ -190,6 +195,8 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
         lastUpdated: DateTime.now(),
         maxScheduledWeek: maxScheduledWeek,
       );
+    } on ForbiddenException {
+      state = state.copyWith(isForbidden: true, isLoading: false, matchups: []);
     } catch (e) {
       state = state.copyWith(
         error: ErrorSanitizer.sanitize(e),

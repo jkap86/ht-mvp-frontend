@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../../leagues/data/league_repository.dart';
 import '../../../leagues/domain/invitation.dart';
 
@@ -61,7 +62,7 @@ class LeagueInvitationsNotifier extends StateNotifier<LeagueInvitationsState> {
       final invitations = await _repository.getLeagueInvitations(leagueId);
       state = state.copyWith(pendingInvitations: invitations, isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorSanitizer.sanitize(e));
     }
   }
 
@@ -77,7 +78,7 @@ class LeagueInvitationsNotifier extends StateNotifier<LeagueInvitationsState> {
       final results = await _repository.searchUsersForInvite(leagueId, query);
       state = state.copyWith(searchResults: results, isSearching: false);
     } catch (e) {
-      state = state.copyWith(isSearching: false, error: e.toString());
+      state = state.copyWith(isSearching: false, error: ErrorSanitizer.sanitize(e));
     }
   }
 
@@ -92,7 +93,7 @@ class LeagueInvitationsNotifier extends StateNotifier<LeagueInvitationsState> {
       state = state.copyWith(isSending: false, searchResults: []);
       return true;
     } catch (e) {
-      state = state.copyWith(isSending: false, error: e.toString());
+      state = state.copyWith(isSending: false, error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }
@@ -112,7 +113,7 @@ class LeagueInvitationsNotifier extends StateNotifier<LeagueInvitationsState> {
       );
       return true;
     } catch (e) {
-      state = state.copyWith(clearCancelling: true, error: e.toString());
+      state = state.copyWith(clearCancelling: true, error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }

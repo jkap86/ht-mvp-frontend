@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/services/invalidation_service.dart';
 import '../../../../core/services/sync_service.dart';
+import '../../../../core/api/api_exceptions.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/waiver_repository.dart';
 import '../../domain/waiver_claim.dart';
@@ -18,6 +19,7 @@ class WaiversState {
   final Set<int> waiverWirePlayerIds; // Player IDs currently on waiver wire
   final bool isLoading;
   final String? error;
+  final bool isForbidden;
   final String filter; // 'all', 'pending', 'completed'
 
   WaiversState({
@@ -27,6 +29,7 @@ class WaiversState {
     this.waiverWirePlayerIds = const {},
     this.isLoading = true,
     this.error,
+    this.isForbidden = false,
     this.filter = 'pending',
   });
 
@@ -79,6 +82,7 @@ class WaiversState {
     Set<int>? waiverWirePlayerIds,
     bool? isLoading,
     String? error,
+    bool? isForbidden,
     String? filter,
     bool clearError = false,
   }) {
@@ -89,6 +93,7 @@ class WaiversState {
       waiverWirePlayerIds: waiverWirePlayerIds ?? this.waiverWirePlayerIds,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
+      isForbidden: isForbidden ?? this.isForbidden,
       filter: filter ?? this.filter,
     );
   }
@@ -351,6 +356,9 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
         waiverWirePlayerIds: waiverWirePlayerIds,
         isLoading: false,
       );
+    } on ForbiddenException {
+      if (!mounted) return;
+      state = state.copyWith(isForbidden: true, isLoading: false, claims: [], priorities: [], budgets: []);
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);

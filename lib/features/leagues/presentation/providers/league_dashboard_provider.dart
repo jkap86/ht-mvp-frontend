@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/league_repository.dart';
 import '../../domain/dashboard.dart';
 
@@ -163,7 +164,7 @@ class LeagueDashboardNotifier extends StateNotifier<LeagueDashboardState> {
       );
     } catch (e) {
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isLoading: false,
       );
     }

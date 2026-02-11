@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/services/invalidation_service.dart';
+import '../../../../core/api/api_exceptions.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../../leagues/data/league_repository.dart';
 import '../../../leagues/domain/league.dart';
 import '../../data/roster_repository.dart';
@@ -40,6 +42,7 @@ class TeamState {
   final bool isSaving;
   final DateTime? lastUpdated;
   final List<Roster> leagueMembers;
+  final bool isForbidden;
 
   TeamState({
     this.league,
@@ -51,6 +54,7 @@ class TeamState {
     this.isSaving = false,
     this.lastUpdated,
     this.leagueMembers = const [],
+    this.isForbidden = false,
   });
 
   /// Check if data is stale (older than 5 minutes)
@@ -156,6 +160,7 @@ class TeamState {
     bool? isSaving,
     DateTime? lastUpdated,
     List<Roster>? leagueMembers,
+    bool? isForbidden,
   }) {
     return TeamState(
       league: league ?? this.league,
@@ -167,6 +172,7 @@ class TeamState {
       isSaving: isSaving ?? this.isSaving,
       lastUpdated: lastUpdated ?? this.lastUpdated,
       leagueMembers: leagueMembers ?? this.leagueMembers,
+      isForbidden: isForbidden ?? this.isForbidden,
     );
   }
 }
@@ -246,10 +252,13 @@ class TeamNotifier extends StateNotifier<TeamState> {
         lastUpdated: DateTime.now(),
         leagueMembers: members,
       );
+    } on ForbiddenException {
+      if (!mounted) return;
+      state = state.copyWith(isForbidden: true, isLoading: false, players: []);
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isLoading: false,
       );
     }
@@ -313,7 +322,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       if (!mounted) return false;
       // Keep key for retry
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isSaving: false,
       );
       return false;
@@ -354,7 +363,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       if (!mounted) return false;
       // Keep key for retry
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isSaving: false,
       );
       return false;
@@ -390,7 +399,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       if (!mounted) return false;
       // Keep key for retry
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isSaving: false,
       );
       return false;
@@ -444,7 +453,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
       if (!mounted) return false;
       // Keep key for retry
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isSaving: false,
       );
       return false;

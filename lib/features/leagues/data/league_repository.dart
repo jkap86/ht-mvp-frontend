@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_exceptions.dart';
+import '../../../core/utils/error_sanitizer.dart';
 import '../domain/league.dart';
 import '../domain/invitation.dart';
 import '../domain/dashboard.dart';
@@ -314,7 +315,7 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
       final leagues = await _repository.getMyLeagues();
       state = state.copyWith(leagues: leagues, isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorSanitizer.sanitize(e));
     }
   }
 
@@ -347,7 +348,7 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
         isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorSanitizer.sanitize(e));
     }
   }
 }

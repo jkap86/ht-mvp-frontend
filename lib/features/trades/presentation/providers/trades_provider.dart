@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/services/invalidation_service.dart';
 import '../../../../core/services/sync_service.dart';
+import '../../../../core/api/api_exceptions.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/trade_repository.dart';
 import '../../domain/trade.dart';
@@ -17,6 +18,7 @@ class TradesState {
   final String filter; // 'mine', 'all', 'pending', 'completed'
   final DateTime? lastUpdated;
   final int? userRosterId;
+  final bool isForbidden;
 
   TradesState({
     this.trades = const [],
@@ -25,6 +27,7 @@ class TradesState {
     this.filter = 'mine',
     this.lastUpdated,
     this.userRosterId,
+    this.isForbidden = false,
   });
 
   /// Check if data is stale (older than 5 minutes)
@@ -67,6 +70,7 @@ class TradesState {
     bool clearError = false,
     DateTime? lastUpdated,
     int? userRosterId,
+    bool? isForbidden,
   }) {
     return TradesState(
       trades: trades ?? this.trades,
@@ -75,6 +79,7 @@ class TradesState {
       filter: filter ?? this.filter,
       lastUpdated: lastUpdated ?? this.lastUpdated,
       userRosterId: userRosterId ?? this.userRosterId,
+      isForbidden: isForbidden ?? this.isForbidden,
     );
   }
 }
@@ -291,6 +296,9 @@ class TradesNotifier extends StateNotifier<TradesState> {
       final trades = await _tradeRepo.getTrades(leagueId);
       if (!mounted) return;
       state = state.copyWith(trades: trades, isLoading: false, lastUpdated: DateTime.now());
+    } on ForbiddenException {
+      if (!mounted) return;
+      state = state.copyWith(isForbidden: true, isLoading: false, trades: []);
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
