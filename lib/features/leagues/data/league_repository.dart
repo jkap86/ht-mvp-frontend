@@ -4,6 +4,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/api/api_exceptions.dart';
 import '../../../core/utils/error_sanitizer.dart';
 import '../domain/league.dart';
+import '../domain/league_filter.dart';
 import '../domain/invitation.dart';
 import '../domain/dashboard.dart';
 
@@ -282,24 +283,32 @@ class LeagueRepository {
 // State management for leagues
 class LeaguesState {
   final List<League> leagues;
+  final List<League> filteredLeagues;
   final bool isLoading;
   final String? error;
+  final LeagueFilterCriteria filters;
 
   LeaguesState({
     this.leagues = const [],
+    this.filteredLeagues = const [],
     this.isLoading = false,
     this.error,
+    this.filters = const LeagueFilterCriteria(),
   });
 
   LeaguesState copyWith({
     List<League>? leagues,
+    List<League>? filteredLeagues,
     bool? isLoading,
     String? error,
+    LeagueFilterCriteria? filters,
   }) {
     return LeaguesState(
       leagues: leagues ?? this.leagues,
+      filteredLeagues: filteredLeagues ?? this.filteredLeagues,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      filters: filters ?? this.filters,
     );
   }
 }
@@ -314,6 +323,7 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
     try {
       final leagues = await _repository.getMyLeagues();
       state = state.copyWith(leagues: leagues, isLoading: false);
+      _applyFiltersAndSort();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: ErrorSanitizer.sanitize(e));
     }
@@ -347,9 +357,142 @@ class LeaguesNotifier extends StateNotifier<LeaguesState> {
         leagues: [...state.leagues, league],
         isLoading: false,
       );
+      _applyFiltersAndSort();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: ErrorSanitizer.sanitize(e));
     }
+  }
+
+  void updateSearchQuery(String query) {
+    state = state.copyWith(filters: state.filters.copyWith(searchQuery: query));
+    _applyFiltersAndSort();
+  }
+
+  void toggleModeFilter(String mode) {
+    final modes = Set<String>.from(state.filters.modes);
+    if (modes.contains(mode)) {
+      modes.remove(mode);
+    } else {
+      modes.add(mode);
+    }
+    state = state.copyWith(filters: state.filters.copyWith(modes: modes));
+    _applyFiltersAndSort();
+  }
+
+  void toggleSeasonStatusFilter(SeasonStatus status) {
+    final statuses = Set<SeasonStatus>.from(state.filters.seasonStatuses);
+    if (statuses.contains(status)) {
+      statuses.remove(status);
+    } else {
+      statuses.add(status);
+    }
+    state = state.copyWith(
+      filters: state.filters.copyWith(seasonStatuses: statuses),
+    );
+    _applyFiltersAndSort();
+  }
+
+  void toggleScoringFilter(String scoring) {
+    final types = Set<String>.from(state.filters.scoringTypes);
+    if (types.contains(scoring)) {
+      types.remove(scoring);
+    } else {
+      types.add(scoring);
+    }
+    state = state.copyWith(
+      filters: state.filters.copyWith(scoringTypes: types),
+    );
+    _applyFiltersAndSort();
+  }
+
+  void toggleRosterFeatureFilter(RosterFeature feature) {
+    final features = Set<RosterFeature>.from(state.filters.rosterFeatures);
+    if (features.contains(feature)) {
+      features.remove(feature);
+    } else {
+      features.add(feature);
+    }
+    state = state.copyWith(
+      filters: state.filters.copyWith(rosterFeatures: features),
+    );
+    _applyFiltersAndSort();
+  }
+
+  void updateSort(LeagueSortField field) {
+    final currentField = state.filters.sortField;
+    final currentDir = state.filters.sortDirection;
+    // Tap same field: toggle direction. Tap different field: ascending.
+    final newDir = field == currentField
+        ? (currentDir == SortDirection.ascending
+            ? SortDirection.descending
+            : SortDirection.ascending)
+        : SortDirection.ascending;
+    state = state.copyWith(
+      filters: state.filters.copyWith(sortField: field, sortDirection: newDir),
+    );
+    _applyFiltersAndSort();
+  }
+
+  void clearAllFilters() {
+    state = state.copyWith(filters: state.filters.clearAll());
+    _applyFiltersAndSort();
+  }
+
+  void _applyFiltersAndSort() {
+    final filters = state.filters;
+    var results = List<League>.from(state.leagues);
+
+    // Search query
+    if (filters.searchQuery.isNotEmpty) {
+      final query = filters.searchQuery.toLowerCase();
+      results = results
+          .where((l) => l.name.toLowerCase().contains(query))
+          .toList();
+    }
+
+    // Mode filter (OR within category)
+    if (filters.modes.isNotEmpty) {
+      results = results
+          .where((l) => filters.modes.contains(l.mode))
+          .toList();
+    }
+
+    // Season status filter (OR within category)
+    if (filters.seasonStatuses.isNotEmpty) {
+      results = results
+          .where((l) => filters.seasonStatuses.contains(l.seasonStatus))
+          .toList();
+    }
+
+    // Scoring type filter (OR within category)
+    if (filters.scoringTypes.isNotEmpty) {
+      results = results
+          .where((l) => filters.scoringTypes.contains(l.scoringType))
+          .toList();
+    }
+
+    // Roster features filter (AND across selections)
+    if (filters.rosterFeatures.isNotEmpty) {
+      results = results.where((l) {
+        return filters.rosterFeatures.every((f) => l.hasRosterFeature(f));
+      }).toList();
+    }
+
+    // Sort
+    results.sort((a, b) {
+      int cmp;
+      switch (filters.sortField) {
+        case LeagueSortField.name:
+          cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        case LeagueSortField.season:
+          cmp = a.season.compareTo(b.season);
+        case LeagueSortField.status:
+          cmp = a.seasonStatus.index.compareTo(b.seasonStatus.index);
+      }
+      return filters.sortDirection == SortDirection.ascending ? cmp : -cmp;
+    });
+
+    state = state.copyWith(filteredLeagues: results);
   }
 }
 

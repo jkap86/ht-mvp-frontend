@@ -6,6 +6,7 @@ import '../../../core/widgets/states/states.dart';
 import '../data/league_repository.dart';
 import '../../home/presentation/widgets/league_card.dart';
 import '../../notifications/presentation/widgets/notification_bell.dart';
+import 'widgets/leagues_search_bar.dart';
 
 class LeaguesScreen extends ConsumerStatefulWidget {
   const LeaguesScreen({super.key});
@@ -35,6 +36,12 @@ class _LeaguesScreenState extends ConsumerState<LeaguesScreen> {
         actions: const [
           NotificationBell(),
         ],
+        bottom: leaguesState.leagues.isNotEmpty
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(56),
+                child: LeaguesSearchBar(),
+              )
+            : null,
       ),
       body: Stack(
         children: [
@@ -73,6 +80,24 @@ class _LeaguesScreenState extends ConsumerState<LeaguesScreen> {
       );
     }
 
+    final filtered = leaguesState.filteredLeagues;
+    final hasActiveFilters = leaguesState.filters.hasActiveFilters ||
+        leaguesState.filters.searchQuery.isNotEmpty;
+
+    if (filtered.isEmpty && hasActiveFilters) {
+      return AppEmptyView(
+        icon: Icons.search_off,
+        title: 'No leagues match your filters',
+        subtitle: 'Try adjusting your search or filters',
+        action: TextButton(
+          onPressed: () {
+            ref.read(myLeaguesProvider.notifier).clearAllFilters();
+          },
+          child: const Text('Clear Filters'),
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: () => ref.read(myLeaguesProvider.notifier).loadLeagues(),
       child: Center(
@@ -80,9 +105,9 @@ class _LeaguesScreenState extends ConsumerState<LeaguesScreen> {
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: leaguesState.leagues.length,
+            itemCount: filtered.length,
             itemBuilder: (context, index) {
-              final league = leaguesState.leagues[index];
+              final league = filtered[index];
               return LeagueCard(
                 league: league,
                 onNavigate: () => ref.read(myLeaguesProvider.notifier).loadLeagues(),
