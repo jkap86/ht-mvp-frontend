@@ -46,16 +46,16 @@ class _ConnectionBannerContent extends StatelessWidget {
         ? AppTheme.draftWarning
         : AppTheme.draftWarning;
 
-    return Material(
-      elevation: 2,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: bannerBg,
-        ),
-        child: SafeArea(
-          bottom: false,
+    return SafeArea(
+      bottom: false,
+      child: Material(
+        elevation: 2,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: bannerBg,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

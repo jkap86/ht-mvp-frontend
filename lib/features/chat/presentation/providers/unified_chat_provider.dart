@@ -77,8 +77,9 @@ class UnifiedChatNotifier extends StateNotifier<UnifiedChatState> {
   }
 }
 
-/// Provider for unified chat widget state
+/// Provider for unified chat widget state.
+/// AutoDispose ensures state resets when all listeners are removed (e.g., on logout).
 final unifiedChatProvider =
-    StateNotifierProvider<UnifiedChatNotifier, UnifiedChatState>(
+    StateNotifierProvider.autoDispose<UnifiedChatNotifier, UnifiedChatState>(
   (ref) => UnifiedChatNotifier(),
 );

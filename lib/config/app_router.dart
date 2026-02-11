@@ -41,7 +41,9 @@ class AuthChangeNotifier extends ChangeNotifier {
 }
 
 final _authChangeNotifierProvider = Provider<AuthChangeNotifier>((ref) {
-  return AuthChangeNotifier(ref);
+  final notifier = AuthChangeNotifier(ref);
+  ref.onDispose(() => notifier.dispose());
+  return notifier;
 });
 
 /// Parse an integer from route parameters, returning null if invalid or <= 0
@@ -234,18 +236,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthRoute = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
 
-      // Update current league ID and route based on navigation
+      // Update current league ID and route based on navigation.
+      // Use addPostFrameCallback to avoid modifying provider state during redirect
+      // while ensuring the update happens in the same frame (unlike Future.microtask
+      // which can race with subsequent builds).
       final leagueMatch = RegExp(r'/leagues/(\d+)').firstMatch(state.matchedLocation);
       if (leagueMatch != null) {
-        // Update to the current league and save the full route path
         final leagueId = int.tryParse(leagueMatch.group(1) ?? '');
-        Future.microtask(() {
+        final matchedLocation = state.matchedLocation;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           ref.read(currentLeagueIdProvider.notifier).state = leagueId;
-          ref.read(lastLeagueRouteProvider.notifier).state = state.matchedLocation;
+          ref.read(lastLeagueRouteProvider.notifier).state = matchedLocation;
         });
       } else if (state.matchedLocation == '/' || state.matchedLocation == '/login' || state.matchedLocation == '/register') {
         // Clear league context only for top-level navigation (home, auth screens)
-        Future.microtask(() {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           ref.read(currentLeagueIdProvider.notifier).state = null;
           ref.read(lastLeagueRouteProvider.notifier).state = null;
         });

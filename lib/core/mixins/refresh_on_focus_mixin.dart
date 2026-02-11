@@ -52,18 +52,21 @@ mixin RefreshOnFocusMixin<T extends ConsumerStatefulWidget> on ConsumerState<T>
     final route = ModalRoute.of(context);
     if (route != null) {
       // Try to find a RouteObserver in the widget tree
-      try {
-        final observer = Navigator.of(context).widget.observers
-            .whereType<RouteObserver<ModalRoute<void>>>()
-            .firstOrNull;
-        if (observer != null && _routeObserver != observer) {
-          _routeObserver?.unsubscribe(this);
-          _routeObserver = observer;
-          observer.subscribe(this, route);
+      final navigator = Navigator.maybeOf(context);
+      if (navigator != null) {
+        try {
+          final observer = navigator.widget.observers
+              .whereType<RouteObserver<ModalRoute<void>>>()
+              .firstOrNull;
+          if (observer != null && _routeObserver != observer) {
+            _routeObserver?.unsubscribe(this);
+            _routeObserver = observer;
+            observer.subscribe(this, route);
+          }
+        } catch (_) {
+          // RouteObserver not available, fall back to didChangeDependencies behavior
+          _checkAndRefresh();
         }
-      } catch (_) {
-        // RouteObserver not available, fall back to didChangeDependencies behavior
-        _checkAndRefresh();
       }
     }
   }
