@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class AppConfig {
   static const String appName = 'HypeTrain FF';
 
@@ -5,26 +7,24 @@ class AppConfig {
   // Build with: --dart-define=API_BASE_URL=https://your-api.com/api
   static const String _apiBaseUrlEnv = String.fromEnvironment('API_BASE_URL');
   static String get apiBaseUrl {
-    if (_apiBaseUrlEnv.isEmpty) {
-      throw StateError(
-        'API_BASE_URL environment variable is required. '
-        'Build with: --dart-define=API_BASE_URL=https://your-api-url.com/api',
-      );
-    }
-    return _apiBaseUrlEnv;
+    if (_apiBaseUrlEnv.isNotEmpty) return _apiBaseUrlEnv;
+    if (kDebugMode) return 'http://localhost:5000/api';
+    throw StateError(
+      'API_BASE_URL environment variable is required. '
+      'Build with: --dart-define=API_BASE_URL=https://your-api-url.com/api',
+    );
   }
 
   // Socket.IO Configuration
   // Build with: --dart-define=SOCKET_URL=https://your-api.com
   static const String _socketUrlEnv = String.fromEnvironment('SOCKET_URL');
   static String get socketUrl {
-    if (_socketUrlEnv.isEmpty) {
-      throw StateError(
-        'SOCKET_URL environment variable is required. '
-        'Build with: --dart-define=SOCKET_URL=https://your-api-url.com',
-      );
-    }
-    return _socketUrlEnv;
+    if (_socketUrlEnv.isNotEmpty) return _socketUrlEnv;
+    if (kDebugMode) return 'http://localhost:5000';
+    throw StateError(
+      'SOCKET_URL environment variable is required. '
+      'Build with: --dart-define=SOCKET_URL=https://your-api-url.com',
+    );
   }
 
   // Auth token keys for storage
