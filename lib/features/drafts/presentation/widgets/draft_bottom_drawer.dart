@@ -2,13 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/semantic_colors.dart';
 import '../providers/draft_room_provider.dart';
 import '../providers/draft_queue_provider.dart';
+import '../utils/player_filtering.dart';
 import '../../domain/auction_lot.dart';
+import '../../domain/auction_settings.dart';
+import 'auction_bid_dialog.dart';
 import 'auction_drawer_content.dart';
 import 'draft_activity_feed.dart';
 import 'drawer_drag_handle.dart';
 import 'fast_auction_panel.dart';
+import 'nomination_hint_row.dart';
+import 'player_search_filter_panel.dart';
 import 'snake_linear_drawer_content.dart';
 
 enum _DrawerTab { players, activity }
@@ -26,7 +32,7 @@ class DraftBottomDrawer extends ConsumerStatefulWidget {
   final Future<void> Function(int playerId) onMakePick;
   final Future<void> Function(int playerId) onAddToQueue;
   final Future<void> Function(int playerId)? onNominate;
-  final Future<void> Function(int lotId, int maxBid)? onSetMaxBid;
+  final Future<String?> Function(int lotId, int maxBid)? onSetMaxBid;
   final Future<void> Function(int pickAssetId)? onMakePickAssetSelection;
   final Future<void> Function(int pickAssetId)? onAddPickAssetToQueue;
   final DraggableScrollableController? sheetController;
@@ -86,37 +92,21 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
   }
 
   void _showBidDialog(BuildContext context, AuctionLot lot) {
-    final controller = TextEditingController(text: '${lot.currentBid + 1}');
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Place Bid'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: 'Max Bid',
-            hintText: 'Min: \$${lot.currentBid + 1}',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final bid = int.tryParse(controller.text);
-              if (bid != null && bid > lot.currentBid) {
-                widget.onSetMaxBid?.call(lot.id, bid);
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('Bid'),
-          ),
-        ],
-      ),
+    final draftState = ref.read(draftRoomProvider(widget.providerKey));
+    final player = draftState.players.where((p) => p.id == lot.playerId).firstOrNull;
+    if (player == null || widget.onSetMaxBid == null) return;
+
+    AuctionBidDialog.show(
+      context,
+      leagueId: widget.leagueId,
+      draftId: widget.draftId,
+      lot: lot,
+      player: player,
+      myBudget: draftState.myBudget,
+      draftOrder: draftState.draftOrder,
+      settings: draftState.auctionSettings ?? AuctionSettings.defaults,
+      onSubmit: (maxBid) async => await widget.onSetMaxBid!(lot.id, maxBid),
+      serverClockOffsetMs: draftState.serverClockOffsetMs,
     );
   }
 
@@ -197,18 +187,8 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
                       ? DraftActivityFeed(providerKey: widget.providerKey)
                       : widget.isAuction
                           ? (isFastAuction
-                              ? FastAuctionPanel(
-                                  state: draftState,
-                                  onBidTap: (lot) => _showBidDialog(context, lot),
-                                  onNominateTap: () {
-                                    // Expand drawer to show player search
-                                    _sheetController.animateTo(
-                                      _expandedSize,
-                                      duration: const Duration(milliseconds: 300),
-                                      curve: Curves.easeInOut,
-                                    );
-                                  },
-                                )
+                              ? _buildFastAuctionContent(
+                                  context, scrollController, draftState)
                               : AuctionDrawerContent(
                                   providerKey: widget.providerKey,
                                   scrollController: scrollController,

@@ -25,6 +25,7 @@ import '../../domain/draft_pick_asset.dart';
 import '../../domain/draft_phase.dart';
 import '../../domain/draft_status.dart';
 import '../../domain/draft_type.dart';
+import '../../domain/lot_result.dart';
 import 'draft_socket_handler.dart';
 
 export 'draft_socket_handler.dart' show OutbidNotification;
@@ -77,6 +78,9 @@ class DraftRoomState {
   final List<DraftActivityEvent> activityFeed;
   final bool isForbidden;
   final bool isPickSubmitting;
+  // Lot result announcement
+  final LotResult? lastLotResult;
+  final List<LotResult> completedLotResults;
 
   DraftRoomState({
     this.draft,
@@ -110,6 +114,8 @@ class DraftRoomState {
     this.activityFeed = const [],
     this.isForbidden = false,
     this.isPickSubmitting = false,
+    this.lastLotResult,
+    this.completedLotResults = const [],
   });
 
   bool get isAuction => draft?.draftType == DraftType.auction;
@@ -259,6 +265,9 @@ class DraftRoomState {
     List<DraftActivityEvent>? activityFeed,
     bool? isForbidden,
     bool? isPickSubmitting,
+    LotResult? lastLotResult,
+    bool clearLastLotResult = false,
+    List<LotResult>? completedLotResults,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -304,6 +313,8 @@ class DraftRoomState {
       activityFeed: activityFeed ?? this.activityFeed,
       isForbidden: isForbidden ?? this.isForbidden,
       isPickSubmitting: isPickSubmitting ?? this.isPickSubmitting,
+      lastLotResult: clearLastLotResult ? null : (lastLotResult ?? this.lastLotResult),
+      completedLotResults: completedLotResults ?? this.completedLotResults,
     );
   }
 }
@@ -323,6 +334,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   late final DraftSocketHandler _socketHandler;
   Timer? _budgetRefreshTimer;
   Timer? _outbidDismissTimer;
+  Timer? _lotResultDismissTimer;
   VoidCallback? _reconnectUnsubscribe;
   VoidCallback? _memberKickedDisposer;
 
@@ -514,6 +526,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       );
     }
     _addActivityEvent(DraftActivityType.draftResumed, 'Draft resumed');
+    // Refresh auction data to get restored lot deadlines
+    if (state.isAuction) {
+      loadAuctionData();
+    }
   }
 
   /// Update server clock offset based on serverTime from socket events.
@@ -584,11 +600,14 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   }
 
   @override
-  void onLotWonReceived(int lotId) {
+  void onLotWonReceived(LotResult result) {
     if (!mounted) return;
     state = state.copyWith(
-      activeLots: state.activeLots.where((l) => l.id != lotId).toList(),
+      activeLots: state.activeLots.where((l) => l.id != result.lotId).toList(),
+      lastLotResult: result,
+      completedLotResults: [...state.completedLotResults, result],
     );
+    _startLotResultDismissTimer(result.lotId);
     // Debounce to prevent rapid lot completions from spamming API
     _budgetRefreshTimer?.cancel();
     _budgetRefreshTimer = Timer(const Duration(milliseconds: 200), () {
@@ -597,11 +616,30 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   }
 
   @override
-  void onLotPassedReceived(int lotId) {
+  void onLotPassedReceived(LotResult result) {
     if (!mounted) return;
     state = state.copyWith(
-      activeLots: state.activeLots.where((l) => l.id != lotId).toList(),
+      activeLots: state.activeLots.where((l) => l.id != result.lotId).toList(),
+      lastLotResult: result,
+      completedLotResults: [...state.completedLotResults, result],
     );
+    _startLotResultDismissTimer(result.lotId);
+  }
+
+  void _startLotResultDismissTimer(int lotId) {
+    _lotResultDismissTimer?.cancel();
+    _lotResultDismissTimer = Timer(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      // Only clear if this is still the same result
+      if (state.lastLotResult?.lotId == lotId) {
+        state = state.copyWith(clearLastLotResult: true);
+      }
+    });
+  }
+
+  void dismissLotResult() {
+    _lotResultDismissTimer?.cancel();
+    state = state.copyWith(clearLastLotResult: true);
   }
 
   @override
@@ -898,6 +936,26 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     }
   }
 
+  /// Pause the draft (commissioner only)
+  Future<String?> pauseDraft() async {
+    try {
+      await _draftRepo.pauseDraft(leagueId, draftId);
+      return null;
+    } catch (e) {
+      return ErrorSanitizer.sanitize(e);
+    }
+  }
+
+  /// Resume the draft (commissioner only)
+  Future<String?> resumeDraft() async {
+    try {
+      await _draftRepo.resumeDraft(leagueId, draftId);
+      return null;
+    } catch (e) {
+      return ErrorSanitizer.sanitize(e);
+    }
+  }
+
   /// Confirm draft order without randomizing (commissioner only)
   Future<String?> confirmDraftOrder() async {
     try {
@@ -1146,6 +1204,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   void dispose() {
     _budgetRefreshTimer?.cancel();
     _outbidDismissTimer?.cancel();
+    _lotResultDismissTimer?.cancel();
     _reconnectUnsubscribe?.call();
     _memberKickedDisposer?.call();
     _socketService.leaveLeague(leagueId);

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../players/domain/player.dart';
 import '../../domain/auction_lot.dart';
+import '../../domain/draft_status.dart';
 import '../providers/draft_room_provider.dart';
 import 'fast_auction_header.dart';
+import 'fast_auction_history_sheet.dart';
 import 'fast_auction_lot_card.dart';
+import 'fast_auction_lot_result.dart';
 import 'fast_auction_waiting_state.dart';
 
 /// Panel for fast auction mode showing:
@@ -14,12 +18,14 @@ class FastAuctionPanel extends StatelessWidget {
   final DraftRoomState state;
   final void Function(AuctionLot lot) onBidTap;
   final VoidCallback onNominateTap;
+  final VoidCallback? onDismissResult;
 
   const FastAuctionPanel({
     super.key,
     required this.state,
     required this.onBidTap,
     required this.onNominateTap,
+    this.onDismissResult,
   });
 
   @override
@@ -34,6 +40,7 @@ class FastAuctionPanel extends StatelessWidget {
     // Build a map of players by ID for quick lookup
     final playersMap = {for (var p in state.players) p.id: p};
     final budgetsMap = {for (var b in state.budgets) b.rosterId: b};
+    final lastResult = state.lastLotResult;
 
     final theme = Theme.of(context);
     return Container(
@@ -45,15 +52,72 @@ class FastAuctionPanel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Header with nominator info
-          FastAuctionHeader(
-            nominator: nominator,
-            isMyNomination: isMyNomination,
-            nominationNumber: nominationNumber,
-            myBudgetAvailable: state.myBudget?.available,
+          Builder(
+            builder: (context) => FastAuctionHeader(
+              nominator: nominator,
+              isMyNomination: isMyNomination,
+              nominationNumber: nominationNumber,
+              myBudgetAvailable: state.myBudget?.available,
+              completedCount: state.completedLotResults.length,
+              onHistoryTap: state.completedLotResults.isNotEmpty
+                  ? () => FastAuctionHistorySheet.show(
+                        context,
+                        completedResults: state.completedLotResults,
+                        playersMap: playersMap,
+                        budgetsMap: budgetsMap,
+                        myRosterId: state.myBudget?.rosterId,
+                      )
+                  : null,
+            ),
           ),
 
-          // Active lot or waiting state
-          if (activeLot != null)
+          // Lot result announcement banner
+          if (lastResult != null)
+            FastAuctionLotResult(
+              result: lastResult,
+              playerName: playersMap[lastResult.playerId]?.fullName,
+              winnerName: lastResult.winnerRosterId != null
+                  ? budgetsMap[lastResult.winnerRosterId]?.username
+                  : null,
+              isMyWin: !lastResult.isPassed &&
+                  lastResult.winnerRosterId == state.myBudget?.rosterId,
+              onDismiss: onDismissResult,
+            ),
+
+          // Paused overlay or active lot / waiting state
+          if (state.draft?.status == DraftStatus.paused)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.pause_circle_filled,
+                    size: 48,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Draft Paused',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Timers are frozen. Waiting for commissioner to resume.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (activeLot != null)
             FastAuctionLotCard(
               lot: activeLot,
               player: playersMap[activeLot.playerId],

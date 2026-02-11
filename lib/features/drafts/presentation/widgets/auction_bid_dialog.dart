@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
@@ -20,7 +21,7 @@ class AuctionBidDialog extends StatefulWidget {
   final AuctionBudget? myBudget;
   final List<DraftOrderEntry> draftOrder;
   final AuctionSettings settings;
-  final void Function(int maxBid) onSubmit;
+  final Future<String?> Function(int maxBid) onSubmit;
   final int? serverClockOffsetMs;
 
   const AuctionBidDialog({
@@ -46,7 +47,7 @@ class AuctionBidDialog extends StatefulWidget {
     AuctionBudget? myBudget,
     required List<DraftOrderEntry> draftOrder,
     required AuctionSettings settings,
-    required void Function(int maxBid) onSubmit,
+    required Future<String?> Function(int maxBid) onSubmit,
     int? serverClockOffsetMs,
   }) {
     return showDialog(
@@ -187,9 +188,29 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
 
     try {
       final bid = int.parse(_bidController.text);
-      widget.onSubmit(bid);
-      if (mounted) {
+      final playerName = widget.player.fullName;
+      final error = await widget.onSubmit(bid);
+
+      if (!mounted) return;
+
+      if (error != null) {
+        // Show error SnackBar and keep dialog open for retry
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      } else {
+        // Capture messenger before popping (context may become invalid)
+        final messenger = ScaffoldMessenger.of(context);
         Navigator.pop(context);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Bid placed: max \$$bid on $playerName'),
+            backgroundColor: AppTheme.draftSuccess,
+          ),
+        );
       }
     } finally {
       if (mounted) {

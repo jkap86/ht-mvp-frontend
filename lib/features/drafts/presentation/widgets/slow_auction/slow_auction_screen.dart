@@ -21,7 +21,7 @@ class SlowAuctionScreen extends ConsumerWidget {
   final int leagueId;
   final int draftId;
   final Future<void> Function(int) onNominate;
-  final Future<void> Function(int, int) onSetMaxBid;
+  final Future<String?> Function(int, int) onSetMaxBid;
   final Future<void> Function() onStartDraft;
   final bool isStartingDraft;
 
@@ -275,7 +275,7 @@ class SlowAuctionScreen extends ConsumerWidget {
       myBudget: myBudget,
       draftOrder: draftOrder,
       settings: settings ?? AuctionSettings.defaults,
-      onSubmit: (maxBid) => onSetMaxBid(lot.id, maxBid),
+      onSubmit: (maxBid) async => await onSetMaxBid(lot.id, maxBid),
       serverClockOffsetMs: serverClockOffsetMs,
     );
   }

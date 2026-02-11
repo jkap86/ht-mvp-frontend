@@ -5,6 +5,7 @@ import '../../domain/auction_lot.dart';
 import '../../domain/derby_state.dart';
 import '../../domain/draft_pick.dart';
 import '../../domain/draft_pick_asset.dart';
+import '../../domain/lot_result.dart';
 
 /// Notification when user is outbid on a lot
 class OutbidNotification {
@@ -32,8 +33,8 @@ abstract class DraftSocketCallbacks {
   // Auction callbacks
   void onLotCreatedReceived(AuctionLot lot, {int? serverTime});
   void onLotUpdatedReceived(AuctionLot lot, {int? serverTime});
-  void onLotWonReceived(int lotId);
-  void onLotPassedReceived(int lotId);
+  void onLotWonReceived(LotResult result);
+  void onLotPassedReceived(LotResult result);
   void onOutbidReceived(OutbidNotification notification);
   void onNominatorChangedReceived(int? rosterId, int? nominationNumber, DateTime? nominationDeadline);
   void onAuctionErrorReceived(String message);
@@ -154,14 +155,25 @@ class DraftSocketHandler {
     _addDisposer(_socketService.onAuctionLotWon((data) {
       final lotId = data['lot_id'] as int? ?? data['lotId'] as int?;
       if (lotId != null) {
-        _callbacks.onLotWonReceived(lotId);
+        final result = LotResult(
+          lotId: lotId,
+          playerId: (data['playerId'] as int? ?? data['player_id'] as int?) ?? 0,
+          winnerRosterId: data['winnerRosterId'] as int? ?? data['winner_roster_id'] as int?,
+          price: data['price'] as int? ?? data['winning_bid'] as int?,
+        );
+        _callbacks.onLotWonReceived(result);
       }
     }));
 
     _addDisposer(_socketService.onAuctionLotPassed((data) {
       final lotId = data['lot_id'] as int? ?? data['lotId'] as int?;
       if (lotId != null) {
-        _callbacks.onLotPassedReceived(lotId);
+        final result = LotResult(
+          lotId: lotId,
+          playerId: (data['playerId'] as int? ?? data['player_id'] as int?) ?? 0,
+          isPassed: true,
+        );
+        _callbacks.onLotPassedReceived(result);
       }
     }));
 

@@ -10,6 +10,7 @@ import '../../../core/widgets/states/states.dart';
 import '../../players/domain/player.dart';
 import '../domain/auction_settings.dart';
 import '../domain/draft_phase.dart';
+import '../domain/draft_status.dart';
 import 'providers/draft_room_provider.dart';
 import 'providers/draft_queue_provider.dart';
 import 'screens/derby_screen.dart';
@@ -115,15 +116,16 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     }
   }
 
-  Future<void> _handleSetMaxBid(int lotId, int maxBid) async {
-    if (_isMaxBidSubmitting) return; // Prevent double-tap
+  Future<String?> _handleSetMaxBid(int lotId, int maxBid) async {
+    if (_isMaxBidSubmitting) return 'Bid already in progress';
     setState(() => _isMaxBidSubmitting = true);
     try {
       final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
       final error = await notifier.setMaxBid(lotId, maxBid);
       if (error != null && context.mounted) {
-        error.showAsError(ref);
+        // Don't show error here - caller (bid dialog) will handle it
       }
+      return error;
     } finally {
       _isMaxBidSubmitting = false; // Always reset flag
       if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
@@ -272,6 +274,9 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     final draft = ref.watch(
       draftRoomProvider(_providerKey).select((s) => s.draft),
     );
+    final isDraftPaused = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.draft?.status == DraftStatus.paused),
+    );
 
     // Listen for outbid notifications
     ref.listen<OutbidNotification?>(
@@ -306,7 +311,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
                       myBudget: currentState.myBudget,
                       draftOrder: currentState.draftOrder,
                       settings: currentState.auctionSettings ?? AuctionSettings.defaults,
-                      onSubmit: (maxBid) => _handleSetMaxBid(lot.id, maxBid),
+                      onSubmit: (maxBid) async => await _handleSetMaxBid(lot.id, maxBid),
                       serverClockOffsetMs: currentState.serverClockOffsetMs,
                     );
                   }
@@ -346,6 +351,47 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
                   await notifier.updateScheduledStart(scheduledStart);
                 },
               ),
+            ),
+          // Pause/Resume button for commissioner during active/paused fast auctions
+          if (isCommissioner && isFastAuction && (isDraftActive || isDraftPaused == true))
+            IconButton(
+              icon: Icon(isDraftPaused == true ? Icons.play_arrow : Icons.pause),
+              tooltip: isDraftPaused == true ? 'Resume Draft' : 'Pause Draft',
+              onPressed: () async {
+                if (isDraftPaused == true) {
+                  final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+                  final error = await notifier.resumeDraft();
+                  if (error != null && context.mounted) {
+                    error.showAsError(ref);
+                  }
+                } else {
+                  // Show confirmation dialog before pausing
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Pause Draft?'),
+                      content: const Text('This will freeze all timers and prevent bidding until resumed.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Pause'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+                    final error = await notifier.pauseDraft();
+                    if (error != null && context.mounted) {
+                      error.showAsError(ref);
+                    }
+                  }
+                }
+              },
             ),
           // Budget chip for auction drafts
           if (isAuction && myBudget != null)
@@ -417,7 +463,7 @@ class _DraftRoomBody extends ConsumerStatefulWidget {
   final Future<void> Function(int) onAddToQueue;
   final Future<void> Function(int) onAddPickAssetToQueue;
   final Future<void> Function(int) onNominate;
-  final Future<void> Function(int, int) onSetMaxBid;
+  final Future<String?> Function(int, int) onSetMaxBid;
   final Future<void> Function() onStartDraft;
   final bool isStartingDraft;
   final Future<void> Function() onConfirmOrder;
@@ -661,7 +707,7 @@ class _DraftBottomDrawerWithController extends StatefulWidget {
   final Future<void> Function(int) onAddToQueue;
   final Future<void> Function(int) onAddPickAssetToQueue;
   final Future<void> Function(int) onNominate;
-  final Future<void> Function(int, int) onSetMaxBid;
+  final Future<String?> Function(int, int) onSetMaxBid;
   final Future<void> Function(int) onMakePickAssetSelection;
   final bool isPickSubmitting;
   final bool isQueueSubmitting;

@@ -4,6 +4,7 @@ import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/hype_train_colors.dart';
 import '../../../players/domain/player.dart';
+import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
 import '../mixins/countdown_mixin.dart';
 import 'shared/bid_amount_display.dart';
@@ -15,7 +16,7 @@ class FastAuctionLotCard extends StatefulWidget {
   final AuctionLot lot;
   final Player? player;
   final String? leadingBidderName;
-  final dynamic myBudget;
+  final AuctionBudget? myBudget;
   final VoidCallback onBidTap;
   /// Server clock offset in milliseconds for accurate countdown
   final int? serverClockOffsetMs;
@@ -36,6 +37,10 @@ class FastAuctionLotCard extends StatefulWidget {
 
 class _FastAuctionLotCardState extends State<FastAuctionLotCard>
     with SingleTickerProviderStateMixin, CountdownMixin {
+  bool get _isWinning =>
+      widget.myBudget?.rosterId != null &&
+      widget.lot.currentBidderRosterId == widget.myBudget!.rosterId;
+
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -97,6 +102,12 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
       padding: const EdgeInsets.all(12),
       child: Card(
         elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: _isWinning
+              ? const BorderSide(color: AppTheme.draftSuccess, width: 2)
+              : BorderSide.none,
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -221,6 +232,7 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
         LargeBidAmountDisplay(
           amount: widget.lot.currentBid,
           leadingBidderName: widget.leadingBidderName,
+          isWinning: _isWinning,
         ),
       ],
     );

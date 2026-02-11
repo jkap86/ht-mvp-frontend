@@ -21,7 +21,7 @@ class AuctionDrawerContent extends ConsumerWidget {
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String?> onPositionChanged;
   final Future<void> Function(int playerId)? onNominate;
-  final Future<void> Function(int lotId, int maxBid)? onSetMaxBid;
+  final Future<String?> Function(int lotId, int maxBid)? onSetMaxBid;
 
   const AuctionDrawerContent({
     super.key,
@@ -70,7 +70,7 @@ class AuctionDrawerContent extends ConsumerWidget {
                 myBudget: myBudget,
                 draftOrder: state.draftOrder,
                 settings: auctionSettings ?? AuctionSettings.defaults,
-                onSubmit: (maxBid) => onSetMaxBid!(lot.id, maxBid),
+                onSubmit: (maxBid) async => await onSetMaxBid!(lot.id, maxBid),
                 serverClockOffsetMs: state.serverClockOffsetMs,
               );
             },

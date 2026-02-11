@@ -10,6 +10,8 @@ class FastAuctionHeader extends StatelessWidget {
   final bool isMyNomination;
   final int nominationNumber;
   final int? myBudgetAvailable;
+  final int completedCount;
+  final VoidCallback? onHistoryTap;
 
   const FastAuctionHeader({
     super.key,
@@ -17,6 +19,8 @@ class FastAuctionHeader extends StatelessWidget {
     required this.isMyNomination,
     required this.nominationNumber,
     this.myBudgetAvailable,
+    this.completedCount = 0,
+    this.onHistoryTap,
   });
 
   @override
@@ -67,6 +71,14 @@ class FastAuctionHeader extends StatelessWidget {
               ],
             ),
           ),
+          if (completedCount > 0 && onHistoryTap != null)
+            IconButton(
+              icon: const Icon(Icons.history, size: 20),
+              tooltip: 'Auction History',
+              onPressed: onHistoryTap,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              padding: EdgeInsets.zero,
+            ),
           if (myBudgetAvailable != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

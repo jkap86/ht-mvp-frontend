@@ -47,11 +47,13 @@ class BidAmountDisplay extends StatelessWidget {
 class LargeBidAmountDisplay extends StatelessWidget {
   final int amount;
   final String? leadingBidderName;
+  final bool isWinning;
 
   const LargeBidAmountDisplay({
     super.key,
     required this.amount,
     this.leadingBidderName,
+    this.isWinning = false,
   });
 
   @override
@@ -67,16 +69,27 @@ class LargeBidAmountDisplay extends StatelessWidget {
             fontSize: 28,
             fontWeight: FontWeight.bold,
             fontFamily: 'monospace',
-            color: AppTheme.draftActionPrimary,
+            color: isWinning ? AppTheme.draftSuccess : AppTheme.draftActionPrimary,
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          leadingBidderName ?? 'No bids',
-          style: TextStyle(
-            fontSize: 12,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isWinning)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(Icons.check_circle, size: 14, color: AppTheme.draftSuccess),
+              ),
+            Text(
+              isWinning ? "You're winning" : (leadingBidderName ?? 'No bids'),
+              style: TextStyle(
+                fontSize: 12,
+                color: isWinning ? AppTheme.draftSuccess : theme.colorScheme.onSurfaceVariant,
+                fontWeight: isWinning ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ],
     );

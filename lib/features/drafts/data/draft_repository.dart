@@ -300,6 +300,21 @@ class DraftRepository {
     return pickData;
   }
 
+  // Pause/Resume methods (commissioner only)
+  Future<void> pauseDraft(int leagueId, int draftId) async {
+    await _apiClient.post(
+      '/leagues/$leagueId/drafts/$draftId/actions',
+      body: {'action': 'pause'},
+    );
+  }
+
+  Future<void> resumeDraft(int leagueId, int draftId) async {
+    await _apiClient.post(
+      '/leagues/$leagueId/drafts/$draftId/actions',
+      body: {'action': 'resume'},
+    );
+  }
+
   // Derby methods (draft order selection phase)
 
   /// Get current derby state
