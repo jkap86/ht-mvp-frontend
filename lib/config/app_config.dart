@@ -27,6 +27,17 @@ class AppConfig {
     );
   }
 
+  // Tenor GIF API Configuration
+  // Build with: --dart-define=TENOR_API_KEY=your-tenor-api-key
+  static const String _tenorApiKeyEnv = String.fromEnvironment('TENOR_API_KEY');
+  static String get tenorApiKey {
+    if (_tenorApiKeyEnv.isNotEmpty) return _tenorApiKeyEnv;
+    if (kDebugMode) return ''; // GIFs disabled without key in debug
+    return '';
+  }
+
+  static bool get isGifEnabled => tenorApiKey.isNotEmpty;
+
   // Auth token keys for storage
   static const String accessTokenKey = 'access_token';
   static const String refreshTokenKey = 'refresh_token';

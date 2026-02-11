@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/time_formatter.dart';
 import '../../../../core/widgets/states/states.dart';
@@ -8,6 +9,10 @@ import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/chat_message.dart';
 import '../providers/chat_provider.dart';
 import 'chat_message_input.dart';
+import 'gif_message_bubble.dart';
+import 'gif_picker.dart';
+import 'reaction_bar.dart';
+import 'reaction_pills.dart';
 import 'system_message_bubble.dart';
 
 /// League chat view for the floating chat widget.
@@ -27,6 +32,10 @@ class LeagueChatView extends ConsumerStatefulWidget {
 class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+  bool _gifPickerOpen = false;
+
+  /// Track the newest message ID so we only animate truly new arrivals.
+  int? _lastSeenMessageId;
 
   @override
   void initState() {
@@ -63,6 +72,15 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
     }
   }
 
+  Future<void> _sendGif(String gifUrl) async {
+    setState(() => _gifPickerOpen = false);
+    final notifier = ref.read(chatProvider(widget.leagueId).notifier);
+    final success = await notifier.sendMessage('gif::$gifUrl');
+    if (!success && mounted) {
+      'Error sending GIF'.showAsError(ref);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(chatProvider(widget.leagueId), (prev, next) {
@@ -76,10 +94,21 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
     return Column(
       children: [
         Expanded(child: _buildMessageList(state)),
+        if (_gifPickerOpen)
+          GifPicker(
+            compact: true,
+            onGifSelected: _sendGif,
+          ),
         ChatMessageInput(
           controller: _messageController,
           isSending: state.isSending,
           onSend: _sendMessage,
+          gifPickerOpen: _gifPickerOpen,
+          onInputModeChanged: (mode) {
+            setState(() {
+              _gifPickerOpen = mode == InputMode.gif;
+            });
+          },
         ),
       ],
     );
@@ -105,6 +134,13 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
       );
     }
 
+    // Determine if the newest message is brand-new (for slide animation)
+    final newestId = state.messages.isNotEmpty ? state.messages.first.id : null;
+    final isNewArrival = _lastSeenMessageId != null &&
+        newestId != null &&
+        newestId != _lastSeenMessageId;
+    _lastSeenMessageId = newestId;
+
     // Add 1 to itemCount for loading indicator when loading more
     final itemCount = state.messages.length + (state.isLoadingMore ? 1 : 0);
 
@@ -127,8 +163,145 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
         if (message.isSystemMessage) {
           return SystemMessageBubble(message: message);
         }
-        return _LeagueChatBubble(message: message);
+
+        // Compute grouping flags (list is reversed: index 0 = newest)
+        final prevMessage = index + 1 < state.messages.length
+            ? state.messages[index + 1]
+            : null;
+        final nextMessage = index - 1 >= 0
+            ? state.messages[index - 1]
+            : null;
+
+        final isFirstInGroup = !_isSameGroup(prevMessage, message);
+        final isLastInGroup = !_isSameGroup(message, nextMessage);
+
+        final bubble = _LeagueChatBubbleWithReactions(
+          message: message,
+          isFirstInGroup: isFirstInGroup,
+          isLastInGroup: isLastInGroup,
+          onToggleReaction: (emoji) {
+            ref.read(chatProvider(widget.leagueId).notifier)
+                .toggleReaction(message.id, emoji);
+          },
+        );
+
+        // Animate only the very newest message
+        if (index == 0 && isNewArrival) {
+          return _SlideInMessage(child: bubble);
+        }
+
+        return bubble;
       },
+    );
+  }
+
+  /// Two messages belong to the same group if same non-null userId and <2min apart.
+  bool _isSameGroup(ChatMessage? earlier, ChatMessage? later) {
+    if (earlier == null || later == null) return false;
+    if (earlier.isSystemMessage || later.isSystemMessage) return false;
+    if (earlier.userId == null || later.userId == null) return false;
+    if (earlier.userId != later.userId) return false;
+    return later.createdAt.difference(earlier.createdAt).inSeconds.abs() < 120;
+  }
+}
+
+/// Slide-up + fade animation for newly arrived messages.
+class _SlideInMessage extends StatefulWidget {
+  final Widget child;
+  const _SlideInMessage({required this.child});
+
+  @override
+  State<_SlideInMessage> createState() => _SlideInMessageState();
+}
+
+class _SlideInMessageState extends State<_SlideInMessage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<Offset> _slideAnimation;
+  late final Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _slideAnimation,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Wraps a league chat bubble with long-press reaction support and reaction pills.
+class _LeagueChatBubbleWithReactions extends StatelessWidget {
+  final ChatMessage message;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
+  final void Function(String emoji) onToggleReaction;
+
+  const _LeagueChatBubbleWithReactions({
+    required this.message,
+    this.isFirstInGroup = true,
+    this.isLastInGroup = true,
+    required this.onToggleReaction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onLongPressStart: (details) async {
+        final emoji = await showReactionBar(
+          context,
+          position: details.globalPosition,
+        );
+        if (emoji != null) {
+          onToggleReaction(emoji);
+        }
+      },
+      onDoubleTap: () => onToggleReaction('🔥'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _LeagueChatBubble(
+            message: message,
+            isFirstInGroup: isFirstInGroup,
+            isLastInGroup: isLastInGroup,
+          ),
+          if (message.reactions.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 36),
+              child: ReactionPills(
+                reactions: message.reactions,
+                currentUserId: message.userId,
+                onToggleReaction: onToggleReaction,
+                compact: true,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -136,57 +309,98 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
 /// Message bubble for league chat (group chat style with avatar + name).
 class _LeagueChatBubble extends StatelessWidget {
   final ChatMessage message;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
 
-  const _LeagueChatBubble({required this.message});
+  const _LeagueChatBubble({
+    required this.message,
+    this.isFirstInGroup = true,
+    this.isLastInGroup = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final username = message.username ?? 'Unknown';
     final timestamp = formatMessageTimestamp(message.createdAt);
 
     return Semantics(
       label: '$username sent: ${message.message}, at $timestamp',
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: EdgeInsets.only(
+          top: isFirstInGroup ? 4 : 1,
+          bottom: isLastInGroup ? 4 : 0,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserAvatar(
-              name: username,
-              size: 28,
-              backgroundColor: theme.colorScheme.primary,
-              textColor: theme.colorScheme.onPrimary,
-            ),
+            // Show avatar only for first message in group, otherwise indent
+            if (isFirstInGroup)
+              UserAvatar(
+                name: username,
+                size: 28,
+                backgroundColor: colorScheme.primary,
+                textColor: colorScheme.onPrimary,
+              )
+            else
+              const SizedBox(width: 28),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        username,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                  // Show username + timestamp only for first in group
+                  if (isFirstInGroup) ...[
+                    Row(
+                      children: [
+                        Text(
+                          username,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          timestamp,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                  ],
+                  // Message bubble with background (or GIF)
+                  if (GifMessageBubble.isGifMessage(message.message))
+                    GifMessageBubble(
+                      messageText: message.message,
+                      compact: true,
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(
+                            isFirstInGroup ? AppSpacing.radiusXl : AppSpacing.radiusSm,
+                          ),
+                          topRight: const Radius.circular(AppSpacing.radiusXl),
+                          bottomLeft: Radius.circular(
+                            isLastInGroup ? AppSpacing.radiusSm : AppSpacing.radiusSm,
+                          ),
+                          bottomRight: const Radius.circular(AppSpacing.radiusXl),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        timestamp,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                      child: SelectableText(
+                        message.message,
+                        style: theme.textTheme.bodyMedium,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  SelectableText(
-                    message.message,
-                    style: const TextStyle(fontSize: 14),
-                  ),
+                    ),
                 ],
               ),
             ),

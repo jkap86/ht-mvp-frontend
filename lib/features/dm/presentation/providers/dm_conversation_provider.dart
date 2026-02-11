@@ -4,9 +4,11 @@ import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/api/api_exceptions.dart';
+import '../../../../core/constants/socket_events.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 
 import '../../../../core/socket/socket_service.dart';
+import '../../../chat/domain/chat_message.dart' show ReactionGroup;
 import '../../data/dm_repository.dart';
 import '../../domain/direct_message.dart';
 import 'dm_inbox_provider.dart';
@@ -60,6 +62,8 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
 
   VoidCallback? _dmMessageDisposer;
   VoidCallback? _reconnectDisposer;
+  VoidCallback? _reactionAddedDisposer;
+  VoidCallback? _reactionRemovedDisposer;
   Timer? _markAsReadDebounce;
 
   DmConversationNotifier(
@@ -82,6 +86,22 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
       if (needsFullRefresh) {
         loadMessages();
       }
+    });
+
+    _reactionAddedDisposer = _socketService.on(SocketEvents.dmReactionAdded, (data) {
+      if (!mounted) return;
+      if (data is! Map) return;
+      final msgConvId = data['conversationId'] as int?;
+      if (msgConvId != conversationId) return;
+      _handleReactionSocket(data, added: true);
+    });
+
+    _reactionRemovedDisposer = _socketService.on(SocketEvents.dmReactionRemoved, (data) {
+      if (!mounted) return;
+      if (data is! Map) return;
+      final msgConvId = data['conversationId'] as int?;
+      if (msgConvId != conversationId) return;
+      _handleReactionSocket(data, added: false);
     });
 
     _dmMessageDisposer = _socketService.onDmMessage((data) {
@@ -219,10 +239,81 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
     });
   }
 
+  /// Handle a reaction socket event for DM messages.
+  void _handleReactionSocket(dynamic data, {required bool added}) {
+    if (data is! Map) return;
+    final messageId = data['messageId'] as int?;
+    final userId = data['userId'] as String?;
+    final emoji = data['emoji'] as String?;
+    if (messageId == null || userId == null || emoji == null) return;
+
+    final idx = state.messages.indexWhere((m) => m.id == messageId);
+    if (idx < 0) return;
+
+    final msg = state.messages[idx];
+    final reactions = List<ReactionGroup>.from(msg.reactions);
+
+    if (added) {
+      final existingIdx = reactions.indexWhere((r) => r.emoji == emoji);
+      if (existingIdx >= 0) {
+        final existing = reactions[existingIdx];
+        if (!existing.users.contains(userId)) {
+          reactions[existingIdx] = existing.copyWith(
+            count: existing.count + 1,
+            users: [...existing.users, userId],
+          );
+        }
+      } else {
+        reactions.add(ReactionGroup(emoji: emoji, count: 1, users: [userId]));
+      }
+    } else {
+      final existingIdx = reactions.indexWhere((r) => r.emoji == emoji);
+      if (existingIdx >= 0) {
+        final existing = reactions[existingIdx];
+        final newUsers = existing.users.where((u) => u != userId).toList();
+        if (newUsers.isEmpty) {
+          reactions.removeAt(existingIdx);
+        } else {
+          reactions[existingIdx] = existing.copyWith(
+            count: newUsers.length,
+            users: newUsers,
+          );
+        }
+      }
+    }
+
+    final updatedMessages = [...state.messages];
+    updatedMessages[idx] = msg.copyWith(reactions: reactions);
+    state = state.copyWith(messages: updatedMessages);
+  }
+
+  /// Toggle a reaction on a DM message (add if not present, remove if present).
+  Future<void> toggleReaction(int messageId, String emoji, String currentUserId) async {
+    final idx = state.messages.indexWhere((m) => m.id == messageId);
+    if (idx < 0) return;
+
+    final msg = state.messages[idx];
+    final existingReaction = msg.reactions.where((r) => r.emoji == emoji).firstOrNull;
+    final hasReacted = existingReaction != null &&
+        existingReaction.users.contains(currentUserId);
+
+    try {
+      if (hasReacted) {
+        await _dmRepo.removeReaction(conversationId, messageId, emoji);
+      } else {
+        await _dmRepo.addReaction(conversationId, messageId, emoji);
+      }
+    } catch (_) {
+      // Silent fail - socket event will update state
+    }
+  }
+
   @override
   void dispose() {
     _dmMessageDisposer?.call();
     _reconnectDisposer?.call();
+    _reactionAddedDisposer?.call();
+    _reactionRemovedDisposer?.call();
     _markAsReadDebounce?.cancel();
     super.dispose();
   }

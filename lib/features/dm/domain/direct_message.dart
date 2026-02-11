@@ -1,9 +1,12 @@
+import '../../../features/chat/domain/chat_message.dart' show ReactionGroup;
+
 class DirectMessage {
   final int id;
   final int conversationId;
   final String senderId;
   final String senderUsername;
   final String message;
+  final List<ReactionGroup> reactions;
   final DateTime createdAt;
 
   DirectMessage({
@@ -12,8 +15,23 @@ class DirectMessage {
     required this.senderId,
     required this.senderUsername,
     required this.message,
+    this.reactions = const [],
     required this.createdAt,
   });
+
+  DirectMessage copyWith({
+    List<ReactionGroup>? reactions,
+  }) {
+    return DirectMessage(
+      id: id,
+      conversationId: conversationId,
+      senderId: senderId,
+      senderUsername: senderUsername,
+      message: message,
+      reactions: reactions ?? this.reactions,
+      createdAt: createdAt,
+    );
+  }
 
   factory DirectMessage.fromJson(Map<String, dynamic> json) {
     return DirectMessage(
@@ -22,6 +40,10 @@ class DirectMessage {
       senderId: json['sender_id'] as String? ?? json['senderId'] as String? ?? '',
       senderUsername: json['sender_username'] as String? ?? json['senderUsername'] as String? ?? 'Unknown',
       message: json['message'] as String? ?? '',
+      reactions: (json['reactions'] as List<dynamic>?)
+              ?.map((r) => ReactionGroup.fromJson(r as Map<String, dynamic>))
+              .toList() ??
+          [],
       createdAt: _parseDateTime(json['created_at'] ?? json['createdAt']),
     );
   }

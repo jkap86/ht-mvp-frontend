@@ -37,4 +37,18 @@ class ChatRepository {
       idempotencyKey: idempotencyKey,
     );
   }
+
+  Future<void> addReaction(int leagueId, int messageId, String emoji) async {
+    await _apiClient.post(
+      '/leagues/$leagueId/chat/$messageId/reactions',
+      body: {'emoji': emoji},
+    );
+  }
+
+  Future<void> removeReaction(int leagueId, int messageId, String emoji) async {
+    await _apiClient.delete(
+      '/leagues/$leagueId/chat/$messageId/reactions',
+      body: {'emoji': emoji},
+    );
+  }
 }

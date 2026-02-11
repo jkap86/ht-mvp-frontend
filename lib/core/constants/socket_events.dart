@@ -48,10 +48,14 @@ class SocketEvents {
 
   // Chat events
   static const chatMessage = 'chat:message';
+  static const chatReactionAdded = 'chat:reaction_added';
+  static const chatReactionRemoved = 'chat:reaction_removed';
 
   // Direct message events
   static const dmMessage = 'dm:message';
   static const dmRead = 'dm:read';
+  static const dmReactionAdded = 'dm:reaction_added';
+  static const dmReactionRemoved = 'dm:reaction_removed';
 
   // Trade events
   static const tradeProposed = 'trade:proposed';

@@ -5,9 +5,13 @@ import '../../../../core/utils/error_display.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../../auth/presentation/auth_provider.dart';
+import '../../../dm/domain/direct_message.dart';
 import '../../../dm/presentation/providers/dm_conversation_provider.dart';
 import 'chat_message_input.dart';
 import 'dm_message_bubble.dart';
+import 'gif_picker.dart';
+import 'reaction_bar.dart';
+import 'reaction_pills.dart';
 
 /// DM conversation view for the floating chat widget.
 /// Shows messages and input field with a back button header.
@@ -30,6 +34,10 @@ class DmConversationView extends ConsumerStatefulWidget {
 class _DmConversationViewState extends ConsumerState<DmConversationView> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+  bool _gifPickerOpen = false;
+
+  /// Track the newest message ID so we only animate truly new arrivals.
+  int? _lastSeenMessageId;
 
   @override
   void initState() {
@@ -70,6 +78,22 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
     }
   }
 
+  Future<void> _sendGif(String gifUrl) async {
+    setState(() => _gifPickerOpen = false);
+    final notifier = ref.read(dmConversationProvider(widget.conversationId).notifier);
+    final success = await notifier.sendMessage('gif::$gifUrl');
+    if (!success && mounted) {
+      'Error sending GIF'.showAsError(ref);
+    }
+  }
+
+  /// Two DM messages belong to the same group if same sender and <2min apart.
+  bool _isSameGroup(DirectMessage? earlier, DirectMessage? later) {
+    if (earlier == null || later == null) return false;
+    if (earlier.senderId != later.senderId) return false;
+    return later.createdAt.difference(earlier.createdAt).inSeconds.abs() < 120;
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(dmConversationProvider(widget.conversationId));
@@ -84,11 +108,23 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
         Expanded(
           child: _buildMessageList(state, currentUserId),
         ),
+        // GIF picker (inline, between messages and input)
+        if (_gifPickerOpen)
+          GifPicker(
+            compact: true,
+            onGifSelected: _sendGif,
+          ),
         // Input field
         ChatMessageInput(
           controller: _messageController,
           isSending: state.isSending,
           onSend: _sendMessage,
+          gifPickerOpen: _gifPickerOpen,
+          onInputModeChanged: (mode) {
+            setState(() {
+              _gifPickerOpen = mode == InputMode.gif;
+            });
+          },
         ),
       ],
     );
@@ -150,6 +186,13 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
       );
     }
 
+    // Determine if the newest message is brand-new (for slide animation)
+    final newestId = state.messages.isNotEmpty ? state.messages.first.id : null;
+    final isNewArrival = _lastSeenMessageId != null &&
+        newestId != null &&
+        newestId != _lastSeenMessageId;
+    _lastSeenMessageId = newestId;
+
     return ListView.builder(
       controller: _scrollController,
       reverse: true,
@@ -167,14 +210,125 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
         }
         final message = state.messages[index];
         final isMe = message.senderId == currentUserId;
-        return DmMessageBubble(
+
+        // Compute grouping flags (list is reversed: index 0 = newest)
+        final prevMessage = index + 1 < state.messages.length
+            ? state.messages[index + 1]
+            : null;
+        final nextMessage = index - 1 >= 0
+            ? state.messages[index - 1]
+            : null;
+
+        final isFirstInGroup = !_isSameGroup(prevMessage, message);
+        final isLastInGroup = !_isSameGroup(message, nextMessage);
+
+        final dmBubble = DmMessageBubble(
           senderUsername: message.senderUsername,
           message: message.message,
           createdAt: message.createdAt,
           isMe: isMe,
           compact: true,
+          isFirstInGroup: isFirstInGroup,
+          isLastInGroup: isLastInGroup,
         );
+
+        final toggleReaction = (String emoji) {
+          if (currentUserId != null) {
+            ref.read(dmConversationProvider(widget.conversationId).notifier)
+                .toggleReaction(message.id, emoji, currentUserId);
+          }
+        };
+
+        final bubble = GestureDetector(
+          onLongPressStart: (details) async {
+            final emoji = await showReactionBar(
+              context,
+              position: details.globalPosition,
+            );
+            if (emoji != null) {
+              toggleReaction(emoji);
+            }
+          },
+          onDoubleTap: () => toggleReaction('🔥'),
+          child: Column(
+            crossAxisAlignment:
+                isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              dmBubble,
+              if (message.reactions.isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: isMe ? 0 : 36,
+                    right: isMe ? 36 : 0,
+                  ),
+                  child: ReactionPills(
+                    reactions: message.reactions,
+                    currentUserId: currentUserId,
+                    onToggleReaction: toggleReaction,
+                    compact: true,
+                  ),
+                ),
+            ],
+          ),
+        );
+
+        // Animate only the very newest message
+        if (index == 0 && isNewArrival) {
+          return _SlideInMessage(child: bubble);
+        }
+
+        return bubble;
       },
+    );
+  }
+}
+
+/// Slide-up + fade animation for newly arrived messages.
+class _SlideInMessage extends StatefulWidget {
+  final Widget child;
+  const _SlideInMessage({required this.child});
+
+  @override
+  State<_SlideInMessage> createState() => _SlideInMessageState();
+}
+
+class _SlideInMessageState extends State<_SlideInMessage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<Offset> _slideAnimation;
+  late final Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _slideAnimation,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: widget.child,
+      ),
     );
   }
 }

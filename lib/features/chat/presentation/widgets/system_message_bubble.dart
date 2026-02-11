@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/time_formatter.dart';
 import '../../domain/chat_message.dart';
 
 /// A widget that displays system messages in league chat.
-/// System messages have a distinct appearance with centered text,
-/// divider lines, and icons based on message type.
+/// System messages have a distinct appearance with a subtle card container
+/// and icons based on message type.
 class SystemMessageBubble extends StatelessWidget {
   final ChatMessage message;
 
@@ -18,22 +19,19 @@ class SystemMessageBubble extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(child: _buildDivider(colorScheme)),
-          const SizedBox(width: 12),
-          _buildMessageContent(context, colorScheme),
-          const SizedBox(width: 12),
-          Expanded(child: _buildDivider(colorScheme)),
-        ],
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLowest.withValues(alpha: 0.5),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+            ),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          ),
+          child: _buildMessageContent(context, colorScheme),
+        ),
       ),
-    );
-  }
-
-  Widget _buildDivider(ColorScheme colorScheme) {
-    return Container(
-      height: 1,
-      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
     );
   }
 

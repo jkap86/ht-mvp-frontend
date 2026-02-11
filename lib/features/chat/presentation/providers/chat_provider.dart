@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/socket_events.dart';
 import '../../../../core/services/sync_service.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/api/api_exceptions.dart';
@@ -62,6 +63,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
   VoidCallback? _chatMessageDisposer;
   VoidCallback? _reconnectDisposer;
   VoidCallback? _syncDisposer;
+  VoidCallback? _reactionAddedDisposer;
+  VoidCallback? _reactionRemovedDisposer;
 
   ChatNotifier(
     this._chatRepo,
@@ -80,6 +83,16 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   void _setupSocketListeners() {
     _socketService.joinLeague(leagueId);
+
+    _reactionAddedDisposer = _socketService.on(SocketEvents.chatReactionAdded, (data) {
+      if (!mounted) return;
+      _handleReactionSocket(data, added: true);
+    });
+
+    _reactionRemovedDisposer = _socketService.on(SocketEvents.chatReactionRemoved, (data) {
+      if (!mounted) return;
+      _handleReactionSocket(data, added: false);
+    });
 
     _chatMessageDisposer = _socketService.onChatMessage((data) {
       if (!mounted) return;
@@ -132,6 +145,77 @@ class ChatNotifier extends StateNotifier<ChatState> {
     } else {
       // Add new message normally
       state = state.copyWith(messages: [message, ...state.messages]);
+    }
+  }
+
+  /// Handle a reaction added/removed socket event.
+  void _handleReactionSocket(dynamic data, {required bool added}) {
+    if (data is! Map) return;
+    final messageId = data['messageId'] as int?;
+    final userId = data['userId'] as String?;
+    final emoji = data['emoji'] as String?;
+    if (messageId == null || userId == null || emoji == null) return;
+
+    final idx = state.messages.indexWhere((m) => m.id == messageId);
+    if (idx < 0) return;
+
+    final msg = state.messages[idx];
+    final reactions = List<ReactionGroup>.from(msg.reactions);
+
+    if (added) {
+      final existingIdx = reactions.indexWhere((r) => r.emoji == emoji);
+      if (existingIdx >= 0) {
+        final existing = reactions[existingIdx];
+        if (!existing.users.contains(userId)) {
+          reactions[existingIdx] = existing.copyWith(
+            count: existing.count + 1,
+            users: [...existing.users, userId],
+          );
+        }
+      } else {
+        reactions.add(ReactionGroup(emoji: emoji, count: 1, users: [userId]));
+      }
+    } else {
+      final existingIdx = reactions.indexWhere((r) => r.emoji == emoji);
+      if (existingIdx >= 0) {
+        final existing = reactions[existingIdx];
+        final newUsers = existing.users.where((u) => u != userId).toList();
+        if (newUsers.isEmpty) {
+          reactions.removeAt(existingIdx);
+        } else {
+          reactions[existingIdx] = existing.copyWith(
+            count: newUsers.length,
+            users: newUsers,
+          );
+        }
+      }
+    }
+
+    final updatedMessages = [...state.messages];
+    updatedMessages[idx] = msg.copyWith(reactions: reactions);
+    state = state.copyWith(messages: updatedMessages);
+  }
+
+  /// Toggle a reaction on a message (add if not present, remove if present).
+  Future<void> toggleReaction(int messageId, String emoji) async {
+    if (_currentUserId == null) return;
+
+    final idx = state.messages.indexWhere((m) => m.id == messageId);
+    if (idx < 0) return;
+
+    final msg = state.messages[idx];
+    final existingReaction = msg.reactions.where((r) => r.emoji == emoji).firstOrNull;
+    final hasReacted = existingReaction != null &&
+        existingReaction.users.contains(_currentUserId);
+
+    try {
+      if (hasReacted) {
+        await _chatRepo.removeReaction(leagueId, messageId, emoji);
+      } else {
+        await _chatRepo.addReaction(leagueId, messageId, emoji);
+      }
+    } catch (_) {
+      // Silent fail - socket event will update state
     }
   }
 
@@ -274,6 +358,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
     _chatMessageDisposer?.call();
     _reconnectDisposer?.call();
     _syncDisposer?.call();
+    _reactionAddedDisposer?.call();
+    _reactionRemovedDisposer?.call();
     super.dispose();
   }
 }

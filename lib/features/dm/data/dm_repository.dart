@@ -64,4 +64,18 @@ class DmRepository {
     final response = await _apiClient.get('/dm/unread-count');
     return (response as Map<String, dynamic>)['unread_count'] as int? ?? 0;
   }
+
+  Future<void> addReaction(int conversationId, int messageId, String emoji) async {
+    await _apiClient.post(
+      '/dm/$conversationId/messages/$messageId/reactions',
+      body: {'emoji': emoji},
+    );
+  }
+
+  Future<void> removeReaction(int conversationId, int messageId, String emoji) async {
+    await _apiClient.delete(
+      '/dm/$conversationId/messages/$messageId/reactions',
+      body: {'emoji': emoji},
+    );
+  }
 }

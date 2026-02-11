@@ -460,6 +460,14 @@ class SocketService {
     return on(SocketEvents.chatMessage, callback);
   }
 
+  VoidCallback onChatReactionAdded(void Function(dynamic) callback) {
+    return on(SocketEvents.chatReactionAdded, callback);
+  }
+
+  VoidCallback onChatReactionRemoved(void Function(dynamic) callback) {
+    return on(SocketEvents.chatReactionRemoved, callback);
+  }
+
   /// Listen for direct messages
   VoidCallback onDmMessage(void Function(dynamic) callback) {
     return on(SocketEvents.dmMessage, callback);
@@ -468,6 +476,14 @@ class SocketService {
   /// Listen for DM read events (when other user marks messages as read)
   VoidCallback onDmRead(void Function(dynamic) callback) {
     return on(SocketEvents.dmRead, callback);
+  }
+
+  VoidCallback onDmReactionAdded(void Function(dynamic) callback) {
+    return on(SocketEvents.dmReactionAdded, callback);
+  }
+
+  VoidCallback onDmReactionRemoved(void Function(dynamic) callback) {
+    return on(SocketEvents.dmReactionRemoved, callback);
   }
 
   /// Listen for queue updates (player removed from queue when drafted)

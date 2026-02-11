@@ -154,6 +154,47 @@ class SystemMessageMetadata {
   }
 }
 
+/// Aggregated reaction data for a single emoji on a message.
+class ReactionGroup {
+  final String emoji;
+  final int count;
+  final List<String> users;
+  final bool hasReacted;
+
+  const ReactionGroup({
+    required this.emoji,
+    required this.count,
+    required this.users,
+    this.hasReacted = false,
+  });
+
+  factory ReactionGroup.fromJson(Map<String, dynamic> json) {
+    return ReactionGroup(
+      emoji: json['emoji'] as String? ?? '',
+      count: json['count'] as int? ?? 0,
+      users: (json['users'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      hasReacted: json['hasReacted'] as bool? ?? false,
+    );
+  }
+
+  ReactionGroup copyWith({
+    String? emoji,
+    int? count,
+    List<String>? users,
+    bool? hasReacted,
+  }) {
+    return ReactionGroup(
+      emoji: emoji ?? this.emoji,
+      count: count ?? this.count,
+      users: users ?? this.users,
+      hasReacted: hasReacted ?? this.hasReacted,
+    );
+  }
+}
+
 class ChatMessage {
   final int id;
   final int leagueId;
@@ -162,6 +203,7 @@ class ChatMessage {
   final String message;
   final MessageType messageType;
   final SystemMessageMetadata? metadata;
+  final List<ReactionGroup> reactions;
   final DateTime createdAt;
 
   ChatMessage({
@@ -172,6 +214,7 @@ class ChatMessage {
     required this.message,
     this.messageType = MessageType.chat,
     this.metadata,
+    this.reactions = const [],
     required this.createdAt,
   });
 
@@ -207,6 +250,26 @@ class ChatMessage {
       metadata: json['metadata'] != null
           ? SystemMessageMetadata.fromJson(json['metadata'] as Map<String, dynamic>?)
           : null,
+      reactions: (json['reactions'] as List<dynamic>?)
+              ?.map((r) => ReactionGroup.fromJson(r as Map<String, dynamic>))
+              .toList() ??
+          [],
+      createdAt: createdAt,
+    );
+  }
+
+  ChatMessage copyWith({
+    List<ReactionGroup>? reactions,
+  }) {
+    return ChatMessage(
+      id: id,
+      leagueId: leagueId,
+      userId: userId,
+      username: username,
+      message: message,
+      messageType: messageType,
+      metadata: metadata,
+      reactions: reactions ?? this.reactions,
       createdAt: createdAt,
     );
   }
