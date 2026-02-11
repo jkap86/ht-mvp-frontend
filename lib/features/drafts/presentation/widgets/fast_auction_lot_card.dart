@@ -6,6 +6,7 @@ import '../../../../core/theme/hype_train_colors.dart';
 import '../../../players/domain/player.dart';
 import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
+import '../../domain/auction_settings.dart';
 import '../mixins/countdown_mixin.dart';
 import 'shared/bid_amount_display.dart';
 import '../../../../core/widgets/position_badge.dart';
@@ -20,6 +21,8 @@ class FastAuctionLotCard extends StatefulWidget {
   final VoidCallback onBidTap;
   /// Server clock offset in milliseconds for accurate countdown
   final int? serverClockOffsetMs;
+  final AuctionSettings? auctionSettings;
+  final int? myRosterId;
 
   const FastAuctionLotCard({
     super.key,
@@ -29,6 +32,8 @@ class FastAuctionLotCard extends StatefulWidget {
     required this.myBudget,
     required this.onBidTap,
     this.serverClockOffsetMs,
+    this.auctionSettings,
+    this.myRosterId,
   });
 
   @override
@@ -38,8 +43,15 @@ class FastAuctionLotCard extends StatefulWidget {
 class _FastAuctionLotCardState extends State<FastAuctionLotCard>
     with SingleTickerProviderStateMixin, CountdownMixin {
   bool get _isWinning =>
-      widget.myBudget?.rosterId != null &&
-      widget.lot.currentBidderRosterId == widget.myBudget!.rosterId;
+      widget.myRosterId != null &&
+      widget.lot.currentBidderRosterId == widget.myRosterId;
+
+  int get _minBid {
+    final settings = widget.auctionSettings;
+    if (settings == null) return widget.lot.currentBid + 1;
+    if (_isWinning) return widget.lot.currentBid;
+    return widget.lot.currentBid + settings.minIncrement;
+  }
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -118,7 +130,11 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
 
               // Player info row
               _buildPlayerInfoRow(theme, playerName, position, team),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+
+              // Bid info: budget, min bid, leading indicator
+              _buildBidInfoRow(theme),
+              const SizedBox(height: 12),
 
               // Bid button
               _buildBidButton(theme, isExpired),
@@ -235,6 +251,107 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
           isWinning: _isWinning,
         ),
       ],
+    );
+  }
+
+  Widget _buildBidInfoRow(ThemeData theme) {
+    final budget = widget.myBudget;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Budget and min bid chips
+        Row(
+          children: [
+            if (budget != null)
+              Expanded(
+                child: _buildInfoChip(
+                  theme,
+                  icon: Icons.account_balance_wallet,
+                  label: 'Budget: \$${budget.available}',
+                ),
+              ),
+            if (budget != null) const SizedBox(width: 8),
+            Expanded(
+              child: _buildInfoChip(
+                theme,
+                icon: Icons.gavel,
+                label: 'Min Bid: \$$_minBid',
+              ),
+            ),
+          ],
+        ),
+        // "You are leading" banner
+        if (_isWinning)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.draftSuccess.withAlpha(30),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.draftSuccess.withAlpha(100)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.emoji_events, size: 16, color: AppTheme.draftSuccess),
+                  const SizedBox(width: 6),
+                  Text(
+                    'You are leading',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.draftSuccess,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        // Your max bid
+        if (widget.lot.myMaxBid != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              'Your Max: \$${widget.lot.myMaxBid}',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildInfoChip(ThemeData theme, {required IconData icon, required String label}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

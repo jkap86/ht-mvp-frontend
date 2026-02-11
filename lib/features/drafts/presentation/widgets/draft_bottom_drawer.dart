@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/semantic_colors.dart';
+import '../../../players/domain/player.dart';
 import '../providers/draft_room_provider.dart';
 import '../providers/draft_queue_provider.dart';
 import '../utils/player_filtering.dart';
@@ -107,6 +108,92 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
       settings: draftState.auctionSettings ?? AuctionSettings.defaults,
       onSubmit: (maxBid) async => await widget.onSetMaxBid!(lot.id, maxBid),
       serverClockOffsetMs: draftState.serverClockOffsetMs,
+    );
+  }
+
+  Widget _buildFastAuctionContent(
+    BuildContext context,
+    ScrollController scrollController,
+    DraftRoomState draftState,
+  ) {
+    final isMyNomination = draftState.isMyNomination;
+    final availablePlayers = filterAvailablePlayers(
+      draftState.players,
+      draftedIds: draftState.draftedPlayerIds,
+      selectedPosition: _selectedPosition,
+      searchQuery: _searchQuery,
+    );
+
+    return Column(
+      children: [
+        // FastAuctionPanel pinned at top
+        FastAuctionPanel(
+          state: draftState,
+          onBidTap: (lot) => _showBidDialog(context, lot),
+          onNominateTap: () {
+            _sheetController.animateTo(
+              _expandedSize,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          },
+          onDismissResult: () {
+            ref.read(draftRoomProvider(widget.providerKey).notifier).dismissLotResult();
+          },
+        ),
+        const Divider(height: 1),
+        // Scrollable player list for nomination / browsing
+        Expanded(
+          child: CustomScrollView(
+            controller: scrollController,
+            slivers: [
+              SliverToBoxAdapter(
+                child: PlayerSearchFilterPanel(
+                  searchQuery: _searchQuery,
+                  selectedPosition: _selectedPosition,
+                  onSearchChanged: (value) =>
+                      setState(() => _searchQuery = value),
+                  onPositionChanged: (pos) =>
+                      setState(() => _selectedPosition = pos),
+                  hintText: 'Search players to nominate...',
+                ),
+              ),
+              if (isMyNomination)
+                const SliverToBoxAdapter(child: NominationHintRow()),
+              SliverList.builder(
+                itemCount: availablePlayers.length,
+                itemBuilder: (context, index) {
+                  final player = availablePlayers[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: getPositionColor(player.primaryPosition),
+                      child: Text(
+                        player.primaryPosition,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    title: Text(player.fullName,
+                        style: const TextStyle(fontSize: 14)),
+                    subtitle: Text(
+                      '${player.team ?? 'FA'} - ${player.primaryPosition}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    dense: true,
+                    onTap: isMyNomination && widget.onNominate != null
+                        ? () => widget.onNominate!(player.id)
+                        : null,
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

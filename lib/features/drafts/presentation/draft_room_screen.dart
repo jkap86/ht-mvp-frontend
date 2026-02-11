@@ -37,6 +37,8 @@ class DraftRoomScreen extends ConsumerStatefulWidget {
 }
 
 class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
+  final GlobalKey<_DraftRoomBodyState> _bodyKey = GlobalKey();
+
   // Separate flags per operation to prevent one failed operation from blocking others
   // _isPickSubmitting moved to DraftRoomState to survive navigation
   bool _isQueueSubmitting = false;
@@ -302,6 +304,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
                       ? currentState.players.where((p) => p.id == lot.playerId).firstOrNull
                       : null;
                   if (lot != null && lotPlayer != null && context.mounted) {
+                    _bodyKey.currentState?.expandDrawer();
                     AuctionBidDialog.show(
                       context,
                       leagueId: widget.leagueId,
@@ -320,6 +323,28 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
             ),
           );
           ref.read(draftRoomProvider(_providerKey).notifier).clearOutbidNotification();
+        }
+      },
+    );
+
+    // Listen for auction errors (expired/closed lots) and show snackbar
+    ref.listen<String?>(
+      draftRoomProvider(_providerKey).select((s) => s.error),
+      (previous, next) {
+        if (next != null && previous != next) {
+          final lower = next.toLowerCase();
+          if (lower.contains('expired') ||
+              lower.contains('ended') ||
+              lower.contains('closed') ||
+              lower.contains('closing')) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(next),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+          ref.read(draftRoomProvider(_providerKey).notifier).clearError();
         }
       },
     );
@@ -429,6 +454,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
           ? SlowAuctionRosterDrawer(providerKey: _providerKey)
           : null,
       body: _DraftRoomBody(
+        key: _bodyKey,
         providerKey: _providerKey,
         queueKey: _queueKey,
         leagueId: widget.leagueId,
@@ -474,6 +500,7 @@ class _DraftRoomBody extends ConsumerStatefulWidget {
   final bool isPickAssetQueueSubmitting;
 
   const _DraftRoomBody({
+    super.key,
     required this.providerKey,
     required this.queueKey,
     required this.leagueId,
@@ -501,7 +528,7 @@ class _DraftRoomBody extends ConsumerStatefulWidget {
 class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
   final GlobalKey<_DraftBottomDrawerWithControllerState> _drawerKey = GlobalKey();
 
-  void _expandDrawer() {
+  void expandDrawer() {
     _drawerKey.currentState?.expand();
   }
 
@@ -661,7 +688,7 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
                       }
                     }
                   : null,
-              onPickPlayer: _expandDrawer,
+              onPickPlayer: expandDrawer,
             ),
             Expanded(
               child: DraftBoardGridView(

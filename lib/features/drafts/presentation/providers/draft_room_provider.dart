@@ -907,6 +907,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     state = state.copyWith(clearOutbidNotification: true);
   }
 
+  void clearError() {
+    state = state.copyWith(clearError: true);
+  }
+
   /// Toggle the grid axis orientation
   void toggleGridAxis() {
     state = state.copyWith(teamsOnXAxis: !state.teamsOnXAxis);

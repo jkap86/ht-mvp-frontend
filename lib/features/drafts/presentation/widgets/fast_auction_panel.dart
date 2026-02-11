@@ -127,6 +127,8 @@ class FastAuctionPanel extends StatelessWidget {
               myBudget: state.myBudget,
               onBidTap: () => onBidTap(activeLot),
               serverClockOffsetMs: state.serverClockOffsetMs,
+              auctionSettings: state.auctionSettings,
+              myRosterId: state.myRosterId,
             )
           else
             FastAuctionWaitingState(
