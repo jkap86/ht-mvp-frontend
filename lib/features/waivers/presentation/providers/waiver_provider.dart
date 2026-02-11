@@ -59,20 +59,12 @@ class WaiversState {
 
   /// Get user's FAAB budget (if any)
   FaabBudget? getBudgetForRoster(int rosterId) {
-    try {
-      return budgets.firstWhere((b) => b.rosterId == rosterId);
-    } catch (_) {
-      return null;
-    }
+    return budgets.where((b) => b.rosterId == rosterId).firstOrNull;
   }
 
   /// Get user's waiver priority (if any)
   WaiverPriority? getPriorityForRoster(int rosterId) {
-    try {
-      return priorities.firstWhere((p) => p.rosterId == rosterId);
-    } catch (_) {
-      return null;
-    }
+    return priorities.where((p) => p.rosterId == rosterId).firstOrNull;
   }
 
   WaiversState copyWith({

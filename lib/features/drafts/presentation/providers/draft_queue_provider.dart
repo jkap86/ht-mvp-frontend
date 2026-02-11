@@ -168,7 +168,7 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
       await loadQueue();
       return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }
@@ -180,7 +180,7 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
       await loadQueue();
       return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }
@@ -194,7 +194,7 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
       );
       return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }
@@ -208,7 +208,7 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
       );
       return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }
@@ -221,7 +221,7 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
       state = state.copyWith(queue: queue);
       return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }
@@ -234,7 +234,7 @@ class DraftQueueNotifier extends StateNotifier<DraftQueueState> {
       state = state.copyWith(queue: queue);
       return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return false;
     }
   }

@@ -100,6 +100,7 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
     this._syncService,
     this.leagueId,
   ) : super(MatchupState()) {
+    _socketService.joinLeague(leagueId);
     _setupSocketListeners();
     _registerInvalidationCallback();
     _syncDisposer = _syncService.registerLeagueSync(leagueId, loadData);
@@ -167,6 +168,7 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
     _invalidationDisposer?.call();
     _reconnectDisposer?.call();
     _syncDisposer?.call();
+    _socketService.leaveLeague(leagueId);
     super.dispose();
   }
 

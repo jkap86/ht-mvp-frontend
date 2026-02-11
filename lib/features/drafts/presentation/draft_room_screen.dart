@@ -37,7 +37,7 @@ class DraftRoomScreen extends ConsumerStatefulWidget {
 
 class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
   // Separate flags per operation to prevent one failed operation from blocking others
-  bool _isPickSubmitting = false;
+  // _isPickSubmitting moved to DraftRoomState to survive navigation
   bool _isQueueSubmitting = false;
   bool _isPickAssetQueueSubmitting = false;
   bool _isNominateSubmitting = false;
@@ -50,28 +50,21 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
   DraftQueueKey get _queueKey => (leagueId: widget.leagueId, draftId: widget.draftId);
 
   Future<void> _makePick(int playerId) async {
-    if (_isPickSubmitting) return; // Prevent double-tap
-    setState(() => _isPickSubmitting = true);
+    final draftState = ref.read(draftRoomProvider(_providerKey));
+    if (draftState.isPickSubmitting) return; // Prevent double-tap (state in provider)
 
     // Look up player name before the pick for use in success message
-    final players = ref.read(draftRoomProvider(_providerKey)).players;
-    final player = players.where((p) => p.id == playerId).firstOrNull;
+    final player = draftState.players.where((p) => p.id == playerId).firstOrNull;
     final playerName = player?.fullName ?? 'Player';
 
-    try {
-      final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
-      final error = await notifier.makePick(playerId);
-      if (context.mounted) {
-        if (error != null) {
-          error.showAsError(ref);
-        } else {
-          // Success feedback with player name
-          showSuccess(ref, 'Drafted: $playerName');
-        }
+    final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+    final error = await notifier.makePick(playerId);
+    if (context.mounted) {
+      if (error != null) {
+        error.showAsError(ref);
+      } else {
+        showSuccess(ref, 'Drafted: $playerName');
       }
-    } finally {
-      _isPickSubmitting = false; // Always reset flag
-      if (context.mounted) setState(() {}); // Only trigger rebuild if mounted
     }
   }
 
@@ -404,7 +397,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         onConfirmOrder: _confirmOrder,
         isConfirmingOrder: _isConfirmingOrder,
         onMakePickAssetSelection: _makePickAssetSelection,
-        isPickSubmitting: _isPickSubmitting,
+        isPickSubmitting: ref.watch(draftRoomProvider(_providerKey)).isPickSubmitting,
         isQueueSubmitting: _isQueueSubmitting,
         isPickAssetQueueSubmitting: _isPickAssetQueueSubmitting,
       ),

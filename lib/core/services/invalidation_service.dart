@@ -138,9 +138,10 @@ class InvalidationService {
       debugPrint('InvalidationService: Invalidating $types for event $event in league $leagueId');
     }
 
-    for (final type in types) {
-      await _invalidateType(type, leagueId);
-    }
+    // Run independent type invalidations in parallel for better performance
+    await Future.wait(
+      types.map((type) => _invalidateType(type, leagueId)),
+    );
   }
 
   /// Directly invalidate a specific data type in a league.

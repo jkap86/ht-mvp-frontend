@@ -76,6 +76,7 @@ class DraftRoomState {
   // Activity feed for the draft room log
   final List<DraftActivityEvent> activityFeed;
   final bool isForbidden;
+  final bool isPickSubmitting;
 
   DraftRoomState({
     this.draft,
@@ -108,6 +109,7 @@ class DraftRoomState {
     this.serverClockOffsetMs,
     this.activityFeed = const [],
     this.isForbidden = false,
+    this.isPickSubmitting = false,
   });
 
   bool get isAuction => draft?.draftType == DraftType.auction;
@@ -232,10 +234,15 @@ class DraftRoomState {
     bool clearOutbidNotification = false,
     String? auctionMode,
     int? currentNominatorRosterId,
+    bool clearNominator = false,
     int? nominationNumber,
+    bool clearNominationNumber = false,
     DateTime? nominationDeadline,
+    bool clearNominationDeadline = false,
     int? dailyNominationsRemaining,
+    bool clearDailyNominationsRemaining = false,
     int? dailyNominationLimit,
+    bool clearDailyNominationLimit = false,
     bool? globalCapReached,
     AuctionSettings? auctionSettings,
     List<DraftPickAsset>? pickAssets,
@@ -251,6 +258,7 @@ class DraftRoomState {
     int? serverClockOffsetMs,
     List<DraftActivityEvent>? activityFeed,
     bool? isForbidden,
+    bool? isPickSubmitting,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -266,13 +274,21 @@ class DraftRoomState {
           ? null
           : (outbidNotification ?? this.outbidNotification),
       auctionMode: auctionMode ?? this.auctionMode,
-      currentNominatorRosterId:
-          currentNominatorRosterId ?? this.currentNominatorRosterId,
-      nominationNumber: nominationNumber ?? this.nominationNumber,
-      nominationDeadline: nominationDeadline ?? this.nominationDeadline,
-      dailyNominationsRemaining:
-          dailyNominationsRemaining ?? this.dailyNominationsRemaining,
-      dailyNominationLimit: dailyNominationLimit ?? this.dailyNominationLimit,
+      currentNominatorRosterId: clearNominator
+          ? null
+          : (currentNominatorRosterId ?? this.currentNominatorRosterId),
+      nominationNumber: clearNominationNumber
+          ? null
+          : (nominationNumber ?? this.nominationNumber),
+      nominationDeadline: clearNominationDeadline
+          ? null
+          : (nominationDeadline ?? this.nominationDeadline),
+      dailyNominationsRemaining: clearDailyNominationsRemaining
+          ? null
+          : (dailyNominationsRemaining ?? this.dailyNominationsRemaining),
+      dailyNominationLimit: clearDailyNominationLimit
+          ? null
+          : (dailyNominationLimit ?? this.dailyNominationLimit),
       globalCapReached: globalCapReached ?? this.globalCapReached,
       auctionSettings: auctionSettings ?? this.auctionSettings,
       pickAssets: pickAssets ?? this.pickAssets,
@@ -287,6 +303,7 @@ class DraftRoomState {
       serverClockOffsetMs: serverClockOffsetMs ?? this.serverClockOffsetMs,
       activityFeed: activityFeed ?? this.activityFeed,
       isForbidden: isForbidden ?? this.isForbidden,
+      isPickSubmitting: isPickSubmitting ?? this.isPickSubmitting,
     );
   }
 }
@@ -546,16 +563,12 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     _updateServerClockOffset(serverTime);
     final myRosterId = state.myRosterId;
 
-    state = state.copyWith(
-      activeLots: state.activeLots.map((l) {
-        if (l.id == lot.id) {
-          // Preserve user's myMaxBid when merging socket update
-          // (socket broadcasts don't include user-specific data)
-          return lot.copyWith(myMaxBid: l.myMaxBid);
-        }
-        return l;
-      }).toList(),
-    );
+    // Preserve user's myMaxBid and re-sort by deadline (deadline extensions change order)
+    final existingLot = state.activeLots.where((l) => l.id == lot.id).firstOrNull;
+    final mergedLot = (lot.myMaxBid == null && existingLot?.myMaxBid != null)
+        ? lot.copyWith(myMaxBid: existingLot!.myMaxBid)
+        : lot;
+    _upsertAndSortLot(mergedLot);
 
     // Instant refresh for own bid updates (user needs immediate budget feedback)
     // Keep 200ms debounce for other events to avoid spamming API during rapid bidding
@@ -576,7 +589,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     state = state.copyWith(
       activeLots: state.activeLots.where((l) => l.id != lotId).toList(),
     );
-    if (mounted) loadAuctionData();
+    // Debounce to prevent rapid lot completions from spamming API
+    _budgetRefreshTimer?.cancel();
+    _budgetRefreshTimer = Timer(const Duration(milliseconds: 200), () {
+      if (mounted) loadAuctionData();
+    });
   }
 
   @override
@@ -609,8 +626,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     if (!mounted) return;
     state = state.copyWith(
       currentNominatorRosterId: rosterId,
+      clearNominator: rosterId == null,
       nominationNumber: nominationNumber,
+      clearNominationNumber: nominationNumber == null,
       nominationDeadline: nominationDeadline,
+      clearNominationDeadline: nominationDeadline == null,
     );
   }
 
@@ -761,6 +781,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
   // Action methods
   Future<String?> makePick(int playerId) async {
+    if (state.isPickSubmitting) return 'Pick already in progress';
+    state = state.copyWith(isPickSubmitting: true);
     try {
       await _draftRepo.makePick(leagueId, draftId, playerId);
       // Resync to ensure UI is updated even if socket event was missed
@@ -768,6 +790,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       return null;
     } catch (e) {
       return ErrorSanitizer.sanitize(e);
+    } finally {
+      if (mounted) state = state.copyWith(isPickSubmitting: false);
     }
   }
 

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/services/invalidation_service.dart';
+import '../../../../core/services/sync_service.dart';
+import '../../../../core/socket/socket_service.dart';
 import '../../../../core/api/api_exceptions.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../../leagues/data/league_repository.dart';
@@ -190,10 +192,14 @@ class TeamNotifier extends StateNotifier<TeamState> {
   final RosterRepository _rosterRepo;
   final LeagueRepository _leagueRepo;
   final InvalidationService _invalidationService;
+  final SyncService _syncService;
+  final SocketService _socketService;
   final int leagueId;
   final int rosterId;
 
   VoidCallback? _invalidationDisposer;
+  VoidCallback? _syncDisposer;
+  final List<VoidCallback> _socketDisposers = [];
 
   // Idempotency keys for retry safety
   String? _lineupIdempotencyKey;
@@ -204,11 +210,23 @@ class TeamNotifier extends StateNotifier<TeamState> {
     this._rosterRepo,
     this._leagueRepo,
     this._invalidationService,
+    this._syncService,
+    this._socketService,
     this.leagueId,
     this.rosterId,
   ) : super(TeamState()) {
+    _socketService.joinLeague(leagueId);
+    _setupSocketListeners();
     _registerInvalidationCallback();
+    _syncDisposer = _syncService.registerLeagueSync(leagueId, loadData);
     loadData();
+  }
+
+  void _setupSocketListeners() {
+    _socketDisposers.add(_socketService.onScoresUpdated((data) {
+      if (!mounted) return;
+      loadData();
+    }));
   }
 
   void _registerInvalidationCallback() {
@@ -221,7 +239,13 @@ class TeamNotifier extends StateNotifier<TeamState> {
 
   @override
   void dispose() {
+    for (final disposer in _socketDisposers) {
+      disposer();
+    }
+    _socketDisposers.clear();
     _invalidationDisposer?.call();
+    _syncDisposer?.call();
+    _socketService.leaveLeague(leagueId);
     super.dispose();
   }
 
@@ -475,6 +499,8 @@ final teamProvider = StateNotifierProvider.autoDispose.family<TeamNotifier, Team
     ref.watch(rosterRepositoryProvider),
     ref.watch(leagueRepositoryProvider),
     ref.watch(invalidationServiceProvider),
+    ref.watch(syncServiceProvider),
+    ref.watch(socketServiceProvider),
     key.leagueId,
     key.rosterId,
   ),

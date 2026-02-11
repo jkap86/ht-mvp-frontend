@@ -1,6 +1,8 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:hypetrain_mvp/features/auth/presentation/auth_provider.dart';
 import 'package:hypetrain_mvp/features/auth/data/auth_repository.dart';
@@ -11,6 +13,9 @@ import '../../mocks/mock_repositories.dart';
 import '../../mocks/mock_socket_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
+
   late MockAuthRepository mockAuthRepo;
   late MockSocketService mockSocketService;
   late MockApiClient mockApiClient;
@@ -22,7 +27,9 @@ void main() {
     mockApiClient = MockApiClient();
   });
 
-  tearDown(() {
+  tearDown(() async {
+    // Wait for constructor's _checkAuthStatus() to complete before disposing
+    await Future.delayed(const Duration(milliseconds: 100));
     container?.dispose();
     container = null;
   });

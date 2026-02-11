@@ -221,6 +221,11 @@ class SocketService {
     _activeSubscriptions.clear();
     _leagueRoomRefCount.clear();
     _draftRoomRefCount.clear();
+    _reconnectCallbacks.clear();
+    _connectCallbacks.clear();
+    _disconnectCallbacks.clear();
+    _listenersToRestore = null;
+    _disconnectedAt = null;
     _socket?.disconnect();
     _socket = null;
   }

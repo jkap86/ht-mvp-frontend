@@ -48,7 +48,7 @@ class LeagueContext {
 /// final context = await ref.watch(leagueContextProvider(leagueId).future);
 /// if (context.isCommissioner) { ... }
 /// ```
-final leagueContextProvider = FutureProvider.family<LeagueContext, int>((ref, leagueId) async {
+final leagueContextProvider = FutureProvider.autoDispose.family<LeagueContext, int>((ref, leagueId) async {
   final repo = ref.watch(leagueRepositoryProvider);
   final league = await repo.getLeague(leagueId);
 

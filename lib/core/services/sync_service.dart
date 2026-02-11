@@ -71,7 +71,8 @@ class SyncService {
     if (kDebugMode) {
       debugPrint('SyncService: Syncing ${callbacks.length} callbacks for league $leagueId');
     }
-    for (final callback in callbacks) {
+    // Copy list to prevent concurrent modification if callbacks dispose providers
+    for (final callback in List<SyncCallback>.from(callbacks)) {
       try {
         await callback();
       } catch (e) {
@@ -95,7 +96,8 @@ class SyncService {
     if (kDebugMode) {
       debugPrint('SyncService: Syncing ${callbacks.length} callbacks for draft $draftId');
     }
-    for (final callback in callbacks) {
+    // Copy list to prevent concurrent modification if callbacks dispose providers
+    for (final callback in List<SyncCallback>.from(callbacks)) {
       try {
         await callback();
       } catch (e) {
@@ -122,8 +124,8 @@ class SyncService {
       await syncDraftData(draftId);
     }
 
-    // Trigger global callbacks
-    for (final callback in _globalSyncCallbacks) {
+    // Copy list to prevent concurrent modification if callbacks dispose providers
+    for (final callback in List<SyncCallback>.from(_globalSyncCallbacks)) {
       try {
         await callback();
       } catch (e) {

@@ -94,6 +94,8 @@ void main() {
     when(() => mockSocketService.onMemberJoined(any())).thenReturn(() {});
     when(() => mockSocketService.onMemberKicked(any())).thenReturn(() {});
     when(() => mockSocketService.onDraftCreated(any())).thenReturn(() {});
+    when(() => mockSocketService.onMemberBenched(any())).thenReturn(() {});
+    when(() => mockSocketService.onLeagueSettingsUpdated(any())).thenReturn(() {});
 
     // Setup default invalidation service mock
     when(() => mockInvalidationService.register(any(), any(), any())).thenReturn(() {});

@@ -66,10 +66,13 @@ class ApiClient {
   }
 
   Future<bool> _doRefresh() async {
-    final success = await onTokenRefresh!();
-    if (success && onTokenRefreshed != null) {
+    final refreshCallback = onTokenRefresh;
+    if (refreshCallback == null) return false;
+    final success = await refreshCallback();
+    if (success) {
       // Notify that tokens were refreshed (e.g., to reconnect socket)
-      onTokenRefreshed!();
+      // Re-read callback in case it was cleared during refresh
+      onTokenRefreshed?.call();
     }
     return success;
   }
@@ -157,9 +160,19 @@ class ApiClient {
       } on UnauthorizedException {
         // Attempt token refresh and retry once (not part of exponential backoff)
         if (auth && await _attemptTokenRefresh()) {
-          final headers = await _getHeaders(auth: auth, idempotencyKey: idempotencyKey);
-          final response = await executeRequest(headers).timeout(requestTimeout);
-          return _handleResponse(response);
+          try {
+            final headers = await _getHeaders(auth: auth, idempotencyKey: idempotencyKey);
+            final response = await executeRequest(headers).timeout(requestTimeout);
+            return _handleResponse(response);
+          } catch (retryError) {
+            // If the post-refresh retry fails with a retryable error,
+            // convert to our exception type and let it fall through to
+            // the outer retry loop on the next iteration
+            if (retryError is! ApiException) {
+              throw NetworkException('Failed to connect to server');
+            }
+            rethrow;
+          }
         }
         // Refresh failed — trigger session-expired callback
         onUnauthorized?.call();

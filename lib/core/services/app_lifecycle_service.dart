@@ -58,9 +58,12 @@ class AppLifecycleService with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.paused:
-      case AppLifecycleState.inactive:
-        // App is going to background
+        // App is going to background - only set on paused (not inactive)
+        // inactive fires for brief interruptions like permission dialogs
         _backgroundedAt = DateTime.now();
+        break;
+      case AppLifecycleState.inactive:
+        // Brief interruptions (permission dialogs, etc.) - don't update timestamp
         break;
       case AppLifecycleState.resumed:
         // App is coming back to foreground

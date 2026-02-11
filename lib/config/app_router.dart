@@ -526,7 +526,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'free-agents',
             pageBuilder: (context, state) {
               final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
-              final rosterId = _extractIntExtra(state.extra);
+              // Support both state.extra (in-app nav) and query param (deep link)
+              final rosterId = _extractIntExtra(state.extra) != 0
+                  ? _extractIntExtra(state.extra)
+                  : _parseIntParam(state.uri.queryParameters['rosterId']) ?? 0;
               return _slideTransition(state, FreeAgentsScreen(leagueId: leagueId, rosterId: rosterId));
             },
           ),
