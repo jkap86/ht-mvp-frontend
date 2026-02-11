@@ -116,7 +116,6 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final urgency = getSlowAuctionUrgencyLevel();
     final isExpired = urgency == 0;
     final isEndingSoon = urgency <= 2;
@@ -124,11 +123,11 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
     // Determine card background based on state
     Color? cardColor;
     if (widget.isWinning) {
-      cardColor = AppTheme.draftActionPrimary.withAlpha(isDark ? 30 : 20);
+      cardColor = AppTheme.draftActionPrimary.withAlpha(25);
     } else if (urgency == 1) {
-      cardColor = AppTheme.draftUrgent.withAlpha(isDark ? 25 : 15);
+      cardColor = AppTheme.draftUrgent.withAlpha(20);
     } else if (urgency == 2) {
-      cardColor = AppTheme.draftWarning.withAlpha(isDark ? 20 : 12);
+      cardColor = AppTheme.draftWarning.withAlpha(16);
     }
 
     return Card(
@@ -271,14 +270,14 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
               height: 1,
               color: theme.colorScheme.outlineVariant.withAlpha(100),
             ),
-            _buildExpandedSection(theme, isDark),
+            _buildExpandedSection(theme),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildExpandedSection(ThemeData theme, bool isDark) {
+  Widget _buildExpandedSection(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -368,7 +367,7 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
             constraints: const BoxConstraints(maxHeight: 200),
             child: SingleChildScrollView(
               child: Column(
-                children: _bidHistory!.reversed.map((entry) => _buildBidHistoryTile(entry, theme, isDark)).toList(),
+                children: _bidHistory!.reversed.map((entry) => _buildBidHistoryTile(entry, theme)).toList(),
               ),
             ),
           ),
@@ -396,7 +395,7 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
     );
   }
 
-  Widget _buildBidHistoryTile(BidHistoryEntry entry, ThemeData theme, bool isDark) {
+  Widget _buildBidHistoryTile(BidHistoryEntry entry, ThemeData theme) {
     final username = entry.username ?? _getUsernameForRoster(entry.rosterId);
 
     return Container(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../matchups/data/matchup_repository.dart';
 import '../../../matchups/domain/matchup.dart';
@@ -143,7 +144,7 @@ class SeasonSummaryScreen extends ConsumerWidget {
               Icon(
                 Icons.emoji_events,
                 size: 72,
-                color: Colors.amber[600],
+                color: AppTheme.medalGold,
               ),
               const SizedBox(height: AppSpacing.lg),
 
@@ -163,10 +164,10 @@ class SeasonSummaryScreen extends ConsumerWidget {
                   label: 'Champion',
                   teamName: data.champion!.teamName,
                   record: data.champion!.record,
-                  borderColor: Colors.amber[600]!,
-                  backgroundColor: Colors.amber.withValues(alpha: 0.08),
+                  borderColor: AppTheme.medalGold,
+                  backgroundColor: AppTheme.medalGold.withAlpha(20),
                   icon: Icons.emoji_events,
-                  iconColor: Colors.amber[600]!,
+                  iconColor: AppTheme.medalGold,
                   isLarge: true,
                 ),
 
@@ -179,10 +180,10 @@ class SeasonSummaryScreen extends ConsumerWidget {
                   label: 'Runner-Up',
                   teamName: data.runnerUp!.teamName,
                   record: data.runnerUp!.record,
-                  borderColor: Colors.grey[400]!,
-                  backgroundColor: Colors.grey.withValues(alpha: 0.06),
+                  borderColor: AppTheme.medalSilver,
+                  backgroundColor: AppTheme.medalSilver.withAlpha(15),
                   icon: Icons.workspace_premium,
-                  iconColor: Colors.grey[500]!,
+                  iconColor: AppTheme.medalSilver,
                   isLarge: false,
                 ),
 
@@ -195,10 +196,10 @@ class SeasonSummaryScreen extends ConsumerWidget {
                   label: '3rd Place',
                   teamName: data.thirdPlace!.teamName,
                   record: data.thirdPlace!.record,
-                  borderColor: Colors.brown[400]!,
-                  backgroundColor: Colors.brown.withValues(alpha: 0.05),
+                  borderColor: AppTheme.medalBronze,
+                  backgroundColor: AppTheme.medalBronze.withAlpha(13),
                   icon: Icons.military_tech,
-                  iconColor: Colors.brown[400]!,
+                  iconColor: AppTheme.medalBronze,
                   isLarge: false,
                 ),
 

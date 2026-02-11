@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../players/domain/player.dart';
 import '../../domain/auction_lot.dart';
 import '../providers/draft_room_provider.dart';
@@ -62,14 +63,11 @@ class AuctionLotsPanel extends StatelessWidget {
     // Build a map of budgets by rosterId for quick lookup of bidder names
     final budgetsMap = {for (var b in state.budgets) b.rosterId: b};
 
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.auctionBgDark : AppTheme.auctionBgLight,
+        color: context.htColors.auctionBg,
         border: Border(top: BorderSide(
-          color: isDark ? AppTheme.auctionBorderDark : AppTheme.auctionBorderLight,
+          color: context.htColors.auctionBorder,
         )),
       ),
       child: Column(

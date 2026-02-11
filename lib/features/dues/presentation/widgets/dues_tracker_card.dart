@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../providers/dues_provider.dart';
 
@@ -122,12 +123,12 @@ class DuesTrackerCard extends ConsumerWidget {
                   leading: CircleAvatar(
                     radius: 16,
                     backgroundColor: payment.isPaid
-                        ? Colors.green.withAlpha(51)
-                        : Colors.red.withAlpha(51),
+                        ? context.htColors.success.withAlpha(51)
+                        : context.htColors.error.withAlpha(51),
                     child: Icon(
                       payment.isPaid ? Icons.check : Icons.close,
                       size: 18,
-                      color: payment.isPaid ? Colors.green : Colors.red,
+                      color: payment.isPaid ? context.htColors.success : context.htColors.error,
                     ),
                   ),
                   title: Text(

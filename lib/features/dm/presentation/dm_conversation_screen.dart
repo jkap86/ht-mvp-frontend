@@ -6,6 +6,7 @@ import '../../../core/utils/idempotency.dart';
 import '../../../core/utils/time_formatter.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/hype_train_colors.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../domain/direct_message.dart';
@@ -154,7 +155,7 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
         color: theme.scaffoldBackgroundColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: context.htColors.shadow,
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),

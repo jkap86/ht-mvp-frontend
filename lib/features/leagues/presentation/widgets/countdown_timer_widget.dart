@@ -64,7 +64,7 @@ class _CountdownTimerWidgetState extends State<CountdownTimerWidget> {
     } else if (_remaining.inHours < 72) {
       return AppTheme.draftWarning;
     }
-    return AppTheme.auctionTextMuted;
+    return AppTheme.injuryMuted;
   }
 
   String _formatDuration() {

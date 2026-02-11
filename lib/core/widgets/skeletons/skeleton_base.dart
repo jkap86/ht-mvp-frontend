@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../theme/hype_train_colors.dart';
+
 /// Base shimmer wrapper for skeleton loading states
 class SkeletonShimmer extends StatelessWidget {
   final Widget child;
@@ -12,12 +14,9 @@ class SkeletonShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Shimmer.fromColors(
-      baseColor: isDark ? colorScheme.surfaceContainerHighest : colorScheme.surfaceContainerLow,
-      highlightColor: isDark ? colorScheme.surfaceContainer : colorScheme.surface,
+      baseColor: context.htColors.surfaceContainer,
+      highlightColor: context.htColors.surface,
       child: child,
     );
   }

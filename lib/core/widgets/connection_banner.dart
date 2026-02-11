@@ -37,14 +37,9 @@ class _ConnectionBannerContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isReconnecting = state == SocketConnectionState.reconnecting;
-    final bannerBg = isDark
-        ? AppTheme.draftWarning.withAlpha(40)
-        : AppTheme.draftWarning.withAlpha(30);
-    final bannerFg = isDark
-        ? AppTheme.draftWarning
-        : AppTheme.draftWarning;
+    final bannerBg = AppTheme.draftWarning.withAlpha(35);
+    final bannerFg = AppTheme.draftWarning;
 
     return SafeArea(
       bottom: false,

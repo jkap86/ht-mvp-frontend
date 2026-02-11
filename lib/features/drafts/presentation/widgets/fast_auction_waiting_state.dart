@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 
 /// Widget shown when waiting for nomination in fast auction mode.
 /// Displays countdown timer until auto-nomination and nominate button.
@@ -140,23 +141,21 @@ class _FastAuctionWaitingStateState extends State<FastAuctionWaitingState> {
   }
 
   Widget _buildTimerDisplay(ThemeData theme, bool isExpired, bool isUrgent) {
-    final isDark = theme.brightness == Brightness.dark;
-
     final Color timerColor;
     final Color backgroundColor;
 
     if (isExpired) {
-      timerColor = const Color(0xFF6E7681);
+      timerColor = context.htColors.textMuted;
       backgroundColor = theme.colorScheme.surfaceContainerHighest;
     } else if (isUrgent) {
       timerColor = AppTheme.draftUrgent;
-      backgroundColor = AppTheme.draftUrgent.withAlpha(isDark ? 40 : 25);
+      backgroundColor = AppTheme.draftUrgent.withAlpha(30);
     } else if (_remaining.inSeconds <= 30) {
       timerColor = AppTheme.draftWarning;
-      backgroundColor = AppTheme.draftWarning.withAlpha(isDark ? 40 : 25);
+      backgroundColor = AppTheme.draftWarning.withAlpha(30);
     } else {
       timerColor = AppTheme.draftNormal;
-      backgroundColor = AppTheme.draftNormal.withAlpha(isDark ? 40 : 25);
+      backgroundColor = AppTheme.draftNormal.withAlpha(30);
     }
 
     return Container(

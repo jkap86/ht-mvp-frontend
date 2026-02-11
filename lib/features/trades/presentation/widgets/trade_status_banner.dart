@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/semantic_colors.dart';
+import '../../../../config/app_theme.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../domain/trade.dart';
@@ -67,7 +68,6 @@ class _TradeStatusBannerState extends State<TradeStatusBanner> {
   Widget build(BuildContext context) {
     final trade = widget.trade;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     Color statusColor;
     IconData icon;
@@ -75,23 +75,23 @@ class _TradeStatusBannerState extends State<TradeStatusBanner> {
     switch (trade.status) {
       case TradeStatus.pending:
       case TradeStatus.countered:
-        statusColor = TradeStatusColors.pending;
+        statusColor = AppTheme.brandOrange;
         icon = Icons.pending;
         break;
       case TradeStatus.accepted:
       case TradeStatus.inReview:
-        statusColor = TradeStatusColors.inReview;
+        statusColor = AppTheme.brandBlue;
         icon = Icons.hourglass_empty;
         break;
       case TradeStatus.completed:
-        statusColor = TradeStatusColors.completed;
+        statusColor = context.htColors.success;
         icon = Icons.check_circle;
         break;
       case TradeStatus.rejected:
       case TradeStatus.cancelled:
       case TradeStatus.expired:
       case TradeStatus.vetoed:
-        statusColor = TradeStatusColors.failed;
+        statusColor = AppTheme.injuryMuted;
         icon = Icons.cancel;
         break;
     }
@@ -99,10 +99,10 @@ class _TradeStatusBannerState extends State<TradeStatusBanner> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: statusColor.withAlpha(isDark ? 40 : 30),
+        color: statusColor.withAlpha(35),
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         border: Border.all(
-          color: statusColor.withAlpha(isDark ? 75 : 50),
+          color: statusColor.withAlpha(60),
         ),
       ),
       child: Row(

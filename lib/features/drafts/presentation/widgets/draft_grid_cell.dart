@@ -36,7 +36,6 @@ class DraftGridCell extends StatelessWidget {
 
   Widget _buildEmptyCell(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     // Theme-aware colors
     final Color borderColor;
@@ -45,11 +44,11 @@ class DraftGridCell extends StatelessWidget {
 
     if (isCurrentPick) {
       borderColor = AppTheme.draftActionPrimary;
-      backgroundColor = AppTheme.draftActionPrimary.withAlpha(isDark ? 30 : 20);
+      backgroundColor = AppTheme.draftActionPrimary.withAlpha(25);
       textColor = AppTheme.draftActionPrimary;
     } else if (isTraded) {
       borderColor = AppTheme.draftWarning.withAlpha(180);
-      backgroundColor = AppTheme.draftWarning.withAlpha(isDark ? 25 : 15);
+      backgroundColor = AppTheme.draftWarning.withAlpha(20);
       textColor = AppTheme.draftWarning;
     } else {
       borderColor = theme.colorScheme.outlineVariant;
@@ -242,7 +241,7 @@ class DraftGridCell extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     // Use a distinct teal/cyan color for pick assets
-    const pickAssetColor = Color(0xFF00ACC1); // Cyan 600
+    final pickAssetColor = AppTheme.positionRecFlex;
 
     // Format the pick asset display
     final season = pick!.pickAssetSeason ?? 0;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/socket/connection_state_provider.dart';
 import '../../../leagues/domain/league.dart';
 import 'autodraft_toggle_widget.dart';
@@ -35,7 +36,6 @@ class DraftStatusBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final isInProgress = draft?.status.isActive ?? false;
     final isCompleted = draft?.status.isFinished ?? false;
 
@@ -45,15 +45,15 @@ class DraftStatusBar extends ConsumerWidget {
     final Color textColor;
 
     if (isMyTurn) {
-      backgroundColor = AppTheme.draftActionPrimary.withAlpha(isDark ? 40 : 30);
+      backgroundColor = context.htColors.draftActionBg;
       iconColor = AppTheme.draftActionPrimary;
-      textColor = isDark ? AppTheme.draftActionPrimary : const Color(0xFF1A7F37);
+      textColor = context.htColors.draftAction;
     } else if (isInProgress) {
-      backgroundColor = AppTheme.draftNormal.withAlpha(isDark ? 30 : 20);
+      backgroundColor = AppTheme.draftNormal.withAlpha(25);
       iconColor = AppTheme.draftNormal;
-      textColor = isDark ? AppTheme.draftNormal : const Color(0xFF0969DA);
+      textColor = context.htColors.draftNormal;
     } else {
-      backgroundColor = theme.colorScheme.surfaceContainerHighest.withAlpha(isDark ? 60 : 80);
+      backgroundColor = theme.colorScheme.surfaceContainerHighest.withAlpha(70);
       iconColor = theme.colorScheme.onSurfaceVariant;
       textColor = theme.colorScheme.onSurfaceVariant;
     }

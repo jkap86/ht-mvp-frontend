@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../players/domain/player.dart';
 import '../../domain/auction_lot.dart';
 import '../mixins/countdown_mixin.dart';
@@ -118,24 +119,23 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
   }
 
   Widget _buildTimerDisplay(ThemeData theme, bool isExpired, bool isUrgent) {
-    final isDark = theme.brightness == Brightness.dark;
     final isCritical = timeRemaining.inSeconds > 0 && timeRemaining.inSeconds <= 5;
 
     final Color timerColor;
     final Color backgroundColor;
 
     if (isExpired) {
-      timerColor = AppTheme.auctionTextMuted;
+      timerColor = context.htColors.textMuted;
       backgroundColor = theme.colorScheme.surfaceContainerHighest;
     } else if (isUrgent) {
       timerColor = AppTheme.draftUrgent;
-      backgroundColor = AppTheme.draftUrgent.withAlpha(isDark ? 40 : 25);
+      backgroundColor = AppTheme.draftUrgent.withAlpha(30);
     } else if (timeRemaining.inSeconds <= 30) {
       timerColor = AppTheme.draftWarning;
-      backgroundColor = AppTheme.draftWarning.withAlpha(isDark ? 40 : 25);
+      backgroundColor = AppTheme.draftWarning.withAlpha(30);
     } else {
       timerColor = AppTheme.draftNormal;
-      backgroundColor = AppTheme.draftNormal.withAlpha(isDark ? 40 : 25);
+      backgroundColor = AppTheme.draftNormal.withAlpha(30);
     }
 
     final timerWidget = Container(

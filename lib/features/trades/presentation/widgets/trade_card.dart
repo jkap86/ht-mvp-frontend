@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../config/app_theme.dart';
-import '../../../../core/theme/semantic_colors.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../domain/trade.dart';
@@ -138,7 +138,7 @@ class TradeCard extends StatelessWidget {
                   style: AppTypography.bodySmall.copyWith(
                     color: trade.isExpired
                         ? AppTheme.errorColor
-                        : TradeStatusColors.pending,
+                        : AppTheme.brandOrange,
                   ),
                 ),
               ],
@@ -150,32 +150,29 @@ class TradeCard extends StatelessWidget {
   }
 
   Widget _buildStatusBadge(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     Color color;
     switch (trade.status) {
       case TradeStatus.pending:
       case TradeStatus.countered:
-        color = TradeStatusColors.pending;
+        color = AppTheme.brandOrange;
         break;
       case TradeStatus.accepted:
       case TradeStatus.inReview:
-        color = TradeStatusColors.inReview;
+        color = AppTheme.brandBlue;
         break;
       case TradeStatus.completed:
-        color = TradeStatusColors.completed;
+        color = context.htColors.success;
         break;
       default:
-        color = TradeStatusColors.failed;
+        color = AppTheme.injuryMuted;
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 30 : 25),
+        color: color.withAlpha(28),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        border: Border.all(color: color.withAlpha(isDark ? 75 : 75)),
+        border: Border.all(color: color.withAlpha(75)),
       ),
       child: Text(
         trade.status.label,

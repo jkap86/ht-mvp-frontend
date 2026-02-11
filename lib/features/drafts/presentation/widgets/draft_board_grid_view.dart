@@ -235,7 +235,6 @@ class DraftBoardGridView extends ConsumerWidget {
 
   Widget _buildTeamHeaderCell(BuildContext context, DraftOrderEntry entry, bool isCurrentTeam) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       width: 92,
@@ -244,7 +243,7 @@ class DraftBoardGridView extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 1),
       decoration: BoxDecoration(
         color: isCurrentTeam
-            ? AppTheme.draftActionPrimary.withAlpha(isDark ? 40 : 25)
+            ? AppTheme.draftActionPrimary.withAlpha(30)
             : theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
@@ -359,7 +358,6 @@ class DraftBoardGridView extends ConsumerWidget {
     required List<DraftPickAsset> pickAssets,
   }) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final isCurrentTeam = currentCell?.rosterId == entry.rosterId;
 
     return Row(
@@ -373,7 +371,7 @@ class DraftBoardGridView extends ConsumerWidget {
           margin: const EdgeInsets.symmetric(vertical: 1),
           decoration: BoxDecoration(
             color: isCurrentTeam
-                ? AppTheme.draftActionPrimary.withAlpha(isDark ? 40 : 25)
+                ? AppTheme.draftActionPrimary.withAlpha(30)
                 : theme.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(6),
             border: Border.all(

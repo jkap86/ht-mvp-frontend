@@ -28,8 +28,6 @@ class LineupPlayerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEmpty = player == null;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: InkWell(
@@ -93,9 +91,7 @@ class LineupPlayerRow extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                   decoration: BoxDecoration(
-                                    color: isDark
-                                        ? theme.colorScheme.surfaceContainerHighest
-                                        : theme.colorScheme.surfaceContainerHighest,
+                                    color: theme.colorScheme.surfaceContainerHighest,
                                     borderRadius: AppSpacing.badgeRadius,
                                   ),
                                   child: Text(

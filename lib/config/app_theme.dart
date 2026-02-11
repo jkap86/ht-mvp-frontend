@@ -1,76 +1,101 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme/hype_train_colors.dart';
+
 class AppTheme {
-  // Light theme colors
-  static const Color primaryColor = Color(0xFF1E88E5);
-  static const Color secondaryColor = Color(0xFF26A69A);
+  // ══════════════════════════════════════════════════════════════════════
+  // Brand palette (theme-invariant)
+  // ══════════════════════════════════════════════════════════════════════
+
+  static const Color brandBlue = Color(0xFF32B8FB);
+  static const Color brandBlueDark = Color(0xFF1A8FCC); // WCAG-safe on light bg
+  static const Color brandPink = Color(0xFFFE1155);
+  static const Color brandMint = Color(0xFF11FDA9);
+  static const Color brandOrange = Color(0xFFFF8C11);
+  static const Color darkBase = Color(0xFF0E1A25);
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Legacy aliases (kept for backward compat during migration)
+  // ══════════════════════════════════════════════════════════════════════
+
+  static const Color primaryColor = brandBlue;
+  static const Color secondaryColor = brandMint;
   static const Color errorColor = Color(0xFFE53935);
-  static const Color backgroundColor = Color(0xFFF5F5F5);
-  static const Color surfaceColor = Colors.white;
-  static const Color textPrimary = Color(0xFF212121);
-  static const Color textSecondary = Color(0xFF757575);
 
-  // Dark theme colors
-  static const Color darkBackgroundColor = Color(0xFF121212);
-  static const Color darkSurfaceColor = Color(0xFF1E1E1E);
-  static const Color darkCardColor = Color(0xFF2C2C2C);
-  static const Color darkTextPrimary = Color(0xFFE0E0E0);
-  static const Color darkTextSecondary = Color(0xFF9E9E9E);
+  // ══════════════════════════════════════════════════════════════════════
+  // Draft-specific semantic colors (theme-invariant)
+  // ══════════════════════════════════════════════════════════════════════
 
-  // Draft-specific semantic colors
-  static const Color draftActionPrimary = Color(0xFF238636);  // Draft button, your turn
-  static const Color draftUrgent = Color(0xFFDA3633);         // Timer urgent (<10s)
-  static const Color draftWarning = Color(0xFFD29922);        // Timer warning (10-30s)
-  static const Color draftNormal = Color(0xFF1F6FEB);         // Timer normal, in-progress
-  static const Color draftSuccess = Color(0xFF238636);        // Timer plenty of time (>60s)
+  static const Color draftActionPrimary = brandMint;
+  static const Color draftUrgent = Color(0xFFDA3633);
+  static const Color draftWarning = Color(0xFFD29922);
+  static const Color draftNormal = brandBlue;
+  static const Color draftSuccess = Color(0xFF43A047);
 
-  // Auction-specific colors
-  static const Color auctionPrimary = Color(0xFFFF9800);      // Orange - auction accent
-  static const Color auctionBgLight = Color(0xFFFFF3E0);      // Light orange background
-  static const Color auctionBgDark = Color(0xFF3D2E1E);       // Dark orange-tinted background
-  static const Color auctionBorderLight = Color(0xFFFFCC80);  // Light orange border
-  static const Color auctionBorderDark = Color(0xFF5D4E3E);   // Dark orange border
-  static const Color auctionTextMuted = Color(0xFF6E7681);    // Muted text color
+  // ══════════════════════════════════════════════════════════════════════
+  // Auction-specific colors (theme-invariant accents)
+  // ══════════════════════════════════════════════════════════════════════
 
-  // Position colors (industry standard)
-  static const Color positionQB = Color(0xFFE91E63);        // Pink/Magenta
-  static const Color positionRB = Color(0xFF00BFA5);        // Teal
-  static const Color positionWR = Color(0xFF2196F3);        // Blue
-  static const Color positionTE = Color(0xFFFF9800);        // Orange
-  static const Color positionK = Color(0xFF9C27B0);         // Purple
-  static const Color positionDEF = Color(0xFF795548);       // Brown
-  static const Color positionFLEX = Color(0xFF607D8B);      // Blue-grey
-  static const Color positionSuperFlex = Color(0xFF7C4DFF); // Deep Purple
-  static const Color positionRecFlex = Color(0xFF00ACC1);   // Cyan
-  static const Color positionDL = Color(0xFF5D4037);        // Brown (dark)
-  static const Color positionLB = Color(0xFF6D4C41);        // Brown (medium)
-  static const Color positionDB = Color(0xFF8D6E63);        // Brown (light)
-  static const Color positionIdpFlex = Color(0xFF795548);   // Brown
-  static const Color positionIR = Color(0xFF9E9E9E);        // Grey
-  static const Color positionTaxi = Color(0xFFFFB300);      // Amber/Gold
-  static const Color positionPick = Color(0xFF3F51B5);      // Indigo (draft pick asset)
+  static const Color auctionPrimary = brandOrange;
 
-  // Injury status colors
+  // ══════════════════════════════════════════════════════════════════════
+  // Position colors (industry standard, theme-invariant)
+  // ══════════════════════════════════════════════════════════════════════
+
+  static const Color positionQB = Color(0xFFE91E63);
+  static const Color positionRB = Color(0xFF00BFA5);
+  static const Color positionWR = Color(0xFF2196F3);
+  static const Color positionTE = Color(0xFFFF9800);
+  static const Color positionK = Color(0xFF9C27B0);
+  static const Color positionDEF = Color(0xFF795548);
+  static const Color positionFLEX = Color(0xFF607D8B);
+  static const Color positionSuperFlex = Color(0xFF7C4DFF);
+  static const Color positionRecFlex = Color(0xFF00ACC1);
+  static const Color positionDL = Color(0xFF5D4037);
+  static const Color positionLB = Color(0xFF6D4C41);
+  static const Color positionDB = Color(0xFF8D6E63);
+  static const Color positionIdpFlex = Color(0xFF795548);
+  static const Color positionIR = Color(0xFF9E9E9E);
+  static const Color positionTaxi = Color(0xFFFFB300);
+  static const Color positionPick = Color(0xFF3F51B5);
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Injury status colors (theme-invariant)
+  // ══════════════════════════════════════════════════════════════════════
+
   static const Color injuryOut = Color(0xFFDA3633);
   static const Color injuryDoubtful = Color(0xFFDA3633);
   static const Color injuryQuestionable = Color(0xFFD29922);
   static const Color injuryProbable = Color(0xFFD29922);
+  static const Color injuryMuted = Color(0xFF6E7681);
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Medal colors (theme-invariant)
+  // ══════════════════════════════════════════════════════════════════════
+
+  static const Color medalGold = Color(0xFFFFB300);
+  static const Color medalSilver = Color(0xFF9E9E9E);
+  static const Color medalBronze = Color(0xFF8D6E63);
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Light Theme
+  // ══════════════════════════════════════════════════════════════════════
 
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        primary: primaryColor,
-        secondary: secondaryColor,
+        seedColor: brandBlue,
+        primary: brandBlue,
+        secondary: brandMint,
         error: errorColor,
-        surface: surfaceColor,
+        surface: const Color(0xFFFFFFFF),
       ),
-      scaffoldBackgroundColor: backgroundColor,
+      scaffoldBackgroundColor: const Color(0xFFEEF2F6),
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
-        backgroundColor: primaryColor,
+        backgroundColor: brandBlue,
         foregroundColor: Colors.white,
       ),
       cardTheme: CardTheme(
@@ -84,15 +109,15 @@ class AppTheme {
         fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Colors.grey),
+          borderSide: const BorderSide(color: Color(0xFFD0D7DE)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: const BorderSide(color: Color(0xFFD0D7DE)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: primaryColor, width: 2),
+          borderSide: const BorderSide(color: brandBlue, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -102,7 +127,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: brandBlue,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
@@ -112,99 +137,104 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
+          foregroundColor: brandBlueDark,
         ),
       ),
       dialogTheme: DialogTheme(
-        backgroundColor: surfaceColor,
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: surfaceColor,
+        backgroundColor: Colors.white,
       ),
-      dividerTheme: DividerThemeData(
-        color: Colors.grey.shade300,
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFFD0D7DE),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: Colors.grey.shade100,
-        selectedColor: primaryColor.withAlpha(30),
-        labelStyle: const TextStyle(color: textPrimary),
+        backgroundColor: const Color(0xFFF5F8FB),
+        selectedColor: brandBlue.withAlpha(30),
+        labelStyle: const TextStyle(color: Color(0xFF0E1A25)),
       ),
       listTileTheme: const ListTileThemeData(
-        textColor: textPrimary,
-        iconColor: textSecondary,
+        textColor: Color(0xFF0E1A25),
+        iconColor: Color(0xFF4A5F73),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: surfaceColor,
+        color: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: textPrimary,
-        contentTextStyle: const TextStyle(color: surfaceColor),
+        backgroundColor: const Color(0xFF0E1A25),
+        contentTextStyle: const TextStyle(color: Colors.white),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
         behavior: SnackBarBehavior.floating,
       ),
+      extensions: const [HypeTrainColors.light],
     );
   }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Dark Theme
+  // ══════════════════════════════════════════════════════════════════════
 
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
+        seedColor: brandBlue,
         brightness: Brightness.dark,
-        primary: primaryColor,
-        secondary: secondaryColor,
+        primary: brandBlue,
+        secondary: brandMint,
         error: errorColor,
-        surface: darkSurfaceColor,
+        surface: const Color(0xFF142230),
       ),
-      scaffoldBackgroundColor: darkBackgroundColor,
+      scaffoldBackgroundColor: darkBase,
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
-        backgroundColor: darkSurfaceColor,
-        foregroundColor: darkTextPrimary,
+        backgroundColor: Color(0xFF142230),
+        foregroundColor: Color(0xFFE8EDF2),
       ),
       cardTheme: CardTheme(
         elevation: 2,
-        color: darkCardColor,
+        color: const Color(0xFF1F3345),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: darkCardColor,
+        fillColor: const Color(0xFF1F3345),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade700),
+          borderSide: const BorderSide(color: Color(0xFF2D4255)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade700),
+          borderSide: const BorderSide(color: Color(0xFF2D4255)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: primaryColor, width: 2),
+          borderSide: const BorderSide(color: brandBlue, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: errorColor),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        labelStyle: const TextStyle(color: darkTextSecondary),
-        hintStyle: const TextStyle(color: darkTextSecondary),
+        labelStyle: const TextStyle(color: Color(0xFF8DA0B5)),
+        hintStyle: const TextStyle(color: Color(0xFF8DA0B5)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: brandBlue,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
@@ -214,44 +244,45 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
+          foregroundColor: brandBlue,
         ),
       ),
       dialogTheme: DialogTheme(
-        backgroundColor: darkSurfaceColor,
+        backgroundColor: const Color(0xFF142230),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: darkSurfaceColor,
+        backgroundColor: Color(0xFF142230),
       ),
-      dividerTheme: DividerThemeData(
-        color: Colors.grey.shade800,
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFF2D4255),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: darkCardColor,
-        selectedColor: primaryColor.withAlpha(50),
-        labelStyle: const TextStyle(color: darkTextPrimary),
+        backgroundColor: const Color(0xFF1F3345),
+        selectedColor: brandBlue.withAlpha(50),
+        labelStyle: const TextStyle(color: Color(0xFFE8EDF2)),
       ),
       listTileTheme: const ListTileThemeData(
-        textColor: darkTextPrimary,
-        iconColor: darkTextSecondary,
+        textColor: Color(0xFFE8EDF2),
+        iconColor: Color(0xFF8DA0B5),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: darkCardColor,
+        color: const Color(0xFF1F3345),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: darkCardColor,
-        contentTextStyle: const TextStyle(color: darkTextPrimary),
+        backgroundColor: const Color(0xFF1F3345),
+        contentTextStyle: const TextStyle(color: Color(0xFFE8EDF2)),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
         behavior: SnackBarBehavior.floating,
       ),
+      extensions: const [HypeTrainColors.dark],
     );
   }
 }

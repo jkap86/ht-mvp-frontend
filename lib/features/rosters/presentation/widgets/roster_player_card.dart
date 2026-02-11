@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/status_badge.dart';
@@ -31,22 +32,21 @@ class RosterPlayerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final positionColor = getPositionColor(player.position);
 
     final card = Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         side: isSelected
-            ? BorderSide(color: SelectionColors.primary, width: 2)
+            ? BorderSide(color: context.htColors.info, width: 2)
             : isHighlighted
-                ? BorderSide(color: SelectionColors.success, width: 2)
+                ? BorderSide(color: context.htColors.success, width: 2)
                 : BorderSide.none,
       ),
       color: isSelected
-          ? SelectionColors.primary.withAlpha(isDark ? 30 : 20)
+          ? context.htColors.selectionPrimary
           : isHighlighted
-              ? SelectionColors.success.withAlpha(isDark ? 30 : 20)
+              ? context.htColors.selectionSuccess
               : null,
       child: InkWell(
         onTap: onTap,

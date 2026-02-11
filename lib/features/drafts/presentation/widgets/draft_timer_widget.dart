@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 
 class DraftTimerWidget extends StatefulWidget {
   final DateTime? pickDeadline;
@@ -97,9 +98,9 @@ class _DraftTimerWidgetState extends State<DraftTimerWidget>
     }
   }
 
-  Color _getTimerColor() {
+  Color _getTimerColor(BuildContext context) {
     if (_secondsRemaining <= 0) {
-      return const Color(0xFF6E7681); // Grey for expired
+      return context.htColors.textMuted;
     }
     if (_secondsRemaining <= 10) {
       return AppTheme.draftUrgent; // Red - urgent
@@ -131,15 +132,13 @@ class _DraftTimerWidgetState extends State<DraftTimerWidget>
       return const SizedBox.shrink();
     }
 
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final color = _getTimerColor();
+    final color = _getTimerColor(context);
     final timeText = _formatTime();
 
     Widget timerContent = Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 40 : 30),
+        color: color.withAlpha(35),
         borderRadius: BorderRadius.circular(AppSpacing.radiusXxl),
         border: Border.all(color: color, width: 2),
       ),

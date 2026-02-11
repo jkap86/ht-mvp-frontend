@@ -66,20 +66,10 @@ Color getInjuryColor(String? status) {
     case 'IR':
       return AppTheme.injuryOut;
     case 'PUP':
-      return const Color(0xFF6E7681);
+      return AppTheme.injuryMuted;
     default:
-      return const Color(0xFF6E7681);
+      return AppTheme.injuryMuted;
   }
-}
-
-/// Semantic colors for trade statuses.
-class TradeStatusColors {
-  TradeStatusColors._();
-
-  static const Color pending = Color(0xFFFF9800);
-  static const Color inReview = Color(0xFF1E88E5);
-  static const Color completed = Color(0xFF43A047);
-  static const Color failed = Color(0xFF9E9E9E);
 }
 
 /// Returns the appropriate color for a trade status.
@@ -87,23 +77,14 @@ Color getTradeStatusColor(String status) {
   switch (status.toLowerCase()) {
     case 'pending':
     case 'countered':
-      return TradeStatusColors.pending;
+      return AppTheme.brandOrange;
     case 'accepted':
     case 'in_review':
     case 'inreview':
-      return TradeStatusColors.inReview;
+      return AppTheme.brandBlue;
     case 'completed':
-      return TradeStatusColors.completed;
+      return const Color(0xFF43A047);
     default:
-      return TradeStatusColors.failed;
+      return AppTheme.injuryMuted;
   }
-}
-
-/// Semantic colors for selection states.
-class SelectionColors {
-  SelectionColors._();
-
-  static const Color primary = Color(0xFF1E88E5);
-  static const Color success = Color(0xFF43A047);
-  static const Color warning = Color(0xFFFF9800);
 }

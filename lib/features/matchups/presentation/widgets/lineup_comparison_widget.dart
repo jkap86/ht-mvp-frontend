@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../config/app_theme.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -99,7 +99,7 @@ class LineupComparisonWidget extends StatelessWidget {
             child: Text(
               team1.teamName,
               style: AppTypography.bodyBold.copyWith(
-                color: isTeam1Winner ? SelectionColors.success : theme.colorScheme.onSurface,
+                color: isTeam1Winner ? context.htColors.success : theme.colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
@@ -120,7 +120,7 @@ class LineupComparisonWidget extends StatelessWidget {
             child: Text(
               team2.teamName,
               style: AppTypography.bodyBold.copyWith(
-                color: isTeam2Winner ? SelectionColors.success : theme.colorScheme.onSurface,
+                color: isTeam2Winner ? context.htColors.success : theme.colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
@@ -133,12 +133,11 @@ class LineupComparisonWidget extends StatelessWidget {
 
   Widget _buildSectionHeader(BuildContext context, String title) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
       width: double.infinity,
-      color: isDark ? AppTheme.darkCardColor : theme.colorScheme.surfaceContainerHighest,
+      color: context.htColors.surfaceContainer,
       child: Text(
         title,
         style: AppTypography.label.copyWith(
@@ -154,8 +153,6 @@ class LineupComparisonWidget extends StatelessWidget {
     MatchupPlayer? player1,
     MatchupPlayer? player2,
   ) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final slot = player1?.slot ?? player2?.slot ?? '';
     final points1Won = player1 != null && player2 != null && player1.points > player2.points;
     final points2Won = player1 != null && player2 != null && player2.points > player1.points;
@@ -164,7 +161,7 @@ class LineupComparisonWidget extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: isDark ? AppTheme.darkCardColor : theme.colorScheme.surfaceContainerHighest,
+            color: context.htColors.surfaceContainer,
             width: 1,
           ),
         ),
@@ -236,7 +233,7 @@ class _PlayerCell extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
-        color: isWinning ? SelectionColors.success.withAlpha(25) : null,
+        color: isWinning ? context.htColors.selectionSuccess : null,
       ),
       child: Row(
         mainAxisAlignment:
@@ -296,14 +293,13 @@ class _PointsDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: isWinning
-            ? SelectionColors.success.withAlpha(isDark ? 50 : 30)
-            : (isDark ? AppTheme.darkCardColor : theme.colorScheme.surfaceContainerHighest),
+            ? context.htColors.selectionSuccess
+            : context.htColors.surfaceContainer,
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       ),
       child: Text(
@@ -312,7 +308,7 @@ class _PointsDisplay extends StatelessWidget {
           fontSize: AppTypography.fontXs + 1,
           fontWeight: FontWeight.bold,
           color: isWinning
-              ? SelectionColors.success
+              ? context.htColors.success
               : theme.colorScheme.onSurfaceVariant,
         ),
       ),
@@ -328,13 +324,12 @@ class _PositionBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = getPositionColor(slot);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: 36,
       height: 24,
       decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 50 : 35),
+        color: color.withAlpha(40),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       ),
       child: Center(

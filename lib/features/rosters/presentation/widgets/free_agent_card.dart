@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/widgets/status_badge.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -99,8 +100,8 @@ class FreeAgentCard extends StatelessWidget {
                 avatar: const Icon(Icons.access_time, size: 18),
                 label: const Text('Claim'),
                 onPressed: onAdd,
-                backgroundColor: SelectionColors.warning.withAlpha(25),
-                side: BorderSide(color: SelectionColors.warning.withAlpha(75)),
+                backgroundColor: context.htColors.selectionWarning,
+                side: BorderSide(color: context.htColors.warning.withAlpha(75)),
               )
             else
               IconButton(

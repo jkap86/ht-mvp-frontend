@@ -18,16 +18,15 @@ class PositionBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final positionColor = getPositionColor(position);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: positionColor.withAlpha(isDark ? 50 : 35),
+        color: positionColor.withAlpha(40),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(
-          color: positionColor.withAlpha(isDark ? 100 : 70),
+          color: positionColor.withAlpha(85),
           width: 1.5,
         ),
       ),

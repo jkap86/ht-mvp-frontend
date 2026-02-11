@@ -158,13 +158,12 @@ class _SlowAuctionRosterDrawerState
     int? myRosterId,
   ) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final isMyTeam = team.rosterId == myRosterId;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       color: isMyTeam
-          ? AppTheme.draftActionPrimary.withAlpha(isDark ? 25 : 15)
+          ? AppTheme.draftActionPrimary.withAlpha(20)
           : null,
       child: Theme(
         // Override ExpansionTile divider color
@@ -251,8 +250,6 @@ class _SlowAuctionRosterDrawerState
   }
 
   Widget _buildPlayerListTile(_RosterPlayer player) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final positionColor = getPositionColor(player.position);
 
     return ListTile(
@@ -263,10 +260,10 @@ class _SlowAuctionRosterDrawerState
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: positionColor.withAlpha(isDark ? 50 : 35),
+          color: positionColor.withAlpha(40),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: positionColor.withAlpha(isDark ? 100 : 70),
+            color: positionColor.withAlpha(85),
             width: 1,
           ),
         ),
