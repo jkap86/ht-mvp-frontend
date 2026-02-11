@@ -30,6 +30,7 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   bool _gifPickerOpen = false;
+  Offset? _doubleTapPosition;
 
   /// Track the newest message ID so we only animate truly new arrivals.
   int? _lastSeenMessageId;
@@ -181,7 +182,16 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
               onToggleReaction(emoji);
             }
           },
-          onDoubleTap: () => onToggleReaction('🔥'),
+          onDoubleTapDown: (details) => _doubleTapPosition = details.globalPosition,
+          onDoubleTap: () async {
+            final emoji = await showReactionBar(
+              context,
+              position: _doubleTapPosition!,
+            );
+            if (emoji != null) {
+              onToggleReaction(emoji);
+            }
+          },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

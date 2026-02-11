@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_spacing.dart';
 
 /// Quick-reaction emojis for the floating reaction bar.
-const _quickReactions = ['🔥', '👍', '😂', '👀', '💀'];
+const _quickReactions = ['🔥', '👍', '😂', '👀', '💀', '💩', '🤡'];
 
 /// A floating reaction bar that appears above a long-pressed message.
 /// Shows 5 quick reactions + a "+" button for a picker.
