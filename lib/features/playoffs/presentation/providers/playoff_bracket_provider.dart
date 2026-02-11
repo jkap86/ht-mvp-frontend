@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/api/api_exceptions.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/playoff_repository.dart';
 import '../../domain/playoff.dart';
 
@@ -9,6 +11,7 @@ class PlayoffBracketState {
   final bool isProcessing;
   final String? error;
   final String? successMessage;
+  final bool isForbidden;
 
   PlayoffBracketState({
     this.bracketView,
@@ -16,6 +19,7 @@ class PlayoffBracketState {
     this.isProcessing = false,
     this.error,
     this.successMessage,
+    this.isForbidden = false,
   });
 
   bool get hasPlayoffs => bracketView?.hasPlayoffs ?? false;
@@ -27,6 +31,7 @@ class PlayoffBracketState {
     bool? isProcessing,
     String? error,
     String? successMessage,
+    bool? isForbidden,
     bool clearError = false,
     bool clearSuccess = false,
   }) {
@@ -36,6 +41,7 @@ class PlayoffBracketState {
       isProcessing: isProcessing ?? this.isProcessing,
       error: clearError ? null : (error ?? this.error),
       successMessage: clearSuccess ? null : (successMessage ?? this.successMessage),
+      isForbidden: isForbidden ?? this.isForbidden,
     );
   }
 }
@@ -58,9 +64,11 @@ class PlayoffBracketNotifier extends StateNotifier<PlayoffBracketState> {
         bracketView: bracketView,
         isLoading: false,
       );
+    } on ForbiddenException {
+      state = state.copyWith(isForbidden: true, isLoading: false);
     } catch (e) {
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isLoading: false,
       );
     }
@@ -88,7 +96,7 @@ class PlayoffBracketNotifier extends StateNotifier<PlayoffBracketState> {
       return true;
     } catch (e) {
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;
@@ -108,7 +116,7 @@ class PlayoffBracketNotifier extends StateNotifier<PlayoffBracketState> {
       return true;
     } catch (e) {
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isProcessing: false,
       );
       return false;

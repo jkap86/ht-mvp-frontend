@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/api/api_exceptions.dart';
 import '../../../../core/services/invalidation_service.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../../leagues/data/league_repository.dart';
 import '../../../leagues/domain/league.dart';
 import '../../data/matchup_repository.dart';
@@ -13,6 +15,7 @@ class StandingsState {
   final int? myRosterId;
   final bool isLoading;
   final String? error;
+  final bool isForbidden;
   final DateTime? lastUpdated;
 
   StandingsState({
@@ -21,6 +24,7 @@ class StandingsState {
     this.myRosterId,
     this.isLoading = true,
     this.error,
+    this.isForbidden = false,
     this.lastUpdated,
   });
 
@@ -45,6 +49,7 @@ class StandingsState {
     int? myRosterId,
     bool? isLoading,
     String? error,
+    bool? isForbidden,
     bool clearError = false,
     DateTime? lastUpdated,
   }) {
@@ -54,6 +59,7 @@ class StandingsState {
       myRosterId: myRosterId ?? this.myRosterId,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
+      isForbidden: isForbidden ?? this.isForbidden,
       lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
@@ -110,9 +116,11 @@ class StandingsNotifier extends StateNotifier<StandingsState> {
         isLoading: false,
         lastUpdated: DateTime.now(),
       );
+    } on ForbiddenException {
+      state = state.copyWith(isForbidden: true, isLoading: false, standings: []);
     } catch (e) {
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isLoading: false,
       );
     }

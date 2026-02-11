@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api/api_exceptions.dart';
+import '../../../core/utils/error_sanitizer.dart';
 import '../domain/league.dart';
 import 'league_repository.dart';
 
@@ -46,7 +48,7 @@ class PublicLeaguesNotifier extends StateNotifier<PublicLeaguesState> {
       final leagues = await _repository.discoverPublicLeagues();
       state = state.copyWith(leagues: leagues, isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorSanitizer.sanitize(e));
     }
   }
 
@@ -62,8 +64,20 @@ class PublicLeaguesNotifier extends StateNotifier<PublicLeaguesState> {
         clearJoining: true,
       );
       return league;
+    } on ForbiddenException {
+      state = state.copyWith(
+        error: 'You are not allowed to join this league.',
+        clearJoining: true,
+      );
+      return null;
+    } on ConflictException {
+      state = state.copyWith(
+        error: 'You are already a member of this league.',
+        clearJoining: true,
+      );
+      return null;
     } catch (e) {
-      state = state.copyWith(error: e.toString(), clearJoining: true);
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e), clearJoining: true);
       return null;
     }
   }

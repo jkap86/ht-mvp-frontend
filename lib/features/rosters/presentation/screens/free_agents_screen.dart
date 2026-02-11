@@ -62,6 +62,13 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     final waiversEnabled = _waiversEnabled(teamState.league?.settings);
     final isFaabLeague = _getWaiverType(teamState.league?.settings) == 'faab';
 
+    // Navigate away if access is lost
+    ref.listen(freeAgentsProvider(_key), (prev, next) {
+      if (next.isForbidden && prev?.isForbidden != true) {
+        handleForbiddenNavigation(context, ref);
+      }
+    });
+
     // Show error snackbar
     ref.listen<FreeAgentsState>(freeAgentsProvider(_key), (previous, next) {
       if (next.error != null && previous?.error != next.error) {

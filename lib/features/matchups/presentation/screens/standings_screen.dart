@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../leagues/domain/league.dart';
@@ -17,6 +18,12 @@ class StandingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(standingsProvider(leagueId), (prev, next) {
+      if (next.isForbidden && prev?.isForbidden != true) {
+        handleForbiddenNavigation(context, ref);
+      }
+    });
+
     final state = ref.watch(standingsProvider(leagueId));
 
     if (state.isLoading) {

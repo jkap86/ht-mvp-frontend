@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api/api_exceptions.dart';
+import '../../../core/utils/error_sanitizer.dart';
 import '../domain/invitation.dart';
 import '../domain/league.dart';
 import 'league_repository.dart';
@@ -47,7 +49,7 @@ class InvitationsNotifier extends StateNotifier<InvitationsState> {
       final invitations = await _repository.getPendingInvitations();
       state = state.copyWith(invitations: invitations, isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorSanitizer.sanitize(e));
     }
   }
 
@@ -65,8 +67,25 @@ class InvitationsNotifier extends StateNotifier<InvitationsState> {
         clearProcessing: true,
       );
       return league;
+    } on ForbiddenException {
+      state = state.copyWith(
+        error: 'This invitation is not valid for your account.',
+        clearProcessing: true,
+      );
+      return null;
+    } on NotFoundException {
+      // Remove the expired/revoked invitation from the list
+      final updatedInvitations = state.invitations
+          .where((inv) => inv.id != invitationId)
+          .toList();
+      state = state.copyWith(
+        invitations: updatedInvitations,
+        error: 'This invitation has expired or been revoked.',
+        clearProcessing: true,
+      );
+      return null;
     } catch (e) {
-      state = state.copyWith(error: e.toString(), clearProcessing: true);
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e), clearProcessing: true);
       return null;
     }
   }
@@ -86,7 +105,7 @@ class InvitationsNotifier extends StateNotifier<InvitationsState> {
       );
       return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString(), clearProcessing: true);
+      state = state.copyWith(error: ErrorSanitizer.sanitize(e), clearProcessing: true);
       return false;
     }
   }

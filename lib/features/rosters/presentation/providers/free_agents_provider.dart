@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/api/api_exceptions.dart';
 import '../../../../core/services/invalidation_service.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../../players/domain/player.dart';
 import '../../data/roster_repository.dart';
 
@@ -13,6 +15,7 @@ class FreeAgentsState {
   final String? error;
   final bool isAddingPlayer;
   final int? addingPlayerId;
+  final bool isForbidden;
   final DateTime? lastUpdated;
 
   FreeAgentsState({
@@ -23,6 +26,7 @@ class FreeAgentsState {
     this.error,
     this.isAddingPlayer = false,
     this.addingPlayerId,
+    this.isForbidden = false,
     this.lastUpdated,
   });
 
@@ -63,6 +67,7 @@ class FreeAgentsState {
     bool? isAddingPlayer,
     int? addingPlayerId,
     bool clearAddingPlayer = false,
+    bool? isForbidden,
     DateTime? lastUpdated,
   }) {
     return FreeAgentsState(
@@ -73,6 +78,7 @@ class FreeAgentsState {
       error: clearError ? null : (error ?? this.error),
       isAddingPlayer: isAddingPlayer ?? this.isAddingPlayer,
       addingPlayerId: clearAddingPlayer ? null : (addingPlayerId ?? this.addingPlayerId),
+      isForbidden: isForbidden ?? this.isForbidden,
       lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
@@ -126,9 +132,11 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
         isLoading: false,
         lastUpdated: DateTime.now(),
       );
+    } on ForbiddenException {
+      state = state.copyWith(isForbidden: true, isLoading: false, players: []);
     } catch (e) {
       state = state.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isLoading: false,
       );
     }
@@ -186,7 +194,7 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
     } catch (e) {
       // ROLLBACK: Restore previous state on failure
       state = previousState.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isAddingPlayer: false,
         clearAddingPlayer: true,
       );
@@ -223,7 +231,7 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
     } catch (e) {
       // ROLLBACK: Restore previous state on failure
       state = previousState.copyWith(
-        error: e.toString(),
+        error: ErrorSanitizer.sanitize(e),
         isAddingPlayer: false,
         clearAddingPlayer: true,
       );

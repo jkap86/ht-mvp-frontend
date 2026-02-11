@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../core/utils/error_display.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../leagues/presentation/providers/league_detail_provider.dart';
 import '../providers/playoff_bracket_provider.dart';
@@ -28,6 +29,10 @@ class _PlayoffBracketScreenState extends ConsumerState<PlayoffBracketScreen> {
       _subscription = ref.listenManual(
         playoffBracketProvider(widget.leagueId),
         (prev, next) {
+          if (next.isForbidden && prev?.isForbidden != true) {
+            handleForbiddenNavigation(context, ref);
+            return;
+          }
           if (next.successMessage != null && prev?.successMessage != next.successMessage) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
