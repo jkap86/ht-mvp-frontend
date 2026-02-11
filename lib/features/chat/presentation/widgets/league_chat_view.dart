@@ -13,6 +13,7 @@ import 'gif_message_bubble.dart';
 import 'gif_picker.dart';
 import 'reaction_bar.dart';
 import 'reaction_pills.dart';
+import 'slide_in_message.dart';
 import 'system_message_bubble.dart';
 
 /// League chat view for the floating chat widget.
@@ -187,7 +188,7 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
 
         // Animate only the very newest message
         if (index == 0 && isNewArrival) {
-          return _SlideInMessage(child: bubble);
+          return SlideInMessage(child: bubble);
         }
 
         return bubble;
@@ -202,56 +203,6 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
     if (earlier.userId == null || later.userId == null) return false;
     if (earlier.userId != later.userId) return false;
     return later.createdAt.difference(earlier.createdAt).inSeconds.abs() < 120;
-  }
-}
-
-/// Slide-up + fade animation for newly arrived messages.
-class _SlideInMessage extends StatefulWidget {
-  final Widget child;
-  const _SlideInMessage({required this.child});
-
-  @override
-  State<_SlideInMessage> createState() => _SlideInMessageState();
-}
-
-class _SlideInMessageState extends State<_SlideInMessage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<Offset> _slideAnimation;
-  late final Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SlideTransition(
-      position: _slideAnimation,
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: widget.child,
-      ),
-    );
   }
 }
 

@@ -208,6 +208,38 @@ class ChatNotifier extends StateNotifier<ChatState> {
     final hasReacted = existingReaction != null &&
         existingReaction.users.contains(_currentUserId);
 
+    // Optimistic update
+    final previousMessages = state.messages;
+    final reactions = List<ReactionGroup>.from(msg.reactions);
+
+    if (hasReacted) {
+      final rIdx = reactions.indexWhere((r) => r.emoji == emoji);
+      if (rIdx >= 0) {
+        final existing = reactions[rIdx];
+        final newUsers = existing.users.where((u) => u != _currentUserId).toList();
+        if (newUsers.isEmpty) {
+          reactions.removeAt(rIdx);
+        } else {
+          reactions[rIdx] = existing.copyWith(count: newUsers.length, users: newUsers);
+        }
+      }
+    } else {
+      final rIdx = reactions.indexWhere((r) => r.emoji == emoji);
+      if (rIdx >= 0) {
+        final existing = reactions[rIdx];
+        reactions[rIdx] = existing.copyWith(
+          count: existing.count + 1,
+          users: [...existing.users, _currentUserId!],
+        );
+      } else {
+        reactions.add(ReactionGroup(emoji: emoji, count: 1, users: [_currentUserId!]));
+      }
+    }
+
+    final updatedMessages = [...state.messages];
+    updatedMessages[idx] = msg.copyWith(reactions: reactions);
+    state = state.copyWith(messages: updatedMessages);
+
     try {
       if (hasReacted) {
         await _chatRepo.removeReaction(leagueId, messageId, emoji);
@@ -215,7 +247,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
         await _chatRepo.addReaction(leagueId, messageId, emoji);
       }
     } catch (_) {
-      // Silent fail - socket event will update state
+      // Revert optimistic update on error
+      if (mounted) {
+        state = state.copyWith(messages: previousMessages);
+      }
     }
   }
 

@@ -9,9 +9,12 @@ import '../../../core/widgets/states/states.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../domain/chat_message.dart';
 import 'providers/chat_provider.dart';
+import 'widgets/chat_message_input.dart';
 import 'widgets/gif_message_bubble.dart';
+import 'widgets/gif_picker.dart';
 import 'widgets/reaction_bar.dart';
 import 'widgets/reaction_pills.dart';
+import 'widgets/slide_in_message.dart';
 import 'widgets/system_message_bubble.dart';
 
 class ChatWidget extends ConsumerStatefulWidget {
@@ -26,6 +29,7 @@ class ChatWidget extends ConsumerStatefulWidget {
 class _ChatWidgetState extends ConsumerState<ChatWidget> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+  bool _gifPickerOpen = false;
 
   /// Track the newest message ID so we only animate truly new arrivals.
   int? _lastSeenMessageId;
@@ -66,6 +70,15 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
     }
   }
 
+  Future<void> _sendGif(String gifUrl) async {
+    setState(() => _gifPickerOpen = false);
+    final notifier = ref.read(chatProvider(widget.leagueId).notifier);
+    final success = await notifier.sendMessage('gif::$gifUrl');
+    if (!success && mounted) {
+      'Error sending GIF'.showAsError(ref);
+    }
+  }
+
   /// Two messages belong to the same group if same non-null userId and <2min apart.
   bool _isSameGroup(ChatMessage? earlier, ChatMessage? later) {
     if (earlier == null || later == null) return false;
@@ -94,7 +107,22 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
                 )
               : _buildMessageList(state),
         ),
-        _buildMessageInput(state),
+        if (_gifPickerOpen)
+          GifPicker(
+            compact: true,
+            onGifSelected: _sendGif,
+          ),
+        ChatMessageInput(
+          controller: _messageController,
+          isSending: state.isSending,
+          onSend: _sendMessage,
+          gifPickerOpen: _gifPickerOpen,
+          onInputModeChanged: (mode) {
+            setState(() {
+              _gifPickerOpen = mode == InputMode.gif;
+            });
+          },
+        ),
       ],
     );
   }
@@ -177,7 +205,7 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
 
         // Animate only the very newest message
         if (index == 0 && isNewArrival) {
-          return _SlideInMessage(child: bubble);
+          return SlideInMessage(child: bubble);
         }
 
         return bubble;
@@ -185,104 +213,6 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
     );
   }
 
-  Widget _buildMessageInput(ChatState state) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: 'Type a message...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusXxl),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-              ),
-              maxLines: null,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _sendMessage(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton.filled(
-            onPressed: state.isSending ? null : _sendMessage,
-            icon: state.isSending
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.send),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Slide-up + fade animation for newly arrived messages.
-class _SlideInMessage extends StatefulWidget {
-  final Widget child;
-  const _SlideInMessage({required this.child});
-
-  @override
-  State<_SlideInMessage> createState() => _SlideInMessageState();
-}
-
-class _SlideInMessageState extends State<_SlideInMessage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<Offset> _slideAnimation;
-  late final Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SlideTransition(
-      position: _slideAnimation,
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: widget.child,
-      ),
-    );
-  }
 }
 
 class _MessageBubble extends StatelessWidget {
@@ -368,7 +298,7 @@ class _MessageBubble extends StatelessWidget {
                         bottomRight: const Radius.circular(AppSpacing.radiusXl),
                       ),
                     ),
-                    child: Text(
+                    child: SelectableText(
                       message.message,
                       style: theme.textTheme.bodyMedium,
                     ),
