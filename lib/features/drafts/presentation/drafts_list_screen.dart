@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/states/states.dart';
 import '../domain/draft_status.dart';
 import '../domain/draft_type.dart';
 import 'providers/drafts_list_provider.dart';
@@ -24,66 +25,28 @@ class DraftsListScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(draftsListProvider.notifier).loadDrafts(),
-        child: _buildBody(context, state),
+        child: _buildBody(context, ref, state),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, DraftsListState state) {
+  Widget _buildBody(BuildContext context, WidgetRef ref, DraftsListState state) {
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoadingView();
     }
 
     if (state.error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading drafts',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              state.error!,
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+      return AppErrorView(
+        message: state.error!,
+        onRetry: () => ref.read(draftsListProvider.notifier).loadDrafts(),
       );
     }
 
     if (state.drafts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.assignment_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No drafts yet',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Drafts will appear here when created',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-            ),
-          ],
-        ),
+      return const AppEmptyView(
+        icon: Icons.assignment_outlined,
+        title: 'No drafts yet',
+        subtitle: 'Drafts will appear here when created',
       );
     }
 

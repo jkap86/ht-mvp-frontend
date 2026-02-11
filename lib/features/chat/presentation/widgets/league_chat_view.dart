@@ -169,7 +169,7 @@ class _LeagueChatBubble extends StatelessWidget {
                         username,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                          fontSize: 13,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -185,7 +185,7 @@ class _LeagueChatBubble extends StatelessWidget {
                   const SizedBox(height: 2),
                   SelectableText(
                     message.message,
-                    style: const TextStyle(fontSize: 12),
+                    style: const TextStyle(fontSize: 14),
                   ),
                 ],
               ),

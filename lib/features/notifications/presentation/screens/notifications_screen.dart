@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/app_router.dart';
+import '../../../../core/widgets/skeletons/skeletons.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/notification_item.dart';
@@ -76,7 +77,7 @@ class NotificationsScreen extends ConsumerWidget {
 
   Widget _buildBody(BuildContext context, WidgetRef ref, NotificationsState state) {
     if (state.isLoading) {
-      return const AppLoadingView(message: 'Loading notifications...');
+      return const SkeletonList(itemCount: 6);
     }
 
     if (state.error != null) {

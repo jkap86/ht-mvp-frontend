@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/navigation_utils.dart';
+import '../../../../core/utils/error_sanitizer.dart';
+import '../../../../core/widgets/live_badge.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../domain/matchup.dart';
 import '../providers/matchup_provider.dart';
@@ -91,7 +93,7 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen> {
         },
         loading: () => const AppLoadingView(),
         error: (error, _) => AppErrorView(
-          message: error.toString(),
+          message: ErrorSanitizer.sanitize(error),
           onRetry: () {
             ref.invalidate(matchupDetailsProvider(
               (leagueId: widget.leagueId, matchupId: widget.matchupId),
@@ -266,35 +268,7 @@ class _ScoreHeader extends StatelessWidget {
               ),
               if (isLive && !isFinal) ...[
                 const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withAlpha(30),
-                    borderRadius: AppSpacing.cardRadius,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: colorScheme.error,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'LIVE',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const LiveBadge(),
               ],
             ],
           ),

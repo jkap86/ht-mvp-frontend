@@ -6,6 +6,8 @@ import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/navigation_utils.dart';
+import '../../../../core/widgets/live_badge.dart';
+import '../../../../core/widgets/skeletons/skeletons.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../../core/widgets/week_selector_strip.dart';
 import '../../../leagues/domain/league.dart';
@@ -39,7 +41,7 @@ class MatchupScreen extends ConsumerWidget {
           ),
           title: const Text('Matchups'),
         ),
-        body: const AppLoadingView(),
+        body: const SkeletonMatchupList(itemCount: 4),
       );
     }
 
@@ -312,35 +314,7 @@ class _MatchupCard extends StatelessWidget {
                       ),
                     )
                   else if (matchup.hasLiveData)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withAlpha(30),
-                        borderRadius: AppSpacing.badgeRadius,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: colorScheme.error,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'LIVE',
-                            style: TextStyle(
-                              color: colorScheme.primary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    const LiveBadge(),
                   if (matchup.isPlayoff && !matchup.isFinal) ...[
                     const SizedBox(width: 8),
                     Container(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_filter_chip.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
@@ -33,6 +34,9 @@ class MyClaimsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Waiver Claims'),
+        actions: [
+          if (userRosterId != null) _buildBudgetChip(context, state),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: _buildFilterChips(context, ref, state),
@@ -42,12 +46,30 @@ class MyClaimsScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildBudgetChip(BuildContext context, WaiversState state) {
+    final budget = state.getBudgetForRoster(userRosterId!);
+    if (budget == null) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: Chip(
+        avatar: Icon(Icons.account_balance_wallet, size: 16, color: colorScheme.primary),
+        label: Text(
+          '\$${budget.remainingBudget} / \$${budget.initialBudget}',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        ),
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+  }
+
   Widget _buildFilterChips(BuildContext context, WidgetRef ref, WaiversState state) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          _FilterChip(
+          AppFilterChip(
             label: 'Pending',
             selected: state.filter == 'pending',
             onSelected: () => ref
@@ -55,7 +77,7 @@ class MyClaimsScreen extends ConsumerWidget {
                 .setFilter('pending'),
           ),
           const SizedBox(width: 8),
-          _FilterChip(
+          AppFilterChip(
             label: 'All',
             selected: state.filter == 'all',
             onSelected: () => ref
@@ -63,7 +85,7 @@ class MyClaimsScreen extends ConsumerWidget {
                 .setFilter('all'),
           ),
           const SizedBox(width: 8),
-          _FilterChip(
+          AppFilterChip(
             label: 'Completed',
             selected: state.filter == 'completed',
             onSelected: () => ref
@@ -132,7 +154,11 @@ class MyClaimsScreen extends ConsumerWidget {
   }
 
   Widget _buildReorderablePendingList(BuildContext context, WidgetRef ref, List<WaiverClaim> claims) {
-    return ReorderableListView.builder(
+    return RefreshIndicator(
+      onRefresh: () => ref
+          .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+          .loadWaiverData(),
+      child: ReorderableListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: claims.length,
       onReorder: (oldIndex, newIndex) async {
@@ -181,6 +207,7 @@ class MyClaimsScreen extends ConsumerWidget {
           ),
         );
       },
+    ),
     );
   }
 
@@ -212,27 +239,6 @@ class MyClaimsScreen extends ConsumerWidget {
         showSuccess(ref, 'Claim cancelled');
       }
     }
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onSelected;
-
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onSelected(),
-    );
   }
 }
 

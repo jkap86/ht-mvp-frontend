@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/error_display.dart';
+import '../../../../core/utils/error_sanitizer.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../../core/widgets/states/app_error_view.dart';
@@ -52,7 +53,7 @@ class TradeDetailScreen extends ConsumerWidget {
       body: tradeAsync.when(
         loading: () => const AppLoadingView(message: 'Loading trade...'),
         error: (error, stack) => AppErrorView(
-          message: error.toString(),
+          message: ErrorSanitizer.sanitize(error),
           onRetry: () => ref.invalidate(
               tradeDetailProvider((leagueId: leagueId, tradeId: tradeId))),
         ),

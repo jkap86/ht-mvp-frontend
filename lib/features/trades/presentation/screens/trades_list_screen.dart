@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/utils/error_display.dart';
-import '../../../../core/widgets/states/app_loading_view.dart';
+import '../../../../core/widgets/app_filter_chip.dart';
+import '../../../../core/widgets/skeletons/skeletons.dart';
 import '../../../../core/widgets/states/app_error_view.dart';
 import '../../../../core/widgets/states/app_empty_view.dart';
 import '../../../leagues/presentation/providers/league_detail_provider.dart';
@@ -59,21 +60,21 @@ class TradesListScreen extends ConsumerWidget {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _FilterChip(
+            AppFilterChip(
               label: 'My Trades',
               selected: state.filter == 'mine',
               onSelected: () =>
                   ref.read(tradesProvider(leagueId).notifier).setFilter('mine'),
             ),
             const SizedBox(width: 8),
-            _FilterChip(
+            AppFilterChip(
               label: 'All',
               selected: state.filter == 'all',
               onSelected: () =>
                   ref.read(tradesProvider(leagueId).notifier).setFilter('all'),
             ),
             const SizedBox(width: 8),
-            _FilterChip(
+            AppFilterChip(
               label: 'Pending',
               selected: state.filter == 'pending',
               onSelected: () => ref
@@ -81,7 +82,7 @@ class TradesListScreen extends ConsumerWidget {
                   .setFilter('pending'),
             ),
             const SizedBox(width: 8),
-            _FilterChip(
+            AppFilterChip(
               label: 'Completed',
               selected: state.filter == 'completed',
               onSelected: () => ref
@@ -96,7 +97,7 @@ class TradesListScreen extends ConsumerWidget {
 
   Widget _buildBody(BuildContext context, WidgetRef ref, TradesState state) {
     if (state.isLoading) {
-      return const AppLoadingView(message: 'Loading trades...');
+      return const SkeletonTradeList(itemCount: 4);
     }
 
     if (state.error != null) {
@@ -151,23 +152,3 @@ class TradesListScreen extends ConsumerWidget {
   }
 }
 
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onSelected;
-
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onSelected(),
-    );
-  }
-}

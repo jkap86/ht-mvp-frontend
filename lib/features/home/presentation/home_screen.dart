@@ -6,6 +6,7 @@ import '../../../config/theme_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/providers/league_context_provider.dart';
 import '../../../core/widgets/skeletons/skeletons.dart';
+import '../../../core/widgets/states/app_error_view.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../commissioner/presentation/providers/commissioner_provider.dart';
 import '../../commissioner/presentation/providers/league_invitations_provider.dart';
@@ -70,39 +71,20 @@ class HomeScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(homeDashboardProvider.notifier).loadDashboard(),
-        child: _buildBody(context, dashboardState),
+        child: _buildBody(context, ref, dashboardState),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, HomeDashboardState state) {
+  Widget _buildBody(BuildContext context, WidgetRef ref, HomeDashboardState state) {
     if (state.isLoading) {
       return _buildLoadingSkeleton();
     }
 
     if (state.error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading dashboard',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              state.error!,
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+      return AppErrorView(
+        message: state.error!,
+        onRetry: () => ref.read(homeDashboardProvider.notifier).loadDashboard(),
       );
     }
 

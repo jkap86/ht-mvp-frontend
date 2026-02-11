@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/time_formatter.dart';
+import '../../../core/widgets/states/states.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../domain/conversation.dart';
 import 'providers/dm_inbox_provider.dart';
@@ -33,59 +34,21 @@ class DmInboxScreen extends ConsumerWidget {
 
   Widget _buildBody(BuildContext context, WidgetRef ref, DmInboxState state) {
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoadingView();
     }
 
     if (state.error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading messages',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              state.error!,
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+      return AppErrorView(
+        message: state.error!,
+        onRetry: () => ref.read(dmInboxProvider.notifier).loadConversations(),
       );
     }
 
     if (state.conversations.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.chat_bubble_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No messages yet',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tap the pencil icon to start a conversation',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-            ),
-          ],
-        ),
+      return const AppEmptyView(
+        icon: Icons.chat_bubble_outline,
+        title: 'No messages yet',
+        subtitle: 'Tap the pencil icon to start a conversation',
       );
     }
 

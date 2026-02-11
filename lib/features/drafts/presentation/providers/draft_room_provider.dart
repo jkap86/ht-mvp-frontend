@@ -307,6 +307,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   Timer? _budgetRefreshTimer;
   Timer? _outbidDismissTimer;
   VoidCallback? _reconnectUnsubscribe;
+  VoidCallback? _memberKickedDisposer;
 
   /// Extract playerPool from draft settings, defaulting to veteran + rookie
   List<String>? _extractPlayerPool(Map<String, dynamic>? settings) {
@@ -337,6 +338,14 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
     // Subscribe to socket reconnection events to refresh state
     _reconnectUnsubscribe = _socketService.onReconnected(_onSocketReconnected);
+
+    // Join league room to receive membership events (member:kicked)
+    _socketService.joinLeague(leagueId);
+    _memberKickedDisposer = _socketService.onMemberKicked((data) {
+      if (!mounted) return;
+      // Reload data - if we were kicked, API returns 403 -> isForbidden is set
+      loadData();
+    });
 
     loadData();
   }
@@ -1108,6 +1117,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     _budgetRefreshTimer?.cancel();
     _outbidDismissTimer?.cancel();
     _reconnectUnsubscribe?.call();
+    _memberKickedDisposer?.call();
+    _socketService.leaveLeague(leagueId);
     _socketHandler.dispose();
     super.dispose();
   }

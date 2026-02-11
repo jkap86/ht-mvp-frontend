@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/utils/navigation_utils.dart';
+import '../../../../core/widgets/skeletons/skeletons.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../../core/widgets/team_selector_sheet.dart';
 import '../../../../core/widgets/week_selector_strip.dart';
@@ -128,7 +129,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           ),
           title: const Text('My Team'),
         ),
-        body: const AppLoadingView(),
+        body: const SkeletonLineup(),
       );
     }
 
@@ -517,10 +518,17 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
       return [
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              'No players on bench',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.event_seat_outlined, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Text(
+                  'No players on bench',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ],
             ),
           ),
         ),
@@ -537,10 +545,17 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
         return [
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'No eligible players for this slot',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.filter_list_off, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 8),
+                  Text(
+                    'No eligible players for this slot',
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                ],
               ),
             ),
           ),

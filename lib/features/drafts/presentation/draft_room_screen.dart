@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
 import '../../../core/utils/error_display.dart';
 import '../../../core/utils/idempotency.dart';
+import '../../../core/widgets/skeletons/skeletons.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../players/domain/player.dart';
 import '../domain/auction_settings.dart';
@@ -210,7 +211,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
           ),
           title: const Text('Draft Room'),
         ),
-        body: const AppLoadingView(),
+        body: const SkeletonList(itemCount: 6),
       );
     }
 

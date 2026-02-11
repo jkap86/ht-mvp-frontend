@@ -175,6 +175,8 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     try {
       final members = await _leagueRepo.getLeagueMembers(leagueId);
       state = state.copyWith(members: members);
+    } on ForbiddenException {
+      state = state.copyWith(isForbidden: true, isLoading: false, members: [], drafts: [], standings: []);
     } catch (_) {}
   }
 
@@ -182,6 +184,8 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     try {
       final drafts = await _leagueRepo.getLeagueDrafts(leagueId);
       state = state.copyWith(drafts: drafts);
+    } on ForbiddenException {
+      state = state.copyWith(isForbidden: true, isLoading: false, members: [], drafts: [], standings: []);
     } catch (_) {}
   }
 

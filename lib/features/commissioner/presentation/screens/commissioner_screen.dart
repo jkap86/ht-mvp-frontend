@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/providers/league_context_provider.dart';
 import '../../../../core/utils/idempotency.dart';
+import '../../../../core/widgets/skeletons/skeletons.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../providers/commissioner_provider.dart';
 import '../widgets/edit_league_card.dart';
@@ -97,7 +98,7 @@ class CommissionerScreen extends ConsumerWidget {
         title: const Text('Commissioner Tools'),
       ),
       body: state.isLoading
-          ? const AppLoadingView()
+          ? const SkeletonList(itemCount: 5)
           : Stack(
               children: [
                 Center(
@@ -105,181 +106,9 @@ class CommissionerScreen extends ConsumerWidget {
                     constraints: const BoxConstraints(maxWidth: 600),
                     child: RefreshIndicator(
                       onRefresh: () => ref.read(commissionerProvider(leagueId).notifier).loadData(),
-                      child: ListView.builder(
+                      child: ListView(
                         padding: const EdgeInsets.all(16),
-                        itemCount: 13, // 13 cards total including Danger Zone
-                        itemBuilder: (context, index) {
-                          // Add spacing between cards (except first one)
-                          Widget wrapWithSpacing(Widget child) {
-                            if (index == 0) return child;
-                            return Column(
-                              children: [
-                                const SizedBox(height: 16),
-                                child,
-                              ],
-                            );
-                          }
-
-                          switch (index) {
-                            case 0:
-                              return LeagueInfoCard(state: state);
-                            case 1:
-                              return wrapWithSpacing(EditLeagueCard(
-                                leagueId: leagueId,
-                                state: state,
-                              ));
-                            case 2:
-                              return wrapWithSpacing(MemberManagementCard(
-                                state: state,
-                                onKickMember: (rosterId, teamName, username) {
-                                  final key = newIdempotencyKey();
-                                  ref.read(commissionerProvider(leagueId).notifier).kickMember(rosterId, teamName, idempotencyKey: key);
-                                },
-                                onReinstateMember: (rosterId, teamName) {
-                                  final key = newIdempotencyKey();
-                                  ref.read(commissionerProvider(leagueId).notifier).reinstateMember(rosterId, teamName, idempotencyKey: key);
-                                },
-                              ));
-                            case 3:
-                              return wrapWithSpacing(InviteMemberCard(leagueId: leagueId));
-                            case 4:
-                              return wrapWithSpacing(ScheduleManagementCard(
-                                onGenerateSchedule: (weeks) {
-                                  final key = newIdempotencyKey();
-                                  ref.read(commissionerProvider(leagueId).notifier).generateSchedule(weeks, idempotencyKey: key);
-                                },
-                              ));
-                            case 5:
-                              return wrapWithSpacing(ScoringCard(
-                                currentWeek: state.league?.currentWeek ?? 1,
-                                onFinalizeWeek: (week) {
-                                  final key = newIdempotencyKey();
-                                  ref.read(commissionerProvider(leagueId).notifier).finalizeWeek(week, idempotencyKey: key);
-                                },
-                              ));
-                            case 6:
-                              return wrapWithSpacing(WaiverManagementCard(
-                                waiversInitialized: state.waiversInitialized,
-                                onInitializeWaivers: ({int? faabBudget}) {
-                                  final key = newIdempotencyKey();
-                                  ref.read(commissionerProvider(leagueId).notifier).initializeWaivers(faabBudget: faabBudget, idempotencyKey: key);
-                                },
-                                onProcessWaivers: () {
-                                  final key = newIdempotencyKey();
-                                  ref.read(commissionerProvider(leagueId).notifier).processWaivers(idempotencyKey: key);
-                                },
-                              ));
-                            case 7:
-                              return wrapWithSpacing(DuesConfigCard(
-                                leagueId: leagueId,
-                                totalRosters: state.league?.totalRosters ?? 12,
-                              ));
-                            case 8:
-                              return wrapWithSpacing(DuesTrackerCard(leagueId: leagueId));
-                            case 9:
-                              return wrapWithSpacing(PlayoffManagementCard(
-                                state: state,
-                                leagueId: leagueId,
-                                onGeneratePlayoffBracket: ({
-                                  required int playoffTeams,
-                                  required int startWeek,
-                                  List<int>? weeksByRound,
-                                  bool? enableThirdPlaceGame,
-                                  String? consolationType,
-                                  int? consolationTeams,
-                                }) {
-                                  final key = newIdempotencyKey();
-                                  ref.read(commissionerProvider(leagueId).notifier).generatePlayoffBracket(
-                                    playoffTeams: playoffTeams,
-                                    startWeek: startWeek,
-                                    weeksByRound: weeksByRound,
-                                    enableThirdPlaceGame: enableThirdPlaceGame,
-                                    consolationType: consolationType,
-                                    consolationTeams: consolationTeams,
-                                    idempotencyKey: key,
-                                  );
-                                },
-                                onAdvanceWinners: (week) {
-                                  final key = newIdempotencyKey();
-                                  ref.read(commissionerProvider(leagueId).notifier).advanceWinners(week, idempotencyKey: key);
-                                },
-                                onViewBracket: () {
-                                  context.push('/leagues/$leagueId/playoffs');
-                                },
-                              ));
-                            case 10:
-                              return wrapWithSpacing(SeasonControlsCard(
-                                leagueId: leagueId,
-                                state: state,
-                              ));
-                            case 11:
-                              return wrapWithSpacing(SeasonResetCard(
-                                leagueId: leagueId,
-                                state: state,
-                                onReset: ({
-                                  required String newSeason,
-                                  required String confirmationName,
-                                  bool keepMembers = false,
-                                  bool clearChat = true,
-                                }) {
-                                  final key = newIdempotencyKey();
-                                  return ref.read(commissionerProvider(leagueId).notifier).resetLeague(
-                                    newSeason: newSeason,
-                                    confirmationName: confirmationName,
-                                    keepMembers: keepMembers,
-                                    clearChat: clearChat,
-                                    idempotencyKey: key,
-                                  );
-                                },
-                              ));
-                            case 12:
-                              // Danger Zone Card
-                              return wrapWithSpacing(Card(
-                                color: Theme.of(context).colorScheme.errorContainer,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(Icons.warning, color: Theme.of(context).colorScheme.error),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Danger Zone',
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              color: Theme.of(context).colorScheme.error,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      const Text(
-                                        'Deleting the league will permanently remove all data including rosters, drafts, matchups, and transactions. This action cannot be undone.',
-                                      ),
-                                      const SizedBox(height: 16),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: ElevatedButton.icon(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Theme.of(context).colorScheme.error,
-                                            foregroundColor: Theme.of(context).colorScheme.onError,
-                                          ),
-                                          icon: const Icon(Icons.delete_forever),
-                                          label: const Text('Delete League'),
-                                          onPressed: () => _showDeleteConfirmation(context, ref, state.league?.name ?? ''),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ));
-                            default:
-                              return const SizedBox.shrink();
-                          }
-                        },
+                        children: _buildCommissionerCards(context, ref, state),
                       ),
                     ),
                   ),
@@ -294,6 +123,157 @@ class CommissionerScreen extends ConsumerWidget {
               ],
             ),
     );
+  }
+
+  List<Widget> _buildCommissionerCards(BuildContext context, WidgetRef ref, CommissionerState state) {
+    const spacing = SizedBox(height: 16);
+    return [
+      LeagueInfoCard(state: state),
+      spacing,
+      EditLeagueCard(leagueId: leagueId, state: state),
+      spacing,
+      MemberManagementCard(
+        state: state,
+        onKickMember: (rosterId, teamName, username) {
+          final key = newIdempotencyKey();
+          ref.read(commissionerProvider(leagueId).notifier).kickMember(rosterId, teamName, idempotencyKey: key);
+        },
+        onReinstateMember: (rosterId, teamName) {
+          final key = newIdempotencyKey();
+          ref.read(commissionerProvider(leagueId).notifier).reinstateMember(rosterId, teamName, idempotencyKey: key);
+        },
+      ),
+      spacing,
+      InviteMemberCard(leagueId: leagueId),
+      spacing,
+      ScheduleManagementCard(
+        onGenerateSchedule: (weeks) {
+          final key = newIdempotencyKey();
+          ref.read(commissionerProvider(leagueId).notifier).generateSchedule(weeks, idempotencyKey: key);
+        },
+      ),
+      spacing,
+      ScoringCard(
+        currentWeek: state.league?.currentWeek ?? 1,
+        onFinalizeWeek: (week) {
+          final key = newIdempotencyKey();
+          ref.read(commissionerProvider(leagueId).notifier).finalizeWeek(week, idempotencyKey: key);
+        },
+      ),
+      spacing,
+      WaiverManagementCard(
+        waiversInitialized: state.waiversInitialized,
+        onInitializeWaivers: ({int? faabBudget}) {
+          final key = newIdempotencyKey();
+          ref.read(commissionerProvider(leagueId).notifier).initializeWaivers(faabBudget: faabBudget, idempotencyKey: key);
+        },
+        onProcessWaivers: () {
+          final key = newIdempotencyKey();
+          ref.read(commissionerProvider(leagueId).notifier).processWaivers(idempotencyKey: key);
+        },
+      ),
+      spacing,
+      DuesConfigCard(leagueId: leagueId, totalRosters: state.league?.totalRosters ?? 12),
+      spacing,
+      DuesTrackerCard(leagueId: leagueId),
+      spacing,
+      PlayoffManagementCard(
+        state: state,
+        leagueId: leagueId,
+        onGeneratePlayoffBracket: ({
+          required int playoffTeams,
+          required int startWeek,
+          List<int>? weeksByRound,
+          bool? enableThirdPlaceGame,
+          String? consolationType,
+          int? consolationTeams,
+        }) {
+          final key = newIdempotencyKey();
+          ref.read(commissionerProvider(leagueId).notifier).generatePlayoffBracket(
+            playoffTeams: playoffTeams,
+            startWeek: startWeek,
+            weeksByRound: weeksByRound,
+            enableThirdPlaceGame: enableThirdPlaceGame,
+            consolationType: consolationType,
+            consolationTeams: consolationTeams,
+            idempotencyKey: key,
+          );
+        },
+        onAdvanceWinners: (week) {
+          final key = newIdempotencyKey();
+          ref.read(commissionerProvider(leagueId).notifier).advanceWinners(week, idempotencyKey: key);
+        },
+        onViewBracket: () {
+          context.push('/leagues/$leagueId/playoffs');
+        },
+      ),
+      spacing,
+      SeasonControlsCard(leagueId: leagueId, state: state),
+      spacing,
+      SeasonResetCard(
+        leagueId: leagueId,
+        state: state,
+        onReset: ({
+          required String newSeason,
+          required String confirmationName,
+          bool keepMembers = false,
+          bool clearChat = true,
+        }) {
+          final key = newIdempotencyKey();
+          return ref.read(commissionerProvider(leagueId).notifier).resetLeague(
+            newSeason: newSeason,
+            confirmationName: confirmationName,
+            keepMembers: keepMembers,
+            clearChat: clearChat,
+            idempotencyKey: key,
+          );
+        },
+      ),
+      spacing,
+      // Danger Zone
+      Card(
+        color: Theme.of(context).colorScheme.errorContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.warning, color: Theme.of(context).colorScheme.error),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Danger Zone',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Deleting the league will permanently remove all data including rosters, drafts, matchups, and transactions. This action cannot be undone.',
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                  ),
+                  icon: const Icon(Icons.delete_forever),
+                  label: const Text('Delete League'),
+                  onPressed: () => _showDeleteConfirmation(context, ref, state.league?.name ?? ''),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ];
   }
 
   void _showDeleteConfirmation(BuildContext context, WidgetRef ref, String leagueName) {

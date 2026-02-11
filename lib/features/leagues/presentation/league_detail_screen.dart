@@ -7,6 +7,7 @@ import '../../../core/utils/error_display.dart';
 import '../../../core/utils/idempotency.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/dev_console.dart';
+import '../../../core/widgets/skeletons/skeletons.dart';
 import '../../../core/widgets/states/states.dart';
 import '../domain/league.dart';
 import '../../drafts/domain/draft_order_entry.dart';
@@ -196,7 +197,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen> {
           ),
           title: const Text('Loading...'),
         ),
-        body: const AppLoadingView(),
+        body: const SkeletonList(itemCount: 4),
       );
     }
 
