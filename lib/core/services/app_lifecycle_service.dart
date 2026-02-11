@@ -17,7 +17,6 @@ typedef RefreshCallback = Future<void> Function();
 class AppLifecycleService with WidgetsBindingObserver {
   final SocketService _socketService;
   final SyncService _syncService;
-  final Ref _ref;
 
   DateTime? _backgroundedAt;
   final List<RefreshCallback> _refreshCallbacks = [];
@@ -26,7 +25,7 @@ class AppLifecycleService with WidgetsBindingObserver {
   /// If app was backgrounded longer than this, trigger refresh on resume.
   static const staleThreshold = Duration(seconds: 30);
 
-  AppLifecycleService(this._socketService, this._syncService, this._ref) {
+  AppLifecycleService(this._socketService, this._syncService, Ref _) {
     WidgetsBinding.instance.addObserver(this);
   }
 

@@ -245,7 +245,7 @@ class SocketEventRouter {
     }
   }
 
-  /// Normalize incoming data to Map<String, dynamic>.
+  /// Normalize incoming data to `Map<String, dynamic>`.
   Map<String, dynamic>? _normalizeData(dynamic data) {
     if (data is Map<String, dynamic>) {
       return data;

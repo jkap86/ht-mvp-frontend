@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'optimistic_action.dart';
-
 /// Mixin that provides optimistic update capabilities to a StateNotifier.
 ///
 /// Use this mixin to implement optimistic updates with automatic rollback

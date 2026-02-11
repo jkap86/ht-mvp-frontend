@@ -14,8 +14,6 @@ typedef SyncCallback = Future<void> Function();
 /// Providers register themselves with the sync service and are notified
 /// when a sync is requested.
 class SyncService {
-  final Ref _ref;
-
   /// Map of leagueId -> list of sync callbacks
   final Map<int, List<SyncCallback>> _leagueSyncCallbacks = {};
 
@@ -25,7 +23,7 @@ class SyncService {
   /// List of callbacks for global sync
   final List<SyncCallback> _globalSyncCallbacks = [];
 
-  SyncService(this._ref);
+  SyncService(Ref _);
 
   /// Register a callback to be called when league data should be synced.
   /// Returns a function to unregister the callback.

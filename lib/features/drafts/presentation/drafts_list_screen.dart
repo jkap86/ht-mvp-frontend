@@ -183,7 +183,7 @@ class _DraftCard extends StatelessWidget {
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: isActive
-                                    ? colorScheme.onErrorContainer.withOpacity(0.8)
+                                    ? colorScheme.onErrorContainer.withValues(alpha: 0.8)
                                     : colorScheme.outline,
                               ),
                         ),
@@ -192,7 +192,7 @@ class _DraftCard extends StatelessWidget {
                           '•',
                           style: TextStyle(
                             color: isActive
-                                ? colorScheme.onErrorContainer.withOpacity(0.8)
+                                ? colorScheme.onErrorContainer.withValues(alpha: 0.8)
                                 : colorScheme.outline,
                           ),
                         ),
@@ -201,7 +201,7 @@ class _DraftCard extends StatelessWidget {
                           _getDraftTypeLabel(draft.draft.draftType),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: isActive
-                                    ? colorScheme.onErrorContainer.withOpacity(0.8)
+                                    ? colorScheme.onErrorContainer.withValues(alpha: 0.8)
                                     : colorScheme.outline,
                               ),
                         ),
@@ -210,7 +210,7 @@ class _DraftCard extends StatelessWidget {
                           '•',
                           style: TextStyle(
                             color: isActive
-                                ? colorScheme.onErrorContainer.withOpacity(0.8)
+                                ? colorScheme.onErrorContainer.withValues(alpha: 0.8)
                                 : colorScheme.outline,
                           ),
                         ),

@@ -39,8 +39,6 @@ typedef InvalidationCallback = Future<void> Function();
 /// Example: When a trade is accepted, the team provider, free agents provider,
 /// and standings provider all need to refresh their data.
 class InvalidationService {
-  final Ref _ref;
-
   /// Map of invalidation type -> leagueId -> callbacks
   final Map<InvalidationType, Map<int, List<InvalidationCallback>>> _callbacks = {};
 
@@ -103,7 +101,7 @@ class InvalidationService {
     ],
   };
 
-  InvalidationService(this._ref);
+  InvalidationService(Ref _);
 
   /// Register a callback to be called when a specific data type is invalidated.
   /// Returns a function to unregister the callback.

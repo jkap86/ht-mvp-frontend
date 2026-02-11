@@ -189,10 +189,7 @@ class ApiClient {
         }
 
         // No more retries - throw the error
-        if (error is ApiException) {
-          throw error;
-        }
-        throw NetworkException('Failed to connect to server');
+        throw error;
       }
     }
 
