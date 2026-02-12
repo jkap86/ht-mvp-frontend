@@ -54,3 +54,6 @@ app.*.map.json
 
 # Build artifacts
 lib.zip
+
+# Local Claude settings
+.claude/
