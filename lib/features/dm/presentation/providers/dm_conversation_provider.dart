@@ -23,6 +23,14 @@ class DmConversationState {
   final String? error;
   final bool isForbidden;
 
+  // Search state
+  final String? searchQuery;
+  final List<DirectMessage> searchResults;
+  final int searchTotal;
+  final bool isSearching;
+  final int currentSearchIndex;
+  final int? highlightedMessageId; // For date jump navigation
+
   DmConversationState({
     this.messages = const [],
     this.isLoading = true,
@@ -31,6 +39,12 @@ class DmConversationState {
     this.hasMore = true,
     this.error,
     this.isForbidden = false,
+    this.searchQuery,
+    this.searchResults = const [],
+    this.searchTotal = 0,
+    this.isSearching = false,
+    this.currentSearchIndex = 0,
+    this.highlightedMessageId,
   });
 
   DmConversationState copyWith({
@@ -42,6 +56,14 @@ class DmConversationState {
     String? error,
     bool? isForbidden,
     bool clearError = false,
+    String? searchQuery,
+    bool clearSearch = false,
+    List<DirectMessage>? searchResults,
+    int? searchTotal,
+    bool? isSearching,
+    int? currentSearchIndex,
+    int? highlightedMessageId,
+    bool clearHighlight = false,
   }) {
     return DmConversationState(
       messages: messages ?? this.messages,
@@ -51,6 +73,12 @@ class DmConversationState {
       hasMore: hasMore ?? this.hasMore,
       error: clearError ? null : (error ?? this.error),
       isForbidden: isForbidden ?? this.isForbidden,
+      searchQuery: clearSearch ? null : (searchQuery ?? this.searchQuery),
+      searchResults: clearSearch ? [] : (searchResults ?? this.searchResults),
+      searchTotal: clearSearch ? 0 : (searchTotal ?? this.searchTotal),
+      isSearching: isSearching ?? this.isSearching,
+      currentSearchIndex: clearSearch ? 0 : (currentSearchIndex ?? this.currentSearchIndex),
+      highlightedMessageId: clearHighlight ? null : (highlightedMessageId ?? this.highlightedMessageId),
     );
   }
 }
@@ -346,6 +374,107 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
     state = state.copyWith(
       messages: state.messages.where((m) => m.id != tempId).toList(),
     );
+  }
+
+  /// Search messages with the given query
+  Future<void> searchMessages(String query) async {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) {
+      state = state.copyWith(clearSearch: true);
+      return;
+    }
+
+    state = state.copyWith(
+      searchQuery: trimmedQuery,
+      isSearching: true,
+    );
+
+    try {
+      final result = await _dmRepo.searchMessages(conversationId, trimmedQuery);
+
+      if (!mounted) return;
+
+      state = state.copyWith(
+        searchResults: result['messages'] as List<DirectMessage>,
+        searchTotal: result['total'] as int,
+        isSearching: false,
+        currentSearchIndex: 0,
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      state = state.copyWith(
+        isSearching: false,
+        error: ErrorSanitizer.sanitize(e),
+      );
+    }
+  }
+
+  /// Clear search results
+  void clearSearch() {
+    state = state.copyWith(clearSearch: true);
+  }
+
+  /// Navigate to next search result
+  void nextSearchResult() {
+    if (state.searchResults.isEmpty) return;
+    final newIndex = (state.currentSearchIndex + 1) % state.searchResults.length;
+    state = state.copyWith(currentSearchIndex: newIndex);
+  }
+
+  /// Navigate to previous search result
+  void previousSearchResult() {
+    if (state.searchResults.isEmpty) return;
+    final newIndex = state.currentSearchIndex == 0
+        ? state.searchResults.length - 1
+        : state.currentSearchIndex - 1;
+    state = state.copyWith(currentSearchIndex: newIndex);
+  }
+
+  /// Jump to a specific date/time in conversation history
+  Future<void> jumpToTimestamp(DateTime timestamp) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final messages = await _dmRepo.getMessages(
+        conversationId,
+        limit: _pageSize,
+        aroundTimestamp: timestamp,
+      );
+
+      if (!mounted) return;
+
+      // Find the message closest to the timestamp to highlight
+      int? highlightId;
+      if (messages.isNotEmpty) {
+        highlightId = messages.reduce((a, b) {
+          final aDiff = a.createdAt.difference(timestamp).abs();
+          final bDiff = b.createdAt.difference(timestamp).abs();
+          return aDiff < bDiff ? a : b;
+        }).id;
+      }
+
+      state = state.copyWith(
+        messages: messages,
+        isLoading: false,
+        hasMore: messages.length >= _pageSize,
+        highlightedMessageId: highlightId,
+      );
+
+      // Clear highlight after 2 seconds
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          state = state.copyWith(clearHighlight: true);
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      state = state.copyWith(
+        error: ErrorSanitizer.sanitize(e),
+        isLoading: false,
+      );
+    }
   }
 
   void _markAsRead() {

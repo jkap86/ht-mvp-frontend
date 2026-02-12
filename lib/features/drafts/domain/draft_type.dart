@@ -2,7 +2,8 @@
 enum DraftType {
   snake('snake', 'Snake', 'Pick order reverses each round'),
   linear('linear', 'Linear', 'Same pick order every round'),
-  auction('auction', 'Auction', 'Bid on players with a budget');
+  auction('auction', 'Auction', 'Bid on players with a budget'),
+  matchups('matchups', 'Matchups', 'Draft your schedule strategically');
 
   final String value;
   final String label;
@@ -20,4 +21,7 @@ enum DraftType {
 
   /// Check if this is an auction draft
   bool get isAuction => this == DraftType.auction;
+
+  /// Check if this is a matchups draft
+  bool get isMatchups => this == DraftType.matchups;
 }

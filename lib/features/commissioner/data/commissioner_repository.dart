@@ -165,6 +165,24 @@ class CommissionerRepository {
     return _matchupRepo.finalizeMatchups(leagueId, week, idempotencyKey: idempotencyKey);
   }
 
+  /// Create a matchups draft
+  Future<int> createMatchupsDraft(
+    int leagueId, {
+    required int weeks,
+    required int pickTimeSeconds,
+    required bool randomizeDraftOrder,
+    String? idempotencyKey,
+  }) async {
+    final draft = await _leagueRepo.createDraft(
+      leagueId,
+      draftType: 'matchups',
+      rounds: weeks,
+      pickTimeSeconds: pickTimeSeconds,
+      idempotencyKey: idempotencyKey,
+    );
+    return draft.id;
+  }
+
   // ============================================================
   // Playoff Management
   // ============================================================

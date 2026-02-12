@@ -29,11 +29,17 @@ class DmRepository {
   }
 
   /// Get messages for a conversation
-  Future<List<DirectMessage>> getMessages(int conversationId, {int? limit, int? before}) async {
+  Future<List<DirectMessage>> getMessages(
+    int conversationId, {
+    int? limit,
+    int? before,
+    DateTime? aroundTimestamp,
+  }) async {
     String path = '/dm/$conversationId/messages';
     final queryParams = <String>[];
     if (limit != null) queryParams.add('limit=$limit');
     if (before != null) queryParams.add('before=$before');
+    if (aroundTimestamp != null) queryParams.add('around_timestamp=${aroundTimestamp.toIso8601String()}');
     if (queryParams.isNotEmpty) {
       path += '?${queryParams.join('&')}';
     }
@@ -42,6 +48,26 @@ class DmRepository {
     return (response as List)
         .map((json) => DirectMessage.fromJson(json as Map<String, dynamic>))
         .toList();
+  }
+
+  /// Search messages in a conversation
+  Future<Map<String, dynamic>> searchMessages(
+    int conversationId,
+    String query, {
+    int limit = 100,
+    int offset = 0,
+  }) async {
+    final queryString = 'q=${Uri.encodeComponent(query)}&limit=$limit&offset=$offset';
+    final response = await _apiClient.get('/dm/$conversationId/messages/search?$queryString');
+
+    return {
+      'messages': (response['messages'] as List)
+          .map((json) => DirectMessage.fromJson(json as Map<String, dynamic>))
+          .toList(),
+      'total': response['total'] as int,
+      'limit': response['limit'] as int,
+      'offset': response['offset'] as int,
+    };
   }
 
   /// Send a message in a conversation

@@ -14,6 +14,7 @@ import 'auction_drawer_content.dart';
 import 'draft_activity_feed.dart';
 import 'drawer_drag_handle.dart';
 import 'fast_auction_panel.dart';
+import 'matchups_drawer_content.dart';
 import 'nomination_hint_row.dart';
 import 'player_search_filter_panel.dart';
 import 'snake_linear_drawer_content.dart';
@@ -24,18 +25,21 @@ enum _DrawerTab { players, activity }
 /// Adapts content based on draft type:
 /// - Snake/Linear: Search + Players + Queue
 /// - Auction: Active lots + Search + Players for nomination
+/// - Matchups: Available matchups + My schedule
 class DraftBottomDrawer extends ConsumerStatefulWidget {
   final DraftRoomKey providerKey;
   final DraftQueueKey queueKey;
   final int leagueId;
   final int draftId;
   final bool isAuction;
+  final bool isMatchups;
   final Future<void> Function(int playerId) onMakePick;
   final Future<void> Function(int playerId) onAddToQueue;
   final Future<void> Function(int playerId)? onNominate;
   final Future<String?> Function(int lotId, int maxBid)? onSetMaxBid;
   final Future<void> Function(int pickAssetId)? onMakePickAssetSelection;
   final Future<void> Function(int pickAssetId)? onAddPickAssetToQueue;
+  final Future<void> Function(int week, int opponentRosterId)? onPickMatchup;
   final DraggableScrollableController? sheetController;
   final bool isPickSubmitting;
   final bool isQueueSubmitting;
@@ -48,12 +52,14 @@ class DraftBottomDrawer extends ConsumerStatefulWidget {
     required this.leagueId,
     required this.draftId,
     required this.isAuction,
+    this.isMatchups = false,
     required this.onMakePick,
     required this.onAddToQueue,
     this.onNominate,
     this.onSetMaxBid,
     this.onMakePickAssetSelection,
     this.onAddPickAssetToQueue,
+    this.onPickMatchup,
     this.sheetController,
     this.isPickSubmitting = false,
     this.isQueueSubmitting = false,
@@ -297,12 +303,38 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
                 Expanded(
                   child: _selectedTab == _DrawerTab.activity
                       ? DraftActivityFeed(providerKey: widget.providerKey)
-                      : widget.isAuction
-                          ? (isFastAuction
-                              ? _buildFastAuctionContent(
-                                  context, scrollController, draftState)
-                              : AuctionDrawerContent(
+                      : widget.isMatchups
+                          ? MatchupsDrawerContent(
+                              providerKey: widget.providerKey,
+                              leagueId: widget.leagueId,
+                              draftId: widget.draftId,
+                              scrollController: scrollController,
+                              onPickMatchup: widget.onPickMatchup ?? (week, opponentId) async {},
+                              isPickSubmitting: widget.isPickSubmitting,
+                            )
+                          : widget.isAuction
+                              ? (isFastAuction
+                                  ? _buildFastAuctionContent(
+                                      context, scrollController, draftState)
+                                  : AuctionDrawerContent(
+                                      providerKey: widget.providerKey,
+                                      scrollController: scrollController,
+                                      searchQuery: _searchQuery,
+                                      selectedPosition: _selectedPosition,
+                                      onSearchChanged: (value) =>
+                                          setState(() => _searchQuery = value),
+                                      onPositionChanged: (pos) =>
+                                          setState(() => _selectedPosition = pos),
+                                      onNominate: widget.onNominate,
+                                      onSetMaxBid: widget.onSetMaxBid,
+                                    ))
+                              : SnakeLinearDrawerContent(
                                   providerKey: widget.providerKey,
+                                  queueKey: widget.queueKey,
+                                  leagueId: widget.leagueId,
+                                  draftId: widget.draftId,
+                                  draftedPlayerIds: draftedPlayerIds,
+                                  draftedPickAssetIds: draftedPickAssetIds,
                                   scrollController: scrollController,
                                   searchQuery: _searchQuery,
                                   selectedPosition: _selectedPosition,
@@ -310,31 +342,14 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
                                       setState(() => _searchQuery = value),
                                   onPositionChanged: (pos) =>
                                       setState(() => _selectedPosition = pos),
-                                  onNominate: widget.onNominate,
-                                  onSetMaxBid: widget.onSetMaxBid,
-                                ))
-                          : SnakeLinearDrawerContent(
-                              providerKey: widget.providerKey,
-                              queueKey: widget.queueKey,
-                              leagueId: widget.leagueId,
-                              draftId: widget.draftId,
-                              draftedPlayerIds: draftedPlayerIds,
-                              draftedPickAssetIds: draftedPickAssetIds,
-                              scrollController: scrollController,
-                              searchQuery: _searchQuery,
-                              selectedPosition: _selectedPosition,
-                              onSearchChanged: (value) =>
-                                  setState(() => _searchQuery = value),
-                              onPositionChanged: (pos) =>
-                                  setState(() => _selectedPosition = pos),
-                              onMakePick: widget.onMakePick,
-                              onAddToQueue: widget.onAddToQueue,
-                              onMakePickAssetSelection: widget.onMakePickAssetSelection,
-                              onAddPickAssetToQueue: widget.onAddPickAssetToQueue,
-                              isPickSubmitting: widget.isPickSubmitting,
-                              isQueueSubmitting: widget.isQueueSubmitting,
-                              isPickAssetQueueSubmitting: widget.isPickAssetQueueSubmitting,
-                            ),
+                                  onMakePick: widget.onMakePick,
+                                  onAddToQueue: widget.onAddToQueue,
+                                  onMakePickAssetSelection: widget.onMakePickAssetSelection,
+                                  onAddPickAssetToQueue: widget.onAddPickAssetToQueue,
+                                  isPickSubmitting: widget.isPickSubmitting,
+                                  isQueueSubmitting: widget.isQueueSubmitting,
+                                  isPickAssetQueueSubmitting: widget.isPickAssetQueueSubmitting,
+                                ),
                 ),
               ],
             ),

@@ -323,6 +323,8 @@ class _DraftCard extends StatelessWidget {
         return 'Linear Draft';
       case DraftType.auction:
         return 'Auction Draft';
+      case DraftType.matchups:
+        return 'Matchups Draft';
     }
   }
 

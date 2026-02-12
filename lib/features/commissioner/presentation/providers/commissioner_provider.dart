@@ -424,6 +424,38 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
       return false;
     }
   }
+
+  Future<int?> startMatchupsDraft({
+    required int weeks,
+    required int pickTimeSeconds,
+    required bool randomizeDraftOrder,
+    String? idempotencyKey,
+  }) async {
+    state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
+
+    try {
+      final draftId = await _repo.createMatchupsDraft(
+        leagueId,
+        weeks: weeks,
+        pickTimeSeconds: pickTimeSeconds,
+        randomizeDraftOrder: randomizeDraftOrder,
+        idempotencyKey: idempotencyKey,
+      );
+      if (!mounted) return null;
+      state = state.copyWith(
+        isProcessing: false,
+        successMessage: 'Matchups draft created successfully',
+      );
+      return draftId;
+    } catch (e) {
+      if (!mounted) return null;
+      state = state.copyWith(
+        error: ErrorSanitizer.sanitize(e),
+        isProcessing: false,
+      );
+      return null;
+    }
+  }
 }
 
 /// Provider for commissioner screen

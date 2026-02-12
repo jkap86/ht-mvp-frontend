@@ -17,10 +17,14 @@ class ChatRepository {
     int leagueId, {
     int limit = 50,
     int? before,
+    DateTime? aroundTimestamp,
   }) async {
     final queryParts = <String>['limit=$limit'];
     if (before != null) {
       queryParts.add('before=$before');
+    }
+    if (aroundTimestamp != null) {
+      queryParts.add('around_timestamp=${aroundTimestamp.toIso8601String()}');
     }
     final queryString = queryParts.join('&');
 
@@ -28,6 +32,25 @@ class ChatRepository {
     return (response as List)
         .map((json) => ChatMessage.fromJson(json))
         .toList();
+  }
+
+  Future<Map<String, dynamic>> searchMessages(
+    int leagueId,
+    String query, {
+    int limit = 100,
+    int offset = 0,
+  }) async {
+    final queryString = 'q=${Uri.encodeComponent(query)}&limit=$limit&offset=$offset';
+    final response = await _apiClient.get('/leagues/$leagueId/chat/search?$queryString');
+
+    return {
+      'messages': (response['messages'] as List)
+          .map((json) => ChatMessage.fromJson(json))
+          .toList(),
+      'total': response['total'] as int,
+      'limit': response['limit'] as int,
+      'offset': response['offset'] as int,
+    };
   }
 
   Future<void> sendMessage(int leagueId, String message, {String? idempotencyKey}) async {

@@ -8,6 +8,7 @@ import '../../../../core/socket/connection_state_provider.dart';
 import '../../../leagues/domain/league.dart';
 import 'autodraft_toggle_widget.dart';
 import 'draft_timer_widget.dart';
+import 'overnight_pause_countdown.dart';
 
 class DraftStatusBar extends ConsumerWidget {
   final Draft? draft;
@@ -31,6 +32,8 @@ class DraftStatusBar extends ConsumerWidget {
   final int totalRosterSlots;
   /// Positions still needed (e.g., ['RB', 'TE', 'K'])
   final List<String> neededPositions;
+  /// Whether draft is currently in overnight pause window
+  final bool isInOvernightPause;
 
   const DraftStatusBar({
     super.key,
@@ -49,6 +52,7 @@ class DraftStatusBar extends ConsumerWidget {
     this.myPickCount = 0,
     this.totalRosterSlots = 0,
     this.neededPositions = const [],
+    this.isInOvernightPause = false,
   });
 
   @override
@@ -133,10 +137,14 @@ class DraftStatusBar extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
-                      isMyTurn ? 'Make your pick' : 'Waiting for $currentPickerName',
+                      isInOvernightPause
+                          ? 'Draft paused: overnight pause window'
+                          : (isMyTurn ? 'Make your pick' : 'Waiting for $currentPickerName'),
                       style: TextStyle(
                         fontSize: 13,
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: isInOvernightPause
+                            ? AppTheme.draftWarning
+                            : theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -224,8 +232,18 @@ class DraftStatusBar extends ConsumerWidget {
             ),
           // Connection status indicator (LIVE/RECONNECTING)
           if (isInProgress) _buildConnectionIndicator(context, ref),
-          // Timer first (more important, shows countdown, synced to server)
-          if (isInProgress && draft?.pickDeadline != null)
+          // Overnight pause countdown (if enabled and active)
+          if (isInProgress && draft != null && draft!.overnightPauseEnabled)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: OvernightPauseCountdown(
+                draft: draft!,
+                isInOvernightPause: isInOvernightPause,
+                serverClockOffsetMs: serverClockOffsetMs,
+              ),
+            ),
+          // Timer (shows countdown to next pick, synced to server)
+          if (isInProgress && draft?.pickDeadline != null && !isInOvernightPause)
             Padding(
               padding: const EdgeInsets.only(right: 12),
               child: Semantics(

@@ -46,6 +46,10 @@ class SocketEvents {
   static const derbyTurnChanged = 'derby:turn_changed';
   static const derbyPhaseTransition = 'derby:phase_transition';
 
+  // Overnight pause events (snake/linear drafts)
+  static const draftOvernightPauseStarted = 'draft:overnight_pause_started';
+  static const draftOvernightPauseEnded = 'draft:overnight_pause_ended';
+
   // Chat events
   static const chatMessage = 'chat:message';
   static const chatReactionAdded = 'chat:reaction_added';

@@ -134,6 +134,9 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen> {
         bool? includeRookiePicks,
         int? rookiePicksSeason,
         int? rookiePicksRounds,
+        bool? overnightPauseEnabled,
+        String? overnightPauseStart,
+        String? overnightPauseEnd,
       }) async {
         final key = newIdempotencyKey();
         final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
@@ -147,6 +150,9 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen> {
           includeRookiePicks: includeRookiePicks,
           rookiePicksSeason: rookiePicksSeason,
           rookiePicksRounds: rookiePicksRounds,
+          overnightPauseEnabled: overnightPauseEnabled,
+          overnightPauseStart: overnightPauseStart,
+          overnightPauseEnd: overnightPauseEnd,
           idempotencyKey: key,
         );
       },

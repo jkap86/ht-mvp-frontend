@@ -373,6 +373,9 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     bool? includeRookiePicks,
     int? rookiePicksSeason,
     int? rookiePicksRounds,
+    bool? overnightPauseEnabled,
+    String? overnightPauseStart,
+    String? overnightPauseEnd,
     String? idempotencyKey,
   }) async {
     try {
@@ -385,10 +388,13 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
         auctionSettings: auctionSettings,
         playerPool: playerPool,
         scheduledStart: scheduledStart,
-        clearScheduledStart: scheduledStart == null && draftType == null && rounds == null && pickTimeSeconds == null && auctionSettings == null && playerPool == null && includeRookiePicks == null && rookiePicksSeason == null && rookiePicksRounds == null,
+        clearScheduledStart: scheduledStart == null && draftType == null && rounds == null && pickTimeSeconds == null && auctionSettings == null && playerPool == null && includeRookiePicks == null && rookiePicksSeason == null && rookiePicksRounds == null && overnightPauseEnabled == null && overnightPauseStart == null && overnightPauseEnd == null,
         includeRookiePicks: includeRookiePicks,
         rookiePicksSeason: rookiePicksSeason,
         rookiePicksRounds: rookiePicksRounds,
+        overnightPauseEnabled: overnightPauseEnabled,
+        overnightPauseStart: overnightPauseStart,
+        overnightPauseEnd: overnightPauseEnd,
         idempotencyKey: idempotencyKey,
       );
       // Update the draft in state

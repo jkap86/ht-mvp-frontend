@@ -200,6 +200,23 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     }
   }
 
+  Future<void> _pickMatchup(int week, int opponentRosterId) async {
+    final draftState = ref.read(draftRoomProvider(_providerKey));
+    if (draftState.isPickSubmitting) return; // Prevent double-tap (state in provider)
+
+    final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+    final error = await notifier.pickMatchup(week, opponentRosterId);
+    if (context.mounted) {
+      if (error != null) {
+        error.showAsError(ref);
+        HapticFeedback.vibrate();
+      } else {
+        showSuccess(ref, 'Matchup selected: Week $week');
+        HapticFeedback.heavyImpact();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(draftRoomProvider(_providerKey), (prev, next) {
@@ -282,6 +299,9 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     );
     final isFastAuction = ref.watch(
       draftRoomProvider(_providerKey).select((s) => s.isFastAuction),
+    );
+    final isMatchups = ref.watch(
+      draftRoomProvider(_providerKey).select((s) => s.isMatchupsDraft),
     );
     final isSlowAuction = isAuction && !isFastAuction;
     final myBudget = ref.watch(
@@ -487,11 +507,13 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         leagueId: widget.leagueId,
         draftId: widget.draftId,
         isAuction: isAuction,
+        isMatchups: isMatchups,
         onMakePick: _makePick,
         onAddToQueue: _addToQueue,
         onAddPickAssetToQueue: _addPickAssetToQueue,
         onNominate: _handleNominate,
         onSetMaxBid: _handleSetMaxBid,
+        onPickMatchup: _pickMatchup,
         onStartDraft: _startDraft,
         isStartingDraft: _isStartingDraft,
         onConfirmOrder: _confirmOrder,
@@ -512,11 +534,13 @@ class _DraftRoomBody extends ConsumerStatefulWidget {
   final int leagueId;
   final int draftId;
   final bool isAuction;
+  final bool isMatchups;
   final Future<void> Function(int) onMakePick;
   final Future<void> Function(int) onAddToQueue;
   final Future<void> Function(int) onAddPickAssetToQueue;
   final Future<void> Function(int) onNominate;
   final Future<String?> Function(int, int) onSetMaxBid;
+  final Future<void> Function(int, int) onPickMatchup;
   final Future<void> Function() onStartDraft;
   final bool isStartingDraft;
   final Future<void> Function() onConfirmOrder;
@@ -533,11 +557,13 @@ class _DraftRoomBody extends ConsumerStatefulWidget {
     required this.leagueId,
     required this.draftId,
     required this.isAuction,
+    this.isMatchups = false,
     required this.onMakePick,
     required this.onAddToQueue,
     required this.onAddPickAssetToQueue,
     required this.onNominate,
     required this.onSetMaxBid,
+    required this.onPickMatchup,
     required this.onStartDraft,
     required this.isStartingDraft,
     required this.onConfirmOrder,
@@ -635,6 +661,11 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
         : null;
     final neededPositions = _computeNeededPositions(rosterConfig, myPicks);
 
+    // Get overnight pause state
+    final isInOvernightPause = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.isInOvernightPause),
+    );
+
     return DraftStatusBar(
       draft: draft,
       currentPickerName: currentPickerName,
@@ -667,6 +698,7 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
       myPickCount: myPicks.length,
       totalRosterSlots: totalRosterSlots,
       neededPositions: neededPositions,
+      isInOvernightPause: isInOvernightPause,
     );
   }
 
@@ -864,11 +896,13 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
           leagueId: widget.leagueId,
           draftId: widget.draftId,
           isAuction: widget.isAuction,
+          isMatchups: widget.isMatchups,
           onMakePick: widget.onMakePick,
           onAddToQueue: widget.onAddToQueue,
           onAddPickAssetToQueue: widget.onAddPickAssetToQueue,
           onNominate: widget.onNominate,
           onSetMaxBid: widget.onSetMaxBid,
+          onPickMatchup: widget.onPickMatchup,
           onMakePickAssetSelection: widget.onMakePickAssetSelection,
           isPickSubmitting: widget.isPickSubmitting,
           isQueueSubmitting: widget.isQueueSubmitting,
@@ -886,11 +920,13 @@ class _DraftBottomDrawerWithController extends StatefulWidget {
   final int leagueId;
   final int draftId;
   final bool isAuction;
+  final bool isMatchups;
   final Future<void> Function(int) onMakePick;
   final Future<void> Function(int) onAddToQueue;
   final Future<void> Function(int) onAddPickAssetToQueue;
   final Future<void> Function(int) onNominate;
   final Future<String?> Function(int, int) onSetMaxBid;
+  final Future<void> Function(int, int) onPickMatchup;
   final Future<void> Function(int) onMakePickAssetSelection;
   final bool isPickSubmitting;
   final bool isQueueSubmitting;
@@ -903,11 +939,13 @@ class _DraftBottomDrawerWithController extends StatefulWidget {
     required this.leagueId,
     required this.draftId,
     required this.isAuction,
+    this.isMatchups = false,
     required this.onMakePick,
     required this.onAddToQueue,
     required this.onAddPickAssetToQueue,
     required this.onNominate,
     required this.onSetMaxBid,
+    required this.onPickMatchup,
     required this.onMakePickAssetSelection,
     required this.isPickSubmitting,
     required this.isQueueSubmitting,
@@ -948,11 +986,13 @@ class _DraftBottomDrawerWithControllerState
       leagueId: widget.leagueId,
       draftId: widget.draftId,
       isAuction: widget.isAuction,
+      isMatchups: widget.isMatchups,
       onMakePick: widget.onMakePick,
       onAddToQueue: widget.onAddToQueue,
       onAddPickAssetToQueue: widget.onAddPickAssetToQueue,
       onNominate: widget.onNominate,
       onSetMaxBid: widget.onSetMaxBid,
+      onPickMatchup: widget.onPickMatchup,
       onMakePickAssetSelection: widget.onMakePickAssetSelection,
       sheetController: _sheetController,
       isPickSubmitting: widget.isPickSubmitting,

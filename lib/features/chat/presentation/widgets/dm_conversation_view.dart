@@ -8,6 +8,9 @@ import '../../../auth/presentation/auth_provider.dart';
 import '../../../chat/domain/chat_message.dart' show MessageSendStatus;
 import '../../../dm/domain/direct_message.dart';
 import '../../../dm/presentation/providers/dm_conversation_provider.dart';
+import '../../../dm/presentation/widgets/dm_date_picker.dart';
+import '../../../dm/presentation/widgets/dm_search_bar.dart';
+import '../../../../core/theme/app_spacing.dart';
 import 'chat_message_input.dart';
 import 'connection_banner.dart';
 import 'dm_message_bubble.dart';
@@ -39,6 +42,7 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   bool _gifPickerOpen = false;
+  bool _searchBarVisible = false;
 
   /// Track the newest message ID so we only animate truly new arrivals.
   int? _lastSeenMessageId;
@@ -108,6 +112,8 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
       children: [
         // Header with back button and username
         _buildHeader(theme),
+        // Search bar (collapsible)
+        if (_searchBarVisible) DmSearchBar(conversationId: widget.conversationId),
         // Connection banner
         const ConnectionBanner(),
         // Messages list
@@ -167,6 +173,36 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          // Action buttons
+          IconButton(
+            icon: Icon(
+              _searchBarVisible ? Icons.search_off : Icons.search,
+              size: 20,
+            ),
+            onPressed: () {
+              setState(() {
+                _searchBarVisible = !_searchBarVisible;
+                if (!_searchBarVisible) {
+                  ref.read(dmConversationProvider(widget.conversationId).notifier).clearSearch();
+                }
+              });
+            },
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            tooltip: _searchBarVisible ? 'Hide search' : 'Search messages',
+          ),
+          IconButton(
+            icon: const Icon(Icons.date_range, size: 20),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => DmDatePicker(conversationId: widget.conversationId),
+              );
+            },
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            tooltip: 'Jump to date',
+          ),
         ],
       ),
     );
@@ -199,6 +235,12 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
         newestId != _lastSeenMessageId;
     _lastSeenMessageId = newestId;
 
+    // Track search state for highlighting
+    final currentSearchMessageId = state.searchResults.isNotEmpty
+        ? state.searchResults[state.currentSearchIndex].id
+        : null;
+    final highlightedId = state.highlightedMessageId;
+
     return ListView.builder(
       controller: _scrollController,
       reverse: true,
@@ -216,6 +258,10 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
         }
         final message = state.messages[index];
         final isMe = message.senderId == currentUserId;
+
+        // Determine if this message should be highlighted
+        final isSearchResult = currentSearchMessageId == message.id;
+        final isHighlighted = highlightedId == message.id;
 
         // Compute grouping flags (list is reversed: index 0 = newest)
         final prevMessage = index + 1 < state.messages.length
@@ -245,7 +291,7 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
           }
         };
 
-        final bubble = GestureDetector(
+        final bubbleContent = GestureDetector(
           onLongPressStart: (details) async {
             final emoji = await showReactionBar(
               context,
@@ -297,6 +343,15 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
           ),
         );
 
+        // Wrap with highlight container if needed
+        final bubble = (isSearchResult || isHighlighted)
+            ? _DmHighlightedMessageContainer(
+                isSearchResult: isSearchResult,
+                isHighlighted: isHighlighted,
+                child: bubbleContent,
+              )
+            : bubbleContent;
+
         // Animate only the very newest message
         if (index == 0 && isNewArrival) {
           return SlideInMessage(child: bubble);
@@ -304,6 +359,42 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
 
         return bubble;
       },
+    );
+  }
+}
+
+/// Highlights a DM message with a colored background
+class _DmHighlightedMessageContainer extends StatelessWidget {
+  final Widget child;
+  final bool isSearchResult;
+  final bool isHighlighted;
+
+  const _DmHighlightedMessageContainer({
+    required this.child,
+    this.isSearchResult = false,
+    this.isHighlighted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    Color? backgroundColor;
+
+    if (isSearchResult) {
+      // Yellow highlight for active search result
+      backgroundColor = theme.colorScheme.secondary.withValues(alpha: 0.2);
+    } else if (isHighlighted) {
+      // Blue highlight for date jump target
+      backgroundColor = theme.colorScheme.primary.withValues(alpha: 0.15);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: child,
     );
   }
 }

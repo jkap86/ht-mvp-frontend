@@ -9,6 +9,7 @@ import '../domain/bid_history_entry.dart';
 import '../domain/derby_state.dart';
 import '../domain/draft_order_entry.dart';
 import '../domain/draft_pick_asset.dart';
+import '../domain/matchup_draft_option.dart';
 
 final draftRepositoryProvider = Provider<DraftRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
@@ -242,6 +243,9 @@ class DraftRepository {
     bool? includeRookiePicks,
     int? rookiePicksSeason,
     int? rookiePicksRounds,
+    bool? overnightPauseEnabled,
+    String? overnightPauseStart,
+    String? overnightPauseEnd,
     String? idempotencyKey,
   }) async {
     final body = <String, dynamic>{};
@@ -258,6 +262,13 @@ class DraftRepository {
     if (includeRookiePicks != null) body['include_rookie_picks'] = includeRookiePicks;
     if (rookiePicksSeason != null) body['rookie_picks_season'] = rookiePicksSeason;
     if (rookiePicksRounds != null) body['rookie_picks_rounds'] = rookiePicksRounds;
+    if (overnightPauseEnabled != null) body['overnight_pause_enabled'] = overnightPauseEnabled;
+    if (overnightPauseStart != null) {
+      body['overnight_pause_start'] = overnightPauseStart.isEmpty ? null : overnightPauseStart;
+    }
+    if (overnightPauseEnd != null) {
+      body['overnight_pause_end'] = overnightPauseEnd.isEmpty ? null : overnightPauseEnd;
+    }
 
     final response = await _apiClient.patch(
       '/leagues/$leagueId/drafts/$draftId/settings',
@@ -341,5 +352,33 @@ class DraftRepository {
       body: {'slot_number': slotNumber},
       idempotencyKey: _apiClient.generateIdempotencyKey(),
     );
+  }
+
+  // Matchups draft methods
+
+  /// Get available matchup options for the current picker
+  Future<List<Map<String, dynamic>>> getAvailableMatchups(
+      int leagueId, int draftId) async {
+    final response = await _apiClient.get(
+      '/leagues/$leagueId/drafts/$draftId/available-matchups',
+    );
+    final matchups = (response as List?) ?? [];
+    return matchups.whereType<Map<String, dynamic>>().toList();
+  }
+
+  /// Pick a matchup (week/opponent combination)
+  Future<Map<String, dynamic>> pickMatchup(
+      int leagueId, int draftId, int week, int opponentRosterId) async {
+    final response = await _apiClient.post(
+      '/leagues/$leagueId/drafts/$draftId/pick-matchup',
+      body: {
+        'week': week,
+        'opponent_roster_id': opponentRosterId,
+      },
+      idempotencyKey: _apiClient.generateIdempotencyKey(),
+    );
+    final pickData = response as Map<String, dynamic>?;
+    if (pickData == null) throw Exception('Invalid response: missing pick data');
+    return pickData;
   }
 }

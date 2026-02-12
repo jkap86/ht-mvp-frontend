@@ -600,6 +600,18 @@ class SocketService {
     return on(SocketEvents.derbyPhaseTransition, callback);
   }
 
+  // Overnight pause event listeners (snake/linear drafts)
+
+  /// Listen for overnight pause started events
+  VoidCallback onOvernightPauseStarted(void Function(dynamic) callback) {
+    return on(SocketEvents.draftOvernightPauseStarted, callback);
+  }
+
+  /// Listen for overnight pause ended events
+  VoidCallback onOvernightPauseEnded(void Function(dynamic) callback) {
+    return on(SocketEvents.draftOvernightPauseEnded, callback);
+  }
+
   // Trade event listeners
   VoidCallback onTradeProposed(void Function(dynamic) callback) {
     return on(SocketEvents.tradeProposed, callback);

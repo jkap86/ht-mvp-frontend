@@ -49,6 +49,9 @@ abstract class DraftSocketCallbacks {
   void onDerbySlotPickedReceived(Map<String, dynamic> data);
   void onDerbyTurnChangedReceived(Map<String, dynamic> data);
   void onDerbyPhaseTransitionReceived(Map<String, dynamic> data);
+  // Overnight pause callbacks (snake/linear drafts)
+  void onOvernightPauseStartedReceived();
+  void onOvernightPauseEndedReceived();
 }
 
 /// Handles all socket event subscriptions for the draft room
@@ -274,6 +277,15 @@ class DraftSocketHandler {
       } catch (e) {
         if (kDebugMode) debugPrint('Failed to parse derby phase transition: $e');
       }
+    }));
+
+    // Overnight pause listeners (snake/linear drafts)
+    _addDisposer(_socketService.onOvernightPauseStarted((data) {
+      _callbacks.onOvernightPauseStartedReceived();
+    }));
+
+    _addDisposer(_socketService.onOvernightPauseEnded((data) {
+      _callbacks.onOvernightPauseEndedReceived();
     }));
   }
 

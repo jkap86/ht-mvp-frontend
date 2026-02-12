@@ -152,6 +152,24 @@ class CommissionerScreen extends ConsumerWidget {
           final key = newIdempotencyKey();
           ref.read(commissionerProvider(leagueId).notifier).generateSchedule(weeks, idempotencyKey: key);
         },
+        onStartMatchupsDraft: ({
+          required int weeks,
+          required int pickTimeSeconds,
+          required bool randomizeDraftOrder,
+        }) async {
+          final key = newIdempotencyKey();
+          final draftId = await ref.read(commissionerProvider(leagueId).notifier).startMatchupsDraft(
+            weeks: weeks,
+            pickTimeSeconds: pickTimeSeconds,
+            randomizeDraftOrder: randomizeDraftOrder,
+            idempotencyKey: key,
+          );
+          if (draftId != null && context.mounted) {
+            context.push('/leagues/$leagueId/drafts/$draftId');
+          }
+          return draftId;
+        },
+        seasonHasStarted: state.league?.currentWeek != null && state.league!.currentWeek > 0,
       ),
       spacing,
       ScoringCard(

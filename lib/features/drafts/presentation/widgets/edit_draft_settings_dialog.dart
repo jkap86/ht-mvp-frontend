@@ -25,6 +25,9 @@ class EditDraftSettingsDialog extends StatefulWidget {
     bool? includeRookiePicks,
     int? rookiePicksSeason,
     int? rookiePicksRounds,
+    bool? overnightPauseEnabled,
+    String? overnightPauseStart,
+    String? overnightPauseEnd,
   }) onSave;
 
   const EditDraftSettingsDialog({
@@ -48,6 +51,9 @@ class EditDraftSettingsDialog extends StatefulWidget {
       bool? includeRookiePicks,
       int? rookiePicksSeason,
       int? rookiePicksRounds,
+      bool? overnightPauseEnabled,
+      String? overnightPauseStart,
+      String? overnightPauseEnd,
     }) onSave,
   }) {
     return showDialog(
@@ -93,6 +99,11 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
   late bool _includeRookiePicks;
   late TextEditingController _rookiePicksSeasonController;
   late int _rookiePicksRounds;
+
+  // Overnight pause settings
+  late bool _overnightPauseEnabled;
+  TimeOfDay? _overnightPauseStart;
+  TimeOfDay? _overnightPauseEnd;
 
   bool get _isNotStarted => widget.draft.status == DraftStatus.notStarted;
   bool get _isPaused => widget.draft.status == DraftStatus.paused;
@@ -152,6 +163,28 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
     final rookiePicksSeason = widget.draft.rawSettings?['rookiePicksSeason'] ?? currentYear;
     _rookiePicksSeasonController = TextEditingController(text: rookiePicksSeason.toString());
     _rookiePicksRounds = widget.draft.rawSettings?['rookiePicksRounds'] ?? 5;
+
+    // Overnight pause settings - read from draft model
+    _overnightPauseEnabled = widget.draft.overnightPauseEnabled;
+    // Parse HH:MM format to TimeOfDay
+    if (widget.draft.overnightPauseStart != null) {
+      final startParts = widget.draft.overnightPauseStart!.split(':');
+      if (startParts.length == 2) {
+        _overnightPauseStart = TimeOfDay(
+          hour: int.tryParse(startParts[0]) ?? 23,
+          minute: int.tryParse(startParts[1]) ?? 0,
+        );
+      }
+    }
+    if (widget.draft.overnightPauseEnd != null) {
+      final endParts = widget.draft.overnightPauseEnd!.split(':');
+      if (endParts.length == 2) {
+        _overnightPauseEnd = TimeOfDay(
+          hour: int.tryParse(endParts[0]) ?? 8,
+          minute: int.tryParse(endParts[1]) ?? 0,
+        );
+      }
+    }
   }
 
   @override
@@ -277,6 +310,36 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
         }
       }
 
+      // Check for overnight pause changes (timers can be edited when paused)
+      bool? overnightPauseEnabled;
+      String? overnightPauseStart;
+      String? overnightPauseEnd;
+      if (_canEditTimers && !_isAuction) {
+        // Only apply to snake/linear drafts
+        if (_overnightPauseEnabled != widget.draft.overnightPauseEnabled) {
+          overnightPauseEnabled = _overnightPauseEnabled;
+        }
+        // Format TimeOfDay to HH:MM string (UTC)
+        if (_overnightPauseStart != null) {
+          final startStr = '${_overnightPauseStart!.hour.toString().padLeft(2, '0')}:${_overnightPauseStart!.minute.toString().padLeft(2, '0')}';
+          if (startStr != widget.draft.overnightPauseStart) {
+            overnightPauseStart = startStr;
+          }
+        } else if (widget.draft.overnightPauseStart != null) {
+          // Clear the start time
+          overnightPauseStart = '';
+        }
+        if (_overnightPauseEnd != null) {
+          final endStr = '${_overnightPauseEnd!.hour.toString().padLeft(2, '0')}:${_overnightPauseEnd!.minute.toString().padLeft(2, '0')}';
+          if (endStr != widget.draft.overnightPauseEnd) {
+            overnightPauseEnd = endStr;
+          }
+        } else if (widget.draft.overnightPauseEnd != null) {
+          // Clear the end time
+          overnightPauseEnd = '';
+        }
+      }
+
       // Check for player pool changes
       bool? includeRookiePicks;
       int? rookiePicksSeason;
@@ -328,7 +391,10 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
           playerPool != null ||
           includeRookiePicks != null ||
           rookiePicksSeason != null ||
-          rookiePicksRounds != null) {
+          rookiePicksRounds != null ||
+          overnightPauseEnabled != null ||
+          overnightPauseStart != null ||
+          overnightPauseEnd != null) {
         await widget.onSave(
           draftType: draftType,
           rounds: rounds,
@@ -338,6 +404,9 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
           includeRookiePicks: includeRookiePicks,
           rookiePicksSeason: rookiePicksSeason,
           rookiePicksRounds: rookiePicksRounds,
+          overnightPauseEnabled: overnightPauseEnabled,
+          overnightPauseStart: overnightPauseStart,
+          overnightPauseEnd: overnightPauseEnd,
         );
       }
 
@@ -396,13 +465,22 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
 
               const SizedBox(height: 16),
 
-              // Pick Time (for snake/linear)
+              // Pick Time and Overnight Pause (for snake/linear)
               if (!_isAuction)
                 DraftTimingSettings(
                   pickTimeController: _pickTimeController,
                   enabled: _canEditTimers,
                   validator: (v) => _validatePositiveInt(v,
                       min: 30, max: 600, fieldName: 'Pick time'),
+                  overnightPauseEnabled: _overnightPauseEnabled,
+                  onOvernightPauseToggled: (enabled) =>
+                      setState(() => _overnightPauseEnabled = enabled),
+                  overnightPauseStart: _overnightPauseStart,
+                  overnightPauseEnd: _overnightPauseEnd,
+                  onPauseStartChanged: (time) =>
+                      setState(() => _overnightPauseStart = time),
+                  onPauseEndChanged: (time) =>
+                      setState(() => _overnightPauseEnd = time),
                 ),
 
               // Auction settings

@@ -296,6 +296,10 @@ class Draft {
   final Map<String, dynamic>? rawSettings; // Preserves full settings including playerPool
   final bool orderConfirmed;
   final String? label; // Computed label like "Veteran Draft", "Rookie Draft"
+  // Overnight pause settings (snake/linear drafts only)
+  final bool overnightPauseEnabled;
+  final String? overnightPauseStart; // HH:MM format (UTC)
+  final String? overnightPauseEnd; // HH:MM format (UTC)
 
   Draft({
     required this.id,
@@ -316,6 +320,9 @@ class Draft {
     this.rawSettings,
     this.orderConfirmed = false,
     this.label,
+    this.overnightPauseEnabled = false,
+    this.overnightPauseStart,
+    this.overnightPauseEnd,
   });
 
   /// Display name - uses label if available, falls back to "Draft #id"
@@ -362,6 +369,9 @@ class Draft {
       rawSettings: settingsJson,
       orderConfirmed: json['order_confirmed'] as bool? ?? false,
       label: json['label'] as String?,
+      overnightPauseEnabled: json['overnight_pause_enabled'] as bool? ?? false,
+      overnightPauseStart: json['overnight_pause_start'] as String?,
+      overnightPauseEnd: json['overnight_pause_end'] as String?,
     );
   }
 
@@ -384,12 +394,17 @@ class Draft {
     Map<String, dynamic>? rawSettings,
     bool? orderConfirmed,
     String? label,
+    bool? overnightPauseEnabled,
+    String? overnightPauseStart,
+    String? overnightPauseEnd,
     bool clearCurrentPick = false,
     bool clearCurrentRound = false,
     bool clearCurrentRosterId = false,
     bool clearPickDeadline = false,
     bool clearScheduledStart = false,
     bool clearSettings = false,
+    bool clearOvernightPauseStart = false,
+    bool clearOvernightPauseEnd = false,
   }) {
     return Draft(
       id: id ?? this.id,
@@ -410,6 +425,9 @@ class Draft {
       rawSettings: clearSettings ? null : (rawSettings ?? this.rawSettings),
       orderConfirmed: orderConfirmed ?? this.orderConfirmed,
       label: label ?? this.label,
+      overnightPauseEnabled: overnightPauseEnabled ?? this.overnightPauseEnabled,
+      overnightPauseStart: clearOvernightPauseStart ? null : (overnightPauseStart ?? this.overnightPauseStart),
+      overnightPauseEnd: clearOvernightPauseEnd ? null : (overnightPauseEnd ?? this.overnightPauseEnd),
     );
   }
 }

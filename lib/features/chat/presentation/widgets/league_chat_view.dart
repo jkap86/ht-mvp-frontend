@@ -9,7 +9,10 @@ import '../../../../core/widgets/states/states.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/chat_message.dart';
 import '../providers/chat_provider.dart';
+import 'chat_date_picker.dart';
+import 'chat_filter_panel.dart';
 import 'chat_message_input.dart';
+import 'chat_search_bar.dart';
 import 'connection_banner.dart';
 import 'gif_message_bubble.dart';
 import 'gif_picker.dart';
@@ -37,6 +40,7 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   bool _gifPickerOpen = false;
+  bool _searchBarVisible = false;
 
   /// Track the newest message ID so we only animate truly new arrivals.
   int? _lastSeenMessageId;
@@ -97,6 +101,8 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
 
     return Column(
       children: [
+        _buildToolbar(),
+        if (_searchBarVisible) ChatSearchBar(leagueId: widget.leagueId),
         const ConnectionBanner(),
         Expanded(child: _buildMessageList(state)),
         if (_gifPickerOpen)
@@ -126,6 +132,40 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
     );
   }
 
+  Widget _buildToolbar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          IconButton(
+            icon: Icon(
+              _searchBarVisible ? Icons.search_off : Icons.search,
+            ),
+            onPressed: () {
+              setState(() {
+                _searchBarVisible = !_searchBarVisible;
+                if (!_searchBarVisible) {
+                  // Clear search when hiding search bar
+                  ref.read(chatProvider(widget.leagueId).notifier).clearSearch();
+                }
+              });
+            },
+            tooltip: _searchBarVisible ? 'Hide search' : 'Search messages',
+          ),
+          ChatDatePickerButton(leagueId: widget.leagueId),
+          ChatFilterButton(leagueId: widget.leagueId),
+          const SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMessageList(ChatState state) {
     if (state.isLoading) {
       return const SkeletonChatMessageList();
@@ -146,15 +186,33 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
       );
     }
 
+    // Use filtered messages instead of all messages
+    final displayMessages = state.filteredMessages;
+
+    if (displayMessages.isEmpty && state.messages.isNotEmpty) {
+      // All messages are filtered out
+      return const AppEmptyView(
+        icon: Icons.filter_alt_off,
+        title: 'All messages filtered',
+        subtitle: 'Adjust your filters to see messages',
+      );
+    }
+
     // Determine if the newest message is brand-new (for slide animation)
-    final newestId = state.messages.isNotEmpty ? state.messages.first.id : null;
+    final newestId = displayMessages.isNotEmpty ? displayMessages.first.id : null;
     final isNewArrival = _lastSeenMessageId != null &&
         newestId != null &&
         newestId != _lastSeenMessageId;
     _lastSeenMessageId = newestId;
 
     // Add 1 to itemCount for loading indicator when loading more
-    final itemCount = state.messages.length + (state.isLoadingMore ? 1 : 0);
+    final itemCount = displayMessages.length + (state.isLoadingMore ? 1 : 0);
+
+    // Track search state for highlighting
+    final currentSearchMessageId = state.searchResults.isNotEmpty
+        ? state.searchResults[state.currentSearchIndex].id
+        : null;
+    final highlightedId = state.highlightedMessageId;
 
     return ListView.builder(
       controller: _scrollController,
@@ -163,28 +221,43 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
       itemCount: itemCount,
       itemBuilder: (context, index) {
         // Show loading indicator at the end (oldest messages position)
-        if (index == state.messages.length && state.isLoadingMore) {
+        if (index == displayMessages.length && state.isLoadingMore) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
           );
         }
 
-        final message = state.messages[index];
+        final message = displayMessages[index];
+
+        // Determine if this message should be highlighted
+        final isSearchResult = currentSearchMessageId == message.id;
+        final isHighlighted = highlightedId == message.id;
         // Render system messages differently
         if (message.isSystemMessage) {
-          return SystemMessageBubble(
+          final systemBubble = SystemMessageBubble(
             key: ValueKey('sys-${message.id}'),
             message: message,
           );
+
+          // Wrap with highlight container if needed
+          if (isSearchResult || isHighlighted) {
+            return _HighlightedMessageContainer(
+              isSearchResult: isSearchResult,
+              isHighlighted: isHighlighted,
+              child: systemBubble,
+            );
+          }
+
+          return systemBubble;
         }
 
         // Compute grouping flags (list is reversed: index 0 = newest)
-        final prevMessage = index + 1 < state.messages.length
-            ? state.messages[index + 1]
+        final prevMessage = index + 1 < displayMessages.length
+            ? displayMessages[index + 1]
             : null;
         final nextMessage = index - 1 >= 0
-            ? state.messages[index - 1]
+            ? displayMessages[index - 1]
             : null;
 
         final isFirstInGroup = !_isSameGroup(prevMessage, message);
@@ -198,6 +271,8 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
               message: message,
               isFirstInGroup: isFirstInGroup,
               isLastInGroup: isLastInGroup,
+              isSearchResult: isSearchResult,
+              isHighlighted: isHighlighted,
               onToggleReaction: (emoji) {
                 ref.read(chatProvider(widget.leagueId).notifier)
                     .toggleReaction(message.id, emoji);
@@ -247,18 +322,22 @@ class _LeagueChatBubbleWithReactions extends StatelessWidget {
   final ChatMessage message;
   final bool isFirstInGroup;
   final bool isLastInGroup;
+  final bool isSearchResult;
+  final bool isHighlighted;
   final void Function(String emoji) onToggleReaction;
 
   const _LeagueChatBubbleWithReactions({
     required this.message,
     this.isFirstInGroup = true,
     this.isLastInGroup = true,
+    this.isSearchResult = false,
+    this.isHighlighted = false,
     required this.onToggleReaction,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final bubbleContent = GestureDetector(
       onLongPressStart: (details) async {
         final emoji = await showReactionBar(
           context,
@@ -290,6 +369,17 @@ class _LeagueChatBubbleWithReactions extends StatelessWidget {
         ],
       ),
     );
+
+    // Wrap with highlight container if needed
+    if (isSearchResult || isHighlighted) {
+      return _HighlightedMessageContainer(
+        isSearchResult: isSearchResult,
+        isHighlighted: isHighlighted,
+        child: bubbleContent,
+      );
+    }
+
+    return bubbleContent;
   }
 }
 
@@ -394,6 +484,42 @@ class _LeagueChatBubble extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Highlights a message with a colored background
+class _HighlightedMessageContainer extends StatelessWidget {
+  final Widget child;
+  final bool isSearchResult;
+  final bool isHighlighted;
+
+  const _HighlightedMessageContainer({
+    required this.child,
+    this.isSearchResult = false,
+    this.isHighlighted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    Color? backgroundColor;
+
+    if (isSearchResult) {
+      // Yellow highlight for active search result
+      backgroundColor = theme.colorScheme.secondary.withValues(alpha: 0.2);
+    } else if (isHighlighted) {
+      // Blue highlight for date jump target
+      backgroundColor = theme.colorScheme.primary.withValues(alpha: 0.15);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: child,
     );
   }
 }

@@ -16,6 +16,8 @@ import '../../../core/widgets/user_avatar.dart';
 import '../domain/direct_message.dart';
 import 'providers/dm_conversation_provider.dart';
 import 'providers/dm_inbox_provider.dart';
+import 'widgets/dm_date_picker.dart';
+import 'widgets/dm_search_bar.dart';
 
 class DmConversationScreen extends ConsumerStatefulWidget {
   final int conversationId;
@@ -32,6 +34,7 @@ class DmConversationScreen extends ConsumerStatefulWidget {
 class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+  bool _searchBarVisible = false;
 
   @override
   void initState() {
@@ -100,9 +103,34 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
             Text(otherUsername),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: Icon(_searchBarVisible ? Icons.search_off : Icons.search),
+            onPressed: () {
+              setState(() {
+                _searchBarVisible = !_searchBarVisible;
+                if (!_searchBarVisible) {
+                  ref.read(dmConversationProvider(widget.conversationId).notifier).clearSearch();
+                }
+              });
+            },
+            tooltip: _searchBarVisible ? 'Hide search' : 'Search messages',
+          ),
+          IconButton(
+            icon: const Icon(Icons.date_range),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => DmDatePicker(conversationId: widget.conversationId),
+              );
+            },
+            tooltip: 'Jump to date',
+          ),
+        ],
       ),
       body: Column(
         children: [
+          if (_searchBarVisible) DmSearchBar(conversationId: widget.conversationId),
           const ConnectionBanner(),
           Expanded(
             child: _buildMessageList(state, currentUserId),
@@ -133,6 +161,12 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
       );
     }
 
+    // Track search state for highlighting
+    final currentSearchMessageId = state.searchResults.isNotEmpty
+        ? state.searchResults[state.currentSearchIndex].id
+        : null;
+    final highlightedId = state.highlightedMessageId;
+
     return ListView.builder(
       controller: _scrollController,
       reverse: true,
@@ -150,7 +184,12 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
         }
         final message = state.messages[index];
         final isMe = message.senderId == currentUserId;
-        return Column(
+
+        // Determine if this message should be highlighted
+        final isSearchResult = currentSearchMessageId == message.id;
+        final isHighlighted = highlightedId == message.id;
+
+        final bubbleContent = Column(
           key: ValueKey('dm-${message.id}'),
           crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
@@ -178,6 +217,17 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
               ),
           ],
         );
+
+        // Wrap with highlight container if needed
+        if (isSearchResult || isHighlighted) {
+          return _HighlightedMessageContainer(
+            isSearchResult: isSearchResult,
+            isHighlighted: isHighlighted,
+            child: bubbleContent,
+          );
+        }
+
+        return bubbleContent;
       },
     );
   }
@@ -311,6 +361,42 @@ class _MessageBubble extends StatelessWidget {
           if (isMe) const SizedBox(width: 36), // Balance avatar space
         ],
       ),
+    );
+  }
+}
+
+/// Highlights a DM message with a colored background
+class _HighlightedMessageContainer extends StatelessWidget {
+  final Widget child;
+  final bool isSearchResult;
+  final bool isHighlighted;
+
+  const _HighlightedMessageContainer({
+    required this.child,
+    this.isSearchResult = false,
+    this.isHighlighted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    Color? backgroundColor;
+
+    if (isSearchResult) {
+      // Yellow highlight for active search result
+      backgroundColor = theme.colorScheme.secondary.withValues(alpha: 0.2);
+    } else if (isHighlighted) {
+      // Blue highlight for date jump target
+      backgroundColor = theme.colorScheme.primary.withValues(alpha: 0.15);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: child,
     );
   }
 }

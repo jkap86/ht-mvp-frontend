@@ -26,6 +26,7 @@ import '../../domain/draft_phase.dart';
 import '../../domain/draft_status.dart';
 import '../../domain/draft_type.dart';
 import '../../domain/lot_result.dart';
+import '../../domain/matchup_draft_option.dart';
 import 'draft_socket_handler.dart';
 
 export 'draft_socket_handler.dart' show OutbidNotification;
@@ -85,6 +86,10 @@ class DraftRoomState {
   final String? autopickExplanation;
   // Timestamp of last successful data load or socket update
   final DateTime? lastUpdated;
+  // Overnight pause state
+  final bool isInOvernightPause;
+  // Matchups draft specific fields
+  final List<MatchupDraftOption> availableMatchups;
 
   DraftRoomState({
     this.draft,
@@ -122,6 +127,8 @@ class DraftRoomState {
     this.completedLotResults = const [],
     this.autopickExplanation,
     this.lastUpdated,
+    this.isInOvernightPause = false,
+    this.availableMatchups = const [],
   });
 
   /// Check if data is stale (older than 5 minutes)
@@ -142,6 +149,7 @@ class DraftRoomState {
 
   bool get isAuction => draft?.draftType == DraftType.auction;
   bool get isFastAuction => isAuction && auctionMode == 'fast';
+  bool get isMatchupsDraft => draft?.draftType == DraftType.matchups;
 
   /// Whether the draft is currently in derby phase (draft order selection)
   bool get isDerbyPhase => draft?.phase == DraftPhase.derby;
@@ -293,6 +301,8 @@ class DraftRoomState {
     String? autopickExplanation,
     bool clearAutopickExplanation = false,
     DateTime? lastUpdated,
+    bool? isInOvernightPause,
+    List<MatchupDraftOption>? availableMatchups,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -342,6 +352,8 @@ class DraftRoomState {
       completedLotResults: completedLotResults ?? this.completedLotResults,
       autopickExplanation: clearAutopickExplanation ? null : (autopickExplanation ?? this.autopickExplanation),
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      isInOvernightPause: isInOvernightPause ?? this.isInOvernightPause,
+      availableMatchups: availableMatchups ?? this.availableMatchups,
     );
   }
 }
@@ -511,6 +523,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     final updatedPicks = [...state.picks, pick]
       ..sort((a, b) => a.pickNumber.compareTo(b.pickNumber));
     state = state.copyWith(picks: updatedPicks, lastUpdated: DateTime.now());
+
+    // Reload available matchups for matchups drafts (reciprocal picks affect availability)
+    if (state.isMatchupsDraft) {
+      loadAvailableMatchups();
+    }
 
     // Add activity event
     final teamName = _teamNameForRoster(pick.rosterId);
@@ -819,6 +836,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       // Load derby state if in derby phase
       if (mounted && draft.phase == DraftPhase.derby) {
         loadDerbyState();
+      }
+
+      // Load available matchups for matchups drafts
+      if (mounted && draft.draftType == DraftType.matchups) {
+        loadAvailableMatchups();
       }
     } on ForbiddenException {
       if (!mounted) return;
@@ -1280,6 +1302,54 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     } catch (e) {
       if (kDebugMode) debugPrint('Failed to load derby state: $e');
     }
+  }
+
+  /// Load available matchups for matchups drafts
+  Future<void> loadAvailableMatchups() async {
+    if (state.draft?.draftType != DraftType.matchups) return;
+    try {
+      final matchupsData = await _draftRepo.getAvailableMatchups(leagueId, draftId);
+      final matchups = matchupsData
+          .map((json) => MatchupDraftOption.fromJson(json))
+          .toList();
+      if (!mounted) return;
+      state = state.copyWith(availableMatchups: matchups);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Failed to load available matchups: $e');
+    }
+  }
+
+  /// Pick a matchup (week/opponent combination) in a matchups draft
+  Future<String?> pickMatchup(int week, int opponentRosterId) async {
+    if (state.isPickSubmitting) return 'Pick already in progress';
+    state = state.copyWith(isPickSubmitting: true);
+    try {
+      await _draftRepo.pickMatchup(leagueId, draftId, week, opponentRosterId);
+      // Resync to ensure UI is updated even if socket event was missed
+      if (mounted) {
+        await _refreshDraftState();
+        await loadAvailableMatchups();
+      }
+      return null;
+    } catch (e) {
+      return ErrorSanitizer.sanitize(e);
+    } finally {
+      if (mounted) state = state.copyWith(isPickSubmitting: false);
+    }
+  }
+
+  @override
+  void onOvernightPauseStartedReceived() {
+    if (!mounted) return;
+    state = state.copyWith(isInOvernightPause: true);
+    _addActivityEvent(DraftActivityType.draftPaused, 'Draft paused: overnight pause window started');
+  }
+
+  @override
+  void onOvernightPauseEndedReceived() {
+    if (!mounted) return;
+    state = state.copyWith(isInOvernightPause: false);
+    _addActivityEvent(DraftActivityType.draftResumed, 'Draft resumed: overnight pause window ended');
   }
 
   @override
