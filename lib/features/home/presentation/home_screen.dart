@@ -115,6 +115,12 @@ class HomeScreen extends ConsumerWidget {
               if (pendingTrades.isNotEmpty)
                 const SizedBox(height: 12),
 
+              // Lineup check reminder when matchups are active
+              if (state.matchups.isNotEmpty)
+                _buildLineupCheckBanner(context, state),
+              if (state.matchups.isNotEmpty)
+                const SizedBox(height: 12),
+
               // 1. DRAFTS
               HomeDraftsCard(activeCount: activeDrafts.length),
               const SizedBox(height: 12),
@@ -225,6 +231,71 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
                 Icon(Icons.chevron_right, color: color),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLineupCheckBanner(BuildContext context, HomeDashboardState state) {
+    // Count leagues with matchups where user has a roster
+    final leaguesWithMatchups = state.matchups
+        .map((m) => (leagueId: m.leagueId, rosterId: m.userRosterId))
+        .where((e) => e.rosterId != null)
+        .toSet();
+
+    if (leaguesWithMatchups.isEmpty) return const SizedBox.shrink();
+
+    final count = leaguesWithMatchups.length;
+    final first = leaguesWithMatchups.first;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: AppSpacing.cardRadius,
+        child: InkWell(
+          onTap: () => context.push(
+            '/leagues/${first.leagueId}/team/${first.rosterId}',
+          ),
+          borderRadius: AppSpacing.cardRadius,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.assignment_outlined,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Set Your Lineups',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        count == 1
+                            ? 'You have an active matchup'
+                            : 'You have matchups in $count leagues',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
               ],
             ),
           ),

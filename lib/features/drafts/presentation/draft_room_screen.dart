@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
@@ -68,8 +69,10 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     if (context.mounted) {
       if (error != null) {
         error.showAsError(ref);
+        HapticFeedback.vibrate();
       } else {
         showSuccess(ref, 'Drafted: $playerName');
+        HapticFeedback.heavyImpact();
       }
     }
   }
@@ -83,6 +86,9 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       final success = await notifier.addToQueue(playerId, idempotencyKey: key);
       if (!success && context.mounted) {
         'Failed to add player to queue'.showAsError(ref);
+        HapticFeedback.vibrate();
+      } else if (success) {
+        HapticFeedback.lightImpact();
       }
     } finally {
       _isQueueSubmitting = false; // Always reset flag
@@ -99,6 +105,9 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       final success = await notifier.addPickAssetToQueue(pickAssetId, idempotencyKey: key);
       if (!success && context.mounted) {
         'Failed to add pick to queue'.showAsError(ref);
+        HapticFeedback.vibrate();
+      } else if (success) {
+        HapticFeedback.lightImpact();
       }
     } finally {
       _isPickAssetQueueSubmitting = false; // Always reset flag
@@ -114,6 +123,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       final error = await notifier.nominate(playerId);
       if (error != null && context.mounted) {
         error.showAsError(ref);
+        HapticFeedback.vibrate();
       }
     } finally {
       _isNominateSubmitting = false; // Always reset flag
@@ -176,6 +186,9 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
       final error = await notifier.makePickAssetSelection(pickAssetId);
       if (error != null && context.mounted) {
         error.showAsError(ref);
+        HapticFeedback.vibrate();
+      } else if (context.mounted) {
+        HapticFeedback.heavyImpact();
       }
     } finally {
       _isPickAssetSubmitting = false; // Always reset flag

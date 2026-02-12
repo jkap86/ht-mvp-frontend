@@ -156,88 +156,118 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
 
             // Step 2: Side-by-side roster selection
             if (myRosterId != null)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // You Give section
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('You Give', style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 8),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 600;
+
+                  final youGiveSection = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('You Give', style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      PlayerSelectorWidget(
+                        leagueId: widget.leagueId,
+                        rosterId: myRosterId,
+                        selectedPlayerIds: _offeringPlayerIds,
+                        onSelectionChanged: (ids) => setState(() {
+                          _offeringPlayerIds
+                            ..clear()
+                            ..addAll(ids);
+                        }),
+                      ),
+                      const SizedBox(height: 16),
+                      DraftPickSelectorWidget(
+                        rosterId: myRosterId,
+                        selectedPickAssetIds: _offeringPickAssetIds,
+                        onSelectionChanged: (ids) => setState(() {
+                          _offeringPickAssetIds = ids;
+                        }),
+                        title: 'You Give',
+                      ),
+                    ],
+                  );
+
+                  final youGetSection = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('You Get', style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      if (_selectedRecipientRosterId != null) ...[
                         PlayerSelectorWidget(
                           leagueId: widget.leagueId,
-                          rosterId: myRosterId,
-                          selectedPlayerIds: _offeringPlayerIds,
+                          rosterId: _selectedRecipientRosterId!,
+                          selectedPlayerIds: _requestingPlayerIds,
                           onSelectionChanged: (ids) => setState(() {
-                            _offeringPlayerIds
+                            _requestingPlayerIds
                               ..clear()
                               ..addAll(ids);
                           }),
                         ),
                         const SizedBox(height: 16),
                         DraftPickSelectorWidget(
-                          rosterId: myRosterId,
-                          selectedPickAssetIds: _offeringPickAssetIds,
+                          rosterId: _selectedRecipientRosterId!,
+                          selectedPickAssetIds: _requestingPickAssetIds,
                           onSelectionChanged: (ids) => setState(() {
-                            _offeringPickAssetIds = ids;
+                            _requestingPickAssetIds = ids;
                           }),
-                          title: 'You Give',
+                          title: 'You Get',
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // You Get section
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('You Get', style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 8),
-                        if (_selectedRecipientRosterId != null) ...[
-                          PlayerSelectorWidget(
-                            leagueId: widget.leagueId,
-                            rosterId: _selectedRecipientRosterId!,
-                            selectedPlayerIds: _requestingPlayerIds,
-                            onSelectionChanged: (ids) => setState(() {
-                              _requestingPlayerIds
-                                ..clear()
-                                ..addAll(ids);
-                            }),
+                      ] else
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                            borderRadius: AppSpacing.buttonRadius,
+                            color: Theme.of(context).colorScheme.surfaceContainerLowest,
                           ),
-                          const SizedBox(height: 16),
-                          DraftPickSelectorWidget(
-                            rosterId: _selectedRecipientRosterId!,
-                            selectedPickAssetIds: _requestingPickAssetIds,
-                            onSelectionChanged: (ids) => setState(() {
-                              _requestingPickAssetIds = ids;
-                            }),
-                            title: 'You Get',
-                          ),
-                        ] else
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-                              borderRadius: AppSpacing.buttonRadius,
-                              color: Theme.of(context).colorScheme.surfaceContainerLowest,
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Select a trade partner',
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  fontStyle: FontStyle.italic,
-                                ),
+                          child: Center(
+                            child: Text(
+                              'Select a trade partner',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                fontStyle: FontStyle.italic,
                               ),
                             ),
                           ),
+                        ),
+                    ],
+                  );
+
+                  if (isNarrow) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        youGiveSection,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Row(
+                            children: [
+                              const Expanded(child: Divider()),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                child: Icon(
+                                  Icons.swap_vert,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const Expanded(child: Divider()),
+                            ],
+                          ),
+                        ),
+                        youGetSection,
                       ],
-                    ),
-                  ),
-                ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: youGiveSection),
+                      const SizedBox(width: 16),
+                      Expanded(child: youGetSection),
+                    ],
+                  );
+                },
               ),
 
             // Notification Options

@@ -154,22 +154,29 @@ class DraftStatusBar extends ConsumerWidget {
           if (isMyTurn && (onDraftFromQueue != null || onPickPlayer != null))
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.draftActionPrimary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 200),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.draftActionPrimary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  icon: const Icon(Icons.check, size: 18),
+                  label: Flexible(
+                    child: Text(
+                      topQueuedPlayerName != null
+                          ? 'Draft: $topQueuedPlayerName'
+                          : 'Pick Player',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                  onPressed: topQueuedPlayerName != null
+                      ? onDraftFromQueue
+                      : onPickPlayer,
                 ),
-                icon: const Icon(Icons.check, size: 18),
-                label: Text(
-                  topQueuedPlayerName != null
-                      ? 'Draft: $topQueuedPlayerName'
-                      : 'Pick Player',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                onPressed: topQueuedPlayerName != null
-                    ? onDraftFromQueue
-                    : onPickPlayer,
               ),
             ),
           // Connection status indicator (LIVE/RECONNECTING)

@@ -443,16 +443,21 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
   }
 
   List<Widget> _buildStarterSlots(TeamState state) {
-    final slots = [
-      LineupSlot.qb,
-      LineupSlot.rb,
-      LineupSlot.rb,
-      LineupSlot.wr,
-      LineupSlot.wr,
-      LineupSlot.te,
-      LineupSlot.flex,
-      LineupSlot.k,
-      LineupSlot.def,
+    final config = state.rosterConfig;
+    final slots = <LineupSlot>[
+      ...List.filled(config.qb, LineupSlot.qb),
+      ...List.filled(config.rb, LineupSlot.rb),
+      ...List.filled(config.wr, LineupSlot.wr),
+      ...List.filled(config.te, LineupSlot.te),
+      ...List.filled(config.flex, LineupSlot.flex),
+      ...List.filled(config.superFlex, LineupSlot.superFlex),
+      ...List.filled(config.recFlex, LineupSlot.recFlex),
+      ...List.filled(config.k, LineupSlot.k),
+      ...List.filled(config.def, LineupSlot.def),
+      ...List.filled(config.dl, LineupSlot.dl),
+      ...List.filled(config.lb, LineupSlot.lb),
+      ...List.filled(config.db, LineupSlot.db),
+      ...List.filled(config.idpFlex, LineupSlot.idpFlex),
     ];
 
     final playersBySlot = state.playersBySlot;
