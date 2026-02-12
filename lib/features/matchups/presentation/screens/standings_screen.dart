@@ -55,6 +55,8 @@ class StandingsScreen extends ConsumerWidget {
       );
     }
 
+    final lastUpdatedText = state.lastUpdatedDisplay;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -67,7 +69,49 @@ class StandingsScreen extends ConsumerWidget {
         onRefresh: () => ref.read(standingsProvider(leagueId).notifier).loadData(),
         child: state.standings.isEmpty
             ? _buildEmptyState(state)
-            : _buildStandingsTable(context, state),
+            : Column(
+                children: [
+                  // Freshness indicator
+                  if (lastUpdatedText.isNotEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(80),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Standings',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (state.isStale)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Icon(
+                                Icons.warning_amber_rounded,
+                                size: 13,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            ),
+                          Text(
+                            lastUpdatedText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: state.isStale
+                                  ? Theme.of(context).colorScheme.error
+                                  : Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  Expanded(child: _buildStandingsTable(context, state)),
+                ],
+              ),
       ),
     );
   }

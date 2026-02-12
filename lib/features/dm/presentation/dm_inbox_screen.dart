@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/time_formatter.dart';
+import '../../../core/widgets/skeletons/skeletons.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../../core/widgets/user_avatar.dart';
+import '../../chat/presentation/widgets/connection_banner.dart';
 import '../domain/conversation.dart';
 import 'providers/dm_inbox_provider.dart';
 import 'widgets/dm_user_search_sheet.dart';
@@ -21,9 +23,16 @@ class DmInboxScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Messages'),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(dmInboxProvider.notifier).loadConversations(),
-        child: _buildBody(context, ref, state),
+      body: Column(
+        children: [
+          const ConnectionBanner(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => ref.read(dmInboxProvider.notifier).loadConversations(),
+              child: _buildBody(context, ref, state),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showNewConversationSheet(context),
@@ -34,7 +43,7 @@ class DmInboxScreen extends ConsumerWidget {
 
   Widget _buildBody(BuildContext context, WidgetRef ref, DmInboxState state) {
     if (state.isLoading) {
-      return const AppLoadingView();
+      return const SkeletonConversationList();
     }
 
     if (state.error != null) {
@@ -57,6 +66,7 @@ class DmInboxScreen extends ConsumerWidget {
       itemBuilder: (context, index) {
         final conversation = state.conversations[index];
         return _ConversationTile(
+          key: ValueKey('conv-${conversation.id}'),
           conversation: conversation,
           onTap: () {
             // Mark as read locally before navigating
@@ -83,6 +93,7 @@ class _ConversationTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ConversationTile({
+    super.key,
     required this.conversation,
     required this.onTap,
   });

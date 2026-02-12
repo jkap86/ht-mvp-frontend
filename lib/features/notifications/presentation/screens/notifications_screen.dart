@@ -91,7 +91,7 @@ class NotificationsScreen extends ConsumerWidget {
       return const AppEmptyView(
         icon: Icons.notifications_none,
         title: 'No Notifications',
-        subtitle: 'You\'re all caught up!',
+        subtitle: 'You\'re all caught up!\nNotifications appear here while the app is open.',
       );
     }
 
@@ -100,8 +100,15 @@ class NotificationsScreen extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () => ref.read(notificationsProvider.notifier).loadNotifications(),
       child: ListView.builder(
-        itemCount: grouped.entries.length,
-        itemBuilder: (context, sectionIndex) {
+        // +1 for the info banner at top
+        itemCount: grouped.entries.length + 1,
+        itemBuilder: (context, index) {
+          // First item: in-app only info banner
+          if (index == 0) {
+            return _buildInAppOnlyBanner(context);
+          }
+
+          final sectionIndex = index - 1;
           final entry = grouped.entries.elementAt(sectionIndex);
           final sectionTitle = entry.key;
           final notifications = entry.value;
@@ -149,6 +156,36 @@ class NotificationsScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildInAppOnlyBanner(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 16,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'In-app only. Push notifications are not yet available.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+        ],
       ),
     );
   }

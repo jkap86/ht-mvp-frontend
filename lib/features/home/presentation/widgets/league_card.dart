@@ -48,26 +48,35 @@ class LeagueCard extends StatelessWidget {
   }
 
   Widget _buildStatusPill() {
-    // Determine status type based on league and season status
+    // Determine status type based on league season status and league status
     LeagueStatusType statusType;
     int? week;
 
-    if (league.seasonStatus == SeasonStatus.regularSeason ||
-        league.seasonStatus == SeasonStatus.playoffs) {
-      statusType = LeagueStatusType.inSeason;
-      week = league.currentWeek;
-    } else {
-      // Pre-season, show status based on league status
-      switch (league.status) {
-        case 'pre_draft':
-          statusType = LeagueStatusType.preSeason;
-          break;
-        case 'drafting':
-          statusType = LeagueStatusType.draftLive;
-          break;
-        default:
-          statusType = LeagueStatusType.preSeason;
-      }
+    switch (league.seasonStatus) {
+      case SeasonStatus.regularSeason:
+        statusType = LeagueStatusType.inSeason;
+        week = league.currentWeek;
+        break;
+      case SeasonStatus.playoffs:
+        statusType = LeagueStatusType.playoffs;
+        week = league.currentWeek;
+        break;
+      case SeasonStatus.offseason:
+        statusType = LeagueStatusType.offseason;
+        break;
+      case SeasonStatus.preSeason:
+        // Distinguish pre-draft vs actively drafting
+        switch (league.status) {
+          case 'drafting':
+            statusType = LeagueStatusType.draftLive;
+            break;
+          case 'complete':
+            statusType = LeagueStatusType.complete;
+            break;
+          default:
+            statusType = LeagueStatusType.preSeason;
+        }
+        break;
     }
 
     return LeagueStatusPill(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../domain/league.dart';
+import 'league_status_pill.dart';
 
 class LeagueHeaderWidget extends StatelessWidget {
   final League league;
@@ -16,6 +17,26 @@ class LeagueHeaderWidget extends StatelessWidget {
     required this.isCommissioner,
     this.onSettingsTap,
   });
+
+  LeagueStatusType _resolveStatusType() {
+    switch (league.seasonStatus) {
+      case SeasonStatus.regularSeason:
+        return LeagueStatusType.inSeason;
+      case SeasonStatus.playoffs:
+        return LeagueStatusType.playoffs;
+      case SeasonStatus.offseason:
+        return LeagueStatusType.offseason;
+      case SeasonStatus.preSeason:
+        switch (league.status) {
+          case 'drafting':
+            return LeagueStatusType.draftLive;
+          case 'complete':
+            return LeagueStatusType.complete;
+          default:
+            return LeagueStatusType.preSeason;
+        }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +74,14 @@ class LeagueHeaderWidget extends StatelessWidget {
                 ),
             ],
           ),
+          const SizedBox(height: 8),
+          LeagueStatusPill(
+            type: _resolveStatusType(),
+            week: (league.seasonStatus == SeasonStatus.regularSeason ||
+                    league.seasonStatus == SeasonStatus.playoffs)
+                ? league.currentWeek
+                : null,
+          ),
           const SizedBox(height: 12),
           Wrap(
             alignment: WrapAlignment.center,
@@ -65,6 +94,7 @@ class LeagueHeaderWidget extends StatelessWidget {
                 icon: league.rosterType == 'bestball' ? Icons.auto_awesome : Icons.view_list,
                 label: league.rosterTypeDisplay,
               ),
+              _HeaderChip(icon: Icons.group, label: '$memberCount/${league.totalRosters}'),
             ],
           ),
         ],

@@ -34,8 +34,8 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen> {
   void initState() {
     super.initState();
     _lastFetchedAt = DateTime.now();
-    // Tick every 60s to update the "last updated" text
-    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+    // Tick every 30s to update the "last updated" text
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) setState(() {});
     });
   }
@@ -49,10 +49,16 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen> {
   String _formatLastUpdated() {
     if (_lastFetchedAt == null) return '';
     final diff = DateTime.now().difference(_lastFetchedAt!);
-    if (diff.inSeconds < 60) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${diff.inDays}d ago';
+    if (diff.inSeconds < 60) return 'Updated just now';
+    if (diff.inMinutes < 60) return 'Updated ${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return 'Updated ${diff.inHours}h ago';
+    return 'Updated ${diff.inDays}d ago';
+  }
+
+  /// Whether data is stale (older than 5 minutes)
+  bool get _isStale {
+    if (_lastFetchedAt == null) return true;
+    return DateTime.now().difference(_lastFetchedAt!) > const Duration(minutes: 5);
   }
 
   @override
@@ -149,6 +155,7 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen> {
                   isTeam2Winner: isTeam2Winner,
                   isFinal: matchup.isFinal,
                   isLive: matchup.hasLiveData,
+                  isPlayoff: matchup.isPlayoff,
                   week: matchup.week,
                 ),
 
@@ -175,12 +182,29 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen> {
                 // Last updated indicator
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    'Updated ${_formatLastUpdated()}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isStale)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Icon(
+                            Icons.warning_amber_rounded,
+                            size: 13,
+                            color: colorScheme.error,
+                          ),
+                        ),
+                      Text(
+                        _formatLastUpdated(),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: _isStale
+                              ? colorScheme.error
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
@@ -213,6 +237,7 @@ class _ScoreHeader extends StatelessWidget {
   final bool isTeam2Winner;
   final bool isFinal;
   final bool isLive;
+  final bool isPlayoff;
   final int week;
 
   const _ScoreHeader({
@@ -226,6 +251,7 @@ class _ScoreHeader extends StatelessWidget {
     required this.isTeam2Winner,
     required this.isFinal,
     this.isLive = false,
+    this.isPlayoff = false,
     required this.week,
   });
 
@@ -237,10 +263,15 @@ class _ScoreHeader extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Theme.of(context).primaryColor.withValues(alpha: 0.1),
-            Theme.of(context).primaryColor.withValues(alpha: 0.05),
-          ],
+          colors: isPlayoff
+              ? [
+                  colorScheme.tertiary.withValues(alpha: 0.12),
+                  colorScheme.tertiary.withValues(alpha: 0.04),
+                ]
+              : [
+                  Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                  Theme.of(context).primaryColor.withValues(alpha: 0.05),
+                ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -254,15 +285,19 @@ class _ScoreHeader extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
+                  color: isPlayoff
+                      ? colorScheme.tertiary.withValues(alpha: 0.2)
+                      : Theme.of(context).primaryColor.withValues(alpha: 0.2),
                   borderRadius: AppSpacing.cardRadius,
                 ),
                 child: Text(
-                  'Week $week',
+                  isPlayoff ? 'Playoff - Week $week' : 'Week $week',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: Theme.of(context).primaryColor,
+                    color: isPlayoff
+                        ? colorScheme.tertiary
+                        : Theme.of(context).primaryColor,
                   ),
                 ),
               ),

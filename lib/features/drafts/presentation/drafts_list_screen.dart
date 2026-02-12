@@ -1,18 +1,43 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/data_freshness_bar.dart';
 import '../../../core/widgets/states/states.dart';
 import '../domain/draft_status.dart';
 import '../domain/draft_type.dart';
 import 'providers/drafts_list_provider.dart';
 
-class DraftsListScreen extends ConsumerWidget {
+class DraftsListScreen extends ConsumerStatefulWidget {
   const DraftsListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DraftsListScreen> createState() => _DraftsListScreenState();
+}
+
+class _DraftsListScreenState extends ConsumerState<DraftsListScreen> {
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Tick every 30s to update the "last updated" relative time text
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(draftsListProvider);
 
     return Scaffold(
@@ -23,14 +48,26 @@ class DraftsListScreen extends ConsumerWidget {
         ),
         title: const Text('Drafts'),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(draftsListProvider.notifier).loadDrafts(),
-        child: _buildBody(context, ref, state),
+      body: Column(
+        children: [
+          // Freshness indicator
+          if (!state.isLoading && state.error == null)
+            DataFreshnessBar(
+              lastUpdatedDisplay: state.lastUpdatedDisplay,
+              isStale: state.isStale,
+            ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => ref.read(draftsListProvider.notifier).loadDrafts(),
+              child: _buildBody(context, state),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, WidgetRef ref, DraftsListState state) {
+  Widget _buildBody(BuildContext context, DraftsListState state) {
     if (state.isLoading) {
       return const AppLoadingView();
     }

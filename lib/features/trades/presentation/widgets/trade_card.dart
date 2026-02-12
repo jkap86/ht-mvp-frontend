@@ -163,8 +163,14 @@ class TradeCard extends StatelessWidget {
       case TradeStatus.completed:
         color = context.htColors.success;
         break;
-      default:
+      case TradeStatus.rejected:
+      case TradeStatus.vetoed:
+        color = AppTheme.errorColor;
+        break;
+      case TradeStatus.cancelled:
+      case TradeStatus.expired:
         color = AppTheme.injuryMuted;
+        break;
     }
 
     return Container(

@@ -23,6 +23,11 @@ class SlowAuctionActionSection extends StatelessWidget {
   final int? dailyNominationLimit;
   final bool globalCapReached;
 
+  /// Minimum bid / starting bid amount (nomination opens bidding at this price)
+  final int? minBid;
+  /// Whether the user has any max bids set on active lots
+  final bool hasMaxBidsSet;
+
   const SlowAuctionActionSection({
     super.key,
     required this.activeLots,
@@ -37,6 +42,8 @@ class SlowAuctionActionSection extends StatelessWidget {
     this.dailyNominationsRemaining,
     this.dailyNominationLimit,
     this.globalCapReached = false,
+    this.minBid,
+    this.hasMaxBidsSet = true,
   });
 
   @override
@@ -93,6 +100,62 @@ class SlowAuctionActionSection extends StatelessWidget {
           ),
 
           const SizedBox(height: 12),
+
+          // Auto-bid behavior warning when no max bids are set
+          if (!hasMaxBidsSet && activeLots.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.tertiaryContainer.withAlpha(80),
+                  borderRadius: AppSpacing.cardRadius,
+                  border: Border.all(color: theme.colorScheme.tertiary.withAlpha(60)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 18, color: theme.colorScheme.tertiary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'No max bids set - you will not auto-bid on any active auctions',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onTertiaryContainer,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Auto-bid behavior text when user has max bids
+          if (hasMaxBidsSet && activeLots.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withAlpha(60),
+                  borderRadius: AppSpacing.cardRadius,
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.autorenew, size: 16, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Auto-bidding is active on lots where you set a max bid',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           // Nominate card
           _buildNominateCard(context),
@@ -160,7 +223,8 @@ class SlowAuctionActionSection extends StatelessWidget {
           ? theme.colorScheme.tertiary
           : theme.colorScheme.onSurfaceVariant;
     } else {
-      subtitle = 'Add a player to the auction block';
+      final bidLabel = minBid != null ? ' (opens bidding at \$$minBid)' : '';
+      subtitle = 'Add a player to the auction block$bidLabel';
       subtitleColor = theme.colorScheme.onSurfaceVariant;
     }
 
@@ -194,7 +258,9 @@ class SlowAuctionActionSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Nominate Player',
+                      minBid != null && !isBlocked
+                          ? 'Nominate (opens bidding at \$$minBid)'
+                          : 'Nominate Player',
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isBlocked

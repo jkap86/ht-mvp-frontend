@@ -265,7 +265,10 @@ class SocketService {
   void joinLeague(int leagueId) {
     final currentCount = _leagueRoomRefCount[leagueId] ?? 0;
     _leagueRoomRefCount[leagueId] = currentCount + 1;
-    // Only emit join on first reference (0 → 1)
+    if (kDebugMode) {
+      debugPrint('Socket: joinLeague($leagueId) refCount $currentCount -> ${currentCount + 1}');
+    }
+    // Only emit join on first reference (0 -> 1)
     if (currentCount == 0) {
       _emit(SocketEvents.leagueJoin, leagueId);
     }
@@ -273,7 +276,18 @@ class SocketService {
 
   void leaveLeague(int leagueId) {
     final currentCount = _leagueRoomRefCount[leagueId] ?? 0;
-    if (currentCount <= 1) {
+    if (currentCount <= 0) {
+      // Leave without matching join -- log warning and do nothing
+      if (kDebugMode) {
+        debugPrint('Socket: WARNING leaveLeague($leagueId) called with refCount 0 (no matching join)');
+      }
+      return;
+    }
+    final newCount = currentCount - 1;
+    if (kDebugMode) {
+      debugPrint('Socket: leaveLeague($leagueId) refCount $currentCount -> $newCount');
+    }
+    if (newCount == 0) {
       // Last reference, remove from map and emit leave
       _leagueRoomRefCount.remove(leagueId);
       if (_socket?.connected == true) {
@@ -281,7 +295,7 @@ class SocketService {
       }
     } else {
       // Other listeners still active, just decrement
-      _leagueRoomRefCount[leagueId] = currentCount - 1;
+      _leagueRoomRefCount[leagueId] = newCount;
     }
   }
 
@@ -291,7 +305,10 @@ class SocketService {
   void joinDraft(int draftId) {
     final currentCount = _draftRoomRefCount[draftId] ?? 0;
     _draftRoomRefCount[draftId] = currentCount + 1;
-    // Only emit join on first reference (0 → 1)
+    if (kDebugMode) {
+      debugPrint('Socket: joinDraft($draftId) refCount $currentCount -> ${currentCount + 1}');
+    }
+    // Only emit join on first reference (0 -> 1)
     if (currentCount == 0) {
       _emit(SocketEvents.draftJoin, draftId);
     }
@@ -299,7 +316,18 @@ class SocketService {
 
   void leaveDraft(int draftId) {
     final currentCount = _draftRoomRefCount[draftId] ?? 0;
-    if (currentCount <= 1) {
+    if (currentCount <= 0) {
+      // Leave without matching join -- log warning and do nothing
+      if (kDebugMode) {
+        debugPrint('Socket: WARNING leaveDraft($draftId) called with refCount 0 (no matching join)');
+      }
+      return;
+    }
+    final newCount = currentCount - 1;
+    if (kDebugMode) {
+      debugPrint('Socket: leaveDraft($draftId) refCount $currentCount -> $newCount');
+    }
+    if (newCount == 0) {
       // Last reference, remove from map and emit leave
       _draftRoomRefCount.remove(draftId);
       if (_socket?.connected == true) {
@@ -307,9 +335,17 @@ class SocketService {
       }
     } else {
       // Other listeners still active, just decrement
-      _draftRoomRefCount[draftId] = currentCount - 1;
+      _draftRoomRefCount[draftId] = newCount;
     }
   }
+
+  /// Debug helper: get current ref counts for league rooms.
+  /// Only intended for debug/testing use.
+  Map<int, int> get debugLeagueRefCounts => Map.unmodifiable(_leagueRoomRefCount);
+
+  /// Debug helper: get current ref counts for draft rooms.
+  /// Only intended for debug/testing use.
+  Map<int, int> get debugDraftRefCounts => Map.unmodifiable(_draftRoomRefCount);
 
   /// Validate that a socket payload is a Map with expected structure
   bool _isValidPayload(dynamic data, {List<String>? requiredFields}) {

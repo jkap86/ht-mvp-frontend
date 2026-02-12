@@ -53,7 +53,9 @@ class _DerbyTurnIndicatorState extends ConsumerState<DerbyTurnIndicator> {
     final state = ref.read(draftRoomProvider(widget.draftKey));
     final deadline = state.derbyState?.slotPickDeadline;
     if (deadline != null) {
-      final now = DateTime.now();
+      // Apply server clock offset for accurate countdown
+      final offset = Duration(milliseconds: state.serverClockOffsetMs ?? 0);
+      final now = DateTime.now().add(offset);
       if (deadline.isAfter(now)) {
         _timeRemaining = deadline.difference(now);
       } else {

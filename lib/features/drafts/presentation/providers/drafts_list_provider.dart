@@ -44,23 +44,43 @@ class DraftsListState {
   final List<DraftsListItem> drafts;
   final bool isLoading;
   final String? error;
+  final DateTime? lastUpdated;
 
   DraftsListState({
     this.drafts = const [],
     this.isLoading = true,
     this.error,
+    this.lastUpdated,
   });
+
+  /// Check if data is stale (older than 5 minutes)
+  bool get isStale {
+    if (lastUpdated == null) return true;
+    return DateTime.now().difference(lastUpdated!) > const Duration(minutes: 5);
+  }
+
+  /// Relative time string for display: "Just now", "2m ago", "1h ago", etc.
+  String get lastUpdatedDisplay {
+    if (lastUpdated == null) return '';
+    final diff = DateTime.now().difference(lastUpdated!);
+    if (diff.inSeconds < 60) return 'Updated just now';
+    if (diff.inMinutes < 60) return 'Updated ${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return 'Updated ${diff.inHours}h ago';
+    return 'Updated ${diff.inDays}d ago';
+  }
 
   DraftsListState copyWith({
     List<DraftsListItem>? drafts,
     bool? isLoading,
     String? error,
     bool clearError = false,
+    DateTime? lastUpdated,
   }) {
     return DraftsListState(
       drafts: drafts ?? this.drafts,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
+      lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
 
@@ -115,7 +135,7 @@ class DraftsListNotifier extends StateNotifier<DraftsListState> {
       final leagues = await _leagueRepo.getMyLeagues();
 
       if (leagues.isEmpty) {
-        state = state.copyWith(drafts: [], isLoading: false);
+        state = state.copyWith(drafts: [], isLoading: false, lastUpdated: DateTime.now());
         return;
       }
 
@@ -138,7 +158,7 @@ class DraftsListNotifier extends StateNotifier<DraftsListState> {
         return b.draft.id.compareTo(a.draft.id);
       });
 
-      state = state.copyWith(drafts: allDrafts, isLoading: false);
+      state = state.copyWith(drafts: allDrafts, isLoading: false, lastUpdated: DateTime.now());
     } catch (e) {
       state = state.copyWith(
         error: ErrorSanitizer.sanitize(e),

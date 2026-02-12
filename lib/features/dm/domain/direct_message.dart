@@ -1,4 +1,4 @@
-import '../../../features/chat/domain/chat_message.dart' show ReactionGroup;
+import '../../../features/chat/domain/chat_message.dart' show MessageSendStatus, ReactionGroup;
 
 class DirectMessage {
   final int id;
@@ -8,6 +8,10 @@ class DirectMessage {
   final String message;
   final List<ReactionGroup> reactions;
   final DateTime createdAt;
+  final MessageSendStatus sendStatus;
+
+  /// Idempotency key used for retry of failed messages
+  final String? idempotencyKey;
 
   DirectMessage({
     required this.id,
@@ -17,19 +21,28 @@ class DirectMessage {
     required this.message,
     this.reactions = const [],
     required this.createdAt,
+    this.sendStatus = MessageSendStatus.sent,
+    this.idempotencyKey,
   });
 
+  /// Whether this is an optimistic (locally-created) message not yet confirmed by the server.
+  bool get isOptimistic => id < 0;
+
   DirectMessage copyWith({
+    int? id,
     List<ReactionGroup>? reactions,
+    MessageSendStatus? sendStatus,
   }) {
     return DirectMessage(
-      id: id,
+      id: id ?? this.id,
       conversationId: conversationId,
       senderId: senderId,
       senderUsername: senderUsername,
       message: message,
       reactions: reactions ?? this.reactions,
       createdAt: createdAt,
+      sendStatus: sendStatus ?? this.sendStatus,
+      idempotencyKey: idempotencyKey,
     );
   }
 

@@ -13,6 +13,7 @@ import '../../data/roster_repository.dart';
 import '../../domain/roster_player.dart';
 import '../../domain/roster_lineup.dart';
 import '../../domain/lineup_optimizer.dart';
+import '../../domain/roster_legality.dart';
 
 export '../../../leagues/domain/league.dart' show Roster;
 
@@ -145,6 +146,61 @@ class TeamState {
   /// Check if lineup is optimal
   bool get isOptimalLineup => lineupIssues.isEmpty;
 
+  /// Get the roster config from league settings
+  RosterConfig get rosterConfig {
+    final configMap = league?.settings['roster_config'];
+    if (configMap is Map<String, dynamic>) {
+      return RosterConfig.fromJson(configMap);
+    }
+    return const RosterConfig();
+  }
+
+  /// Get max roster size from config
+  int get maxRosterSize => rosterConfig.totalRosterSize;
+
+  /// Get roster legality warnings
+  List<RosterLegalityWarning> get legalityWarnings {
+    const validator = RosterLegalityValidator();
+    return validator.validateLineup(
+      players: players,
+      lineup: lineup,
+      config: rosterConfig,
+      currentWeek: currentWeek,
+    );
+  }
+
+  /// Check move validity for a player
+  MoveValidation getMoveValidation(RosterPlayer player) {
+    const validator = RosterLegalityValidator();
+    final currentSlot = lineup?.lineup.getPlayerSlot(player.playerId);
+    return validator.getValidMoveTargets(
+      player: player,
+      currentSlot: currentSlot,
+      config: rosterConfig,
+      lineup: lineup?.lineup ?? LineupSlots(),
+    );
+  }
+
+  /// Get a descriptive error for a failed move
+  String describeMoveFailure(RosterPlayer player, LineupSlot targetSlot) {
+    const validator = RosterLegalityValidator();
+    return validator.describeMoveFailure(
+      player: player,
+      targetSlot: targetSlot,
+      config: rosterConfig,
+      lineup: lineup?.lineup ?? LineupSlots(),
+    );
+  }
+
+  /// Get roster capacity description
+  String get rosterCapacityDescription {
+    const validator = RosterLegalityValidator();
+    return validator.describeRosterCapacity(
+      currentCount: players.length,
+      maxSize: maxRosterSize,
+    );
+  }
+
   /// Calculate what the optimal lineup would score
   double get optimalProjectedPoints {
     if (players.isEmpty) return 0.0;
@@ -199,6 +255,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
 
   VoidCallback? _invalidationDisposer;
   VoidCallback? _syncDisposer;
+  VoidCallback? _reconnectDisposer;
   final List<VoidCallback> _socketDisposers = [];
 
   // Idempotency keys for retry safety
@@ -227,6 +284,16 @@ class TeamNotifier extends StateNotifier<TeamState> {
       if (!mounted) return;
       loadData();
     }));
+
+    // Resync roster data on socket reconnection
+    _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
+      if (!mounted) return;
+      if (kDebugMode) {
+        debugPrint('Team($leagueId/$rosterId): Socket reconnected, needsFullRefresh=$needsFullRefresh');
+      }
+      // Always reload on reconnect -- roster/lineup changes may have been missed
+      loadData();
+    });
   }
 
   void _registerInvalidationCallback() {
@@ -245,6 +312,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
     _socketDisposers.clear();
     _invalidationDisposer?.call();
     _syncDisposer?.call();
+    _reconnectDisposer?.call();
     _socketService.leaveLeague(leagueId);
     super.dispose();
   }
@@ -323,8 +391,32 @@ class TeamNotifier extends StateNotifier<TeamState> {
   /// Move a player to a different lineup slot
   Future<bool> movePlayer(int playerId, String toSlot, {String? idempotencyKey}) async {
     if (state.lineup?.isLocked == true) {
-      state = state.copyWith(error: 'Lineup is locked for this week');
+      state = state.copyWith(error: 'Lineup is locked for this week. Games have already started.');
       return false;
+    }
+
+    // Try to provide a descriptive pre-validation error
+    final targetSlot = LineupSlot.fromCode(toSlot);
+    final player = state.players.where((p) => p.playerId == playerId).firstOrNull;
+    if (player != null && targetSlot != null && state.lineup != null) {
+      final validator = const RosterLegalityValidator();
+      final moveValidation = validator.getValidMoveTargets(
+        player: player,
+        currentSlot: state.lineup!.lineup.getPlayerSlot(playerId),
+        config: state.rosterConfig,
+        lineup: state.lineup!.lineup,
+      );
+      if (!moveValidation.validSlots.contains(targetSlot)) {
+        // Find the specific reason
+        final reason = moveValidation.ineligibleSlots
+            .where((r) => r.slot == targetSlot)
+            .firstOrNull;
+        state = state.copyWith(
+          error: reason?.reason ?? state.describeMoveFailure(player, targetSlot),
+          isSaving: false,
+        );
+        return false;
+      }
     }
 
     // Generate or reuse idempotency key for retry safety
@@ -353,9 +445,25 @@ class TeamNotifier extends StateNotifier<TeamState> {
       return true;
     } catch (e) {
       if (!mounted) return false;
-      // Keep key for retry
+      // Keep key for retry — enhance the error message with context
+      final baseError = ErrorSanitizer.sanitize(e);
+      final playerName = player?.fullName ?? 'Player';
+      final slotName = targetSlot?.displayName ?? toSlot;
+
+      // Provide context-aware error messages
+      String errorMsg;
+      if (baseError.contains('full') || baseError.contains('capacity')) {
+        errorMsg = 'Cannot move $playerName to $slotName: $baseError';
+      } else if (baseError.contains('locked')) {
+        errorMsg = 'Cannot edit lineup: $baseError';
+      } else if (baseError.contains('not on') || baseError.contains('not found')) {
+        errorMsg = '$playerName is no longer on your roster. Try refreshing.';
+      } else {
+        errorMsg = 'Failed to move $playerName to $slotName: $baseError';
+      }
+
       state = state.copyWith(
-        error: ErrorSanitizer.sanitize(e),
+        error: errorMsg,
         isSaving: false,
       );
       return false;
@@ -365,7 +473,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
   /// Save the entire lineup
   Future<bool> saveLineup(LineupSlots lineup, {String? idempotencyKey}) async {
     if (state.lineup?.isLocked == true) {
-      state = state.copyWith(error: 'Lineup is locked for this week');
+      state = state.copyWith(error: 'Lineup is locked for this week. Games have already started.');
       return false;
     }
 
@@ -395,8 +503,13 @@ class TeamNotifier extends StateNotifier<TeamState> {
     } catch (e) {
       if (!mounted) return false;
       // Keep key for retry
+      final baseError = ErrorSanitizer.sanitize(e);
+      final errorMsg = baseError.contains('locked')
+          ? 'Cannot edit lineup: Games have already started for this week.'
+          : 'Failed to save lineup: $baseError';
+
       state = state.copyWith(
-        error: ErrorSanitizer.sanitize(e),
+        error: errorMsg,
         isSaving: false,
       );
       return false;
@@ -407,6 +520,9 @@ class TeamNotifier extends StateNotifier<TeamState> {
   Future<bool> dropPlayer(int playerId, {String? idempotencyKey}) async {
     // Generate or reuse idempotency key for retry safety
     _dropPlayerIdempotencyKey ??= idempotencyKey ?? const Uuid().v4();
+
+    final player = state.players.where((p) => p.playerId == playerId).firstOrNull;
+    final playerName = player?.fullName ?? 'Player';
 
     state = state.copyWith(isSaving: true);
 
@@ -431,8 +547,18 @@ class TeamNotifier extends StateNotifier<TeamState> {
     } catch (e) {
       if (!mounted) return false;
       // Keep key for retry
+      final baseError = ErrorSanitizer.sanitize(e);
+      String errorMsg;
+      if (baseError.contains('not on') || baseError.contains('not found')) {
+        errorMsg = '$playerName is no longer on your roster. Try refreshing.';
+      } else if (baseError.contains('minimum')) {
+        errorMsg = 'Cannot drop $playerName: Your roster would fall below the minimum size.';
+      } else {
+        errorMsg = 'Failed to drop $playerName: $baseError';
+      }
+
       state = state.copyWith(
-        error: ErrorSanitizer.sanitize(e),
+        error: errorMsg,
         isSaving: false,
       );
       return false;
@@ -447,12 +573,12 @@ class TeamNotifier extends StateNotifier<TeamState> {
   /// Set the optimal lineup automatically based on projections
   Future<bool> setOptimalLineup({String? idempotencyKey}) async {
     if (state.lineup?.isLocked == true) {
-      state = state.copyWith(error: 'Lineup is locked for this week');
+      state = state.copyWith(error: 'Lineup is locked for this week. Games have already started.');
       return false;
     }
 
     if (state.players.isEmpty) {
-      state = state.copyWith(error: 'No players on roster');
+      state = state.copyWith(error: 'No players on roster to build a lineup from.');
       return false;
     }
 
@@ -485,8 +611,9 @@ class TeamNotifier extends StateNotifier<TeamState> {
     } catch (e) {
       if (!mounted) return false;
       // Keep key for retry
+      final baseError = ErrorSanitizer.sanitize(e);
       state = state.copyWith(
-        error: ErrorSanitizer.sanitize(e),
+        error: 'Failed to set optimal lineup: $baseError',
         isSaving: false,
       );
       return false;

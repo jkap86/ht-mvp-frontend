@@ -4,6 +4,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/utils/navigation_utils.dart';
+import '../../../../core/widgets/skeletons/skeletons.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../players/domain/player.dart';
 import '../../../waivers/presentation/providers/waiver_provider.dart';
@@ -151,7 +152,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     final state = ref.watch(waiversProvider(waiversKey));
 
     if (state.isLoading) {
-      return const AppLoadingView();
+      return const SkeletonList(itemCount: 4);
     }
 
     if (state.error != null) {
@@ -179,6 +180,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         itemBuilder: (context, index) {
           final claim = claims[index];
           return Padding(
+            key: ValueKey('claim-${claim.id}'),
             padding: const EdgeInsets.only(bottom: 12),
             child: Card(
               child: ListTile(
@@ -296,7 +298,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     required bool isFaabLeague,
   }) {
     if (state.isLoading && state.players.isEmpty) {
-      return const AppLoadingView();
+      return const SkeletonPlayerList();
     }
 
     if (state.error != null && state.players.isEmpty) {
@@ -330,6 +332,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
           final isOnWaiverWire = waiversEnabled && waiversState.isOnWaiverWire(player.id);
 
           return Padding(
+            key: ValueKey('fa-${player.id}'),
             padding: const EdgeInsets.only(bottom: 8),
             child: FreeAgentCard(
               player: player,
@@ -358,12 +361,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
   }) {
     final teamState = ref.read(teamProvider(_teamKey));
     final rosterPlayers = teamState.players;
-    final league = teamState.league;
-
-    final rosterConfig = league?.settings['roster_config'] as Map<String, dynamic>?;
-    final maxRosterSize = rosterConfig != null
-        ? rosterConfig.values.fold<int>(0, (sum, val) => sum + (val as int))
-        : 15;
+    final maxRosterSize = teamState.maxRosterSize;
     final isRosterFull = rosterPlayers.length >= maxRosterSize;
 
     if (isOnWaiverWire) {
@@ -382,7 +380,21 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Add Player'),
-          content: Text('Add ${player.fullName} to your roster?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Add ${player.fullName} to your roster?'),
+              const SizedBox(height: 8),
+              Text(
+                'Roster: ${rosterPlayers.length}/$maxRosterSize players',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -408,6 +420,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         context: context,
         addPlayer: player,
         rosterPlayers: rosterPlayers,
+        maxRosterSize: maxRosterSize,
         onDropSelected: (dropPlayerId) async {
           final key = newIdempotencyKey();
           return await ref.read(freeAgentsProvider(_key).notifier).addDropPlayer(player.id, dropPlayerId, idempotencyKey: key);

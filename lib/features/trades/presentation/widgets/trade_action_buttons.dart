@@ -10,6 +10,14 @@ class TradeActionButtons extends StatelessWidget {
   final VoidCallback onReject;
   final VoidCallback onCancel;
   final void Function(String vote) onVote;
+  final bool isLoading;
+
+  /// Small loading spinner used inside buttons while an action is in flight.
+  static const _buttonSpinner = SizedBox(
+    width: 18,
+    height: 18,
+    child: CircularProgressIndicator(strokeWidth: 2),
+  );
 
   const TradeActionButtons({
     super.key,
@@ -19,6 +27,7 @@ class TradeActionButtons extends StatelessWidget {
     required this.onReject,
     required this.onCancel,
     required this.onVote,
+    this.isLoading = false,
   });
 
   @override
@@ -30,8 +39,8 @@ class TradeActionButtons extends StatelessWidget {
       buttons.addAll([
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: onAccept,
-            icon: const Icon(Icons.check),
+            onPressed: isLoading ? null : onAccept,
+            icon: isLoading ? _buttonSpinner : const Icon(Icons.check),
             label: const Text('Accept'),
             style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary),
           ),
@@ -39,8 +48,8 @@ class TradeActionButtons extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: onReject,
-            icon: const Icon(Icons.close),
+            onPressed: isLoading ? null : onReject,
+            icon: isLoading ? _buttonSpinner : const Icon(Icons.close),
             label: const Text('Reject'),
             style: OutlinedButton.styleFrom(foregroundColor: colorScheme.error),
           ),
@@ -48,8 +57,10 @@ class TradeActionButtons extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () =>
-                context.push('/leagues/$leagueId/trades/${trade.id}/counter'),
+            onPressed: isLoading
+                ? null
+                : () => context
+                    .push('/leagues/$leagueId/trades/${trade.id}/counter'),
             icon: const Icon(Icons.reply),
             label: const Text('Counter'),
           ),
@@ -63,8 +74,8 @@ class TradeActionButtons extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: onCancel,
-            icon: const Icon(Icons.cancel),
+            onPressed: isLoading ? null : onCancel,
+            icon: isLoading ? _buttonSpinner : const Icon(Icons.cancel),
             label: const Text('Cancel Trade'),
             style: OutlinedButton.styleFrom(foregroundColor: colorScheme.tertiary),
           ),
@@ -76,8 +87,8 @@ class TradeActionButtons extends StatelessWidget {
       buttons.addAll([
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () => onVote('approve'),
-            icon: const Icon(Icons.thumb_up),
+            onPressed: isLoading ? null : () => onVote('approve'),
+            icon: isLoading ? _buttonSpinner : const Icon(Icons.thumb_up),
             label: const Text('Approve'),
             style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary),
           ),
@@ -85,8 +96,8 @@ class TradeActionButtons extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () => onVote('veto'),
-            icon: const Icon(Icons.thumb_down),
+            onPressed: isLoading ? null : () => onVote('veto'),
+            icon: isLoading ? _buttonSpinner : const Icon(Icons.thumb_down),
             label: const Text('Veto'),
             style: OutlinedButton.styleFrom(foregroundColor: colorScheme.error),
           ),

@@ -4,13 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/time_formatter.dart';
+import '../../../../core/widgets/skeletons/skeletons.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/chat_message.dart';
 import '../providers/chat_provider.dart';
 import 'chat_message_input.dart';
+import 'connection_banner.dart';
 import 'gif_message_bubble.dart';
 import 'gif_picker.dart';
+import 'message_status_indicator.dart';
 import 'reaction_bar.dart';
 import 'reaction_pills.dart';
 import 'slide_in_message.dart';
@@ -94,21 +97,29 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
 
     return Column(
       children: [
+        const ConnectionBanner(),
         Expanded(child: _buildMessageList(state)),
         if (_gifPickerOpen)
           GifPicker(
             compact: true,
             onGifSelected: _sendGif,
           ),
-        ChatMessageInput(
-          controller: _messageController,
-          isSending: state.isSending,
-          onSend: _sendMessage,
-          gifPickerOpen: _gifPickerOpen,
-          onInputModeChanged: (mode) {
-            setState(() {
-              _gifPickerOpen = mode == InputMode.gif;
-            });
+        Consumer(
+          builder: (context, ref, _) {
+            final isSending = ref.watch(
+              chatProvider(widget.leagueId).select((s) => s.isSending),
+            );
+            return ChatMessageInput(
+              controller: _messageController,
+              isSending: isSending,
+              onSend: _sendMessage,
+              gifPickerOpen: _gifPickerOpen,
+              onInputModeChanged: (mode) {
+                setState(() {
+                  _gifPickerOpen = mode == InputMode.gif;
+                });
+              },
+            );
           },
         ),
       ],
@@ -117,7 +128,7 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
 
   Widget _buildMessageList(ChatState state) {
     if (state.isLoading) {
-      return const AppLoadingView();
+      return const SkeletonChatMessageList();
     }
 
     if (state.error != null) {
@@ -162,7 +173,10 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
         final message = state.messages[index];
         // Render system messages differently
         if (message.isSystemMessage) {
-          return SystemMessageBubble(message: message);
+          return SystemMessageBubble(
+            key: ValueKey('sys-${message.id}'),
+            message: message,
+          );
         }
 
         // Compute grouping flags (list is reversed: index 0 = newest)
@@ -176,14 +190,36 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
         final isFirstInGroup = !_isSameGroup(prevMessage, message);
         final isLastInGroup = !_isSameGroup(message, nextMessage);
 
-        final bubble = _LeagueChatBubbleWithReactions(
-          message: message,
-          isFirstInGroup: isFirstInGroup,
-          isLastInGroup: isLastInGroup,
-          onToggleReaction: (emoji) {
-            ref.read(chatProvider(widget.leagueId).notifier)
-                .toggleReaction(message.id, emoji);
-          },
+        final bubble = Column(
+          key: ValueKey('msg-${message.id}'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _LeagueChatBubbleWithReactions(
+              message: message,
+              isFirstInGroup: isFirstInGroup,
+              isLastInGroup: isLastInGroup,
+              onToggleReaction: (emoji) {
+                ref.read(chatProvider(widget.leagueId).notifier)
+                    .toggleReaction(message.id, emoji);
+              },
+            ),
+            if (message.sendStatus != MessageSendStatus.sent)
+              Padding(
+                padding: const EdgeInsets.only(left: 36),
+                child: MessageStatusIndicator(
+                  status: message.sendStatus,
+                  compact: true,
+                  onRetry: message.sendStatus == MessageSendStatus.failed
+                      ? () => ref.read(chatProvider(widget.leagueId).notifier)
+                          .retryMessage(message.id)
+                      : null,
+                  onDismiss: message.sendStatus == MessageSendStatus.failed
+                      ? () => ref.read(chatProvider(widget.leagueId).notifier)
+                          .dismissFailedMessage(message.id)
+                      : null,
+                ),
+              ),
+          ],
         );
 
         // Animate only the very newest message

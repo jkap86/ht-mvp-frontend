@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show VoidCallback;
+import 'package:flutter/foundation.dart' show VoidCallback, kDebugMode, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/api/api_exceptions.dart';
@@ -8,7 +8,8 @@ import '../../../../core/constants/socket_events.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 
 import '../../../../core/socket/socket_service.dart';
-import '../../../chat/domain/chat_message.dart' show ReactionGroup;
+import '../../../auth/presentation/auth_provider.dart';
+import '../../../chat/domain/chat_message.dart' show MessageSendStatus, ReactionGroup;
 import '../../data/dm_repository.dart';
 import '../../domain/direct_message.dart';
 import 'dm_inbox_provider.dart';
@@ -59,6 +60,8 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
   final SocketService _socketService;
   final int conversationId;
   final Ref _ref;
+  final String? _currentUserId;
+  final String? _currentUsername;
 
   VoidCallback? _dmMessageDisposer;
   VoidCallback? _reconnectDisposer;
@@ -70,22 +73,27 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
     this._dmRepo,
     this._socketService,
     this.conversationId,
-    this._ref,
-  ) : super(DmConversationState()) {
+    this._ref, {
+    String? currentUserId,
+    String? currentUsername,
+  })  : _currentUserId = currentUserId,
+        _currentUsername = currentUsername,
+        super(DmConversationState()) {
     _setupSocketListeners();
     loadMessages();
     _markAsRead();
   }
 
   void _setupSocketListeners() {
-    // Refresh messages on socket reconnection only if disconnected long enough
+    // Refresh messages on socket reconnection (both short and long disconnects)
     _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
       if (!mounted) return;
-      // Only do full refresh if disconnected for more than 30 seconds
-      // For brief disconnects, socket events should have kept us in sync
-      if (needsFullRefresh) {
-        loadMessages();
+      if (kDebugMode) {
+        debugPrint('DmConversation($conversationId): Socket reconnected, needsFullRefresh=$needsFullRefresh');
       }
+      // Always reload messages on reconnect to ensure no gaps.
+      // Short disconnects may have missed incoming messages.
+      loadMessages();
     });
 
     _reactionAddedDisposer = _socketService.on(SocketEvents.dmReactionAdded, (data) {
@@ -140,10 +148,17 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
 
       if (!mounted) return;
 
-      // Merge with existing messages (socket messages may have arrived during fetch)
+      // Preserve any pending/failed optimistic messages (negative IDs)
+      final optimisticMessages = state.messages
+          .where((m) => m.isOptimistic)
+          .toList();
+
+      // Merge optimistic messages with fetched messages and existing socket messages
       final existingIds = state.messages.map((m) => m.id).toSet();
       final newFromApi = fetchedMessages.where((m) => !existingIds.contains(m.id)).toList();
-      final merged = [...state.messages, ...newFromApi];
+      // Include non-optimistic existing messages that were from socket + new from API + optimistic
+      final nonOptimisticExisting = state.messages.where((m) => !m.isOptimistic).toList();
+      final merged = [...optimisticMessages, ...nonOptimisticExisting, ...newFromApi];
 
       // Sort by timestamp (newest first) and dedupe
       merged.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -169,10 +184,14 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
   Future<void> loadMoreMessages() async {
     if (state.isLoadingMore || !state.hasMore || state.messages.isEmpty) return;
 
+    // Find the oldest real (non-optimistic) message ID for pagination cursor
+    final realMessages = state.messages.where((m) => !m.isOptimistic);
+    if (realMessages.isEmpty) return;
+
     state = state.copyWith(isLoadingMore: true);
 
     try {
-      final oldestId = state.messages.last.id;
+      final oldestId = realMessages.last.id;
       final olderMessages = await _dmRepo.getMessages(
         conversationId,
         limit: _pageSize,
@@ -200,27 +219,133 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
   }
 
   Future<bool> sendMessage(String text, {String? idempotencyKey}) async {
-    if (text.trim().isEmpty || state.isSending) return false;
+    final trimmedText = text.trim();
+    if (trimmedText.isEmpty || state.isSending) return false;
 
-    state = state.copyWith(isSending: true);
+    // Generate a temporary negative ID for optimistic message
+    final tempId = -DateTime.now().millisecondsSinceEpoch;
+
+    // Create optimistic message if we have user info
+    DirectMessage? optimisticMessage;
+    if (_currentUserId != null) {
+      optimisticMessage = DirectMessage(
+        id: tempId,
+        conversationId: conversationId,
+        senderId: _currentUserId,
+        senderUsername: _currentUsername ?? 'You',
+        message: trimmedText,
+        createdAt: DateTime.now(),
+        sendStatus: MessageSendStatus.sending,
+        idempotencyKey: idempotencyKey,
+      );
+
+      // Add optimistic message immediately
+      state = state.copyWith(
+        messages: [optimisticMessage, ...state.messages],
+        isSending: true,
+      );
+    } else {
+      state = state.copyWith(isSending: true);
+    }
 
     try {
-      final message = await _dmRepo.sendMessage(conversationId, text.trim(), idempotencyKey: idempotencyKey);
+      final message = await _dmRepo.sendMessage(conversationId, trimmedText, idempotencyKey: idempotencyKey);
 
       if (!mounted) return false;
 
-      // Add message to the list
+      // Replace optimistic message with the real one from the server
+      if (optimisticMessage != null) {
+        state = state.copyWith(
+          messages: state.messages.map((m) {
+            if (m.id == tempId) return message;
+            return m;
+          }).toList(),
+          isSending: false,
+        );
+      } else {
+        // Add message to the list
+        state = state.copyWith(
+          messages: [message, ...state.messages],
+          isSending: false,
+        );
+      }
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+
+      // Mark the optimistic message as failed instead of removing it
+      if (optimisticMessage != null) {
+        state = state.copyWith(
+          messages: state.messages.map((m) {
+            if (m.id == tempId) {
+              return m.copyWith(sendStatus: MessageSendStatus.failed);
+            }
+            return m;
+          }).toList(),
+          isSending: false,
+        );
+      } else {
+        state = state.copyWith(isSending: false, error: ErrorSanitizer.sanitize(e));
+      }
+      return false;
+    }
+  }
+
+  /// Retry sending a previously failed message.
+  Future<bool> retryMessage(int tempId) async {
+    final failedMessage = state.messages.where((m) => m.id == tempId).firstOrNull;
+    if (failedMessage == null || failedMessage.sendStatus != MessageSendStatus.failed) {
+      return false;
+    }
+
+    // Mark as sending again
+    state = state.copyWith(
+      messages: state.messages.map((m) {
+        if (m.id == tempId) {
+          return m.copyWith(sendStatus: MessageSendStatus.sending);
+        }
+        return m;
+      }).toList(),
+    );
+
+    try {
+      final message = await _dmRepo.sendMessage(
+        conversationId,
+        failedMessage.message,
+        idempotencyKey: failedMessage.idempotencyKey,
+      );
+
+      if (!mounted) return false;
+
+      // Replace temp with real message
       state = state.copyWith(
-        messages: [message, ...state.messages],
-        isSending: false,
+        messages: state.messages.map((m) {
+          if (m.id == tempId) return message;
+          return m;
+        }).toList(),
       );
       return true;
     } catch (e) {
       if (!mounted) return false;
 
-      state = state.copyWith(isSending: false, error: ErrorSanitizer.sanitize(e));
+      // Mark as failed again
+      state = state.copyWith(
+        messages: state.messages.map((m) {
+          if (m.id == tempId) {
+            return m.copyWith(sendStatus: MessageSendStatus.failed);
+          }
+          return m;
+        }).toList(),
+      );
       return false;
     }
+  }
+
+  /// Remove a failed message from the list (dismiss).
+  void dismissFailedMessage(int tempId) {
+    state = state.copyWith(
+      messages: state.messages.where((m) => m.id != tempId).toList(),
+    );
   }
 
   void _markAsRead() {
@@ -356,10 +481,16 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
 
 final dmConversationProvider = StateNotifierProvider.autoDispose.family<
     DmConversationNotifier, DmConversationState, int>(
-  (ref, conversationId) => DmConversationNotifier(
-    ref.watch(dmRepositoryProvider),
-    ref.watch(socketServiceProvider),
-    conversationId,
-    ref,
-  ),
+  (ref, conversationId) {
+    // Import auth state for optimistic messages
+    final authState = ref.watch(authStateProvider);
+    return DmConversationNotifier(
+      ref.watch(dmRepositoryProvider),
+      ref.watch(socketServiceProvider),
+      conversationId,
+      ref,
+      currentUserId: authState.user?.id,
+      currentUsername: authState.user?.username,
+    );
+  },
 );

@@ -79,6 +79,7 @@ class LeagueDashboardNotifier extends StateNotifier<LeagueDashboardState> {
   VoidCallback? _tradeCompletedDisposer;
   VoidCallback? _waiverProcessedDisposer;
   VoidCallback? _auctionLotUpdatedDisposer;
+  VoidCallback? _reconnectDisposer;
 
   LeagueDashboardNotifier(
     this._leagueRepo,
@@ -140,6 +141,16 @@ class LeagueDashboardNotifier extends StateNotifier<LeagueDashboardState> {
       if (!mounted) return;
       loadDashboard();
     });
+
+    // Resync dashboard on socket reconnection
+    _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
+      if (!mounted) return;
+      if (kDebugMode) {
+        debugPrint('Dashboard($leagueId): Socket reconnected, needsFullRefresh=$needsFullRefresh');
+      }
+      // Always reload dashboard on reconnect -- counts and statuses may have changed
+      loadDashboard();
+    });
   }
 
   @override
@@ -150,6 +161,8 @@ class LeagueDashboardNotifier extends StateNotifier<LeagueDashboardState> {
     _tradeCompletedDisposer?.call();
     _waiverProcessedDisposer?.call();
     _auctionLotUpdatedDisposer?.call();
+    _reconnectDisposer?.call();
+    _socketService.leaveLeague(leagueId);
     super.dispose();
   }
 

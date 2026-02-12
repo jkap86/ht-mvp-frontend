@@ -8,6 +8,10 @@ enum DraftActivityType {
   draftCompleted,
   pickUndone,
   autodraftToggled,
+  // Derby-specific activity types
+  derbySlotPicked,
+  derbyTimeout,
+  derbyCompleted,
 }
 
 class DraftActivityEvent {

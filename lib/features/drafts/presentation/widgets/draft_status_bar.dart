@@ -19,6 +19,12 @@ class DraftStatusBar extends ConsumerWidget {
   final String? topQueuedPlayerName;
   final VoidCallback? onDraftFromQueue;
   final VoidCallback? onPickPlayer;
+  /// Server clock offset for accurate timer sync
+  final int? serverClockOffsetMs;
+  /// Message explaining the last autopick (shown after reconnect)
+  final String? autopickExplanation;
+  /// Callback to dismiss the autopick explanation
+  final VoidCallback? onDismissAutopickExplanation;
 
   const DraftStatusBar({
     super.key,
@@ -31,6 +37,9 @@ class DraftStatusBar extends ConsumerWidget {
     this.topQueuedPlayerName,
     this.onDraftFromQueue,
     this.onPickPlayer,
+    this.serverClockOffsetMs,
+    this.autopickExplanation,
+    this.onDismissAutopickExplanation,
   });
 
   @override
@@ -112,6 +121,32 @@ class DraftStatusBar extends ConsumerWidget {
                       ),
                     ),
                   ),
+                // Autopick explanation after reconnect
+                if (autopickExplanation != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.smart_toy, size: 14, color: AppTheme.draftWarning),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            autopickExplanation!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.draftWarning,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        if (onDismissAutopickExplanation != null)
+                          GestureDetector(
+                            onTap: onDismissAutopickExplanation,
+                            child: Icon(Icons.close, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                          ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -139,12 +174,13 @@ class DraftStatusBar extends ConsumerWidget {
             ),
           // Connection status indicator (LIVE/RECONNECTING)
           if (isInProgress) _buildConnectionIndicator(ref),
-          // Timer first (more important, shows countdown)
+          // Timer first (more important, shows countdown, synced to server)
           if (isInProgress && draft?.pickDeadline != null)
             Padding(
               padding: const EdgeInsets.only(right: 12),
               child: DraftTimerWidget(
                 pickDeadline: draft!.pickDeadline,
+                serverClockOffsetMs: serverClockOffsetMs,
               ),
             ),
           // Autodraft toggle

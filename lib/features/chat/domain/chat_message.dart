@@ -195,6 +195,18 @@ class ReactionGroup {
   }
 }
 
+/// Status of a message being sent
+enum MessageSendStatus {
+  /// Message confirmed by the server
+  sent,
+
+  /// Message is being sent (optimistic, awaiting server ack)
+  sending,
+
+  /// Message failed to send
+  failed,
+}
+
 class ChatMessage {
   final int id;
   final int leagueId;
@@ -205,6 +217,10 @@ class ChatMessage {
   final SystemMessageMetadata? metadata;
   final List<ReactionGroup> reactions;
   final DateTime createdAt;
+  final MessageSendStatus sendStatus;
+
+  /// Idempotency key used for retry of failed messages
+  final String? idempotencyKey;
 
   ChatMessage({
     required this.id,
@@ -216,6 +232,8 @@ class ChatMessage {
     this.metadata,
     this.reactions = const [],
     required this.createdAt,
+    this.sendStatus = MessageSendStatus.sent,
+    this.idempotencyKey,
   });
 
   /// Check if this is a system message (no user AND not 'chat' type)
@@ -258,11 +276,16 @@ class ChatMessage {
     );
   }
 
+  /// Whether this is an optimistic (locally-created) message not yet confirmed by the server.
+  bool get isOptimistic => id < 0;
+
   ChatMessage copyWith({
+    int? id,
     List<ReactionGroup>? reactions,
+    MessageSendStatus? sendStatus,
   }) {
     return ChatMessage(
-      id: id,
+      id: id ?? this.id,
       leagueId: leagueId,
       userId: userId,
       username: username,
@@ -271,6 +294,8 @@ class ChatMessage {
       metadata: metadata,
       reactions: reactions ?? this.reactions,
       createdAt: createdAt,
+      sendStatus: sendStatus ?? this.sendStatus,
+      idempotencyKey: idempotencyKey,
     );
   }
 

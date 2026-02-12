@@ -31,29 +31,59 @@ class AvailablePlayersList extends StatelessWidget {
       itemCount: players.length,
       itemBuilder: (context, index) {
         final player = players[index];
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: getPositionColor(player.primaryPosition),
-            child: Text(
-              player.primaryPosition,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          title: Text(player.fullName),
-          subtitle: Text('${player.team ?? 'FA'} - ${player.primaryPosition}'),
-          trailing: _buildTrailingButtons(player),
+        return _AvailablePlayerTile(
+          key: ValueKey('player-${player.id}'),
+          player: player,
+          isDraftInProgress: isDraftInProgress,
+          isMyTurn: isMyTurn,
+          onDraftPlayer: onDraftPlayer,
+          onAddToQueue: onAddToQueue,
+          isInQueue: queuedPlayerIds.contains(player.id),
         );
       },
     );
   }
+}
 
-  Widget? _buildTrailingButtons(Player player) {
-    final isInQueue = queuedPlayerIds.contains(player.id);
+class _AvailablePlayerTile extends StatelessWidget {
+  final Player player;
+  final bool isDraftInProgress;
+  final bool isMyTurn;
+  final void Function(int playerId)? onDraftPlayer;
+  final void Function(int playerId)? onAddToQueue;
+  final bool isInQueue;
 
+  const _AvailablePlayerTile({
+    super.key,
+    required this.player,
+    required this.isDraftInProgress,
+    required this.isMyTurn,
+    this.onDraftPlayer,
+    this.onAddToQueue,
+    required this.isInQueue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: getPositionColor(player.primaryPosition),
+        child: Text(
+          player.primaryPosition,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onPrimary,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      title: Text(player.fullName),
+      subtitle: Text('${player.team ?? 'FA'} - ${player.primaryPosition}'),
+      trailing: _buildTrailingButtons(),
+    );
+  }
+
+  Widget? _buildTrailingButtons() {
     if (!isDraftInProgress) {
       // Before draft starts - only show queue button
       if (onAddToQueue == null) return null;

@@ -12,6 +12,9 @@ enum LeagueStatusType {
   auctionActive,
   waiversSoon,
   inSeason,
+  playoffs,
+  offseason,
+  complete,
   preSeason,
 }
 
@@ -113,6 +116,12 @@ class LeagueStatusPill extends StatelessWidget {
         return 'Waivers soon';
       case LeagueStatusType.inSeason:
         return week != null ? 'Week $week' : 'In season';
+      case LeagueStatusType.playoffs:
+        return week != null ? 'Playoffs Wk $week' : 'Playoffs';
+      case LeagueStatusType.offseason:
+        return 'Offseason';
+      case LeagueStatusType.complete:
+        return 'Complete';
       case LeagueStatusType.preSeason:
         return 'Pre-season';
     }
@@ -172,6 +181,24 @@ class LeagueStatusPill extends StatelessWidget {
           backgroundColor: AppTheme.draftActionPrimary.withValues(alpha: 0.15),
           textColor: AppTheme.draftActionPrimary,
           icon: Icons.sports_football,
+        );
+      case LeagueStatusType.playoffs:
+        return _PillConfig(
+          backgroundColor: AppTheme.brandPink.withValues(alpha: 0.15),
+          textColor: AppTheme.brandPink,
+          icon: Icons.emoji_events,
+        );
+      case LeagueStatusType.offseason:
+        return _PillConfig(
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          textColor: colorScheme.onSurfaceVariant,
+          icon: Icons.bedtime,
+        );
+      case LeagueStatusType.complete:
+        return _PillConfig(
+          backgroundColor: AppTheme.draftSuccess.withValues(alpha: 0.15),
+          textColor: AppTheme.draftSuccess,
+          icon: Icons.check_circle,
         );
       case LeagueStatusType.preSeason:
         return _PillConfig(

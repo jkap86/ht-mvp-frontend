@@ -20,6 +20,64 @@ class WaiverManagementCard extends StatefulWidget {
 class _WaiverManagementCardState extends State<WaiverManagementCard> {
   int _selectedFaabBudget = 100;
 
+  Future<void> _confirmInitialize(BuildContext context) async {
+    final action = widget.waiversInitialized ? 'reinitialize' : 'initialize';
+    final budgetText = _selectedFaabBudget > 0
+        ? ' with a FAAB budget of \$$_selectedFaabBudget'
+        : ' using priority-based waivers';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${widget.waiversInitialized ? 'Reinitialize' : 'Initialize'} Waivers?'),
+        content: Text(
+          'This will $action the waiver system$budgetText. '
+          '${widget.waiversInitialized ? 'Existing waiver settings will be overwritten.' : ''}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(widget.waiversInitialized ? 'Reinitialize' : 'Initialize'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      widget.onInitializeWaivers(
+        faabBudget: _selectedFaabBudget > 0 ? _selectedFaabBudget : null,
+      );
+    }
+  }
+
+  Future<void> _confirmProcess(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Process Waivers Now?'),
+        content: const Text(
+          'This will immediately process all pending waiver claims. '
+          'Claims will be resolved in priority order.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Process'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      widget.onProcessWaivers();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -74,18 +132,14 @@ class _WaiverManagementCardState extends State<WaiverManagementCard> {
               runSpacing: 8,
               children: [
                 ElevatedButton.icon(
-                  onPressed: () {
-                    widget.onInitializeWaivers(
-                      faabBudget: _selectedFaabBudget > 0 ? _selectedFaabBudget : null,
-                    );
-                  },
+                  onPressed: () => _confirmInitialize(context),
                   icon: const Icon(Icons.play_arrow),
                   label: Text(widget.waiversInitialized
                       ? 'Reinitialize Waivers'
                       : 'Initialize Waivers'),
                 ),
                 OutlinedButton.icon(
-                  onPressed: widget.onProcessWaivers,
+                  onPressed: () => _confirmProcess(context),
                   icon: const Icon(Icons.sync),
                   label: const Text('Process Waivers Now'),
                 ),

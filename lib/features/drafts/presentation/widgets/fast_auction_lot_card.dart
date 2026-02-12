@@ -23,6 +23,8 @@ class FastAuctionLotCard extends StatefulWidget {
   final int? serverClockOffsetMs;
   final AuctionSettings? auctionSettings;
   final int? myRosterId;
+  /// Total roster spots for max bid calculation
+  final int? totalRosterSpots;
 
   const FastAuctionLotCard({
     super.key,
@@ -34,6 +36,7 @@ class FastAuctionLotCard extends StatefulWidget {
     this.serverClockOffsetMs,
     this.auctionSettings,
     this.myRosterId,
+    this.totalRosterSpots,
   });
 
   @override
@@ -254,13 +257,29 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
     );
   }
 
+  int? get _maxPossibleBid {
+    final budget = widget.myBudget;
+    if (budget == null) return null;
+    final totalSpots = widget.totalRosterSpots ?? 15;
+    final remainingSpots = totalSpots - budget.wonCount;
+    if (remainingSpots <= 1) return budget.available;
+    final minBidVal = widget.auctionSettings?.minBid ?? 1;
+    final reserved = (remainingSpots - 1) * minBidVal;
+    final maxBid = budget.available - reserved;
+    // Leader can reuse current commitment
+    if (_isWinning) {
+      return (maxBid + widget.lot.currentBid).clamp(0, budget.totalBudget);
+    }
+    return maxBid > 0 ? maxBid : 0;
+  }
+
   Widget _buildBidInfoRow(ThemeData theme) {
     final budget = widget.myBudget;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Budget and min bid chips
+        // Budget, min bid, and max bid chips
         Row(
           children: [
             if (budget != null)
@@ -281,6 +300,15 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
             ),
           ],
         ),
+        if (_maxPossibleBid != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: _buildInfoChip(
+              theme,
+              icon: Icons.trending_up,
+              label: 'Max possible bid: \$$_maxPossibleBid',
+            ),
+          ),
         // "You are leading" banner
         if (_isWinning)
           Padding(

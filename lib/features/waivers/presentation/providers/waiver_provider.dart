@@ -21,6 +21,7 @@ class WaiversState {
   final String? error;
   final bool isForbidden;
   final String filter; // 'all', 'pending', 'completed'
+  final bool isReordering; // True while a reorder API call is in flight
 
   WaiversState({
     this.claims = const [],
@@ -31,6 +32,7 @@ class WaiversState {
     this.error,
     this.isForbidden = false,
     this.filter = 'pending',
+    this.isReordering = false,
   });
 
   /// Check if a player is on the waiver wire
@@ -67,6 +69,17 @@ class WaiversState {
     return priorities.where((p) => p.rosterId == rosterId).firstOrNull;
   }
 
+  /// Get the total number of teams in the league (from priority list)
+  int get totalTeams => priorities.length;
+
+  /// Whether this league uses FAAB bidding (has budget data)
+  bool get isFaabLeague => budgets.isNotEmpty;
+
+  /// Summary counts for quick display
+  int get pendingCount => claims.where((c) => c.status.isPending).length;
+  int get successfulCount => claims.where((c) => c.status.isSuccessful).length;
+  int get failedCount => claims.where((c) => c.status.isFailed).length;
+
   WaiversState copyWith({
     List<WaiverClaim>? claims,
     List<WaiverPriority>? priorities,
@@ -76,6 +89,7 @@ class WaiversState {
     String? error,
     bool? isForbidden,
     String? filter,
+    bool? isReordering,
     bool clearError = false,
   }) {
     return WaiversState(
@@ -87,6 +101,7 @@ class WaiversState {
       error: clearError ? null : (error ?? this.error),
       isForbidden: isForbidden ?? this.isForbidden,
       filter: filter ?? this.filter,
+      isReordering: isReordering ?? this.isReordering,
     );
   }
 }
@@ -289,13 +304,15 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
       _debouncedLoadWaiverData();
     });
 
-    // Resync waivers on socket reconnection
+    // Resync waivers on socket reconnection (both short and long disconnects)
     _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
       if (!mounted) return;
-      if (needsFullRefresh) {
-        if (kDebugMode) debugPrint('Waivers: Socket reconnected after long disconnect, reloading');
-        loadWaiverData();
+      if (kDebugMode) {
+        debugPrint('Waivers: Socket reconnected, needsFullRefresh=$needsFullRefresh');
       }
+      // Always reload waiver data on reconnect to ensure consistency.
+      // Short disconnects may have missed claim status changes.
+      loadWaiverData();
     });
   }
 
@@ -434,7 +451,7 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
         optimisticClaims[index] = optimisticClaims[index].copyWith(claimOrder: i + 1);
       }
     }
-    state = state.copyWith(claims: optimisticClaims);
+    state = state.copyWith(claims: optimisticClaims, isReordering: true);
 
     try {
       final updatedClaims = await _waiverRepo.reorderClaims(leagueId, claimIds, idempotencyKey: idempotencyKey);
@@ -447,12 +464,12 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
           currentClaims[index] = updated;
         }
       }
-      state = state.copyWith(claims: currentClaims);
+      state = state.copyWith(claims: currentClaims, isReordering: false);
       return true;
     } catch (e) {
       if (!mounted) return false;
       // Rollback to previous claim order on error
-      state = state.copyWith(claims: previousClaims, error: ErrorSanitizer.sanitize(e));
+      state = state.copyWith(claims: previousClaims, error: ErrorSanitizer.sanitize(e), isReordering: false);
       return false;
     }
   }

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/hype_train_colors.dart';
+import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/idempotency.dart';
+import '../../domain/dues.dart';
 import '../providers/dues_provider.dart';
 
 /// Card for tracking payment status (commissioner only)
@@ -41,6 +43,13 @@ class DuesTrackerCard extends ConsumerWidget {
     final summary = state.summary;
     final payments = state.payments;
     final buyIn = state.config!.buyInAmount;
+
+    // Listen for errors to show snackbar feedback
+    ref.listen<DuesState>(duesProvider(leagueId), (prev, next) {
+      if (next.error != null && prev?.error != next.error) {
+        next.error!.showAsErrorWithContext(context);
+      }
+    });
 
     return Card(
       child: Padding(
@@ -116,6 +125,7 @@ class DuesTrackerCard extends ConsumerWidget {
               // Payment list
               ...payments.map((payment) {
                 final isUpdating = state.updatingRosterId == payment.rosterId;
+                final anyUpdating = state.updatingRosterId != null;
 
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -131,26 +141,31 @@ class DuesTrackerCard extends ConsumerWidget {
                       color: payment.isPaid ? context.htColors.success : context.htColors.error,
                     ),
                   ),
-                  title: Text(
-                    payment.teamName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      decoration: payment.isPaid ? null : null,
-                    ),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          payment.teamName,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                      _buildStatusBadge(context, payment),
+                    ],
                   ),
                   subtitle: payment.isPaid && payment.paidAt != null
                       ? Text(
-                          'paid ${_formatDate(payment.paidAt)}',
+                          'Paid ${_formatDate(payment.paidAt)}',
                           style: TextStyle(
                             fontSize: 11,
                             color: colorScheme.onSurfaceVariant,
                           ),
                         )
                       : Text(
-                          '\$${buyIn.toStringAsFixed(2)} due',
+                          '\$${buyIn.toStringAsFixed(2)} owed',
                           style: TextStyle(
                             fontSize: 11,
-                            color: colorScheme.error,
+                            color: context.htColors.error,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                   trailing: isUpdating
@@ -161,11 +176,25 @@ class DuesTrackerCard extends ConsumerWidget {
                         )
                       : payment.isPaid
                           ? TextButton(
-                              onPressed: () => _togglePayment(ref, payment.rosterId, false),
+                              onPressed: anyUpdating
+                                  ? null
+                                  : () => _showMarkUnpaidConfirmation(
+                                        context,
+                                        ref,
+                                        payment,
+                                        buyIn,
+                                      ),
                               child: const Text('Undo'),
                             )
                           : FilledButton.tonal(
-                              onPressed: () => _togglePayment(ref, payment.rosterId, true),
+                              onPressed: anyUpdating
+                                  ? null
+                                  : () => _showMarkPaidConfirmation(
+                                        context,
+                                        ref,
+                                        payment,
+                                        buyIn,
+                                      ),
                               child: const Text('Mark Paid'),
                             ),
                 );
@@ -185,8 +214,126 @@ class DuesTrackerCard extends ConsumerWidget {
     );
   }
 
-  void _togglePayment(WidgetRef ref, int rosterId, bool isPaid) {
+  /// Builds a colored status badge for the payment row.
+  Widget _buildStatusBadge(BuildContext context, DuesPayment payment) {
+    final Color bgColor;
+    final Color textColor;
+    final String label;
+
+    if (payment.isPaid) {
+      bgColor = context.htColors.success.withAlpha(31);
+      textColor = context.htColors.success;
+      label = 'Paid';
+    } else {
+      bgColor = context.htColors.error.withAlpha(31);
+      textColor = context.htColors.error;
+      label = 'Owed';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: AppSpacing.badgeRadius,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+
+  /// Shows a confirmation dialog before marking a member as paid.
+  void _showMarkPaidConfirmation(
+    BuildContext context,
+    WidgetRef ref,
+    DuesPayment payment,
+    double buyIn,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Mark as Paid'),
+        content: Text(
+          'Mark ${payment.teamName} (${payment.username}) as paid '
+          '(\$${buyIn.toStringAsFixed(2)})?\n\n'
+          'This will update their dues status to paid.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _executePaymentToggle(ref, context, payment.rosterId, true, payment.teamName);
+            },
+            child: const Text('Mark Paid'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Shows a confirmation dialog before marking a member as unpaid.
+  void _showMarkUnpaidConfirmation(
+    BuildContext context,
+    WidgetRef ref,
+    DuesPayment payment,
+    double buyIn,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Mark as Unpaid'),
+        content: Text(
+          'Mark ${payment.teamName} (${payment.username}) as unpaid?\n\n'
+          'This will revert their payment status to owed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _executePaymentToggle(ref, context, payment.rosterId, false, payment.teamName);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+            ),
+            child: const Text('Mark Unpaid'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Executes the payment status toggle and shows feedback.
+  Future<void> _executePaymentToggle(
+    WidgetRef ref,
+    BuildContext context,
+    int rosterId,
+    bool isPaid,
+    String teamName,
+  ) async {
     final key = newIdempotencyKey();
-    ref.read(duesProvider(leagueId).notifier).markPayment(rosterId, isPaid, idempotencyKey: key);
+    final success = await ref
+        .read(duesProvider(leagueId).notifier)
+        .markPayment(rosterId, isPaid, idempotencyKey: key);
+
+    if (!context.mounted) return;
+
+    if (success) {
+      final action = isPaid ? 'paid' : 'unpaid';
+      showSuccessWithContext(context, '$teamName marked as $action');
+    }
+    // Error case is handled by the ref.listen above
   }
 }

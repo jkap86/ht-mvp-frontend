@@ -23,6 +23,8 @@ class AuctionBidDialog extends StatefulWidget {
   final AuctionSettings settings;
   final Future<String?> Function(int maxBid) onSubmit;
   final int? serverClockOffsetMs;
+  /// Total roster spots for max possible bid calculation
+  final int? totalRosterSpots;
 
   const AuctionBidDialog({
     super.key,
@@ -35,6 +37,7 @@ class AuctionBidDialog extends StatefulWidget {
     required this.settings,
     required this.onSubmit,
     this.serverClockOffsetMs,
+    this.totalRosterSpots,
   });
 
   /// Shows the auction bid dialog.
@@ -49,6 +52,7 @@ class AuctionBidDialog extends StatefulWidget {
     required AuctionSettings settings,
     required Future<String?> Function(int maxBid) onSubmit,
     int? serverClockOffsetMs,
+    int? totalRosterSpots,
   }) {
     return showDialog(
       context: context,
@@ -62,6 +66,7 @@ class AuctionBidDialog extends StatefulWidget {
         settings: settings,
         onSubmit: onSubmit,
         serverClockOffsetMs: serverClockOffsetMs,
+        totalRosterSpots: totalRosterSpots,
       ),
     );
   }
@@ -97,6 +102,21 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
       available += widget.lot.currentBid;
     }
     return available;
+  }
+
+  /// Max possible bid accounting for remaining roster spots needing minimum bids
+  int? get _maxPossibleBid {
+    if (widget.myBudget == null) return null;
+    final totalSpots = widget.totalRosterSpots ?? 15;
+    final remainingSpots = totalSpots - widget.myBudget!.wonCount;
+    if (remainingSpots <= 1) return _maxBid; // Last spot: can bid everything
+    final minBidVal = widget.settings.minBid;
+    final reserved = (remainingSpots - 1) * minBidVal;
+    int available = widget.myBudget!.available - reserved;
+    if (_isCurrentLeader) {
+      available += widget.lot.currentBid;
+    }
+    return available > 0 ? available : 0;
   }
 
   @override
@@ -354,6 +374,15 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
                   'Leading Commitments',
                   '\$${widget.myBudget!.leadingCommitment}',
                 ),
+                if (_maxPossibleBid != null)
+                  _buildInfoRow(
+                    'Max Possible Bid',
+                    '\$$_maxPossibleBid',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.tertiary,
+                    ),
+                  ),
                 const SizedBox(height: 16),
               ],
 

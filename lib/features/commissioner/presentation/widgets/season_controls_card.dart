@@ -74,15 +74,46 @@ class _SeasonControlsCardState extends ConsumerState<SeasonControlsCard> {
     }
   }
 
+  bool _isSaving = false;
+
   Future<void> _saveChanges() async {
+    // Show confirmation dialog for season control changes
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Season Controls'),
+        content: Text(
+          'You are changing the season status to "${_selectedStatus.displayName}" '
+          'and current week to $_selectedWeek.\n\n'
+          'This affects schedules, lineups, and scoring. Are you sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _isSaving = true);
+
     final key = newIdempotencyKey();
     final success = await ref.read(commissionerProvider(widget.leagueId).notifier).updateSeasonControls(
           seasonStatus: _statusToApiValue(_selectedStatus),
           currentWeek: _selectedWeek,
           idempotencyKey: key,
         );
-    if (success) {
-      setState(() => _hasChanges = false);
+    if (mounted) {
+      setState(() {
+        _isSaving = false;
+        if (success) _hasChanges = false;
+      });
     }
   }
 
@@ -171,7 +202,7 @@ class _SeasonControlsCardState extends ConsumerState<SeasonControlsCard> {
               },
             ),
             const SizedBox(height: 16),
-            // Save Button
+            // Save Button with loading state
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -179,9 +210,18 @@ class _SeasonControlsCardState extends ConsumerState<SeasonControlsCard> {
                   backgroundColor: _hasChanges ? colorScheme.primary : colorScheme.surfaceContainerHighest,
                   foregroundColor: _hasChanges ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
                 ),
-                icon: const Icon(Icons.save),
-                label: const Text('Save Changes'),
-                onPressed: _hasChanges ? _saveChanges : null,
+                icon: _isSaving
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colorScheme.onPrimary,
+                        ),
+                      )
+                    : const Icon(Icons.save),
+                label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
+                onPressed: (_hasChanges && !_isSaving) ? _saveChanges : null,
               ),
             ),
           ],

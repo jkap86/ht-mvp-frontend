@@ -170,6 +170,7 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
   Future<bool> addPlayer(int playerId, {String? idempotencyKey}) async {
     // Save state for rollback
     final previousState = state;
+    final playerName = state.players.where((p) => p.id == playerId).firstOrNull?.fullName ?? 'Player';
 
     // Optimistic update - remove player from list immediately
     state = state.copyWith(
@@ -193,8 +194,18 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
       return true;
     } catch (e) {
       // ROLLBACK: Restore previous state on failure
+      final baseError = ErrorSanitizer.sanitize(e);
+      String errorMsg;
+      if (baseError.contains('full') || baseError.contains('capacity') || baseError.contains('max')) {
+        errorMsg = 'Cannot add $playerName: Your roster is full. Drop a player first.';
+      } else if (baseError.contains('already on') || baseError.contains('already owned')) {
+        errorMsg = '$playerName is already on a roster.';
+      } else {
+        errorMsg = 'Failed to add $playerName: $baseError';
+      }
+
       state = previousState.copyWith(
-        error: ErrorSanitizer.sanitize(e),
+        error: errorMsg,
         isAddingPlayer: false,
         clearAddingPlayer: true,
       );
@@ -206,6 +217,7 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
   Future<bool> addDropPlayer(int addPlayerId, int dropPlayerId, {String? idempotencyKey}) async {
     // Save state for rollback
     final previousState = state;
+    final playerName = state.players.where((p) => p.id == addPlayerId).firstOrNull?.fullName ?? 'Player';
 
     // Optimistic update - remove added player from list
     state = state.copyWith(
@@ -230,8 +242,18 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
       return true;
     } catch (e) {
       // ROLLBACK: Restore previous state on failure
+      final baseError = ErrorSanitizer.sanitize(e);
+      String errorMsg;
+      if (baseError.contains('not on') || baseError.contains('not found')) {
+        errorMsg = 'The player to drop is no longer on your roster. Try refreshing.';
+      } else if (baseError.contains('already on') || baseError.contains('already owned')) {
+        errorMsg = '$playerName is already on a roster.';
+      } else {
+        errorMsg = 'Failed to add $playerName: $baseError';
+      }
+
       state = previousState.copyWith(
-        error: ErrorSanitizer.sanitize(e),
+        error: errorMsg,
         isAddingPlayer: false,
         clearAddingPlayer: true,
       );

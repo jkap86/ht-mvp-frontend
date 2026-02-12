@@ -84,12 +84,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
   void _setupSocketListeners() {
     _socketService.joinLeague(leagueId);
 
-    _reactionAddedDisposer = _socketService.on(SocketEvents.chatReactionAdded, (data) {
+    _reactionAddedDisposer =
+        _socketService.on(SocketEvents.chatReactionAdded, (data) {
       if (!mounted) return;
       _handleReactionSocket(data, added: true);
     });
 
-    _reactionRemovedDisposer = _socketService.on(SocketEvents.chatReactionRemoved, (data) {
+    _reactionRemovedDisposer =
+        _socketService.on(SocketEvents.chatReactionRemoved, (data) {
       if (!mounted) return;
       _handleReactionSocket(data, added: false);
     });
@@ -107,13 +109,15 @@ class ChatNotifier extends StateNotifier<ChatState> {
       }
     });
 
-    // Resync messages on socket reconnection
+    // Resync messages on socket reconnection (both short and long disconnects)
     _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
       if (!mounted) return;
-      if (needsFullRefresh) {
-        if (kDebugMode) debugPrint('Chat: Socket reconnected after long disconnect, reloading messages');
-        loadMessages();
+      if (kDebugMode) {
+        debugPrint('Chat: Socket reconnected, needsFullRefresh=$needsFullRefresh');
       }
+      // Always reload messages on reconnect to avoid stale chat state.
+      // Short disconnects may have missed socket events.
+      loadMessages();
     });
   }
 
@@ -139,7 +143,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
       state = state.copyWith(
         messages: [
           message,
-          ...state.messages.where((m) => !(m.id < 0 && m.userId == message.userId && m.message == message.message))
+          ...state.messages.where((m) => !(m.id < 0 &&
+              m.userId == message.userId &&
+              m.message == message.message))
         ],
       );
     } else {
@@ -204,7 +210,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (idx < 0) return;
 
     final msg = state.messages[idx];
-    final existingReaction = msg.reactions.where((r) => r.emoji == emoji).firstOrNull;
+    final existingReaction =
+        msg.reactions.where((r) => r.emoji == emoji).firstOrNull;
     final hasReacted = existingReaction != null &&
         existingReaction.users.contains(_currentUserId);
 
@@ -216,11 +223,13 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final rIdx = reactions.indexWhere((r) => r.emoji == emoji);
       if (rIdx >= 0) {
         final existing = reactions[rIdx];
-        final newUsers = existing.users.where((u) => u != _currentUserId).toList();
+        final newUsers =
+            existing.users.where((u) => u != _currentUserId).toList();
         if (newUsers.isEmpty) {
           reactions.removeAt(rIdx);
         } else {
-          reactions[rIdx] = existing.copyWith(count: newUsers.length, users: newUsers);
+          reactions[rIdx] =
+              existing.copyWith(count: newUsers.length, users: newUsers);
         }
       }
     } else {
@@ -229,10 +238,11 @@ class ChatNotifier extends StateNotifier<ChatState> {
         final existing = reactions[rIdx];
         reactions[rIdx] = existing.copyWith(
           count: existing.count + 1,
-          users: [...existing.users, _currentUserId!],
+          users: [...existing.users, _currentUserId],
         );
       } else {
-        reactions.add(ReactionGroup(emoji: emoji, count: 1, users: [_currentUserId!]));
+        reactions.add(
+            ReactionGroup(emoji: emoji, count: 1, users: [_currentUserId]));
       }
     }
 
@@ -265,8 +275,13 @@ class ChatNotifier extends StateNotifier<ChatState> {
       // Check if disposed during async operations
       if (!mounted) return;
 
+      // Preserve any pending/failed optimistic messages (negative IDs)
+      final optimisticMessages = state.messages
+          .where((m) => m.isOptimistic)
+          .toList();
+
       state = state.copyWith(
-        messages: messages,
+        messages: [...optimisticMessages, ...messages],
         isLoading: false,
         hasMore: messages.length >= _pageSize,
       );
@@ -277,17 +292,22 @@ class ChatNotifier extends StateNotifier<ChatState> {
       // Check if disposed during async operations
       if (!mounted) return;
 
-      state = state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
+      state =
+          state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
     }
   }
 
   Future<void> loadMoreMessages() async {
     if (state.isLoadingMore || !state.hasMore || state.messages.isEmpty) return;
 
+    // Find the oldest real (non-optimistic) message ID for pagination cursor
+    final realMessages = state.messages.where((m) => !m.isOptimistic);
+    if (realMessages.isEmpty) return;
+
     state = state.copyWith(isLoadingMore: true);
 
     try {
-      final oldestId = state.messages.last.id;
+      final oldestId = realMessages.last.id;
       final olderMessages = await _chatRepo.getMessages(
         leagueId,
         limit: _pageSize,
@@ -299,7 +319,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
       // Dedupe in case of race conditions
       final existingIds = state.messages.map((m) => m.id).toSet();
-      final newMessages = olderMessages.where((m) => !existingIds.contains(m.id)).toList();
+      final newMessages =
+          olderMessages.where((m) => !existingIds.contains(m.id)).toList();
 
       state = state.copyWith(
         messages: [...state.messages, ...newMessages],
@@ -310,7 +331,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
       // Check if disposed during async operations
       if (!mounted) return;
 
-      state = state.copyWith(isLoadingMore: false, error: ErrorSanitizer.sanitize(e));
+      state = state.copyWith(
+          isLoadingMore: false, error: ErrorSanitizer.sanitize(e));
     }
   }
 
@@ -333,6 +355,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
         messageType: MessageType.chat,
         metadata: null,
         createdAt: DateTime.now(),
+        sendStatus: MessageSendStatus.sending,
+        idempotencyKey: idempotencyKey,
       );
 
       // Add optimistic message immediately
@@ -345,16 +369,15 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
 
     try {
-      await _chatRepo.sendMessage(leagueId, trimmedText, idempotencyKey: idempotencyKey);
+      await _chatRepo.sendMessage(leagueId, trimmedText,
+          idempotencyKey: idempotencyKey);
 
       // Check if disposed during async operations
       if (!mounted) return false;
 
       // If we used optimistic message, it will be replaced by socket echo
-      // The dedupe logic will handle the socket message properly
-      // We just need to remove the temp message if socket echo arrives with real ID
+      // The dedupe logic in _addMessageWithDedupe will handle replacement
       if (optimisticMessage != null) {
-        // Remove optimistic message - socket echo will add the real one
         // Give socket a moment to deliver, then clean up temp if still there
         Future.delayed(const Duration(milliseconds: 500), () {
           if (!mounted) return;
@@ -374,10 +397,15 @@ class ChatNotifier extends StateNotifier<ChatState> {
       // Check if disposed during async operations
       if (!mounted) return false;
 
-      // Remove optimistic message on failure
+      // Mark the optimistic message as failed instead of removing it
       if (optimisticMessage != null) {
         state = state.copyWith(
-          messages: state.messages.where((m) => m.id != tempId).toList(),
+          messages: state.messages.map((m) {
+            if (m.id == tempId) {
+              return m.copyWith(sendStatus: MessageSendStatus.failed);
+            }
+            return m;
+          }).toList(),
           isSending: false,
         );
       } else {
@@ -385,6 +413,64 @@ class ChatNotifier extends StateNotifier<ChatState> {
       }
       return false;
     }
+  }
+
+  /// Retry sending a previously failed message.
+  Future<bool> retryMessage(int tempId) async {
+    final failedMessage = state.messages.where((m) => m.id == tempId).firstOrNull;
+    if (failedMessage == null || failedMessage.sendStatus != MessageSendStatus.failed) {
+      return false;
+    }
+
+    // Mark as sending again
+    state = state.copyWith(
+      messages: state.messages.map((m) {
+        if (m.id == tempId) {
+          return m.copyWith(sendStatus: MessageSendStatus.sending);
+        }
+        return m;
+      }).toList(),
+    );
+
+    try {
+      await _chatRepo.sendMessage(leagueId, failedMessage.message,
+          idempotencyKey: failedMessage.idempotencyKey);
+
+      if (!mounted) return false;
+
+      // Give socket a moment to deliver, then clean up temp if still there
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (!mounted) return;
+        final hasTemp = state.messages.any((m) => m.id == tempId);
+        if (hasTemp) {
+          state = state.copyWith(
+            messages: state.messages.where((m) => m.id != tempId).toList(),
+          );
+        }
+      });
+
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+
+      // Mark as failed again
+      state = state.copyWith(
+        messages: state.messages.map((m) {
+          if (m.id == tempId) {
+            return m.copyWith(sendStatus: MessageSendStatus.failed);
+          }
+          return m;
+        }).toList(),
+      );
+      return false;
+    }
+  }
+
+  /// Remove a failed message from the list (dismiss).
+  void dismissFailedMessage(int tempId) {
+    state = state.copyWith(
+      messages: state.messages.where((m) => m.id != tempId).toList(),
+    );
   }
 
   @override
@@ -399,7 +485,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 }
 
-final chatProvider = StateNotifierProvider.autoDispose.family<ChatNotifier, ChatState, int>(
+final chatProvider =
+    StateNotifierProvider.autoDispose.family<ChatNotifier, ChatState, int>(
   (ref, leagueId) {
     final authState = ref.watch(authStateProvider);
     return ChatNotifier(

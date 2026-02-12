@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/hype_train_colors.dart';
@@ -88,11 +89,20 @@ class _TradeStatusBannerState extends State<TradeStatusBanner> {
         icon = Icons.check_circle;
         break;
       case TradeStatus.rejected:
+        statusColor = AppTheme.errorColor;
+        icon = Icons.block;
+        break;
       case TradeStatus.cancelled:
-      case TradeStatus.expired:
-      case TradeStatus.vetoed:
         statusColor = AppTheme.injuryMuted;
         icon = Icons.cancel;
+        break;
+      case TradeStatus.expired:
+        statusColor = AppTheme.injuryMuted;
+        icon = Icons.timer_off;
+        break;
+      case TradeStatus.vetoed:
+        statusColor = AppTheme.errorColor;
+        icon = Icons.gavel;
         break;
     }
 
@@ -133,6 +143,52 @@ class _TradeStatusBannerState extends State<TradeStatusBanner> {
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     'Review ends in ${_formatCountdown(trade.reviewEndsAt!)}',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if (trade.status == TradeStatus.expired) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Expired on ${DateFormat.yMMMd().format(trade.expiresAt)}',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if (trade.status == TradeStatus.completed &&
+                    trade.completedAt != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Completed on ${DateFormat.yMMMd().format(trade.completedAt!)}',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if (trade.status == TradeStatus.rejected) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Rejected on ${DateFormat.yMMMd().format(trade.updatedAt)}',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if (trade.status == TradeStatus.cancelled) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Cancelled on ${DateFormat.yMMMd().format(trade.updatedAt)}',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if (trade.status == TradeStatus.vetoed) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Vetoed on ${DateFormat.yMMMd().format(trade.updatedAt)}',
                     style: AppTypography.bodySmall.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../config/app_theme.dart';
 import '../../../core/utils/error_display.dart';
 import '../../../core/utils/idempotency.dart';
+import '../../../core/widgets/data_freshness_bar.dart';
 import '../../../core/widgets/skeletons/skeletons.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../players/domain/player.dart';
@@ -316,6 +319,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
                       settings: currentState.auctionSettings ?? AuctionSettings.defaults,
                       onSubmit: (maxBid) async => await _handleSetMaxBid(lot.id, maxBid),
                       serverClockOffsetMs: currentState.serverClockOffsetMs,
+                      totalRosterSpots: currentState.draft?.rounds,
                     );
                   }
                 },
@@ -527,6 +531,22 @@ class _DraftRoomBody extends ConsumerStatefulWidget {
 
 class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
   final GlobalKey<_DraftBottomDrawerWithControllerState> _drawerKey = GlobalKey();
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Tick every 30s to update the "last updated" relative time text
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
 
   void expandDrawer() {
     _drawerKey.currentState?.expand();
@@ -551,6 +571,21 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
     );
     final isCommissioner = ref.watch(
       draftRoomProvider(widget.providerKey).select((s) => s.isCommissioner),
+    );
+    final serverClockOffsetMs = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.serverClockOffsetMs),
+    );
+    final autopickExplanation = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.autopickExplanation),
+    );
+    final lastUpdatedDisplay = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.lastUpdatedDisplay),
+    );
+    final isStale = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.isStale),
+    );
+    final isDraftActive = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.draft?.status.isActive ?? false),
     );
 
     // Watch queue for top queued player (for CTA button)
@@ -665,6 +700,14 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
                   ],
                 ),
               ),
+            // Freshness indicator
+            DataFreshnessBar(
+              lastUpdatedDisplay: lastUpdatedDisplay,
+              isStale: isStale,
+              label: isDraftActive ? 'Live' : null,
+              labelIcon: isDraftActive ? Icons.circle : null,
+              labelColor: isDraftActive ? Theme.of(context).colorScheme.error : null,
+            ),
             DraftStatusBar(
               draft: draft,
               currentPickerName: currentPickerName,
@@ -689,6 +732,11 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
                     }
                   : null,
               onPickPlayer: expandDrawer,
+              serverClockOffsetMs: serverClockOffsetMs,
+              autopickExplanation: autopickExplanation,
+              onDismissAutopickExplanation: autopickExplanation != null
+                  ? () => ref.read(draftRoomProvider(widget.providerKey).notifier).clearAutopickExplanation()
+                  : null,
             ),
             Expanded(
               child: DraftBoardGridView(

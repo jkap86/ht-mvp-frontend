@@ -31,7 +31,10 @@ class _ScheduleManagementCardState extends State<ScheduleManagementCard> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('This will create a new round-robin schedule. Any existing schedule will be replaced.'),
+            Text(
+              'This will create a new round-robin schedule. Any existing schedule will be replaced. This action cannot be undone.',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: _weeksController,

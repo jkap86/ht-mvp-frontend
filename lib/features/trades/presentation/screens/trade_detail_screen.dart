@@ -27,7 +27,7 @@ final tradeDetailProvider =
 );
 
 /// Screen showing detailed information about a single trade
-class TradeDetailScreen extends ConsumerWidget {
+class TradeDetailScreen extends ConsumerStatefulWidget {
   final int leagueId;
   final int tradeId;
 
@@ -38,9 +38,16 @@ class TradeDetailScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tradeAsync =
-        ref.watch(tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
+  ConsumerState<TradeDetailScreen> createState() => _TradeDetailScreenState();
+}
+
+class _TradeDetailScreenState extends ConsumerState<TradeDetailScreen> {
+  bool _isActionInFlight = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final tradeAsync = ref.watch(tradeDetailProvider(
+        (leagueId: widget.leagueId, tradeId: widget.tradeId)));
 
     return Scaffold(
       appBar: AppBar(
@@ -54,46 +61,47 @@ class TradeDetailScreen extends ConsumerWidget {
         loading: () => const AppLoadingView(message: 'Loading trade...'),
         error: (error, stack) => AppErrorView(
           message: ErrorSanitizer.sanitize(error),
-          onRetry: () => ref.invalidate(
-              tradeDetailProvider((leagueId: leagueId, tradeId: tradeId))),
+          onRetry: () => ref.invalidate(tradeDetailProvider(
+              (leagueId: widget.leagueId, tradeId: widget.tradeId))),
         ),
-        data: (trade) => _buildTradeContent(context, ref, trade),
+        data: (trade) => _buildTradeContent(context, trade),
       ),
     );
   }
 
-  Widget _buildTradeContent(BuildContext context, WidgetRef ref, Trade trade) {
+  Widget _buildTradeContent(BuildContext context, Trade trade) {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TradeStatusBanner(trade: trade),
-          const SizedBox(height: 16),
-          TradeSummaryCard(trade: trade),
-          const SizedBox(height: 24),
-          TradeAssetsSection(trade: trade),
-          const SizedBox(height: 24),
-          if (trade.message != null && trade.message!.isNotEmpty) ...[
-            _buildMessageSection(context, trade),
-            const SizedBox(height: 24),
-          ],
-          if (trade.status == TradeStatus.inReview) ...[
-            TradeVotesSection(trade: trade),
-            const SizedBox(height: 24),
-          ],
-          TradeActionButtons(
-            trade: trade,
-            leagueId: leagueId,
-            onAccept: () => _handleAccept(context, ref, trade),
-            onReject: () => _handleReject(context, ref, trade),
-            onCancel: () => _handleCancel(context, ref, trade),
-            onVote: (vote) => _handleVote(context, ref, trade, vote),
-          ),
-        ],
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TradeStatusBanner(trade: trade),
+              const SizedBox(height: 16),
+              TradeSummaryCard(trade: trade),
+              const SizedBox(height: 24),
+              TradeAssetsSection(trade: trade),
+              const SizedBox(height: 24),
+              if (trade.message != null && trade.message!.isNotEmpty) ...[
+                _buildMessageSection(context, trade),
+                const SizedBox(height: 24),
+              ],
+              if (trade.status == TradeStatus.inReview) ...[
+                TradeVotesSection(trade: trade),
+                const SizedBox(height: 24),
+              ],
+              TradeActionButtons(
+                trade: trade,
+                leagueId: widget.leagueId,
+                isLoading: _isActionInFlight,
+                onAccept: () => _handleAccept(context, trade),
+                onReject: () => _handleReject(context, trade),
+                onCancel: () => _handleCancel(context, trade),
+                onVote: (vote) => _handleVote(context, trade, vote),
+              ),
+            ],
           ),
         ),
       ),
@@ -119,8 +127,7 @@ class TradeDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleAccept(
-      BuildContext context, WidgetRef ref, Trade trade) async {
+  Future<void> _handleAccept(BuildContext context, Trade trade) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -139,25 +146,37 @@ class TradeDetailScreen extends ConsumerWidget {
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed != true) return;
+
+    setState(() => _isActionInFlight = true);
+
+    try {
       final key = newIdempotencyKey();
-      final result =
-          await ref.read(tradesProvider(leagueId).notifier).acceptTrade(trade.id, idempotencyKey: key);
-      if (context.mounted) {
+      final result = await ref
+          .read(tradesProvider(widget.leagueId).notifier)
+          .acceptTrade(trade.id, idempotencyKey: key);
+      if (mounted) {
         if (result != null) {
-          ref.invalidate(
-              tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
+          ref.invalidate(tradeDetailProvider(
+              (leagueId: widget.leagueId, tradeId: widget.tradeId)));
           showSuccess(ref, 'Trade accepted!');
         } else {
-          final error = ref.read(tradesProvider(leagueId)).error;
+          final error = ref.read(tradesProvider(widget.leagueId)).error;
           (error ?? 'Failed to accept trade').showAsError(ref);
         }
+      }
+    } catch (e) {
+      if (mounted) {
+        e.showAsError(ref);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isActionInFlight = false);
       }
     }
   }
 
-  Future<void> _handleReject(
-      BuildContext context, WidgetRef ref, Trade trade) async {
+  Future<void> _handleReject(BuildContext context, Trade trade) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -170,37 +189,51 @@ class TradeDetailScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Reject'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed != true) return;
+
+    setState(() => _isActionInFlight = true);
+
+    try {
       final key = newIdempotencyKey();
-      final result =
-          await ref.read(tradesProvider(leagueId).notifier).rejectTrade(trade.id, idempotencyKey: key);
-      if (context.mounted) {
+      final result = await ref
+          .read(tradesProvider(widget.leagueId).notifier)
+          .rejectTrade(trade.id, idempotencyKey: key);
+      if (mounted) {
         if (result != null) {
-          ref.invalidate(
-              tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
+          ref.invalidate(tradeDetailProvider(
+              (leagueId: widget.leagueId, tradeId: widget.tradeId)));
           showSuccess(ref, 'Trade rejected');
         } else {
-          final error = ref.read(tradesProvider(leagueId)).error;
+          final error = ref.read(tradesProvider(widget.leagueId)).error;
           (error ?? 'Failed to reject trade').showAsError(ref);
         }
+      }
+    } catch (e) {
+      if (mounted) {
+        e.showAsError(ref);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isActionInFlight = false);
       }
     }
   }
 
-  Future<void> _handleCancel(
-      BuildContext context, WidgetRef ref, Trade trade) async {
+  Future<void> _handleCancel(BuildContext context, Trade trade) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cancel Trade?'),
-        content: const Text('Are you sure you want to cancel this trade offer?'),
+        content:
+            const Text('Are you sure you want to cancel this trade offer?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -208,44 +241,71 @@ class TradeDetailScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.tertiary),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.tertiary),
             child: const Text('Cancel Trade'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed != true) return;
+
+    setState(() => _isActionInFlight = true);
+
+    try {
       final key = newIdempotencyKey();
-      final result =
-          await ref.read(tradesProvider(leagueId).notifier).cancelTrade(trade.id, idempotencyKey: key);
-      if (context.mounted) {
+      final result = await ref
+          .read(tradesProvider(widget.leagueId).notifier)
+          .cancelTrade(trade.id, idempotencyKey: key);
+      if (mounted) {
         if (result != null) {
-          ref.invalidate(
-              tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
+          ref.invalidate(tradeDetailProvider(
+              (leagueId: widget.leagueId, tradeId: widget.tradeId)));
           showSuccess(ref, 'Trade cancelled');
         } else {
-          final error = ref.read(tradesProvider(leagueId)).error;
+          final error = ref.read(tradesProvider(widget.leagueId)).error;
           (error ?? 'Failed to cancel trade').showAsError(ref);
         }
+      }
+    } catch (e) {
+      if (mounted) {
+        e.showAsError(ref);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isActionInFlight = false);
       }
     }
   }
 
   Future<void> _handleVote(
-      BuildContext context, WidgetRef ref, Trade trade, String vote) async {
-    final key = newIdempotencyKey();
-    final success = await ref
-        .read(tradesProvider(leagueId).notifier)
-        .voteTrade(trade.id, vote, idempotencyKey: key);
-    if (context.mounted) {
-      if (success) {
-        ref.invalidate(
-            tradeDetailProvider((leagueId: leagueId, tradeId: tradeId)));
-        showSuccess(ref, 'Vote recorded: ${vote == 'approve' ? 'Approved' : 'Vetoed'}');
-      } else {
-        final error = ref.read(tradesProvider(leagueId)).error;
-        (error ?? 'Failed to record vote').showAsError(ref);
+      BuildContext context, Trade trade, String vote) async {
+    setState(() => _isActionInFlight = true);
+
+    try {
+      final key = newIdempotencyKey();
+      final success = await ref
+          .read(tradesProvider(widget.leagueId).notifier)
+          .voteTrade(trade.id, vote, idempotencyKey: key);
+      if (mounted) {
+        if (success) {
+          ref.invalidate(tradeDetailProvider(
+              (leagueId: widget.leagueId, tradeId: widget.tradeId)));
+          showSuccess(
+              ref, 'Vote recorded: ${vote == 'approve' ? 'Approved' : 'Vetoed'}');
+        } else {
+          final error = ref.read(tradesProvider(widget.leagueId)).error;
+          (error ?? 'Failed to record vote').showAsError(ref);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        e.showAsError(ref);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isActionInFlight = false);
       }
     }
   }

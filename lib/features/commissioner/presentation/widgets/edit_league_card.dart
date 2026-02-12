@@ -40,6 +40,7 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
   bool _scoringExpanded = false;
   bool _rosterConfigExpanded = false;
   bool _hasChanges = false;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -128,11 +129,68 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
     }
   }
 
+  /// Determine if significant changes require confirmation
+  bool _hasScoringChanges() {
+    final league = widget.state.league;
+    if (league == null) return false;
+    final currentScoring = _parseScoringSettings(league.scoringSettings);
+    return currentScoring.toJson().toString() != _scoringSettings.toJson().toString();
+  }
+
+  bool _hasRosterConfigChanges() {
+    final league = widget.state.league;
+    if (league == null) return false;
+    final currentConfig = _parseRosterConfig(league.settings['roster_config']);
+    return currentConfig.toJson().toString() != _rosterConfig.toJson().toString();
+  }
+
+  Future<bool> _showConfirmationDialog(String title, String message) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
 
     final league = widget.state.league;
     if (league == null) return;
+
+    // Check if significant changes need confirmation
+    final scoringChanged = _hasScoringChanges();
+    final rosterChanged = _hasRosterConfigChanges();
+
+    if (scoringChanged || rosterChanged) {
+      final parts = <String>[];
+      if (scoringChanged) parts.add('scoring settings');
+      if (rosterChanged) parts.add('roster configuration');
+      final changeList = parts.join(' and ');
+
+      final confirmed = await _showConfirmationDialog(
+        'Confirm Settings Change',
+        'You are about to change $changeList. '
+        'This will affect how the league operates going forward. '
+        'Are you sure you want to proceed?',
+      );
+      if (!confirmed) return;
+    }
+
+    setState(() => _isSaving = true);
 
     // Build settings map, preserving existing settings
     final updatedSettings = Map<String, dynamic>.from(league.settings);
@@ -163,8 +221,11 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
       idempotencyKey: key,
     );
 
-    if (success) {
-      setState(() => _hasChanges = false);
+    if (mounted) {
+      setState(() {
+        _isSaving = false;
+        if (success) _hasChanges = false;
+      });
     }
   }
 
@@ -180,6 +241,9 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
     if (league == null) return const SizedBox.shrink();
 
     final colorScheme = Theme.of(context).colorScheme;
+
+    // Scoring and roster config are locked after season starts
+    final isSeasonActive = league.seasonStatus != SeasonStatus.preSeason;
 
     return Card(
       child: Padding(
@@ -282,49 +346,144 @@ class _EditLeagueCardState extends ConsumerState<EditLeagueCard> {
 
               const SizedBox(height: 12),
 
-              // Scoring Settings Editor
-              ScoringSettingsEditor(
-                settings: _scoringSettings,
-                isExpanded: _scoringExpanded,
-                onExpansionChanged: (expanded) {
-                  setState(() => _scoringExpanded = expanded);
-                },
-                onSettingsChanged: () {
-                  setState(() {});
-                  _markChanged();
-                },
-              ),
+              // Scoring Settings Editor (locked after season starts)
+              if (isSeasonActive) ...[
+                _buildLockedSection(
+                  context,
+                  icon: Icons.scoreboard,
+                  title: 'Scoring Settings',
+                  explanation: 'Scoring settings cannot be changed after the season starts. Reset the league to modify scoring.',
+                ),
+              ] else ...[
+                ScoringSettingsEditor(
+                  settings: _scoringSettings,
+                  isExpanded: _scoringExpanded,
+                  onExpansionChanged: (expanded) {
+                    setState(() => _scoringExpanded = expanded);
+                  },
+                  onSettingsChanged: () {
+                    setState(() {});
+                    _markChanged();
+                  },
+                ),
+              ],
 
               const SizedBox(height: 12),
 
-              // Roster Config Editor
-              RosterConfigEditor(
-                config: _rosterConfig,
-                isExpanded: _rosterConfigExpanded,
-                onExpansionChanged: (expanded) {
-                  setState(() => _rosterConfigExpanded = expanded);
-                },
-                onConfigChanged: () {
-                  setState(() {});
-                  _markChanged();
-                },
-                leagueMode: _selectedMode,
-              ),
+              // Roster Config Editor (locked after season starts)
+              if (isSeasonActive) ...[
+                _buildLockedSection(
+                  context,
+                  icon: Icons.view_list,
+                  title: 'Roster Configuration',
+                  explanation: 'Roster configuration cannot be changed after the season starts. Reset the league to modify roster slots.',
+                ),
+              ] else ...[
+                RosterConfigEditor(
+                  config: _rosterConfig,
+                  isExpanded: _rosterConfigExpanded,
+                  onExpansionChanged: (expanded) {
+                    setState(() => _rosterConfigExpanded = expanded);
+                  },
+                  onConfigChanged: () {
+                    setState(() {});
+                    _markChanged();
+                  },
+                  leagueMode: _selectedMode,
+                ),
+              ],
 
               const SizedBox(height: 16),
 
-              // Save Button
+              // Save Button with loading state
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: _hasChanges ? _handleSave : null,
-                  icon: const Icon(Icons.save, size: 18),
-                  label: const Text('Save Changes'),
+                  onPressed: (_hasChanges && !_isSaving) ? _handleSave : null,
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save, size: 18),
+                  label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLockedSection(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String explanation,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: AppSpacing.cardRadius,
+        border: Border.all(color: colorScheme.outlineVariant.withAlpha(128)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: colorScheme.onSurface.withAlpha(97)),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: colorScheme.onSurface.withAlpha(153),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: AppSpacing.badgeRadius,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.lock,
+                      size: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Locked',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            explanation,
+            style: TextStyle(
+              fontSize: 12,
+              color: colorScheme.onSurface.withAlpha(153),
+            ),
+          ),
+        ],
       ),
     );
   }

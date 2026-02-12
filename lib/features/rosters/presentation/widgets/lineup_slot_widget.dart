@@ -16,6 +16,7 @@ class LineupSlotWidget extends StatelessWidget {
   final bool isSelected;
   final bool isHighlighted;
   final bool isOneWayHighlight;
+  final int? currentWeek;
   final VoidCallback? onTap;
 
   const LineupSlotWidget({
@@ -26,6 +27,7 @@ class LineupSlotWidget extends StatelessWidget {
     this.isSelected = false,
     this.isHighlighted = false,
     this.isOneWayHighlight = false,
+    this.currentWeek,
     this.onTap,
   });
 
@@ -121,6 +123,14 @@ class LineupSlotWidget extends StatelessWidget {
 
   Widget _buildPlayerInfo(BuildContext context) {
     final theme = Theme.of(context);
+    final isOnBye = currentWeek != null &&
+        player!.byeWeek != null &&
+        player!.byeWeek == currentWeek;
+    final isInjuredStarter = slot != LineupSlot.bn &&
+        slot != LineupSlot.ir &&
+        slot != LineupSlot.taxi &&
+        player!.injuryStatus != null &&
+        _isSignificantInjury(player!.injuryStatus!);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,21 +167,57 @@ class LineupSlotWidget extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
+                  color: isOnBye
+                      ? theme.colorScheme.errorContainer
+                      : theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
                 child: Text(
-                  'BYE ${player!.byeWeek}',
+                  isOnBye ? 'ON BYE' : 'BYE ${player!.byeWeek}',
                   style: AppTypography.label.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: isOnBye
+                        ? theme.colorScheme.onErrorContainer
+                        : theme.colorScheme.onSurfaceVariant,
+                    fontWeight: isOnBye ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ),
             ],
           ],
         ),
+        // Show inline warning for bye week or significant injury in starter slots
+        if (isOnBye)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              'On bye this week - will score 0 points',
+              style: TextStyle(
+                fontSize: 10,
+                color: theme.colorScheme.error,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        if (isInjuredStarter && !isOnBye)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              '${player!.injuryStatus} - consider benching',
+              style: TextStyle(
+                fontSize: 10,
+                color: theme.colorScheme.error.withAlpha(200),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
       ],
     );
+  }
+
+  bool _isSignificantInjury(String status) {
+    final upper = status.toUpperCase();
+    return upper == 'OUT' || upper == 'IR' || upper == 'DOUBTFUL' ||
+           upper == 'PUP' || upper == 'NFI' || upper == 'SUS';
   }
 
   Widget _buildEmptyState(BuildContext context) {

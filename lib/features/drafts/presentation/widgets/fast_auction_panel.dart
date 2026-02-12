@@ -129,6 +129,7 @@ class FastAuctionPanel extends StatelessWidget {
               serverClockOffsetMs: state.serverClockOffsetMs,
               auctionSettings: state.auctionSettings,
               myRosterId: state.myRosterId,
+              totalRosterSpots: state.draft?.rounds,
             )
           else
             FastAuctionWaitingState(

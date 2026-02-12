@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/services/invalidation_service.dart';
 import '../../../../core/services/sync_service.dart';
+import '../../../../core/services/app_lifecycle_service.dart';
 import '../../../../core/api/api_exceptions.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../../leagues/data/league_repository.dart';
@@ -39,6 +40,19 @@ class MatchupState {
     if (lastUpdated == null) return true;
     return DateTime.now().difference(lastUpdated!) > const Duration(minutes: 5);
   }
+
+  /// Relative time string for display: "Just now", "2m ago", "1h ago", etc.
+  String get lastUpdatedDisplay {
+    if (lastUpdated == null) return '';
+    final diff = DateTime.now().difference(lastUpdated!);
+    if (diff.inSeconds < 60) return 'Updated just now';
+    if (diff.inMinutes < 60) return 'Updated ${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return 'Updated ${diff.inHours}h ago';
+    return 'Updated ${diff.inDays}d ago';
+  }
+
+  /// Whether current week matchups are all in playoff context
+  bool get isPlayoffWeek => matchups.isNotEmpty && matchups.any((m) => m.isPlayoff);
 
   /// Get the current user's matchup
   Matchup? get myMatchup {
@@ -85,12 +99,14 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
   final SocketService _socketService;
   final InvalidationService _invalidationService;
   final SyncService _syncService;
+  final AppLifecycleService _lifecycleService;
   final int leagueId;
 
   final List<VoidCallback> _socketDisposers = [];
   VoidCallback? _invalidationDisposer;
   VoidCallback? _reconnectDisposer;
   VoidCallback? _syncDisposer;
+  VoidCallback? _lifecycleDisposer;
 
   MatchupNotifier(
     this._matchupRepo,
@@ -98,13 +114,25 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
     this._socketService,
     this._invalidationService,
     this._syncService,
+    this._lifecycleService,
     this.leagueId,
   ) : super(MatchupState()) {
     _socketService.joinLeague(leagueId);
     _setupSocketListeners();
     _registerInvalidationCallback();
     _syncDisposer = _syncService.registerLeagueSync(leagueId, loadData);
+    _lifecycleDisposer = _lifecycleService.registerRefreshCallback(_onAppResumed);
     loadData();
+  }
+
+  /// Called when app resumes from background after stale threshold.
+  /// Refreshes matchup data to ensure scores are fresh.
+  Future<void> _onAppResumed() async {
+    if (!mounted) return;
+    if (kDebugMode) {
+      debugPrint('Matchups: App resumed, refreshing data');
+    }
+    await _refreshMatchups();
   }
 
   void _registerInvalidationCallback() {
@@ -133,11 +161,13 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
       }
     }));
 
-    // Resync matchups on socket reconnection
+    // Resync matchups on socket reconnection (both short and long disconnects)
     _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
       if (!mounted) return;
+      if (kDebugMode) {
+        debugPrint('Matchups: Socket reconnected, needsFullRefresh=$needsFullRefresh');
+      }
       if (needsFullRefresh) {
-        if (kDebugMode) debugPrint('Matchups: Socket reconnected after long disconnect, reloading');
         loadData();
       } else {
         // Short disconnect - scores may have changed, do background refresh
@@ -146,12 +176,16 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
     });
   }
 
-  /// Refresh matchups without showing loading state (background refresh)
+  /// Refresh matchups without showing loading state (background refresh).
+  /// Updates lastUpdated timestamp on success so the UI reflects freshness.
   Future<void> _refreshMatchups() async {
     try {
       final matchups = await _matchupRepo.getMatchups(leagueId, week: state.currentWeek);
       if (mounted) {
-        state = state.copyWith(matchups: matchups);
+        state = state.copyWith(
+          matchups: matchups,
+          lastUpdated: DateTime.now(),
+        );
       }
     } catch (e) {
       // Silently fail on background refresh
@@ -168,6 +202,7 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
     _invalidationDisposer?.call();
     _reconnectDisposer?.call();
     _syncDisposer?.call();
+    _lifecycleDisposer?.call();
     _socketService.leaveLeague(leagueId);
     super.dispose();
   }
@@ -217,6 +252,7 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
       state = state.copyWith(
         matchups: matchups,
         isLoading: false,
+        lastUpdated: DateTime.now(),
       );
     } catch (e) {
       state = state.copyWith(
@@ -238,6 +274,7 @@ final matchupProvider = StateNotifierProvider.autoDispose.family<MatchupNotifier
     ref.watch(socketServiceProvider),
     ref.watch(invalidationServiceProvider),
     ref.watch(syncServiceProvider),
+    ref.watch(appLifecycleServiceProvider),
     leagueId,
   ),
 );

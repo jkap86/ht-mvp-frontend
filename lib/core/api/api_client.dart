@@ -164,6 +164,10 @@ class ApiClient {
             final headers = await _getHeaders(auth: auth, idempotencyKey: idempotencyKey);
             final response = await executeRequest(headers).timeout(requestTimeout);
             return _handleResponse(response);
+          } on UnauthorizedException {
+            // Refreshed token was also rejected — session is truly expired
+            onUnauthorized?.call();
+            rethrow;
           } catch (retryError) {
             // If the post-refresh retry fails with a retryable error,
             // convert to our exception type and let it fall through to
@@ -215,7 +219,7 @@ class ApiClient {
   }) async {
     return _executeWithRetry(
       auth: auth,
-      idempotencyKey: idempotencyKey,
+      idempotencyKey: idempotencyKey ?? _uuid.v4(),
       executeRequest: (headers) => http.post(
         Uri.parse('$baseUrl$endpoint'),
         headers: headers,
@@ -232,7 +236,7 @@ class ApiClient {
   }) async {
     return _executeWithRetry(
       auth: auth,
-      idempotencyKey: idempotencyKey,
+      idempotencyKey: idempotencyKey ?? _uuid.v4(),
       executeRequest: (headers) => http.put(
         Uri.parse('$baseUrl$endpoint'),
         headers: headers,
@@ -249,7 +253,7 @@ class ApiClient {
   }) async {
     return _executeWithRetry(
       auth: auth,
-      idempotencyKey: idempotencyKey,
+      idempotencyKey: idempotencyKey ?? _uuid.v4(),
       executeRequest: (headers) => http.delete(
         Uri.parse('$baseUrl$endpoint'),
         headers: headers,
@@ -266,7 +270,7 @@ class ApiClient {
   }) async {
     return _executeWithRetry(
       auth: auth,
-      idempotencyKey: idempotencyKey,
+      idempotencyKey: idempotencyKey ?? _uuid.v4(),
       executeRequest: (headers) => http.patch(
         Uri.parse('$baseUrl$endpoint'),
         headers: headers,

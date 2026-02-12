@@ -5,11 +5,14 @@ import '../../../../core/utils/error_display.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../../auth/presentation/auth_provider.dart';
+import '../../../chat/domain/chat_message.dart' show MessageSendStatus;
 import '../../../dm/domain/direct_message.dart';
 import '../../../dm/presentation/providers/dm_conversation_provider.dart';
 import 'chat_message_input.dart';
+import 'connection_banner.dart';
 import 'dm_message_bubble.dart';
 import 'gif_picker.dart';
+import 'message_status_indicator.dart';
 import 'reaction_bar.dart';
 import 'reaction_pills.dart';
 import 'slide_in_message.dart';
@@ -105,6 +108,8 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
       children: [
         // Header with back button and username
         _buildHeader(theme),
+        // Connection banner
+        const ConnectionBanner(),
         // Messages list
         Expanded(
           child: _buildMessageList(state, currentUserId),
@@ -250,12 +255,31 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
               toggleReaction(emoji);
             }
           },
-          onDoubleTap: () => toggleReaction('🔥'),
+          onDoubleTap: () => toggleReaction('\u{1F525}'),
           child: Column(
             crossAxisAlignment:
                 isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               dmBubble,
+              if (message.sendStatus != MessageSendStatus.sent)
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: isMe ? 0 : 36,
+                    right: isMe ? 36 : 0,
+                  ),
+                  child: MessageStatusIndicator(
+                    status: message.sendStatus,
+                    compact: true,
+                    onRetry: message.sendStatus == MessageSendStatus.failed
+                        ? () => ref.read(dmConversationProvider(widget.conversationId).notifier)
+                            .retryMessage(message.id)
+                        : null,
+                    onDismiss: message.sendStatus == MessageSendStatus.failed
+                        ? () => ref.read(dmConversationProvider(widget.conversationId).notifier)
+                            .dismissFailedMessage(message.id)
+                        : null,
+                  ),
+                ),
               if (message.reactions.isNotEmpty)
                 Padding(
                   padding: EdgeInsets.only(

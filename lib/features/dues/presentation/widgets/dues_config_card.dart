@@ -174,6 +174,41 @@ class _DuesConfigCardState extends ConsumerState<DuesConfigCard> {
       return;
     }
 
+    // Determine if this is a create or update
+    final isNewConfig = !ref.read(duesProvider(widget.leagueId)).isEnabled;
+    final activeRosterCount =
+        ref.read(duesProvider(widget.leagueId)).summary?.totalCount ?? widget.totalRosters;
+    final totalPot = buyIn * activeRosterCount;
+
+    final dialogTitle = isNewConfig ? 'Set League Dues' : 'Update League Dues';
+    final dialogContent = isNewConfig
+        ? 'Set league dues to \$${buyIn.toStringAsFixed(2)} per team?\n\n'
+            'Total pot: \$${totalPot.toStringAsFixed(2)} ($activeRosterCount teams).\n'
+            'All league members will be marked as owing.'
+        : 'Update league dues to \$${buyIn.toStringAsFixed(2)} per team?\n\n'
+            'Total pot: \$${totalPot.toStringAsFixed(2)} ($activeRosterCount teams).\n'
+            'This will update the dues configuration for all members.';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(dialogTitle),
+        content: Text(dialogContent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(isNewConfig ? 'Set Dues' : 'Update'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
     final key = newIdempotencyKey();
     final success = await ref.read(duesProvider(widget.leagueId).notifier).saveDuesConfig(
           buyInAmount: buyIn,
@@ -194,22 +229,26 @@ class _DuesConfigCardState extends ConsumerState<DuesConfigCard> {
   Future<void> _disableDues() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Disable Dues Tracking'),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove Dues Configuration'),
         content: const Text(
-          'This will disable dues tracking and remove all payment records. Are you sure?',
+          'Remove dues configuration? All payment records will be affected.\n\n'
+          'This will:\n'
+          '- Remove the current buy-in amount and payout structure\n'
+          '- Clear all member payment statuses\n\n'
+          'You can re-enable dues tracking later.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
             ),
-            child: const Text('Disable'),
+            child: const Text('Remove Dues'),
           ),
         ],
       ),

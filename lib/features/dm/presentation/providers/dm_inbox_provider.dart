@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show VoidCallback;
+import 'package:flutter/foundation.dart' show VoidCallback, kDebugMode, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utils/error_sanitizer.dart';
@@ -53,14 +53,15 @@ class DmInboxNotifier extends StateNotifier<DmInboxState> {
   }
 
   void _setupSocketListeners() {
-    // Refresh conversations on socket reconnection only if disconnected long enough
+    // Refresh conversations on socket reconnection (both short and long disconnects)
     _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
       if (!mounted) return;
-      // Only do full refresh if disconnected for more than 30 seconds
-      // For brief disconnects, socket events should have kept us in sync
-      if (needsFullRefresh) {
-        loadConversations();
+      if (kDebugMode) {
+        debugPrint('DmInbox: Socket reconnected, needsFullRefresh=$needsFullRefresh');
       }
+      // Always reload conversations on reconnect to ensure unread counts
+      // and latest messages are accurate. Short disconnects may have missed events.
+      loadConversations();
     });
 
     // Listen for new DM messages to update inbox

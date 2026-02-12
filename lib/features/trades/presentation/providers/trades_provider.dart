@@ -36,22 +36,32 @@ class TradesState {
     return DateTime.now().difference(lastUpdated!) > const Duration(minutes: 5);
   }
 
-  /// Get trades filtered by current filter
+  /// Get trades filtered by current filter, sorted with pending/active first
   List<Trade> get filteredTrades {
+    List<Trade> filtered;
     if (filter == 'mine' && userRosterId != null) {
-      return trades
+      filtered = trades
           .where((t) =>
               t.proposerRosterId == userRosterId ||
               t.recipientRosterId == userRosterId)
           .toList();
     } else if (filter == 'pending') {
-      return trades
+      filtered = trades
           .where((t) => t.status.isPending || t.status == TradeStatus.inReview)
           .toList();
     } else if (filter == 'completed') {
-      return trades.where((t) => t.status.isFinal).toList();
+      filtered = trades.where((t) => t.status.isFinal).toList();
+    } else {
+      filtered = List.of(trades);
     }
-    return trades;
+    // Sort: active/pending trades first, then by updatedAt descending
+    filtered.sort((a, b) {
+      final aActive = a.status.isActive ? 0 : 1;
+      final bActive = b.status.isActive ? 0 : 1;
+      if (aActive != bActive) return aActive.compareTo(bActive);
+      return b.updatedAt.compareTo(a.updatedAt);
+    });
+    return filtered;
   }
 
   /// Get only pending trades
@@ -263,13 +273,15 @@ class TradesNotifier extends StateNotifier<TradesState> {
       _debouncedLoadTrades();
     });
 
-    // Resync trades on socket reconnection
+    // Resync trades on socket reconnection (both short and long disconnects)
     _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
       if (!mounted) return;
-      if (needsFullRefresh) {
-        if (kDebugMode) debugPrint('Trades: Socket reconnected after long disconnect, reloading');
-        loadTrades();
+      if (kDebugMode) {
+        debugPrint('Trades: Socket reconnected, needsFullRefresh=$needsFullRefresh');
       }
+      // Always reload trades on reconnect to ensure consistency.
+      // Short disconnects may have missed trade status transitions.
+      loadTrades();
     });
   }
 

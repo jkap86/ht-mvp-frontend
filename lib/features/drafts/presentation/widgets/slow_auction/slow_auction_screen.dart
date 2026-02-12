@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/theme/app_spacing.dart';
 import '../../../../../core/theme/semantic_colors.dart';
+import '../../../../../core/widgets/data_freshness_bar.dart';
 import '../../../../players/domain/player.dart';
 import '../../../domain/auction_budget.dart';
 import '../../../domain/auction_lot.dart';
@@ -16,7 +19,7 @@ import 'slow_auction_lot_card.dart';
 
 /// Main screen for slow auction drafts.
 /// Replaces the grid view with a task-list/inbox paradigm.
-class SlowAuctionScreen extends ConsumerWidget {
+class SlowAuctionScreen extends ConsumerStatefulWidget {
   final DraftRoomKey providerKey;
   final int leagueId;
   final int draftId;
@@ -37,42 +40,73 @@ class SlowAuctionScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SlowAuctionScreen> createState() => _SlowAuctionScreenState();
+}
+
+class _SlowAuctionScreenState extends ConsumerState<SlowAuctionScreen> {
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Tick every 30s to update the "last updated" relative time text
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final activeLots = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.activeLots),
+      draftRoomProvider(widget.providerKey).select((s) => s.activeLots),
     );
     final myBudget = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.myBudget),
+      draftRoomProvider(widget.providerKey).select((s) => s.myBudget),
     );
     final myRosterId = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.myRosterId),
+      draftRoomProvider(widget.providerKey).select((s) => s.myRosterId),
     );
     final players = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.players),
+      draftRoomProvider(widget.providerKey).select((s) => s.players),
     );
     final draftOrder = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.draftOrder),
+      draftRoomProvider(widget.providerKey).select((s) => s.draftOrder),
     );
     final draft = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.draft),
+      draftRoomProvider(widget.providerKey).select((s) => s.draft),
     );
     final dailyNominationsRemaining = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.dailyNominationsRemaining),
+      draftRoomProvider(widget.providerKey).select((s) => s.dailyNominationsRemaining),
     );
     final dailyNominationLimit = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.dailyNominationLimit),
+      draftRoomProvider(widget.providerKey).select((s) => s.dailyNominationLimit),
     );
     final globalCapReached = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.globalCapReached),
+      draftRoomProvider(widget.providerKey).select((s) => s.globalCapReached),
     );
     final auctionSettings = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.auctionSettings),
+      draftRoomProvider(widget.providerKey).select((s) => s.auctionSettings),
     );
     final serverClockOffsetMs = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.serverClockOffsetMs),
+      draftRoomProvider(widget.providerKey).select((s) => s.serverClockOffsetMs),
     );
     final isCommissioner = ref.watch(
-      draftRoomProvider(providerKey).select((s) => s.isCommissioner),
+      draftRoomProvider(widget.providerKey).select((s) => s.isCommissioner),
+    );
+    final lastUpdatedDisplay = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.lastUpdatedDisplay),
+    );
+    final isStale = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.isStale),
+    );
+    final isDraftActive = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.draft?.status.isActive ?? false),
     );
 
     // Check if draft can be started (slow auctions don't require order confirmation)
@@ -111,23 +145,31 @@ class SlowAuctionScreen extends ConsumerWidget {
                   ),
                 ),
                 ElevatedButton.icon(
-                  onPressed: isStartingDraft ? null : onStartDraft,
-                  icon: isStartingDraft
+                  onPressed: widget.isStartingDraft ? null : widget.onStartDraft,
+                  icon: widget.isStartingDraft
                       ? const SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.play_arrow),
-                  label: Text(isStartingDraft ? 'Starting...' : 'Start Auction'),
+                  label: Text(widget.isStartingDraft ? 'Starting...' : 'Start Auction'),
                 ),
               ],
             ),
           ),
+        // Freshness indicator
+        DataFreshnessBar(
+          lastUpdatedDisplay: lastUpdatedDisplay,
+          isStale: isStale,
+          label: isDraftActive ? 'Live Auction' : null,
+          labelIcon: isDraftActive ? Icons.circle : null,
+          labelColor: isDraftActive ? Theme.of(context).colorScheme.error : null,
+        ),
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              await ref.read(draftRoomProvider(providerKey).notifier).loadAuctionData();
+              await ref.read(draftRoomProvider(widget.providerKey).notifier).loadAuctionData();
             },
             child: CustomScrollView(
               slivers: [
@@ -139,7 +181,7 @@ class SlowAuctionScreen extends ConsumerWidget {
                     myRosterId: myRosterId,
                     players: players,
                     draftOrder: draftOrder,
-                    onNominate: () => _showNominateSheet(context, ref),
+                    onNominate: () => _showNominateSheet(context),
                     onViewLot: (lot) => _showBidDialog(
                       context,
                       lot,
@@ -148,10 +190,14 @@ class SlowAuctionScreen extends ConsumerWidget {
                       myBudget,
                       auctionSettings,
                       serverClockOffsetMs,
+                      totalRosterSpots: draft?.rounds,
                     ),
                     dailyNominationsRemaining: dailyNominationsRemaining,
                     dailyNominationLimit: dailyNominationLimit,
                     globalCapReached: globalCapReached,
+                    minBid: auctionSettings?.minBid,
+                    hasMaxBidsSet: activeLots.any((lot) =>
+                      lot.myMaxBid != null && lot.myMaxBid! > 0),
                   ),
                 ),
 
@@ -216,8 +262,8 @@ class SlowAuctionScreen extends ConsumerWidget {
                             player: player,
                             highBidderName: highBidder?.username ?? 'Unknown',
                             isWinning: isWinning,
-                            leagueId: leagueId,
-                            draftId: draftId,
+                            leagueId: widget.leagueId,
+                            draftId: widget.draftId,
                             draftOrder: draftOrder,
                             onBidTap: () => _showBidDialog(
                               context,
@@ -227,6 +273,7 @@ class SlowAuctionScreen extends ConsumerWidget {
                               myBudget,
                               auctionSettings,
                               serverClockOffsetMs,
+                              totalRosterSpots: draft?.rounds,
                             ),
                           ),
                         );
@@ -249,6 +296,7 @@ class SlowAuctionScreen extends ConsumerWidget {
           SlowAuctionBudgetCard(
             budget: myBudget,
             totalRounds: draft?.rounds ?? 15,
+            auctionSettings: auctionSettings,
           ),
       ],
     );
@@ -261,26 +309,28 @@ class SlowAuctionScreen extends ConsumerWidget {
     List<DraftOrderEntry> draftOrder,
     AuctionBudget? myBudget,
     AuctionSettings? settings,
-    int? serverClockOffsetMs,
-  ) {
+    int? serverClockOffsetMs, {
+    int? totalRosterSpots,
+  }) {
     final player = players.where((p) => p.id == lot.playerId).firstOrNull;
     if (player == null) return;
 
     AuctionBidDialog.show(
       context,
-      leagueId: leagueId,
-      draftId: draftId,
+      leagueId: widget.leagueId,
+      draftId: widget.draftId,
       lot: lot,
       player: player,
       myBudget: myBudget,
       draftOrder: draftOrder,
       settings: settings ?? AuctionSettings.defaults,
-      onSubmit: (maxBid) async => await onSetMaxBid(lot.id, maxBid),
+      onSubmit: (maxBid) async => await widget.onSetMaxBid(lot.id, maxBid),
       serverClockOffsetMs: serverClockOffsetMs,
+      totalRosterSpots: totalRosterSpots,
     );
   }
 
-  void _showNominateSheet(BuildContext context, WidgetRef ref) {
+  void _showNominateSheet(BuildContext context) {
     // Show bottom sheet with player search for nomination
     showModalBottomSheet(
       context: context,
@@ -292,9 +342,9 @@ class SlowAuctionScreen extends ConsumerWidget {
         expand: false,
         builder: (context, scrollController) {
           return _NominatePlayerSheet(
-            providerKey: providerKey,
+            providerKey: widget.providerKey,
             scrollController: scrollController,
-            onNominate: onNominate,
+            onNominate: widget.onNominate,
           );
         },
       ),

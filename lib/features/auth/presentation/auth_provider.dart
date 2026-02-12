@@ -3,6 +3,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../../config/app_config.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/api/api_exceptions.dart';
+import '../../../core/services/snack_bar_service.dart';
 import '../../../core/socket/socket_service.dart';
 import '../data/auth_repository.dart';
 import '../domain/user.dart';
@@ -43,23 +45,53 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
   final SocketService _socketService;
   final ApiClient _apiClient;
+  final SnackBarService _snackBarService;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  AuthNotifier(this._authRepository, this._socketService, this._apiClient) : super(AuthState()) {
+  /// Guard against concurrent session-expired calls from multiple 401 responses
+  bool _isHandlingSessionExpiry = false;
+
+  AuthNotifier(this._authRepository, this._socketService, this._apiClient, this._snackBarService) : super(AuthState()) {
     _checkAuthStatus();
   }
 
   /// Sanitizes error messages to prevent leaking sensitive information.
   /// Maps technical/internal errors to user-friendly messages.
   String _sanitizeAuthError(Object error) {
+    // Handle typed API exceptions directly for precise error mapping
+    if (error is UnauthorizedException) {
+      return 'Invalid username or password';
+    }
+    if (error is ConflictException) {
+      final msg = error.message.toLowerCase();
+      if (msg.contains('username')) {
+        return 'That username is already taken';
+      }
+      if (msg.contains('email')) {
+        return 'An account with that email already exists';
+      }
+      return 'An account with these details already exists';
+    }
+    if (error is ValidationException) {
+      // Validation errors from the backend are already user-friendly
+      return error.message;
+    }
+    if (error is NetworkException) {
+      return 'Unable to connect to server. Please check your connection.';
+    }
+    if (error is ServerException) {
+      return 'Something went wrong. Please try again later.';
+    }
+
+    // Fallback: check error message string for known patterns
     final message = error.toString().toLowerCase();
 
     // Registration errors
-    if (message.contains('already exists') || message.contains('already registered')) {
-      return 'An account with this email or username already exists';
-    }
-    if (message.contains('email') && message.contains('invalid')) {
-      return 'Please enter a valid email address';
+    if (message.contains('already exists') ||
+        message.contains('already registered') ||
+        message.contains('already taken') ||
+        message.contains('already in use')) {
+      return 'An account with these details already exists';
     }
 
     // Login errors
@@ -98,15 +130,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Handles session expiry when token refresh fails.
   /// Clears auth state so the router redirects to login.
+  /// Guarded against reentrancy — multiple concurrent 401s will only
+  /// trigger one logout cycle.
   void _handleSessionExpired() {
+    if (_isHandlingSessionExpiry) return;
+    _isHandlingSessionExpiry = true;
+
     final userId = state.user?.id;
     _clearTokenRefreshCallback();
     _socketService.disconnect();
     if (userId != null) {
       NotificationsRepository.clearForUser(userId);
     }
+
+    // Clear tokens and update state. We fire-and-forget the async token
+    // clearing — the state change below immediately triggers the router
+    // redirect to /login, and the token deletion will complete in the
+    // background. This is safe because _clearTokenRefreshCallback() above
+    // already removed the ApiClient callbacks, so no new authenticated
+    // requests will be attempted with the stale token.
     _authRepository.logout();
+
     state = AuthState(sessionExpired: true);
+    _isHandlingSessionExpiry = false;
+
+    // Show a snackbar for immediate user feedback (visible during navigation)
+    _snackBarService.showWarning('Session expired. Please sign in again.');
   }
 
   Future<void> _checkAuthStatus() async {
@@ -185,5 +234,6 @@ final authStateProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   final socketService = ref.watch(socketServiceProvider);
   final apiClient = ref.watch(apiClientProvider);
-  return AuthNotifier(authRepository, socketService, apiClient);
+  final snackBarService = ref.watch(snackBarServiceProvider);
+  return AuthNotifier(authRepository, socketService, apiClient, snackBarService);
 });

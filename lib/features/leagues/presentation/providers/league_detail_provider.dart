@@ -132,6 +132,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
   VoidCallback? _draftCreatedDisposer;
   VoidCallback? _leagueSettingsDisposer;
   VoidCallback? _invalidationDisposer;
+  VoidCallback? _reconnectDisposer;
 
   LeagueDetailNotifier(this._leagueRepo, this._draftRepo, this._matchupRepo, this._rosterRepo, this._socketService, this._invalidationService, this.leagueId) : super(LeagueDetailState()) {
     _setupSocketListeners();
@@ -169,6 +170,16 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
       if (!mounted) return;
       loadData(); // Full refresh when settings change
     });
+
+    // Resync league detail on socket reconnection
+    _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
+      if (!mounted) return;
+      if (kDebugMode) {
+        debugPrint('LeagueDetail($leagueId): Socket reconnected, needsFullRefresh=$needsFullRefresh');
+      }
+      // Always reload on reconnect -- members, drafts, standings may have changed
+      loadData();
+    });
   }
 
   Future<void> _refreshMembers() async {
@@ -197,6 +208,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     _draftCreatedDisposer?.call();
     _leagueSettingsDisposer?.call();
     _invalidationDisposer?.call();
+    _reconnectDisposer?.call();
     _socketService.leaveLeague(leagueId);
     super.dispose();
   }

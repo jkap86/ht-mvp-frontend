@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,7 +16,7 @@ import '../../../leagues/domain/league.dart';
 import '../../domain/matchup.dart';
 import '../providers/matchup_provider.dart';
 
-class MatchupScreen extends ConsumerWidget {
+class MatchupScreen extends ConsumerStatefulWidget {
   final int leagueId;
 
   const MatchupScreen({
@@ -23,14 +25,36 @@ class MatchupScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(matchupProvider(leagueId), (prev, next) {
+  ConsumerState<MatchupScreen> createState() => _MatchupScreenState();
+}
+
+class _MatchupScreenState extends ConsumerState<MatchupScreen> {
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Tick every 30s to update the "last updated" relative time text
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(matchupProvider(widget.leagueId), (prev, next) {
       if (next.isForbidden && prev?.isForbidden != true) {
         handleForbiddenNavigation(context, ref);
       }
     });
 
-    final state = ref.watch(matchupProvider(leagueId));
+    final state = ref.watch(matchupProvider(widget.leagueId));
 
     if (state.isLoading && state.matchups.isEmpty) {
       return Scaffold(
@@ -56,7 +80,7 @@ class MatchupScreen extends ConsumerWidget {
         ),
         body: AppErrorView(
           message: state.error!,
-          onRetry: () => ref.read(matchupProvider(leagueId).notifier).loadData(),
+          onRetry: () => ref.read(matchupProvider(widget.leagueId).notifier).loadData(),
         ),
       );
     }
@@ -80,12 +104,14 @@ class MatchupScreen extends ConsumerWidget {
                   : (state.league?.totalWeeks ?? 14);
             }(),
             onWeekSelected: (week) {
-              ref.read(matchupProvider(leagueId).notifier).changeWeek(week);
+              ref.read(matchupProvider(widget.leagueId).notifier).changeWeek(week);
             },
           ),
+          // Freshness indicator and context bar
+          _FreshnessBar(state: state),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () => ref.read(matchupProvider(leagueId).notifier).loadData(),
+              onRefresh: () => ref.read(matchupProvider(widget.leagueId).notifier).loadData(),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 600),
@@ -224,7 +250,96 @@ class MatchupScreen extends ConsumerWidget {
 
 
   void _openMatchupDetails(BuildContext context, Matchup matchup) {
-    context.push('/leagues/$leagueId/matchups/${matchup.id}');
+    context.push('/leagues/${widget.leagueId}/matchups/${matchup.id}');
+  }
+}
+
+/// Bar showing freshness timestamp and playoff/season context.
+class _FreshnessBar extends StatelessWidget {
+  final MatchupState state;
+
+  const _FreshnessBar({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final lastUpdatedText = state.lastUpdatedDisplay;
+    final isPlayoff = state.isPlayoffWeek;
+    final seasonStatus = state.league?.seasonStatus;
+
+    // Don't show bar if we have no data yet
+    if (lastUpdatedText.isEmpty && !isPlayoff) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      color: isPlayoff
+          ? colorScheme.tertiary.withAlpha(15)
+          : colorScheme.surfaceContainerHighest.withAlpha(80),
+      child: Row(
+        children: [
+          // Playoff / season context label
+          if (isPlayoff) ...[
+            Icon(
+              Icons.emoji_events,
+              size: 14,
+              color: colorScheme.tertiary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Playoffs',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.tertiary,
+              ),
+            ),
+            // Note: median scoring does not apply to playoffs
+            Text(
+              ' - H2H only',
+              style: TextStyle(
+                fontSize: 11,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ] else if (seasonStatus == SeasonStatus.regularSeason) ...[
+            Text(
+              'Regular Season',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          const Spacer(),
+          // Last updated timestamp
+          if (lastUpdatedText.isNotEmpty)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (state.isStale)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Icon(
+                      Icons.warning_amber_rounded,
+                      size: 13,
+                      color: colorScheme.error,
+                    ),
+                  ),
+                Text(
+                  lastUpdatedText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: state.isStale
+                        ? colorScheme.error
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -315,7 +430,7 @@ class _MatchupCard extends StatelessWidget {
                     )
                   else if (matchup.hasLiveData)
                     const LiveBadge(),
-                  if (matchup.isPlayoff && !matchup.isFinal) ...[
+                  if (matchup.isPlayoff) ...[
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

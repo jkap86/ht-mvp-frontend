@@ -9,11 +9,15 @@ import '../../../../core/theme/hype_train_colors.dart';
 class DraftTimerWidget extends StatefulWidget {
   final DateTime? pickDeadline;
   final VoidCallback? onTimeExpired;
+  /// Server clock offset in milliseconds (serverTime - localTime).
+  /// Used to correct countdown timers for client clock drift.
+  final int? serverClockOffsetMs;
 
   const DraftTimerWidget({
     super.key,
     this.pickDeadline,
     this.onTimeExpired,
+    this.serverClockOffsetMs,
   });
 
   @override
@@ -44,7 +48,8 @@ class _DraftTimerWidgetState extends State<DraftTimerWidget>
   @override
   void didUpdateWidget(DraftTimerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.pickDeadline != widget.pickDeadline) {
+    if (oldWidget.pickDeadline != widget.pickDeadline ||
+        oldWidget.serverClockOffsetMs != widget.serverClockOffsetMs) {
       _hasExpired = false;
       _startTimer();
     }
@@ -72,8 +77,10 @@ class _DraftTimerWidgetState extends State<DraftTimerWidget>
       return;
     }
 
-    // Use UTC for both to ensure correct countdown regardless of user's timezone
-    final now = DateTime.now().toUtc();
+    // Use UTC for both to ensure correct countdown regardless of user's timezone.
+    // Apply server clock offset to correct for client clock drift.
+    final offset = Duration(milliseconds: widget.serverClockOffsetMs ?? 0);
+    final now = DateTime.now().add(offset).toUtc();
     final deadline = widget.pickDeadline!.toUtc();
     final remaining = deadline.difference(now).inSeconds;
 

@@ -29,7 +29,10 @@ class _ScoringCardState extends State<ScoringCard> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('This will lock in all scores for the selected week and update standings.'),
+              const Text(
+                'This will lock in all scores for the selected week and update standings. '
+                'This action cannot be undone.',
+              ),
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: _selectedWeek,
@@ -54,11 +57,14 @@ class _ScoringCardState extends State<ScoringCard> {
               child: const Text('Cancel'),
             ),
             FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
               onPressed: () {
                 Navigator.pop(context);
                 widget.onFinalizeWeek(_selectedWeek);
               },
-              child: const Text('Finalize'),
+              child: const Text('Finalize Week'),
             ),
           ],
         ),

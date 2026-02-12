@@ -81,6 +81,10 @@ class DraftRoomState {
   // Lot result announcement
   final LotResult? lastLotResult;
   final List<LotResult> completedLotResults;
+  // Autopick explanation shown after reconnect (e.g., "You were autopicked: Player X (you were away)")
+  final String? autopickExplanation;
+  // Timestamp of last successful data load or socket update
+  final DateTime? lastUpdated;
 
   DraftRoomState({
     this.draft,
@@ -116,7 +120,25 @@ class DraftRoomState {
     this.isPickSubmitting = false,
     this.lastLotResult,
     this.completedLotResults = const [],
+    this.autopickExplanation,
+    this.lastUpdated,
   });
+
+  /// Check if data is stale (older than 5 minutes)
+  bool get isStale {
+    if (lastUpdated == null) return true;
+    return DateTime.now().difference(lastUpdated!) > const Duration(minutes: 5);
+  }
+
+  /// Relative time string for display: "Just now", "2m ago", "1h ago", etc.
+  String get lastUpdatedDisplay {
+    if (lastUpdated == null) return '';
+    final diff = DateTime.now().difference(lastUpdated!);
+    if (diff.inSeconds < 60) return 'Updated just now';
+    if (diff.inMinutes < 60) return 'Updated ${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return 'Updated ${diff.inHours}h ago';
+    return 'Updated ${diff.inDays}d ago';
+  }
 
   bool get isAuction => draft?.draftType == DraftType.auction;
   bool get isFastAuction => isAuction && auctionMode == 'fast';
@@ -268,6 +290,9 @@ class DraftRoomState {
     LotResult? lastLotResult,
     bool clearLastLotResult = false,
     List<LotResult>? completedLotResults,
+    String? autopickExplanation,
+    bool clearAutopickExplanation = false,
+    DateTime? lastUpdated,
   }) {
     return DraftRoomState(
       draft: draft ?? this.draft,
@@ -315,6 +340,8 @@ class DraftRoomState {
       isPickSubmitting: isPickSubmitting ?? this.isPickSubmitting,
       lastLotResult: clearLastLotResult ? null : (lastLotResult ?? this.lastLotResult),
       completedLotResults: completedLotResults ?? this.completedLotResults,
+      autopickExplanation: clearAutopickExplanation ? null : (autopickExplanation ?? this.autopickExplanation),
+      lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
 }
@@ -379,22 +406,65 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     loadData();
   }
 
-  /// Handle socket reconnection - refresh state if disconnected too long
+  /// Handle socket reconnection - refresh state if disconnected too long.
+  /// Also detects if an autopick happened while disconnected.
   void _onSocketReconnected(bool needsFullRefresh) {
     if (!mounted) return;
+
+    // Capture pick count before reconnect for autopick detection
+    final pickCountBefore = state.picks.length;
+    final myRosterId = state.myRosterId;
 
     if (needsFullRefresh) {
       // Long disconnect (>30s) - do a full reload to ensure consistency
       if (kDebugMode) debugPrint('DraftRoom: Socket reconnected after long disconnect, refreshing all data');
-      loadData();
+      _loadDataAndCheckAutopick(pickCountBefore, myRosterId);
     } else {
       // Short disconnect - just resync draft state and picks
       if (kDebugMode) debugPrint('DraftRoom: Socket reconnected, doing lightweight resync');
-      _refreshDraftState();
+      _refreshDraftStateAndCheckAutopick(pickCountBefore, myRosterId);
       if (state.isAuction) {
         loadAuctionData();
       }
     }
+  }
+
+  /// Load data after reconnect and check for autopicks that happened while away.
+  Future<void> _loadDataAndCheckAutopick(int pickCountBefore, int? myRosterId) async {
+    await loadData();
+    _detectAutopickWhileAway(pickCountBefore, myRosterId);
+  }
+
+  /// Lightweight resync after reconnect with autopick detection.
+  Future<void> _refreshDraftStateAndCheckAutopick(int pickCountBefore, int? myRosterId) async {
+    await _refreshDraftState();
+    _detectAutopickWhileAway(pickCountBefore, myRosterId);
+  }
+
+  /// Detect if the user was autopicked while disconnected and show explanation.
+  void _detectAutopickWhileAway(int pickCountBefore, int? myRosterId) {
+    if (!mounted || myRosterId == null) return;
+    // Find new picks for my roster that are autopicks and weren't in the previous state
+    final newAutopicks = state.picks.where((p) =>
+      p.rosterId == myRosterId &&
+      p.isAutoPick &&
+      p.pickNumber > pickCountBefore
+    ).toList();
+
+    if (newAutopicks.isNotEmpty) {
+      final lastAutopick = newAutopicks.last;
+      final pickLabel = lastAutopick.isPickAsset
+          ? '${lastAutopick.pickAssetSeason} Rd ${lastAutopick.pickAssetRound} pick'
+          : (lastAutopick.playerName ?? 'a player');
+      state = state.copyWith(
+        autopickExplanation: 'You were autopicked: $pickLabel (you were away)',
+      );
+    }
+  }
+
+  /// Clear the autopick explanation banner
+  void clearAutopickExplanation() {
+    state = state.copyWith(clearAutopickExplanation: true);
   }
 
   /// Helper to resolve a roster ID to a team/username for activity messages.
@@ -440,7 +510,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     // Add pick and sort by pickNumber to handle out-of-order socket events
     final updatedPicks = [...state.picks, pick]
       ..sort((a, b) => a.pickNumber.compareTo(b.pickNumber));
-    state = state.copyWith(picks: updatedPicks);
+    state = state.copyWith(picks: updatedPicks, lastUpdated: DateTime.now());
 
     // Add activity event
     final teamName = _teamNameForRoster(pick.rosterId);
@@ -478,7 +548,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   @override
   void onDraftCompletedReceived(Map<String, dynamic> data) {
     if (!mounted) return;
-    state = state.copyWith(draft: Draft.fromJson(data));
+    state = state.copyWith(draft: Draft.fromJson(data), lastUpdated: DateTime.now());
     _addActivityEvent(DraftActivityType.draftCompleted, 'Draft completed');
   }
 
@@ -734,6 +804,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         rookiePicksSeason: rookiePicksSeason,
         rosterNames: rosterNames,
         isLoading: false,
+        lastUpdated: DateTime.now(),
       );
 
       if (mounted && draft.draftType == DraftType.auction) {
@@ -792,6 +863,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         dailyNominationLimit: auctionState.dailyNominationLimit,
         globalCapReached: auctionState.globalCapReached,
         auctionSettings: auctionState.settings,
+        lastUpdated: DateTime.now(),
       );
     } catch (e) {
       // Auction data is supplemental - log for debugging but don't block UI
@@ -817,7 +889,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         ..sort((a, b) => a.pickNumber.compareTo(b.pickNumber));
 
       if (!mounted) return;
-      state = state.copyWith(draft: draft, picks: picks);
+      state = state.copyWith(draft: draft, picks: picks, lastUpdated: DateTime.now());
     } catch (e) {
       // Resync failed silently - socket events are primary update mechanism
     }
@@ -1068,7 +1140,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   @override
   void onDerbyStateReceived(DerbyState derbyState) {
     if (!mounted) return;
-    state = state.copyWith(derbyState: derbyState);
+    state = state.copyWith(derbyState: derbyState, lastUpdated: DateTime.now());
   }
 
   @override
@@ -1106,7 +1178,12 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
           slotPickDeadline: deadline,
           availableSlots: remainingSlots,
         ),
+        lastUpdated: DateTime.now(),
       );
+
+      // Add activity event for derby slot pick
+      final teamName = _teamNameForRoster(rosterId);
+      _addActivityEvent(DraftActivityType.derbySlotPicked, '$teamName picked slot #$slotNumber');
     }
   }
 
@@ -1145,6 +1222,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
       // If transitioning to LIVE, reload the draft order
       if (newPhase == DraftPhase.live) {
+        _addActivityEvent(DraftActivityType.derbyCompleted, 'Draft order selection complete');
         _refreshDraftState();
       }
     }
@@ -1198,7 +1276,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     try {
       final derbyState = await _draftRepo.getDerbyState(leagueId, draftId);
       if (!mounted) return;
-      state = state.copyWith(derbyState: derbyState);
+      state = state.copyWith(derbyState: derbyState, lastUpdated: DateTime.now());
     } catch (e) {
       if (kDebugMode) debugPrint('Failed to load derby state: $e');
     }

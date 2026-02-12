@@ -5,8 +5,12 @@ import '../../../core/utils/error_display.dart';
 import '../../../core/utils/idempotency.dart';
 import '../../../core/utils/time_formatter.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../chat/domain/chat_message.dart' show MessageSendStatus;
+import '../../chat/presentation/widgets/connection_banner.dart';
+import '../../chat/presentation/widgets/message_status_indicator.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/hype_train_colors.dart';
+import '../../../core/widgets/skeletons/skeletons.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../domain/direct_message.dart';
@@ -78,14 +82,14 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
     });
 
     final state = ref.watch(dmConversationProvider(widget.conversationId));
-    final inboxState = ref.watch(dmInboxProvider);
-    final currentUserId = ref.watch(authStateProvider).user?.id;
+    final currentUserId = ref.watch(authStateProvider.select((s) => s.user?.id));
 
-    // Find conversation to get other user's name
-    final conversation = inboxState.conversations
-        .where((c) => c.id == widget.conversationId)
-        .firstOrNull;
-    final otherUsername = conversation?.otherUsername ?? 'Messages';
+    // Only rebuild when this conversation's username changes, not on every inbox update
+    final otherUsername = ref.watch(dmInboxProvider.select((s) =>
+        s.conversations
+            .where((c) => c.id == widget.conversationId)
+            .firstOrNull
+            ?.otherUsername)) ?? 'Messages';
 
     return Scaffold(
       appBar: AppBar(
@@ -99,10 +103,11 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
       ),
       body: Column(
         children: [
+          const ConnectionBanner(),
           Expanded(
             child: _buildMessageList(state, currentUserId),
           ),
-          _buildMessageInput(state),
+          _buildMessageInput(),
         ],
       ),
     );
@@ -110,7 +115,14 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
 
   Widget _buildMessageList(DmConversationState state, String? currentUserId) {
     if (state.isLoading) {
-      return const AppLoadingView();
+      return const SkeletonChatMessageList();
+    }
+
+    if (state.error != null && state.messages.isEmpty) {
+      return AppErrorView(
+        message: state.error!,
+        onRetry: () => ref.read(dmConversationProvider(widget.conversationId).notifier).loadMessages(),
+      );
     }
 
     if (state.messages.isEmpty) {
@@ -138,64 +150,95 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
         }
         final message = state.messages[index];
         final isMe = message.senderId == currentUserId;
-        return _MessageBubble(
-          message: message,
-          isMe: isMe,
+        return Column(
+          key: ValueKey('dm-${message.id}'),
+          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            _MessageBubble(
+              message: message,
+              isMe: isMe,
+            ),
+            if (message.sendStatus != MessageSendStatus.sent)
+              Padding(
+                padding: EdgeInsets.only(
+                  left: isMe ? 0 : 36,
+                  right: isMe ? 36 : 0,
+                ),
+                child: MessageStatusIndicator(
+                  status: message.sendStatus,
+                  onRetry: message.sendStatus == MessageSendStatus.failed
+                      ? () => ref.read(dmConversationProvider(widget.conversationId).notifier)
+                          .retryMessage(message.id)
+                      : null,
+                  onDismiss: message.sendStatus == MessageSendStatus.failed
+                      ? () => ref.read(dmConversationProvider(widget.conversationId).notifier)
+                          .dismissFailedMessage(message.id)
+                      : null,
+                ),
+              ),
+          ],
         );
       },
     );
   }
 
-  Widget _buildMessageInput(DmConversationState state) {
+  Widget _buildMessageInput() {
     final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: context.htColors.shadow,
-            blurRadius: 4,
-            offset: const Offset(0, -2),
+    // Use Consumer to isolate isSending rebuilds from the message list
+    return Consumer(
+      builder: (context, ref, _) {
+        final isSending = ref.watch(
+          dmConversationProvider(widget.conversationId).select((s) => s.isSending),
+        );
+        return Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor,
+            boxShadow: [
+              BoxShadow(
+                color: context.htColors.shadow,
+                blurRadius: 4,
+                offset: const Offset(0, -2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _messageController,
-                decoration: InputDecoration(
-                  hintText: 'Type a message...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusXxl),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+          child: SafeArea(
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: InputDecoration(
+                      hintText: 'Type a message...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusXxl),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                    ),
+                    maxLines: null,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
-                maxLines: null,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _sendMessage(),
-              ),
+                const SizedBox(width: 8),
+                IconButton.filled(
+                  onPressed: isSending ? null : _sendMessage,
+                  icon: isSending
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.send),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            IconButton.filled(
-              onPressed: state.isSending ? null : _sendMessage,
-              icon: state.isSending
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.send),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

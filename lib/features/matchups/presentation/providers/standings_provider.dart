@@ -34,6 +34,16 @@ class StandingsState {
     return DateTime.now().difference(lastUpdated!) > const Duration(minutes: 5);
   }
 
+  /// Relative time string for display: "Just now", "2m ago", "1h ago", etc.
+  String get lastUpdatedDisplay {
+    if (lastUpdated == null) return '';
+    final diff = DateTime.now().difference(lastUpdated!);
+    if (diff.inSeconds < 60) return 'Updated just now';
+    if (diff.inMinutes < 60) return 'Updated ${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return 'Updated ${diff.inHours}h ago';
+    return 'Updated ${diff.inDays}d ago';
+  }
+
   /// Get the current user's standing
   Standing? get myStanding {
     if (myRosterId == null) return null;

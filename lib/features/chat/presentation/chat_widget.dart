@@ -10,8 +10,10 @@ import '../../../core/widgets/user_avatar.dart';
 import '../domain/chat_message.dart';
 import 'providers/chat_provider.dart';
 import 'widgets/chat_message_input.dart';
+import 'widgets/connection_banner.dart';
 import 'widgets/gif_message_bubble.dart';
 import 'widgets/gif_picker.dart';
+import 'widgets/message_status_indicator.dart';
 import 'widgets/reaction_bar.dart';
 import 'widgets/reaction_pills.dart';
 import 'widgets/slide_in_message.dart';
@@ -97,8 +99,16 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
       return const AppLoadingView();
     }
 
+    if (state.error != null && state.messages.isEmpty) {
+      return AppErrorView(
+        message: 'Failed to load messages: ${state.error}',
+        onRetry: () => ref.read(chatProvider(widget.leagueId).notifier).loadMessages(),
+      );
+    }
+
     return Column(
       children: [
+        const ConnectionBanner(),
         Expanded(
           child: state.messages.isEmpty
               ? const AppEmptyView(
@@ -200,6 +210,21 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
                 isFirstInGroup: isFirstInGroup,
                 isLastInGroup: isLastInGroup,
               ),
+              if (message.sendStatus != MessageSendStatus.sent)
+                Padding(
+                  padding: const EdgeInsets.only(left: 40),
+                  child: MessageStatusIndicator(
+                    status: message.sendStatus,
+                    onRetry: message.sendStatus == MessageSendStatus.failed
+                        ? () => ref.read(chatProvider(widget.leagueId).notifier)
+                            .retryMessage(message.id)
+                        : null,
+                    onDismiss: message.sendStatus == MessageSendStatus.failed
+                        ? () => ref.read(chatProvider(widget.leagueId).notifier)
+                            .dismissFailedMessage(message.id)
+                        : null,
+                  ),
+                ),
               if (message.reactions.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(left: 40),

@@ -16,6 +16,7 @@ import '../widgets/lineup_locked_banner.dart';
 import '../widgets/lineup_slot_widget.dart';
 import '../widgets/move_player_sheet.dart';
 import '../widgets/optimal_lineup_banner.dart';
+import '../widgets/roster_legality_banner.dart';
 import '../widgets/roster_player_card.dart';
 import '../widgets/team_points_summary.dart';
 
@@ -103,12 +104,19 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
     // Initialize or update tab controller based on own team status
     _initTabController(isOwnTeam);
 
-    // Show error snackbar when error occurs
+    // Show error snackbar when error occurs - with descriptive messages
     ref.listen<TeamState>(teamProvider(_key), (previous, next) {
       if (next.error != null && previous?.error != next.error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.error!),
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text(next.error!)),
+              ],
+            ),
+            duration: const Duration(seconds: 5),
             action: SnackBarAction(
               label: 'Dismiss',
               onPressed: () {
@@ -295,6 +303,10 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
     // Build items: header widgets + starters header + starters + bench header + bench
     final items = <Widget>[
+      // Roster legality warnings
+      RosterLegalityBanner(
+        warnings: state.legalityWarnings,
+      ),
       // Optimal lineup banner
       OptimalLineupBanner(
         issues: state.lineupIssues,
@@ -503,6 +515,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           isSelected: isSelected,
           isHighlighted: isHighlighted,
           isOneWayHighlight: isOneWayHighlight,
+          currentWeek: state.currentWeek,
           onTap: state.lineup?.isLocked == true
               ? null
               : () => _handleSlotTap(state, slot, player),
@@ -585,6 +598,10 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
   }
 
   Widget _buildRosterTab(TeamState state) {
+    // Build header + player list
+    final headerCount = 1; // roster capacity header
+    final totalCount = headerCount + state.players.length;
+
     return RefreshIndicator(
       onRefresh: () => ref.read(teamProvider(_key).notifier).loadData(),
       child: Center(
@@ -592,9 +609,15 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: state.players.length,
+            itemCount: totalCount,
             itemBuilder: (context, index) {
-              final player = state.players[index];
+              // Roster capacity header
+              if (index == 0) {
+                return _buildRosterCapacityHeader(state);
+              }
+
+              final playerIndex = index - headerCount;
+              final player = state.players[playerIndex];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: RosterPlayerCard(
@@ -612,11 +635,60 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
     );
   }
 
+  Widget _buildRosterCapacityHeader(TeamState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final currentCount = state.players.length;
+    final maxSize = state.maxRosterSize;
+    final isFull = currentCount >= maxSize;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isFull
+              ? colorScheme.errorContainer.withAlpha(100)
+              : colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
+          border: isFull
+              ? Border.all(color: colorScheme.error.withAlpha(100))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isFull ? Icons.group : Icons.people_outline,
+              size: 18,
+              color: isFull
+                  ? colorScheme.error
+                  : colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                state.rosterCapacityDescription,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isFull
+                      ? colorScheme.onErrorContainer
+                      : colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showMovePlayerSheet(TeamState state, RosterPlayer player) {
+    final moveValidation = state.getMoveValidation(player);
     showMovePlayerSheet(
       context: context,
       player: player,
       currentSlot: state.lineup?.lineup.getPlayerSlot(player.playerId),
+      moveValidation: moveValidation,
       onMove: (slotCode) {
         final key = newIdempotencyKey();
         ref.read(teamProvider(_key).notifier).movePlayer(

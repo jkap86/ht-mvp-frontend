@@ -109,8 +109,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       if (value == null || value.isEmpty) {
                         return 'Please enter a username';
                       }
-                      if (value.length < 3) {
-                        return 'Username must be at least 3 characters';
+                      if (value.length < 3 || value.length > 20) {
+                        return 'Username must be 3-20 characters';
+                      }
+                      final usernameRegex = RegExp(r'^[a-zA-Z0-9_]+$');
+                      if (!usernameRegex.hasMatch(value)) {
+                        return 'Only letters, numbers, and underscores allowed';
                       }
                       return null;
                     },
@@ -159,8 +163,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       if (value == null || value.isEmpty) {
                         return 'Please enter a password';
                       }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
+                      if (value.length < 12) {
+                        return 'Password must be at least 12 characters';
                       }
                       return null;
                     },
