@@ -31,11 +31,31 @@ class LineupSlotWidget extends StatelessWidget {
     this.onTap,
   });
 
+  String _buildSemanticsLabel() {
+    final slotLabel = slot.code;
+    final playerLabel = player != null
+        ? '${player!.fullName ?? "Unknown Player"}, ${player!.position ?? "?"}'
+        : 'Empty slot';
+
+    final stateLabel = isSelected
+        ? ', selected for swap'
+        : isHighlighted
+            ? ', available swap target'
+            : isOneWayHighlight
+                ? ', one-way swap target'
+                : '';
+
+    return '$slotLabel slot: $playerLabel$stateLabel';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
+    return Semantics(
+      label: _buildSemanticsLabel(),
+      button: onTap != null && !isLocked,
+      child: Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         side: isSelected
@@ -118,6 +138,7 @@ class LineupSlotWidget extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 

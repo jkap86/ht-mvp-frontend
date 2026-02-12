@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_type.dart';
 
@@ -128,13 +128,13 @@ class _DraftOrderTile extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       decoration: BoxDecoration(
         color: isCurrentPicker
-            ? AppTheme.draftActionPrimary.withAlpha(25)
+            ? context.htColors.draftAction.withAlpha(25)
             : isMyTeam
                 ? theme.colorScheme.primaryContainer
                 : null,
         border: isCurrentPicker
-            ? const Border(
-                left: BorderSide(color: AppTheme.draftActionPrimary, width: 4),
+            ? Border(
+                left: BorderSide(color: context.htColors.draftAction, width: 4),
               )
             : null,
       ),
@@ -143,7 +143,7 @@ class _DraftOrderTile extends StatelessWidget {
         leading: CircleAvatar(
           radius: 14,
           backgroundColor: isCurrentPicker
-              ? AppTheme.draftActionPrimary
+              ? context.htColors.draftAction
               : isMyTeam
                   ? theme.colorScheme.primary
                   : theme.colorScheme.surfaceContainerHighest,
@@ -193,7 +193,7 @@ class _DraftOrderTile extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppTheme.draftActionPrimary,
+                      color: context.htColors.draftAction,
                       borderRadius: AppSpacing.badgeRadius,
                     ),
                     child: Text(

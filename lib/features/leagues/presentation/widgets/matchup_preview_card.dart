@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../matchups/domain/matchup.dart';
 import 'countdown_timer_widget.dart';
 
@@ -298,7 +299,7 @@ class _TeamRow extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 20,
-              color: isWinner ? AppTheme.draftActionPrimary : null,
+              color: isWinner ? context.htColors.draftAction : null,
             ),
           ),
       ],

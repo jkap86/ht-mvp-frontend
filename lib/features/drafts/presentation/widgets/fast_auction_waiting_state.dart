@@ -154,8 +154,8 @@ class _FastAuctionWaitingStateState extends State<FastAuctionWaitingState> {
       timerColor = AppTheme.draftWarning;
       backgroundColor = AppTheme.draftWarning.withAlpha(30);
     } else {
-      timerColor = AppTheme.draftNormal;
-      backgroundColor = AppTheme.draftNormal.withAlpha(30);
+      timerColor = context.htColors.draftNormal;
+      backgroundColor = context.htColors.draftNormal.withAlpha(30);
     }
 
     return Container(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_theme.dart';
+import '../theme/hype_train_colors.dart';
 
 /// Global scaffold messenger key for showing snackbars without context.
 ///
@@ -92,7 +93,7 @@ class SnackBarService {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppTheme.draftActionPrimary,
+        backgroundColor: context.htColors.draftAction,
         behavior: SnackBarBehavior.floating,
       ),
     );

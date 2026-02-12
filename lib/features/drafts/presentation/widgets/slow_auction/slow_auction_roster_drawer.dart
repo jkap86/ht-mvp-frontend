@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../config/app_theme.dart';
 import '../../../../../core/theme/app_spacing.dart';
+import '../../../../../core/theme/hype_train_colors.dart';
 import '../../../../players/domain/player.dart';
 import '../../../domain/auction_lot.dart';
 import '../../../domain/draft_order_entry.dart';
@@ -163,7 +164,7 @@ class _SlowAuctionRosterDrawerState
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       color: isMyTeam
-          ? AppTheme.draftActionPrimary.withAlpha(20)
+          ? context.htColors.draftAction.withAlpha(20)
           : null,
       child: Theme(
         // Override ExpansionTile divider color
@@ -172,7 +173,7 @@ class _SlowAuctionRosterDrawerState
           leading: CircleAvatar(
             radius: 18,
             backgroundColor: isMyTeam
-                ? AppTheme.draftActionPrimary
+                ? context.htColors.draftAction
                 : theme.colorScheme.surfaceContainerHighest,
             child: Text(
               team.username.isNotEmpty
@@ -194,7 +195,7 @@ class _SlowAuctionRosterDrawerState
                   team.username,
                   style: TextStyle(
                     fontWeight: isMyTeam ? FontWeight.bold : FontWeight.w500,
-                    color: isMyTeam ? AppTheme.draftActionPrimary : null,
+                    color: isMyTeam ? context.htColors.draftAction : null,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -205,7 +206,7 @@ class _SlowAuctionRosterDrawerState
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppTheme.draftActionPrimary,
+                    color: context.htColors.draftAction,
                     borderRadius: AppSpacing.cardRadius,
                   ),
                   child: Text(

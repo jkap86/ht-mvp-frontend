@@ -69,15 +69,36 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
   String? _selectedPosition;
   DraggableScrollableController? _ownedController;
   _DrawerTab _selectedTab = _DrawerTab.players;
+  bool _isExpanded = false;
 
   DraggableScrollableController get _sheetController =>
       widget.sheetController ?? (_ownedController ??= DraggableScrollableController());
 
   static const double _collapsedSize = 0.22; // Increased to fit queue
   static const double _expandedSize = 0.70;
+  /// Threshold above which the drawer is considered "expanded"
+  static const double _expandedThreshold = 0.35;
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen to sheet size changes to track expanded/collapsed state.
+    // We defer adding the listener to ensure the controller is attached first.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _sheetController.addListener(_onSheetSizeChanged);
+    });
+  }
+
+  void _onSheetSizeChanged() {
+    final expanded = _sheetController.size > _expandedThreshold;
+    if (expanded != _isExpanded) {
+      setState(() => _isExpanded = expanded);
+    }
+  }
 
   @override
   void dispose() {
+    _sheetController.removeListener(_onSheetSizeChanged);
     _ownedController?.dispose();
     super.dispose();
   }
@@ -236,8 +257,12 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
             ),
             child: Column(
               children: [
-                // Drag handle (tap to toggle) - stays outside scrollable
-                DrawerDragHandle(onTap: _toggleDrawer),
+                // Drag handle with label (tap to toggle) - stays outside scrollable
+                DrawerDragHandle(
+                  onTap: _toggleDrawer,
+                  label: 'Players & Queue',
+                  isExpanded: _isExpanded,
+                ),
                 // Tab toggle: Players | Activity
                 Padding(
                   padding: const EdgeInsets.symmetric(

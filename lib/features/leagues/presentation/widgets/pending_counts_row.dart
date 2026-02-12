@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 
 /// A row of tappable count indicators for pending trades, waivers, and messages.
 class PendingCountsRow extends StatelessWidget {
@@ -51,7 +52,7 @@ class PendingCountsRow extends StatelessWidget {
                 icon: Icons.person_add,
                 count: activeWaiverClaims,
                 label: 'Waiver${activeWaiverClaims == 1 ? '' : 's'}',
-                color: AppTheme.draftNormal,
+                color: context.htColors.draftNormal,
                 onTap: onWaiversTap,
               ),
             ),
@@ -64,7 +65,7 @@ class PendingCountsRow extends StatelessWidget {
                 icon: Icons.chat_bubble_outline,
                 count: unreadChatMessages,
                 label: 'Message${unreadChatMessages == 1 ? '' : 's'}',
-                color: AppTheme.draftActionPrimary,
+                color: context.htColors.draftAction,
                 onTap: onChatTap,
               ),
             ),

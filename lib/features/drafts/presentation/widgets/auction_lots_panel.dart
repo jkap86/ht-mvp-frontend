@@ -78,13 +78,13 @@ class AuctionLotsPanel extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                const Icon(Icons.gavel, size: 18, color: AppTheme.auctionPrimary),
+                Icon(Icons.gavel, size: 18, color: context.htColors.auctionAccent),
                 const SizedBox(width: 8),
                 Text(
                   'Active Lots (${activeLots.length})',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.auctionPrimary,
+                    color: context.htColors.auctionAccent,
                   ),
                 ),
                 const Spacer(),
@@ -93,7 +93,7 @@ class AuctionLotsPanel extends StatelessWidget {
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Nominate'),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.auctionPrimary,
+                    foregroundColor: context.htColors.auctionAccent,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                 ),
@@ -237,10 +237,10 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
               children: [
                 Text(
                   '\$${widget.lot.currentBid}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.draftActionPrimary,
+                    color: context.htColors.draftAction,
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -261,12 +261,12 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
                   ? Theme.of(context).colorScheme.onSurfaceVariant
                   : isUrgent
                       ? AppTheme.draftUrgent
-                      : AppTheme.draftNormal;
+                      : context.htColors.draftNormal;
               final timerBgColor = isExpired
                   ? Theme.of(context).colorScheme.surfaceContainerHighest
                   : isUrgent
                       ? AppTheme.draftUrgent.withAlpha(25)
-                      : AppTheme.draftNormal.withAlpha(25);
+                      : context.htColors.draftNormal.withAlpha(25);
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
@@ -301,7 +301,7 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
               child: ElevatedButton(
                 onPressed: isExpired ? null : widget.onBidTap,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.auctionPrimary,
+                  backgroundColor: context.htColors.auctionAccent,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   minimumSize: const Size(0, 28),

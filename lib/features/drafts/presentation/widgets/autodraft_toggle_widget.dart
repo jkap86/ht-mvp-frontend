@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 
 /// A toggle switch for enabling/disabling autodraft.
 /// When enabled, the system will automatically make picks from the user's queue
@@ -30,12 +30,12 @@ class AutodraftToggleWidget extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isEnabled
-              ? AppTheme.draftActionPrimary.withAlpha(25)
+              ? context.htColors.draftAction.withAlpha(25)
               : theme.colorScheme.surfaceContainerHighest,
           borderRadius: AppSpacing.pillRadius,
           border: Border.all(
             color: isEnabled
-                ? AppTheme.draftActionPrimary
+                ? context.htColors.draftAction
                 : theme.colorScheme.outlineVariant,
           ),
         ),
@@ -46,7 +46,7 @@ class AutodraftToggleWidget extends StatelessWidget {
               Icons.flash_auto,
               size: 18,
               color: isEnabled
-                  ? AppTheme.draftActionPrimary
+                  ? context.htColors.draftAction
                   : theme.colorScheme.onSurfaceVariant,
             ),
             if (isLoading)
@@ -64,7 +64,7 @@ class AutodraftToggleWidget extends StatelessWidget {
                 child: Switch(
                   value: isEnabled,
                   onChanged: onToggle != null ? (_) => onToggle!() : null,
-                  activeColor: AppTheme.draftActionPrimary,
+                  activeColor: context.htColors.draftAction,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/app_layout.dart';
 import '../../../core/widgets/states/states.dart';
 import '../data/league_repository.dart';
 import '../../home/presentation/widgets/league_card.dart';
@@ -102,7 +103,7 @@ class _LeaguesScreenState extends ConsumerState<LeaguesScreen> {
       onRefresh: () => ref.read(myLeaguesProvider.notifier).loadLeagues(),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: AppLayout.contentConstraints(context),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: filtered.length,

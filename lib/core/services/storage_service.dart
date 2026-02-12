@@ -137,6 +137,22 @@ class StorageService {
     await p.setBool('${StorageKeys.onboardingSeenPrefix}$leagueId', true);
   }
 
+  // ============================================================
+  // Feature Onboarding (Global UI hints)
+  // ============================================================
+
+  /// Check if the lineup swap onboarding tooltip has been shown
+  Future<bool> hasSeenLineupSwapOnboarding() async {
+    final p = await prefs;
+    return p.getBool(StorageKeys.lineupSwapOnboardingSeen) ?? false;
+  }
+
+  /// Mark the lineup swap onboarding tooltip as seen
+  Future<void> markLineupSwapOnboardingSeen() async {
+    final p = await prefs;
+    await p.setBool(StorageKeys.lineupSwapOnboardingSeen, true);
+  }
+
   /// Clear all preferences (but not secure storage)
   Future<void> clearPreferences() async {
     final p = await prefs;

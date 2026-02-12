@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../players/domain/player.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/widgets/position_badge.dart';
@@ -167,7 +167,7 @@ class PlayerCard extends StatelessWidget {
           IconButton(
             icon: Icon(
               isQueued ? Icons.playlist_add_check : Icons.playlist_add,
-              color: isQueued ? AppTheme.draftActionPrimary : theme.colorScheme.onSurfaceVariant,
+              color: isQueued ? context.htColors.draftAction : theme.colorScheme.onSurfaceVariant,
             ),
             onPressed: isQueued ? onRemoveFromQueue : onAddToQueue,
             tooltip: isQueued ? 'Remove from queue' : 'Add to queue',
@@ -181,9 +181,9 @@ class PlayerCard extends StatelessWidget {
             child: ElevatedButton(
               onPressed: isSubmitting ? null : onDraft,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.draftActionPrimary,
+                backgroundColor: context.htColors.draftAction,
                 foregroundColor: theme.colorScheme.onPrimary,
-                disabledBackgroundColor: AppTheme.draftActionPrimary.withAlpha(153),
+                disabledBackgroundColor: context.htColors.draftAction.withAlpha(153),
                 disabledForegroundColor: theme.colorScheme.onPrimary.withAlpha(178),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(

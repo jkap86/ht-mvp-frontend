@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/app_layout.dart';
 import '../../../matchups/data/matchup_repository.dart';
 import '../../../matchups/domain/matchup.dart';
 import '../../../playoffs/data/playoff_repository.dart';
@@ -135,7 +136,7 @@ class SeasonSummaryScreen extends ConsumerWidget {
       padding: AppSpacing.screenPadding,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: AppLayout.contentConstraints(context),
           child: Column(
             children: [
               const SizedBox(height: AppSpacing.xl),

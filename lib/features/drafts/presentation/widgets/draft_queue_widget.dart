@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../providers/draft_queue_provider.dart';
@@ -163,7 +164,7 @@ class _QueuePlayerCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       decoration: isHighlighted
           ? BoxDecoration(
-              border: Border.all(color: AppTheme.draftActionPrimary, width: 2),
+              border: Border.all(color: context.htColors.draftAction, width: 2),
               borderRadius: AppSpacing.cardRadius,
             )
           : null,
@@ -190,7 +191,7 @@ class _QueuePlayerCard extends StatelessWidget {
                       CircleAvatar(
                         radius: 10,
                         backgroundColor: isHighlighted
-                            ? AppTheme.draftActionPrimary
+                            ? context.htColors.draftAction
                             : Theme.of(context).colorScheme.onSurfaceVariant,
                         child: Text(
                           '$position',
@@ -225,7 +226,7 @@ class _QueuePlayerCard extends StatelessWidget {
             SizedBox(
               width: 100,
               child: Material(
-                color: isSubmitting ? Theme.of(context).colorScheme.outline : AppTheme.draftActionPrimary,
+                color: isSubmitting ? Theme.of(context).colorScheme.outline : context.htColors.draftAction,
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
                 child: InkWell(
                   onTap: isSubmitting ? null : onDraftNow,
@@ -288,7 +289,7 @@ class _QueuePickAssetCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       decoration: isHighlighted
           ? BoxDecoration(
-              border: Border.all(color: AppTheme.draftActionPrimary, width: 2),
+              border: Border.all(color: context.htColors.draftAction, width: 2),
               borderRadius: AppSpacing.cardRadius,
             )
           : null,
@@ -316,7 +317,7 @@ class _QueuePickAssetCard extends StatelessWidget {
                       CircleAvatar(
                         radius: 10,
                         backgroundColor: isHighlighted
-                            ? AppTheme.draftActionPrimary
+                            ? context.htColors.draftAction
                             : AppTheme.draftWarning,
                         child: Text(
                           '$position',
@@ -353,7 +354,7 @@ class _QueuePickAssetCard extends StatelessWidget {
             SizedBox(
               width: 100,
               child: Material(
-                color: isSubmitting ? Theme.of(context).colorScheme.outline : AppTheme.draftActionPrimary,
+                color: isSubmitting ? Theme.of(context).colorScheme.outline : context.htColors.draftAction,
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
                 child: InkWell(
                   onTap: isSubmitting ? null : onDraftNow,

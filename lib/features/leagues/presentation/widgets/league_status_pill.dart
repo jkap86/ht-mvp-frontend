@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../providers/league_dashboard_provider.dart';
 
 /// Status variants for the league status pill
@@ -65,7 +66,7 @@ class LeagueStatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final config = _getConfig(Theme.of(context).colorScheme);
+    final config = _getConfig(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -144,7 +145,8 @@ class LeagueStatusPill extends StatelessWidget {
     }
   }
 
-  _PillConfig _getConfig(ColorScheme colorScheme) {
+  _PillConfig _getConfig(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (type) {
       case LeagueStatusType.draftLive:
         return _PillConfig(
@@ -166,8 +168,8 @@ class LeagueStatusPill extends StatelessWidget {
         );
       case LeagueStatusType.auctionActive:
         return _PillConfig(
-          backgroundColor: AppTheme.auctionPrimary.withValues(alpha: 0.15),
-          textColor: AppTheme.auctionPrimary,
+          backgroundColor: context.htColors.auctionAccent.withValues(alpha: 0.15),
+          textColor: context.htColors.auctionAccent,
           icon: Icons.gavel,
         );
       case LeagueStatusType.waiversSoon:
@@ -178,8 +180,8 @@ class LeagueStatusPill extends StatelessWidget {
         );
       case LeagueStatusType.inSeason:
         return _PillConfig(
-          backgroundColor: AppTheme.draftActionPrimary.withValues(alpha: 0.15),
-          textColor: AppTheme.draftActionPrimary,
+          backgroundColor: context.htColors.draftAction.withValues(alpha: 0.15),
+          textColor: context.htColors.draftAction,
           icon: Icons.sports_football,
         );
       case LeagueStatusType.playoffs:

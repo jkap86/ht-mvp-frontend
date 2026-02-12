@@ -26,6 +26,7 @@ class _LeagueShellScreenState extends ConsumerState<LeagueShellScreen> {
     final dashboardState = ref.watch(leagueDashboardProvider(widget.leagueId));
 
     final pendingTradesCount = dashboardState.pendingTrades;
+    final pendingWaiverClaims = dashboardState.activeWaiverClaims;
 
     return Scaffold(
       body: widget.navigationShell,
@@ -61,9 +62,21 @@ class _LeagueShellScreenState extends ConsumerState<LeagueShellScreen> {
             ),
             label: 'Trades',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_search_outlined),
-            selectedIcon: Icon(Icons.person_search),
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: pendingWaiverClaims > 0,
+              backgroundColor: Theme.of(context).colorScheme.tertiary,
+              textColor: Theme.of(context).colorScheme.onTertiary,
+              label: Text('$pendingWaiverClaims'),
+              child: const Icon(Icons.person_search_outlined),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: pendingWaiverClaims > 0,
+              backgroundColor: Theme.of(context).colorScheme.tertiary,
+              textColor: Theme.of(context).colorScheme.onTertiary,
+              label: Text('$pendingWaiverClaims'),
+              child: const Icon(Icons.person_search),
+            ),
             label: 'Players',
           ),
           const NavigationDestination(

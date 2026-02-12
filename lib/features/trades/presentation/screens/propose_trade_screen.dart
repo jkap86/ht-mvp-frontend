@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
+import '../../../../core/widgets/status_badge.dart';
 import '../../../../core/widgets/team_selector_sheet.dart';
 import '../../../leagues/presentation/providers/league_detail_provider.dart';
+import '../../../rosters/domain/roster_player.dart';
 import '../../data/trade_repository.dart';
 import '../widgets/player_selector_widget.dart' show PlayerSelectorWidget, tradeRosterPlayersProvider;
 import '../widgets/draft_pick_selector_widget.dart';
@@ -425,12 +428,16 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
     final myPicks = myPicksAsync?.valueOrNull ?? [];
     final theirPicks = theirPicksAsync.valueOrNull ?? [];
 
-    final offeringPlayerNames = myPlayers
+    final offeringPlayersList = myPlayers
         .where((p) => _offeringPlayerIds.contains(p.playerId))
+        .toList();
+    final requestingPlayersList = theirPlayers
+        .where((p) => _requestingPlayerIds.contains(p.playerId))
+        .toList();
+    final offeringPlayerNames = offeringPlayersList
         .map((p) => p.fullName ?? 'Unknown')
         .toList();
-    final requestingPlayerNames = theirPlayers
-        .where((p) => _requestingPlayerIds.contains(p.playerId))
+    final requestingPlayerNames = requestingPlayersList
         .map((p) => p.fullName ?? 'Unknown')
         .toList();
 
@@ -463,6 +470,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
                 offeringPickNames,
                 Theme.of(ctx).colorScheme.errorContainer,
                 Icons.arrow_upward,
+                players: offeringPlayersList,
               ),
               const SizedBox(height: 8),
               _buildTradeSummarySection(
@@ -471,6 +479,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
                 requestingPickNames,
                 Theme.of(ctx).colorScheme.primaryContainer,
                 Icons.arrow_downward,
+                players: requestingPlayersList,
               ),
               const SizedBox(height: 16),
               Container(
@@ -518,8 +527,9 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
     List<String> playerNames,
     List<String> pickNames,
     Color backgroundColor,
-    IconData icon,
-  ) {
+    IconData icon, {
+    List<RosterPlayer>? players,
+  }) {
     final totalAssets = playerNames.length + pickNames.length;
     final assetLabel = _buildAssetCountLabel(playerNames.length, pickNames.length);
 
@@ -546,7 +556,24 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
           ),
           if (totalAssets > 0) ...[
             const SizedBox(height: 8),
-            if (playerNames.isNotEmpty) ...[
+            if (players != null && players.isNotEmpty) ...[
+              ...players.map((player) => Padding(
+                padding: const EdgeInsets.only(left: 26, top: 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '• ${player.fullName ?? "Unknown"}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: _buildPlayerStatsLine(player),
+                    ),
+                  ],
+                ),
+              )),
+            ] else if (playerNames.isNotEmpty) ...[
               ...playerNames.map((name) => Padding(
                 padding: const EdgeInsets.only(left: 26, top: 2),
                 child: Text(
@@ -571,6 +598,52 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildPlayerStatsLine(RosterPlayer player) {
+    final parts = <String>[];
+    if (player.position != null) {
+      parts.add(player.position!);
+    }
+    if (player.team != null) {
+      if (parts.isNotEmpty) {
+        // Combine position and team: "QB - KC"
+        parts[parts.length - 1] = '${parts.last} - ${player.team}';
+      } else {
+        parts.add(player.team!);
+      }
+    }
+    if (player.seasonPoints != null) {
+      parts.add('${player.seasonPoints!.toStringAsFixed(1)} pts');
+    }
+    if (player.projectedPoints != null) {
+      parts.add('Proj: ${player.projectedPoints!.toStringAsFixed(1)}');
+    }
+
+    if (parts.isEmpty && player.injuryStatus == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      children: [
+        if (parts.isNotEmpty)
+          Flexible(
+            child: Text(
+              parts.join('  |  '),
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        if (player.injuryStatus != null) ...[
+          if (parts.isNotEmpty) const SizedBox(width: 6),
+          StatusBadge(
+            label: player.injuryStatus!,
+            backgroundColor: getInjuryColor(player.injuryStatus),
+            fontSize: 9,
+          ),
+        ],
+      ],
     );
   }
 

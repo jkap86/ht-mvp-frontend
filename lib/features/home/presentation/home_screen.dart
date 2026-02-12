@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../config/theme_provider.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/app_layout.dart';
 import '../../../core/providers/league_context_provider.dart';
 import '../../../core/widgets/skeletons/skeletons.dart';
 import '../../../core/widgets/states/app_error_view.dart';
@@ -19,20 +20,61 @@ import '../../notifications/presentation/widgets/notification_bell.dart';
 import 'providers/home_dashboard_provider.dart';
 import 'widgets/home_drafts_card.dart';
 import 'widgets/home_leagues_card.dart';
+import 'widgets/home_lineup_alert_banner.dart';
 import 'widgets/home_matchups_card.dart';
 import 'widgets/home_transactions_card.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
+  /// Returns a time-based greeting prefix based on the current hour.
+  static String _greetingPrefix() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Morning';
+    if (hour < 17) return 'Afternoon';
+    return 'Evening';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider.select((s) => s.user));
     final dashboardState = ref.watch(homeDashboardProvider);
 
+    // Derive NFL week from the first league if available
+    final nflWeek = dashboardState.leagues.isNotEmpty
+        ? dashboardState.leagues.first.currentWeek
+        : null;
+
+    // Build greeting text
+    final username = user?.username;
+    final greeting = username != null
+        ? '${_greetingPrefix()}, $username'
+        : _greetingPrefix();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('HypeTrain'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              greeting,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            if (nflWeek != null)
+              Text(
+                'Week $nflWeek',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.color
+                          ?.withValues(alpha: 0.7),
+                    ),
+              ),
+          ],
+        ),
         actions: [
           const NotificationBell(),
           IconButton(
@@ -78,7 +120,7 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildBody(BuildContext context, WidgetRef ref, HomeDashboardState state) {
     if (state.isLoading) {
-      return _buildLoadingSkeleton();
+      return _buildLoadingSkeleton(context);
     }
 
     if (state.error != null) {
@@ -96,7 +138,7 @@ class HomeScreen extends ConsumerWidget {
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: AppLayout.contentConstraints(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -115,9 +157,9 @@ class HomeScreen extends ConsumerWidget {
               if (pendingTrades.isNotEmpty)
                 const SizedBox(height: 12),
 
-              // Lineup check reminder when matchups are active
+              // Lineup alert banner (injured/bye starters, empty slots)
               if (state.matchups.isNotEmpty)
-                _buildLineupCheckBanner(context, state),
+                const HomeLineupAlertBanner(),
               if (state.matchups.isNotEmpty)
                 const SizedBox(height: 12),
 
@@ -144,12 +186,12 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLoadingSkeleton() {
+  Widget _buildLoadingSkeleton(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: AppLayout.contentConstraints(context),
           child: SkeletonShimmer(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,71 +273,6 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
                 Icon(Icons.chevron_right, color: color),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLineupCheckBanner(BuildContext context, HomeDashboardState state) {
-    // Count leagues with matchups where user has a roster
-    final leaguesWithMatchups = state.matchups
-        .map((m) => (leagueId: m.leagueId, rosterId: m.userRosterId))
-        .where((e) => e.rosterId != null)
-        .toSet();
-
-    if (leaguesWithMatchups.isEmpty) return const SizedBox.shrink();
-
-    final count = leaguesWithMatchups.length;
-    final first = leaguesWithMatchups.first;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: AppSpacing.cardRadius,
-        child: InkWell(
-          onTap: () => context.push(
-            '/leagues/${first.leagueId}/team/${first.rosterId}',
-          ),
-          borderRadius: AppSpacing.cardRadius,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.assignment_outlined,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Set Your Lineups',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        count == 1
-                            ? 'You have an active matchup'
-                            : 'You have matchups in $count leagues',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
               ],
             ),
           ),

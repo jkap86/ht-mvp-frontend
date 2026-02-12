@@ -99,16 +99,37 @@ class PlayerSelectorWidget extends ConsumerWidget {
                   player.fullName ?? 'Unknown Player',
                   overflow: TextOverflow.ellipsis,
                 ),
-                subtitle: Row(
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(player.team ?? 'FA'),
-                    if (player.injuryStatus != null) ...[
-                      const SizedBox(width: 8),
-                      StatusBadge(
-                        label: player.injuryStatus!,
-                        backgroundColor: getInjuryColor(player.injuryStatus),
+                    Row(
+                      children: [
+                        Text(player.team ?? 'FA'),
+                        if (player.injuryStatus != null) ...[
+                          const SizedBox(width: 8),
+                          StatusBadge(
+                            label: player.injuryStatus!,
+                            backgroundColor: getInjuryColor(player.injuryStatus),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (player.seasonPoints != null || player.projectedPoints != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          [
+                            if (player.seasonPoints != null)
+                              '${player.seasonPoints!.toStringAsFixed(1)} pts',
+                            if (player.projectedPoints != null)
+                              'Proj: ${player.projectedPoints!.toStringAsFixed(1)}',
+                          ].join('  |  '),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ),
-                    ],
                   ],
                 ),
                 dense: true,

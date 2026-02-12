@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
+import '../../../../core/utils/app_layout.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/live_badge.dart';
@@ -114,7 +115,7 @@ class _MatchupScreenState extends ConsumerState<MatchupScreen> {
               onRefresh: () => ref.read(matchupProvider(widget.leagueId).notifier).loadData(),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600),
+                  constraints: AppLayout.contentConstraints(context),
                   child: _buildMatchupsList(context, state),
                 ),
               ),
@@ -361,6 +362,8 @@ class _MatchupCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final isMyTeam1 = myRosterId == matchup.roster1Id;
     final isMyTeam2 = myRosterId == matchup.roster2Id;
+    final isTeam1Winner = matchup.isFinal && matchup.winnerId == matchup.roster1Id;
+    final isTeam2Winner = matchup.isFinal && matchup.winnerId == matchup.roster2Id;
 
     // Use live scores for non-final matchups, otherwise use final scores
     final team1Points = matchup.isFinal
@@ -370,163 +373,218 @@ class _MatchupCard extends StatelessWidget {
         ? matchup.roster2Points
         : (matchup.roster2PointsActual ?? matchup.roster2Points);
 
+    final hasScores = team1Points != null || team2Points != null;
+    final showProjections = !matchup.isFinal;
+
     return Card(
       elevation: isFeatured ? 4 : 1,
       child: InkWell(
         onTap: onTap,
         borderRadius: AppSpacing.buttonRadius,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Team 1
-              _TeamRow(
-                teamName: matchup.roster1TeamName ?? 'Team 1',
-                points: team1Points,
-                projectedPoints: matchup.isFinal ? null : matchup.roster1PointsProjected,
-                isWinner: matchup.isFinal && matchup.winnerId == matchup.roster1Id,
-                isMyTeam: isMyTeam1,
-                showProjection: !matchup.isFinal,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'vs',
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
+              // Status row: badges above the scoreboard
+              if (matchup.isFinal || matchup.hasLiveData || matchup.isPlayoff)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (matchup.isFinal)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: context.htColors.draftAction.withAlpha(30),
+                            borderRadius: AppSpacing.badgeRadius,
+                          ),
+                          child: Text(
+                            'FINAL',
+                            style: TextStyle(
+                              color: context.htColors.draftAction,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      else if (matchup.hasLiveData)
+                        const LiveBadge(),
+                      if (matchup.isPlayoff) ...[
+                        if (matchup.isFinal || matchup.hasLiveData)
+                          const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: colorScheme.tertiary.withAlpha(30),
+                            borderRadius: AppSpacing.badgeRadius,
+                          ),
+                          child: Text(
+                            'PLAYOFF',
+                            style: TextStyle(
+                              color: colorScheme.tertiary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-              ),
-              // Team 2
-              _TeamRow(
-                teamName: matchup.roster2TeamName ?? 'Team 2',
-                points: team2Points,
-                projectedPoints: matchup.isFinal ? null : matchup.roster2PointsProjected,
-                isWinner: matchup.isFinal && matchup.winnerId == matchup.roster2Id,
-                isMyTeam: isMyTeam2,
-                showProjection: !matchup.isFinal,
-              ),
-              // Status badges
-              const SizedBox(height: 8),
+              // Main scoreboard row
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (matchup.isFinal)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.draftActionPrimary.withAlpha(30),
-                        borderRadius: AppSpacing.badgeRadius,
-                      ),
-                      child: Text(
-                        'Final',
-                        style: TextStyle(
-                          color: AppTheme.draftActionPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                  // Team 1 (left-aligned)
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            if (isTeam1Winner)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: Icon(
+                                  Icons.emoji_events,
+                                  color: colorScheme.tertiary,
+                                  size: 16,
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                matchup.roster1TeamName ?? 'Team 1',
+                                style: TextStyle(
+                                  fontWeight: isMyTeam1 ? FontWeight.bold : FontWeight.w500,
+                                  fontSize: 14,
+                                  color: isMyTeam1 ? Theme.of(context).primaryColor : null,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    )
-                  else if (matchup.hasLiveData)
-                    const LiveBadge(),
-                  if (matchup.isPlayoff) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: colorScheme.tertiary.withAlpha(30),
-                        borderRadius: AppSpacing.badgeRadius,
-                      ),
-                      child: Text(
-                        'Playoff',
-                        style: TextStyle(
-                          color: colorScheme.tertiary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                        if (showProjections && matchup.roster1PointsProjected != null)
+                          Padding(
+                            padding: EdgeInsets.only(left: isTeam1Winner ? 20 : 0),
+                            child: Text(
+                              'Proj: ${matchup.roster1PointsProjected!.toStringAsFixed(1)}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
+                  ),
+                  // Center score area
+                  Expanded(
+                    flex: 2,
+                    child: Center(
+                      child: hasScores
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  team1Points?.toStringAsFixed(1) ?? '-',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: isTeam1Winner
+                                        ? context.htColors.draftAction
+                                        : null,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  child: Text(
+                                    '-',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  team2Points?.toStringAsFixed(1) ?? '-',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: isTeam2Winner
+                                        ? context.htColors.draftAction
+                                        : null,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Text(
+                              'vs',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                    ),
+                  ),
+                  // Team 2 (right-aligned)
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                matchup.roster2TeamName ?? 'Team 2',
+                                style: TextStyle(
+                                  fontWeight: isMyTeam2 ? FontWeight.bold : FontWeight.w500,
+                                  fontSize: 14,
+                                  color: isMyTeam2 ? Theme.of(context).primaryColor : null,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                textAlign: TextAlign.end,
+                              ),
+                            ),
+                            if (isTeam2Winner)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4),
+                                child: Icon(
+                                  Icons.emoji_events,
+                                  color: colorScheme.tertiary,
+                                  size: 16,
+                                ),
+                              ),
+                          ],
+                        ),
+                        if (showProjections && matchup.roster2PointsProjected != null)
+                          Padding(
+                            padding: EdgeInsets.only(right: isTeam2Winner ? 20 : 0),
+                            child: Text(
+                              'Proj: ${matchup.roster2PointsProjected!.toStringAsFixed(1)}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-class _TeamRow extends StatelessWidget {
-  final String teamName;
-  final double? points;
-  final double? projectedPoints;
-  final bool isWinner;
-  final bool isMyTeam;
-  final bool showProjection;
-
-  const _TeamRow({
-    required this.teamName,
-    this.points,
-    this.projectedPoints,
-    this.isWinner = false,
-    this.isMyTeam = false,
-    this.showProjection = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              if (isWinner)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Icon(Icons.emoji_events, color: colorScheme.tertiary, size: 20),
-                ),
-              Expanded(
-                child: Text(
-                  teamName,
-                  style: TextStyle(
-                    fontWeight: isMyTeam ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 16,
-                    color: isMyTeam ? Theme.of(context).primaryColor : null,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            // Actual points (prominent)
-            Text(
-              points?.toStringAsFixed(2) ?? '-',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: isWinner ? AppTheme.draftActionPrimary : null,
-              ),
-            ),
-            // Projected points (smaller, secondary)
-            if (showProjection && projectedPoints != null)
-              Text(
-                'Proj: ${projectedPoints!.toStringAsFixed(1)}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-          ],
-        ),
-      ],
     );
   }
 }

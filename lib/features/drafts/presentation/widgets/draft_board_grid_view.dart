@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_pick.dart';
 import '../../domain/draft_pick_asset.dart';
@@ -243,11 +244,11 @@ class DraftBoardGridView extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 1),
       decoration: BoxDecoration(
         color: isCurrentTeam
-            ? AppTheme.draftActionPrimary.withAlpha(30)
+            ? context.htColors.draftAction.withAlpha(30)
             : theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: isCurrentTeam ? AppTheme.draftActionPrimary : Colors.transparent,
+          color: isCurrentTeam ? context.htColors.draftAction : Colors.transparent,
           width: isCurrentTeam ? 2 : 0,
         ),
       ),
@@ -265,7 +266,7 @@ class DraftBoardGridView extends ConsumerWidget {
                     fontSize: 10,
                     fontWeight: isCurrentTeam ? FontWeight.w600 : FontWeight.w500,
                     color: isCurrentTeam
-                        ? AppTheme.draftActionPrimary
+                        ? context.htColors.draftAction
                         : theme.colorScheme.onSurface,
                   ),
                   maxLines: 1,
@@ -371,11 +372,11 @@ class DraftBoardGridView extends ConsumerWidget {
           margin: const EdgeInsets.symmetric(vertical: 1),
           decoration: BoxDecoration(
             color: isCurrentTeam
-                ? AppTheme.draftActionPrimary.withAlpha(30)
+                ? context.htColors.draftAction.withAlpha(30)
                 : theme.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: isCurrentTeam ? AppTheme.draftActionPrimary : Colors.transparent,
+              color: isCurrentTeam ? context.htColors.draftAction : Colors.transparent,
               width: isCurrentTeam ? 2 : 0,
             ),
           ),
@@ -392,7 +393,7 @@ class DraftBoardGridView extends ConsumerWidget {
                         fontSize: 11,
                         fontWeight: isCurrentTeam ? FontWeight.w600 : FontWeight.w500,
                         color: isCurrentTeam
-                            ? AppTheme.draftActionPrimary
+                            ? context.htColors.draftAction
                             : theme.colorScheme.onSurface,
                       ),
                       maxLines: 1,

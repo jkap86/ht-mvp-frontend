@@ -6,13 +6,17 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../core/theme/hype_train_colors.dart';
+import '../../../core/providers/league_context_provider.dart';
 import '../../../core/utils/error_display.dart';
 import '../../../core/utils/idempotency.dart';
 import '../../../core/widgets/data_freshness_bar.dart';
 import '../../../core/widgets/skeletons/skeletons.dart';
 import '../../../core/widgets/states/states.dart';
+import '../../leagues/domain/league.dart';
 import '../../players/domain/player.dart';
 import '../domain/auction_settings.dart';
+import '../domain/draft_pick.dart';
 import '../domain/draft_phase.dart';
 import '../domain/draft_status.dart';
 import 'providers/draft_room_provider.dart';
@@ -439,21 +443,27 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
           if (isAuction && myBudget != null)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Chip(
-                avatar: const Icon(Icons.attach_money, size: 16),
-                label: Text('\$${myBudget.available}'),
-                backgroundColor: AppTheme.draftActionPrimary.withAlpha(25),
-                labelStyle: const TextStyle(color: AppTheme.draftActionPrimary, fontWeight: FontWeight.bold),
+              child: Semantics(
+                label: 'Available budget: \$${myBudget.available}',
+                child: Chip(
+                  avatar: const Icon(Icons.attach_money, size: 16),
+                  label: Text('\$${myBudget.available}'),
+                  backgroundColor: context.htColors.draftAction.withAlpha(25),
+                  labelStyle: TextStyle(color: context.htColors.draftAction, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           // Pick chip for active drafts (not applicable to slow auctions)
           if (isDraftActive && !isSlowAuction)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Chip(
-                label: Text('Pick $currentPick'),
-                backgroundColor: AppTheme.draftActionPrimary,
-                labelStyle: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+              child: Semantics(
+                label: 'Current pick number $currentPick in round $currentRound',
+                child: Chip(
+                  label: Text('Pick $currentPick'),
+                  backgroundColor: context.htColors.draftAction,
+                  labelStyle: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+                ),
               ),
             ),
           // Team rosters button for slow auctions
@@ -565,6 +575,101 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
     _drawerKey.currentState?.expand();
   }
 
+  /// Compute which positions are still needed based on roster config and picks made.
+  /// Returns a list of position abbreviations like ['RB', 'TE', 'K'].
+  List<String> _computeNeededPositions(
+    Map<String, dynamic>? rosterConfig,
+    List<DraftPick> myPicks,
+  ) {
+    if (rosterConfig == null || rosterConfig.isEmpty) return [];
+
+    // Count how many of each position the user has drafted
+    final positionCounts = <String, int>{};
+    for (final pick in myPicks) {
+      if (pick.playerPosition != null) {
+        final pos = pick.playerPosition!.toUpperCase();
+        positionCounts[pos] = (positionCounts[pos] ?? 0) + 1;
+      }
+    }
+
+    // Only check dedicated position slots (not flex/bench/IR/taxi)
+    // These are positions where a specific player type is required
+    const dedicatedPositions = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF', 'DL', 'LB', 'DB'];
+    final needed = <String>[];
+
+    for (final pos in dedicatedPositions) {
+      final requiredCount = (rosterConfig[pos] as num?)?.toInt() ?? 0;
+      if (requiredCount <= 0) continue;
+      final drafted = positionCounts[pos] ?? 0;
+      if (drafted < requiredCount) {
+        needed.add(pos);
+      }
+    }
+
+    return needed;
+  }
+
+  /// Builds the DraftStatusBar with roster completion data.
+  Widget _buildDraftStatusBar({
+    required WidgetRef ref,
+    required BuildContext context,
+    required Draft? draft,
+    required String? currentPickerName,
+    required bool isMyTurn,
+    required bool isAutodraftEnabled,
+    required String? topQueuedPlayerName,
+    required QueueEntry? topQueueEntry,
+    required int? serverClockOffsetMs,
+    required String? autopickExplanation,
+  }) {
+    // Compute roster completion data
+    final myPicks = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.myPicks),
+    );
+    final totalRosterSlots = draft?.rounds ?? 0;
+
+    // Get roster config from league context for position needs
+    final leagueContext = ref.watch(leagueContextProvider(widget.leagueId));
+    final rosterConfig = leagueContext.hasValue
+        ? leagueContext.value!.settings['roster_config'] as Map<String, dynamic>?
+        : null;
+    final neededPositions = _computeNeededPositions(rosterConfig, myPicks);
+
+    return DraftStatusBar(
+      draft: draft,
+      currentPickerName: currentPickerName,
+      isMyTurn: isMyTurn,
+      isAutodraftEnabled: isAutodraftEnabled,
+      onToggleAutodraft: () async {
+        final key = newIdempotencyKey();
+        final notifier = ref.read(draftRoomProvider(widget.providerKey).notifier);
+        final error = await notifier.toggleAutodraft(!isAutodraftEnabled, idempotencyKey: key);
+        if (error != null && context.mounted) {
+          error.showAsError(ref);
+        }
+      },
+      topQueuedPlayerName: topQueuedPlayerName,
+      onDraftFromQueue: topQueueEntry != null
+          ? () {
+              if (topQueueEntry.isPlayer && topQueueEntry.playerId != null) {
+                widget.onMakePick(topQueueEntry.playerId!);
+              } else if (topQueueEntry.isPickAsset && topQueueEntry.pickAssetId != null) {
+                widget.onMakePickAssetSelection(topQueueEntry.pickAssetId!);
+              }
+            }
+          : null,
+      onPickPlayer: expandDrawer,
+      serverClockOffsetMs: serverClockOffsetMs,
+      autopickExplanation: autopickExplanation,
+      onDismissAutopickExplanation: autopickExplanation != null
+          ? () => ref.read(draftRoomProvider(widget.providerKey).notifier).clearAutopickExplanation()
+          : null,
+      myPickCount: myPicks.length,
+      totalRosterSlots: totalRosterSlots,
+      neededPositions: neededPositions,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final draft = ref.watch(
@@ -668,16 +773,20 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
                         ),
                       ),
                     ),
-                    OutlinedButton.icon(
-                      onPressed: widget.isConfirmingOrder ? null : widget.onConfirmOrder,
-                      icon: widget.isConfirmingOrder
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.check),
-                      label: Text(widget.isConfirmingOrder ? 'Confirming...' : 'Confirm Order'),
+                    Semantics(
+                      button: true,
+                      label: 'Confirm draft order before starting',
+                      child: OutlinedButton.icon(
+                        onPressed: widget.isConfirmingOrder ? null : widget.onConfirmOrder,
+                        icon: widget.isConfirmingOrder
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.check),
+                        label: Text(widget.isConfirmingOrder ? 'Confirming...' : 'Confirm Order'),
+                      ),
                     ),
                   ],
                 ),
@@ -699,16 +808,20 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
                         ),
                       ),
                     ),
-                    ElevatedButton.icon(
-                      onPressed: widget.isStartingDraft ? null : widget.onStartDraft,
-                      icon: widget.isStartingDraft
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.play_arrow),
-                      label: Text(widget.isStartingDraft ? 'Starting...' : 'Start Draft'),
+                    Semantics(
+                      button: true,
+                      label: 'Start the draft now',
+                      child: ElevatedButton.icon(
+                        onPressed: widget.isStartingDraft ? null : widget.onStartDraft,
+                        icon: widget.isStartingDraft
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.play_arrow),
+                        label: Text(widget.isStartingDraft ? 'Starting...' : 'Start Draft'),
+                      ),
                     ),
                   ],
                 ),
@@ -721,35 +834,17 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
               labelIcon: isDraftActive ? Icons.circle : null,
               labelColor: isDraftActive ? Theme.of(context).colorScheme.error : null,
             ),
-            DraftStatusBar(
+            _buildDraftStatusBar(
+              ref: ref,
+              context: context,
               draft: draft,
               currentPickerName: currentPickerName,
               isMyTurn: isMyTurn,
               isAutodraftEnabled: isAutodraftEnabled,
-              onToggleAutodraft: () async {
-                final key = newIdempotencyKey();
-                final notifier = ref.read(draftRoomProvider(widget.providerKey).notifier);
-                final error = await notifier.toggleAutodraft(!isAutodraftEnabled, idempotencyKey: key);
-                if (error != null && context.mounted) {
-                  error.showAsError(ref);
-                }
-              },
               topQueuedPlayerName: topQueuedPlayerName,
-              onDraftFromQueue: topQueueEntry != null
-                  ? () {
-                      if (topQueueEntry.isPlayer && topQueueEntry.playerId != null) {
-                        widget.onMakePick(topQueueEntry.playerId!);
-                      } else if (topQueueEntry.isPickAsset && topQueueEntry.pickAssetId != null) {
-                        widget.onMakePickAssetSelection(topQueueEntry.pickAssetId!);
-                      }
-                    }
-                  : null,
-              onPickPlayer: expandDrawer,
+              topQueueEntry: topQueueEntry,
               serverClockOffsetMs: serverClockOffsetMs,
               autopickExplanation: autopickExplanation,
-              onDismissAutopickExplanation: autopickExplanation != null
-                  ? () => ref.read(draftRoomProvider(widget.providerKey).notifier).clearAutopickExplanation()
-                  : null,
             ),
             Expanded(
               child: DraftBoardGridView(

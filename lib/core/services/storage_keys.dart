@@ -47,4 +47,11 @@ class StorageKeys {
 
   /// Prefix for league onboarding seen flag (append league ID)
   static const String onboardingSeenPrefix = 'onboarding_seen_';
+
+  // ============================================================
+  // Feature Onboarding (SharedPreferences - global UI hints)
+  // ============================================================
+
+  /// Whether the lineup swap interaction onboarding has been shown
+  static const String lineupSwapOnboardingSeen = 'lineup_swap_onboarding_seen';
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/app_layout.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/utils/navigation_utils.dart';
@@ -283,9 +284,6 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         onChanged: (value) {
           ref.read(freeAgentsProvider(_key).notifier).setSearch(value);
         },
-        onSubmitted: (value) {
-          ref.read(freeAgentsProvider(_key).notifier).searchAndReload(value);
-        },
       ),
     );
   }
@@ -322,7 +320,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
       onRefresh: () => ref.read(freeAgentsProvider(_key).notifier).loadData(),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: AppLayout.contentConstraints(context),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: players.length,

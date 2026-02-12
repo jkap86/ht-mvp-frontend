@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/app_layout.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/idempotency.dart';
+import '../../../../core/widgets/position_badge.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../../core/widgets/states/app_error_view.dart';
+import '../../../../core/widgets/status_badge.dart';
+import '../../../../core/theme/semantic_colors.dart';
 import '../../../leagues/presentation/providers/league_detail_provider.dart';
 import '../../data/trade_repository.dart';
 import '../../domain/trade.dart';
+import '../../domain/trade_item.dart';
 import '../widgets/player_selector_widget.dart';
 import '../widgets/draft_pick_selector_widget.dart';
 
@@ -184,7 +189,7 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: AppLayout.contentConstraints(context),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -212,6 +217,8 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
                             ),
                       ),
                     ],
+                    const SizedBox(height: 12),
+                    _buildOriginalTradeItems(context, originalTrade),
                   ],
                 ),
               ),
@@ -392,5 +399,101 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  Widget _buildOriginalTradeItems(BuildContext context, Trade trade) {
+    final proposerGiving = trade.proposerGiving;
+    final recipientGiving = trade.recipientGiving;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Original offer:',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 6),
+        if (proposerGiving.isNotEmpty) ...[
+          Text(
+            '${trade.proposerTeamName} gives:',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          ...proposerGiving.map((item) => _buildOriginalTradeItemRow(context, item)),
+          const SizedBox(height: 4),
+        ],
+        if (recipientGiving.isNotEmpty) ...[
+          Text(
+            '${trade.recipientTeamName} gives:',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          ...recipientGiving.map((item) => _buildOriginalTradeItemRow(context, item)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildOriginalTradeItemRow(BuildContext context, TradeItem item) {
+    if (item.isDraftPick) {
+      return Padding(
+        padding: const EdgeInsets.only(left: 8, top: 2),
+        child: Row(
+          children: [
+            Icon(Icons.sports_football, size: 12, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 4),
+            Text(
+              item.pickDisplayName,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      );
+    }
+
+    final positionTeam = [
+      if (item.displayPosition != '?') item.displayPosition,
+      if (item.displayTeam.isNotEmpty) item.displayTeam,
+    ].join(' - ');
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, top: 2),
+      child: Row(
+        children: [
+          PositionBadge(position: item.displayPosition, size: 20),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              item.fullName,
+              style: Theme.of(context).textTheme.bodySmall,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (positionTeam.isNotEmpty) ...[
+            const SizedBox(width: 4),
+            Text(
+              '($positionTeam)',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
+            ),
+          ],
+          if (item.status != null && item.status!.isNotEmpty) ...[
+            const SizedBox(width: 6),
+            StatusBadge(
+              label: item.status!,
+              backgroundColor: getInjuryColor(item.status),
+              fontSize: 9,
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../drafts/domain/draft_order_entry.dart';
 import '../../../drafts/domain/draft_status.dart';
 import '../../domain/league.dart';
@@ -370,13 +371,13 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.check_circle, size: 16, color: AppTheme.draftActionPrimary),
+                Icon(Icons.check_circle, size: 16, color: context.htColors.draftAction),
                 const SizedBox(width: 4),
                 Text(
                   'Draft order confirmed',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.draftActionPrimary,
+                    color: context.htColors.draftAction,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -512,22 +513,22 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.draftActionPrimary.withValues(alpha: 0.1),
+        color: context.htColors.draftAction.withValues(alpha: 0.1),
         borderRadius: AppSpacing.buttonRadius,
-        border: Border.all(color: AppTheme.draftActionPrimary.withValues(alpha: 0.3)),
+        border: Border.all(color: context.htColors.draftAction.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.check_circle, size: 16, color: AppTheme.draftActionPrimary),
+              Icon(Icons.check_circle, size: 16, color: context.htColors.draftAction),
               const SizedBox(width: 6),
               Text(
                 'Draft Order Set!',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.draftActionPrimary,
+                  color: context.htColors.draftAction,
                   fontSize: 13,
                 ),
               ),
@@ -663,7 +664,7 @@ class _DraftItemState extends State<_DraftItem> with SingleTickerProviderStateMi
         label = 'Not Started';
         break;
       case DraftStatus.inProgress:
-        backgroundColor = AppTheme.draftActionPrimary;
+        backgroundColor = context.htColors.draftAction;
         textColor = colorScheme.onPrimary;
         label = 'Live';
         break;

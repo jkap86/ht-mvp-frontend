@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../providers/league_dashboard_provider.dart';
 import 'countdown_timer_widget.dart';
 
@@ -40,7 +41,7 @@ class NextUpCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: _getHeaderColor(nextUpType, colorScheme),
+                color: _getHeaderColor(context, nextUpType, colorScheme),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
               ),
               child: Row(
@@ -48,7 +49,7 @@ class NextUpCard extends StatelessWidget {
                   Icon(
                     _getIcon(nextUpType),
                     size: 18,
-                    color: _getHeaderTextColor(nextUpType, colorScheme),
+                    color: _getHeaderTextColor(context, nextUpType, colorScheme),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -56,7 +57,7 @@ class NextUpCard extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
-                      color: _getHeaderTextColor(nextUpType, colorScheme),
+                      color: _getHeaderTextColor(context, nextUpType, colorScheme),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -243,7 +244,7 @@ class NextUpCard extends StatelessWidget {
               _InfoChip(
                 icon: Icons.timer,
                 label: '${auction.endingSoonCount} ending soon',
-                color: AppTheme.auctionPrimary.withValues(alpha: 0.15),
+                color: context.htColors.auctionAccent.withValues(alpha: 0.15),
               ),
             ],
           ],
@@ -357,7 +358,7 @@ class NextUpCard extends StatelessWidget {
     );
   }
 
-  Color _getHeaderColor(NextUpType type, ColorScheme colorScheme) {
+  Color _getHeaderColor(BuildContext context, NextUpType type, ColorScheme colorScheme) {
     switch (type) {
       case NextUpType.draftLive:
         return colorScheme.errorContainer;
@@ -366,17 +367,17 @@ class NextUpCard extends StatelessWidget {
       case NextUpType.draftScheduled:
         return colorScheme.primaryContainer;
       case NextUpType.auctionActive:
-        return AppTheme.auctionPrimary.withValues(alpha: 0.15);
+        return context.htColors.auctionAccent.withValues(alpha: 0.15);
       case NextUpType.waiversSoon:
         return colorScheme.surfaceContainerHighest;
       case NextUpType.inSeason:
-        return AppTheme.draftActionPrimary.withValues(alpha: 0.15);
+        return context.htColors.draftAction.withValues(alpha: 0.15);
       case NextUpType.none:
         return colorScheme.surfaceContainerHighest;
     }
   }
 
-  Color _getHeaderTextColor(NextUpType type, ColorScheme colorScheme) {
+  Color _getHeaderTextColor(BuildContext context, NextUpType type, ColorScheme colorScheme) {
     switch (type) {
       case NextUpType.draftLive:
         return colorScheme.error;
@@ -385,11 +386,11 @@ class NextUpCard extends StatelessWidget {
       case NextUpType.draftScheduled:
         return colorScheme.onPrimaryContainer;
       case NextUpType.auctionActive:
-        return AppTheme.auctionPrimary;
+        return context.htColors.auctionAccent;
       case NextUpType.waiversSoon:
         return colorScheme.onSurface;
       case NextUpType.inSeason:
-        return AppTheme.draftActionPrimary;
+        return context.htColors.draftAction;
       case NextUpType.none:
         return colorScheme.onSurface;
     }

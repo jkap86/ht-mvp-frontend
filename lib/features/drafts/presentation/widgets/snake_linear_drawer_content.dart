@@ -6,7 +6,7 @@ import '../../domain/draft_pick_asset.dart';
 import '../providers/draft_room_provider.dart';
 import '../providers/draft_queue_provider.dart';
 import '../utils/player_filtering.dart';
-import '../../../../config/app_theme.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import 'draft_queue_widget.dart';
 import 'player_search_filter_panel.dart';
@@ -216,6 +216,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
             : 'Rookie Draft Pick',
       ),
       trailing: _buildPickTrailingButtons(
+        context,
         pickAsset,
         isDraftInProgress: isDraftInProgress,
         isMyTurn: isMyTurn,
@@ -226,6 +227,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
   }
 
   Widget? _buildPickTrailingButtons(
+    BuildContext context,
     DraftPickAsset pickAsset, {
     required bool isDraftInProgress,
     required bool isMyTurn,
@@ -237,7 +239,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
       return IconButton(
         icon: Icon(
           isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
-          color: isInQueue ? AppTheme.draftActionPrimary : null,
+          color: isInQueue ? context.htColors.draftAction : null,
         ),
         onPressed: (isInQueue || isPickAssetQueueSubmitting || onAddPickAssetToQueue == null)
             ? null
@@ -253,7 +255,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
         IconButton(
           icon: Icon(
             isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
-            color: isInQueue ? AppTheme.draftActionPrimary : null,
+            color: isInQueue ? context.htColors.draftAction : null,
           ),
           onPressed: (isInQueue || isPickAssetQueueSubmitting || onAddPickAssetToQueue == null)
               ? null
@@ -299,6 +301,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
       title: Text(player.fullName),
       subtitle: Text('${player.team ?? 'FA'} - ${player.primaryPosition}'),
       trailing: _buildTrailingButtons(
+        context,
         player,
         isDraftInProgress: isDraftInProgress,
         isMyTurn: isMyTurn,
@@ -309,6 +312,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
   }
 
   Widget? _buildTrailingButtons(
+    BuildContext context,
     Player player, {
     required bool isDraftInProgress,
     required bool isMyTurn,
@@ -320,7 +324,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
       return IconButton(
         icon: Icon(
           isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
-          color: isInQueue ? AppTheme.draftActionPrimary : null,
+          color: isInQueue ? context.htColors.draftAction : null,
         ),
         onPressed: (isInQueue || isQueueSubmitting) ? null : () => onAddToQueue(player.id),
         tooltip: isInQueue ? 'In queue' : 'Add to queue',
@@ -334,7 +338,7 @@ class SnakeLinearDrawerContent extends ConsumerWidget {
         IconButton(
           icon: Icon(
             isInQueue ? Icons.playlist_add_check : Icons.playlist_add,
-            color: isInQueue ? AppTheme.draftActionPrimary : null,
+            color: isInQueue ? context.htColors.draftAction : null,
           ),
           onPressed: (isInQueue || isQueueSubmitting) ? null : () => onAddToQueue(player.id),
           tooltip: isInQueue ? 'In queue' : 'Add to queue',

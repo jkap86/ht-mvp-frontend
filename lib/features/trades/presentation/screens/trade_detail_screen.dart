@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/app_layout.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../../../core/utils/idempotency.dart';
@@ -72,7 +73,7 @@ class _TradeDetailScreenState extends ConsumerState<TradeDetailScreen> {
   Widget _buildTradeContent(BuildContext context, Trade trade) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600),
+        constraints: AppLayout.contentConstraints(context),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -92,14 +93,17 @@ class _TradeDetailScreenState extends ConsumerState<TradeDetailScreen> {
                 TradeVotesSection(trade: trade),
                 const SizedBox(height: 24),
               ],
-              TradeActionButtons(
-                trade: trade,
-                leagueId: widget.leagueId,
-                isLoading: _isActionInFlight,
-                onAccept: () => _handleAccept(context, trade),
-                onReject: () => _handleReject(context, trade),
-                onCancel: () => _handleCancel(context, trade),
-                onVote: (vote) => _handleVote(context, trade, vote),
+              Semantics(
+                label: 'Trade actions',
+                child: TradeActionButtons(
+                  trade: trade,
+                  leagueId: widget.leagueId,
+                  isLoading: _isActionInFlight,
+                  onAccept: () => _handleAccept(context, trade),
+                  onReject: () => _handleReject(context, trade),
+                  onCancel: () => _handleCancel(context, trade),
+                  onVote: (vote) => _handleVote(context, trade, vote),
+                ),
               ),
             ],
           ),

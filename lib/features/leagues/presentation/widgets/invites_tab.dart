@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/app_layout.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/states/states.dart';
@@ -50,7 +51,7 @@ class _InvitesTabState extends ConsumerState<InvitesTab>
       onRefresh: () => ref.read(invitationsProvider.notifier).loadInvitations(),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: AppLayout.contentConstraints(context),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: state.invitations.length,

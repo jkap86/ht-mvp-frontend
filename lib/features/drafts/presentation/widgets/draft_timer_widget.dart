@@ -116,7 +116,7 @@ class _DraftTimerWidgetState extends State<DraftTimerWidget>
       return AppTheme.draftWarning; // Amber - warning
     }
     if (_secondsRemaining <= 60) {
-      return AppTheme.draftNormal; // Blue - normal
+      return context.htColors.draftNormal; // Blue - normal
     }
     return AppTheme.draftSuccess; // Green - plenty of time
   }

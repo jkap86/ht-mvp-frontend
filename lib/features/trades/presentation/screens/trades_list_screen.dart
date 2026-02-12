@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/app_layout.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/widgets/app_filter_chip.dart';
 import '../../../../core/widgets/skeletons/skeletons.dart';
@@ -130,7 +131,7 @@ class TradesListScreen extends ConsumerWidget {
       onRefresh: () => ref.read(tradesProvider(leagueId).notifier).loadTrades(),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: AppLayout.contentConstraints(context),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: trades.length,

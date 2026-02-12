@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/league.dart';
 import '../../../dues/presentation/providers/dues_provider.dart';
@@ -203,7 +204,7 @@ class _MemberTile extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: isPaid!
-                      ? AppTheme.draftActionPrimary.withValues(alpha: 0.1)
+                      ? context.htColors.draftAction.withValues(alpha: 0.1)
                       : AppTheme.draftWarning.withValues(alpha: 0.1),
                   borderRadius: AppSpacing.badgeRadius,
                 ),
@@ -211,7 +212,7 @@ class _MemberTile extends StatelessWidget {
                   isPaid! ? 'PAID' : 'UNPAID',
                   style: TextStyle(
                     fontSize: 11,
-                    color: isPaid! ? AppTheme.draftActionPrimary : AppTheme.draftWarning,
+                    color: isPaid! ? context.htColors.draftAction : AppTheme.draftWarning,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

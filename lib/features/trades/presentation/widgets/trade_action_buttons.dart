@@ -38,31 +38,43 @@ class TradeActionButtons extends StatelessWidget {
     if (trade.canRespond) {
       buttons.addAll([
         Expanded(
-          child: ElevatedButton.icon(
-            onPressed: isLoading ? null : onAccept,
-            icon: isLoading ? _buttonSpinner : const Icon(Icons.check),
-            label: const Text('Accept'),
-            style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary),
+          child: Semantics(
+            button: true,
+            label: 'Accept this trade offer',
+            child: ElevatedButton.icon(
+              onPressed: isLoading ? null : onAccept,
+              icon: isLoading ? _buttonSpinner : const Icon(Icons.check),
+              label: const Text('Accept'),
+              style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary),
+            ),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: isLoading ? null : onReject,
-            icon: isLoading ? _buttonSpinner : const Icon(Icons.close),
-            label: const Text('Reject'),
-            style: OutlinedButton.styleFrom(foregroundColor: colorScheme.error),
+          child: Semantics(
+            button: true,
+            label: 'Reject this trade offer',
+            child: OutlinedButton.icon(
+              onPressed: isLoading ? null : onReject,
+              icon: isLoading ? _buttonSpinner : const Icon(Icons.close),
+              label: const Text('Reject'),
+              style: OutlinedButton.styleFrom(foregroundColor: colorScheme.error),
+            ),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: isLoading
-                ? null
-                : () => context
-                    .push('/leagues/$leagueId/trades/${trade.id}/counter'),
-            icon: const Icon(Icons.reply),
-            label: const Text('Counter'),
+          child: Semantics(
+            button: true,
+            label: 'Counter this trade with a new offer',
+            child: OutlinedButton.icon(
+              onPressed: isLoading
+                  ? null
+                  : () => context
+                      .push('/leagues/$leagueId/trades/${trade.id}/counter'),
+              icon: const Icon(Icons.reply),
+              label: const Text('Counter'),
+            ),
           ),
         ),
       ]);
@@ -73,11 +85,15 @@ class TradeActionButtons extends StatelessWidget {
       buttons.add(
         SizedBox(
           width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: isLoading ? null : onCancel,
-            icon: isLoading ? _buttonSpinner : const Icon(Icons.cancel),
-            label: const Text('Cancel Trade'),
-            style: OutlinedButton.styleFrom(foregroundColor: colorScheme.tertiary),
+          child: Semantics(
+            button: true,
+            label: 'Cancel this trade offer',
+            child: OutlinedButton.icon(
+              onPressed: isLoading ? null : onCancel,
+              icon: isLoading ? _buttonSpinner : const Icon(Icons.cancel),
+              label: const Text('Cancel Trade'),
+              style: OutlinedButton.styleFrom(foregroundColor: colorScheme.tertiary),
+            ),
           ),
         ),
       );
@@ -86,20 +102,28 @@ class TradeActionButtons extends StatelessWidget {
     if (trade.canVote) {
       buttons.addAll([
         Expanded(
-          child: ElevatedButton.icon(
-            onPressed: isLoading ? null : () => onVote('approve'),
-            icon: isLoading ? _buttonSpinner : const Icon(Icons.thumb_up),
-            label: const Text('Approve'),
-            style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary),
+          child: Semantics(
+            button: true,
+            label: 'Vote to approve this trade',
+            child: ElevatedButton.icon(
+              onPressed: isLoading ? null : () => onVote('approve'),
+              icon: isLoading ? _buttonSpinner : const Icon(Icons.thumb_up),
+              label: const Text('Approve'),
+              style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary),
+            ),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: isLoading ? null : () => onVote('veto'),
-            icon: isLoading ? _buttonSpinner : const Icon(Icons.thumb_down),
-            label: const Text('Veto'),
-            style: OutlinedButton.styleFrom(foregroundColor: colorScheme.error),
+          child: Semantics(
+            button: true,
+            label: 'Vote to veto this trade',
+            child: OutlinedButton.icon(
+              onPressed: isLoading ? null : () => onVote('veto'),
+              icon: isLoading ? _buttonSpinner : const Icon(Icons.thumb_down),
+              label: const Text('Veto'),
+              style: OutlinedButton.styleFrom(foregroundColor: colorScheme.error),
+            ),
           ),
         ),
       ]);

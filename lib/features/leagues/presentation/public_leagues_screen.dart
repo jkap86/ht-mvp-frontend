@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/services/storage_service.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/app_layout.dart';
 import '../../../core/utils/error_display.dart';
 import '../../../core/widgets/states/states.dart';
 import '../data/public_leagues_provider.dart';
@@ -64,7 +65,7 @@ class _PublicLeaguesScreenState extends ConsumerState<PublicLeaguesScreen> {
       onRefresh: () => ref.read(publicLeaguesProvider.notifier).loadPublicLeagues(),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: AppLayout.contentConstraints(context),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: state.leagues.length,

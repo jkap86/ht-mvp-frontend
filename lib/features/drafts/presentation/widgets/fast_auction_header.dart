@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../domain/draft_order_entry.dart';
 
 /// Header widget for the fast auction panel showing nominator info and budget.
@@ -83,14 +83,14 @@ class FastAuctionHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: AppTheme.draftActionPrimary.withAlpha(25),
+                color: context.htColors.draftAction.withAlpha(25),
                 borderRadius: AppSpacing.cardRadius,
               ),
               child: Text(
                 '\$$myBudgetAvailable',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.draftActionPrimary,
+                  color: context.htColors.draftAction,
                   fontSize: 12,
                 ),
               ),

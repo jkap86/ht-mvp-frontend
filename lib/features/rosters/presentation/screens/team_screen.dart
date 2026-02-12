@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/app_layout.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/utils/navigation_utils.dart';
@@ -42,7 +46,43 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
   int? _selectedPlayerId;
   LineupSlot? _selectedSlot;
 
+  // Onboarding tooltip state
+  bool _showSwapOnboarding = false;
+  Timer? _onboardingDismissTimer;
+
   TeamKey get _key => (leagueId: widget.leagueId, rosterId: widget.rosterId);
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSwapOnboarding();
+  }
+
+  Future<void> _checkSwapOnboarding() async {
+    final storage = ref.read(storageServiceProvider);
+    final hasSeen = await storage.hasSeenLineupSwapOnboarding();
+    if (!hasSeen && mounted) {
+      setState(() {
+        _showSwapOnboarding = true;
+      });
+      // Auto-dismiss after 6 seconds
+      _onboardingDismissTimer = Timer(const Duration(seconds: 6), () {
+        _dismissSwapOnboarding();
+      });
+    }
+  }
+
+  void _dismissSwapOnboarding() {
+    if (_showSwapOnboarding && mounted) {
+      setState(() {
+        _showSwapOnboarding = false;
+      });
+      _onboardingDismissTimer?.cancel();
+      _onboardingDismissTimer = null;
+      // Persist that the user has seen the onboarding
+      ref.read(storageServiceProvider).markLineupSwapOnboardingSeen();
+    }
+  }
 
   /// Check if viewing own team
   bool _isOwnTeam(TeamState state) {
@@ -69,6 +109,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
   @override
   void dispose() {
+    _onboardingDismissTimer?.cancel();
     _tabController?.removeListener(_onTabChanged);
     _tabController?.dispose();
     super.dispose();
@@ -303,6 +344,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
     // Build items: header widgets + starters header + starters + bench header + bench
     final items = <Widget>[
+      // First-visit onboarding tooltip for swap interaction
+      _buildSwapOnboardingTooltip(),
       // Roster legality warnings
       RosterLegalityBanner(
         warnings: state.legalityWarnings,
@@ -348,7 +391,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
       onRefresh: () => ref.read(teamProvider(_key).notifier).loadData(),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: AppLayout.contentConstraints(context),
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: items.length,
@@ -390,7 +433,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
       onRefresh: () => ref.read(teamProvider(_key).notifier).loadData(),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: AppLayout.contentConstraints(context),
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: items.length,
@@ -428,14 +471,67 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
                       ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () => setState(() {
-                      _selectedPlayerId = null;
-                      _selectedSlot = null;
-                    }),
-                    child: Icon(Icons.close, size: 18, color: colorScheme.onPrimaryContainer),
+                  Semantics(
+                    button: true,
+                    label: 'Cancel swap selection',
+                    child: GestureDetector(
+                      onTap: () => setState(() {
+                        _selectedPlayerId = null;
+                        _selectedSlot = null;
+                      }),
+                      child: Icon(Icons.close, size: 18, color: colorScheme.onPrimaryContainer),
+                    ),
                   ),
                 ],
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildSwapOnboardingTooltip() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      child: _showSwapOnboarding
+          ? GestureDetector(
+              onTap: _dismissSwapOnboarding,
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: colorScheme.tertiary.withAlpha(80),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.swap_vert_rounded,
+                      color: colorScheme.onTertiaryContainer,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Tap a player, then tap a slot to swap positions',
+                        style: TextStyle(
+                          color: colorScheme.onTertiaryContainer,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.close,
+                      size: 16,
+                      color: colorScheme.onTertiaryContainer.withAlpha(180),
+                    ),
+                  ],
+                ),
               ),
             )
           : const SizedBox.shrink(),
@@ -587,16 +683,26 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
       final isHighlighted = _selectedSlot != null &&
           _canPlayerFitInSlot(player, _selectedSlot!);
 
+      final stateDescription = isSelected
+          ? 'Selected for swap'
+          : isHighlighted
+              ? 'Available swap target'
+              : '';
+
       return Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: RosterPlayerCard(
-          player: player,
-          isSelected: isSelected,
-          isHighlighted: isHighlighted,
-          onTap: state.lineup?.isLocked == true
-              ? null
-              : () => _handleBenchTap(state, player),
-          // No drop on Lineup tab - only available on Roster tab
+        child: Semantics(
+          label: '${player.fullName ?? "Unknown"}, ${player.position ?? "?"}, bench'
+              '${stateDescription.isNotEmpty ? ", $stateDescription" : ""}',
+          child: RosterPlayerCard(
+            player: player,
+            isSelected: isSelected,
+            isHighlighted: isHighlighted,
+            onTap: state.lineup?.isLocked == true
+                ? null
+                : () => _handleBenchTap(state, player),
+            // No drop on Lineup tab - only available on Roster tab
+          ),
         ),
       );
     }).toList();
@@ -611,7 +717,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
       onRefresh: () => ref.read(teamProvider(_key).notifier).loadData(),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: AppLayout.contentConstraints(context),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: totalCount,
@@ -746,6 +852,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
   /// Handle tap on a starter slot
   Future<void> _handleSlotTap(TeamState state, LineupSlot slot, RosterPlayer? currentPlayer) async {
+    // Dismiss onboarding on first interaction
+    if (_showSwapOnboarding) _dismissSwapOnboarding();
+
     final currentLineup = state.lineup?.lineup;
     if (currentLineup == null) return;
 
@@ -826,6 +935,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
   /// Handle tap on a bench player
   Future<void> _handleBenchTap(TeamState state, RosterPlayer player) async {
+    // Dismiss onboarding on first interaction
+    if (_showSwapOnboarding) _dismissSwapOnboarding();
+
     final currentLineup = state.lineup?.lineup;
     if (currentLineup == null) return;
 

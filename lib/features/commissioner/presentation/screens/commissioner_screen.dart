@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/providers/league_context_provider.dart';
+import '../../../../core/utils/app_layout.dart';
 import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/skeletons/skeletons.dart';
 import '../../../../core/widgets/states/states.dart';
@@ -103,7 +104,7 @@ class CommissionerScreen extends ConsumerWidget {
               children: [
                 Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 600),
+                    constraints: AppLayout.contentConstraints(context),
                     child: RefreshIndicator(
                       onRefresh: () => ref.read(commissionerProvider(leagueId).notifier).loadData(),
                       child: ListView(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../domain/trade.dart';
 import '../../domain/trade_item.dart';
 import '../../../../core/widgets/position_badge.dart';
+import '../../../../core/widgets/status_badge.dart';
+import '../../../../core/theme/semantic_colors.dart';
 
 /// Widget showing all trade assets (players + picks) split by team
 class TradeAssetsSection extends StatelessWidget {
@@ -115,13 +117,24 @@ class TradeAssetsSection extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodyMedium,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (item.displayTeam.isNotEmpty)
-                        Text(
-                          item.displayTeam,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
+                      Row(
+                        children: [
+                          if (item.displayTeam.isNotEmpty)
+                            Text(
+                              item.displayTeam,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          if (item.status != null && item.status!.isNotEmpty) ...[
+                            if (item.displayTeam.isNotEmpty) const SizedBox(width: 6),
+                            StatusBadge(
+                              label: item.status!,
+                              backgroundColor: getInjuryColor(item.status),
+                            ),
+                          ],
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -136,13 +149,25 @@ class TradeAssetsSection extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodyMedium,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (item.displayTeam.isNotEmpty)
-                        Text(
-                          item.displayTeam,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (item.status != null && item.status!.isNotEmpty) ...[
+                            StatusBadge(
+                              label: item.status!,
+                              backgroundColor: getInjuryColor(item.status),
+                            ),
+                            if (item.displayTeam.isNotEmpty) const SizedBox(width: 6),
+                          ],
+                          if (item.displayTeam.isNotEmpty)
+                            Text(
+                              item.displayTeam,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

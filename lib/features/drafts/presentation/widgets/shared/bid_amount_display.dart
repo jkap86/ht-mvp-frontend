@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../config/app_theme.dart';
+import '../../../../../core/theme/hype_train_colors.dart';
 
 /// Reusable widget for displaying bid amounts in auction lot cards.
 /// Supports both current bid display and max bid display with optional labels.
@@ -26,7 +27,7 @@ class BidAmountDisplay extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: isWinning
-            ? AppTheme.draftActionPrimary
+            ? context.htColors.draftAction
             : theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(6),
       ),
@@ -69,7 +70,7 @@ class LargeBidAmountDisplay extends StatelessWidget {
             fontSize: 28,
             fontWeight: FontWeight.bold,
             fontFamily: 'monospace',
-            color: isWinning ? AppTheme.draftSuccess : AppTheme.draftActionPrimary,
+            color: isWinning ? AppTheme.draftSuccess : context.htColors.draftAction,
           ),
         ),
         const SizedBox(height: 2),
@@ -115,7 +116,7 @@ class MaxBidIndicator extends StatelessWidget {
       'Max: \$$maxBid',
       style: theme.textTheme.labelSmall?.copyWith(
         color: isWinning
-            ? AppTheme.draftActionPrimary
+            ? context.htColors.draftAction
             : theme.colorScheme.tertiary,
         fontWeight: FontWeight.w500,
         fontFamily: 'monospace',

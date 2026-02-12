@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/states/states.dart';
@@ -187,7 +187,7 @@ class StandingsScreen extends ConsumerWidget {
                           height: 24,
                           margin: const EdgeInsets.only(right: 8),
                           decoration: BoxDecoration(
-                            color: AppTheme.draftActionPrimary,
+                            color: context.htColors.draftAction,
                             borderRadius: BorderRadius.circular(AppSpacing.radiusXs),
                           ),
                         ),
@@ -228,7 +228,7 @@ class StandingsScreen extends ConsumerWidget {
                         Icon(
                           Icons.emoji_events,
                           size: 14,
-                          color: AppTheme.draftActionPrimary.withValues(alpha: 0.6),
+                          color: context.htColors.draftAction.withValues(alpha: 0.6),
                         ),
                       ],
                     ],
@@ -286,7 +286,7 @@ class StandingsScreen extends ConsumerWidget {
                     style: TextStyle(
                       fontWeight: isMyTeam ? FontWeight.bold : FontWeight.normal,
                       color: standing.pointDifferential > 0
-                          ? AppTheme.draftActionPrimary
+                          ? context.htColors.draftAction
                           : standing.pointDifferential < 0
                               ? Theme.of(context).colorScheme.error
                               : null,
@@ -313,7 +313,7 @@ class StandingsScreen extends ConsumerWidget {
     if (streak.isEmpty) return const Text('-');
 
     final isWinStreak = streak.startsWith('W');
-    final color = isWinStreak ? AppTheme.draftActionPrimary : Theme.of(context).colorScheme.error;
+    final color = isWinStreak ? context.htColors.draftAction : Theme.of(context).colorScheme.error;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

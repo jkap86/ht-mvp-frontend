@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,21 +38,12 @@ class FreeAgentsState {
     return DateTime.now().difference(lastUpdated!) > const Duration(minutes: 5);
   }
 
-  /// Get filtered players based on position and search
+  /// Get filtered players based on position (search is handled server-side)
   List<Player> get filteredPlayers {
     var result = players;
 
     if (selectedPosition != null) {
       result = result.where((p) => p.position == selectedPosition).toList();
-    }
-
-    if (searchQuery.isNotEmpty) {
-      final query = searchQuery.toLowerCase();
-      result = result.where((p) {
-        final name = p.fullName.toLowerCase();
-        final team = (p.team ?? '').toLowerCase();
-        return name.contains(query) || team.contains(query);
-      }).toList();
     }
 
     return result;
@@ -91,6 +84,7 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
   final int rosterId;
 
   VoidCallback? _invalidationDisposer;
+  Timer? _searchDebounce;
 
   FreeAgentsNotifier(
     this._rosterRepo,
@@ -112,6 +106,7 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _invalidationDisposer?.call();
     super.dispose();
   }
@@ -154,16 +149,21 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
     loadData();
   }
 
-  /// Search by name
+  /// Search by name with debounced server fetch.
+  /// Immediately clears results when the query is emptied,
+  /// otherwise debounces for 400ms before fetching from the server.
   void setSearch(String query) {
+    _searchDebounce?.cancel();
     state = state.copyWith(searchQuery: query);
-    // Don't reload on every keystroke - let the UI filter locally
-  }
 
-  /// Search and reload from server
-  void searchAndReload(String query) {
-    state = state.copyWith(searchQuery: query);
-    loadData();
+    if (query.isEmpty) {
+      // Immediately reload the default list when search is cleared
+      loadData();
+    } else {
+      _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+        loadData();
+      });
+    }
   }
 
   /// Add a player to the roster with optimistic update and rollback on failure

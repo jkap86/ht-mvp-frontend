@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../../config/app_theme.dart';
 import '../../../../../core/theme/app_spacing.dart';
+import '../../../../../core/theme/hype_train_colors.dart';
 import '../../../../../core/api/api_client.dart';
 import '../../../../players/domain/player.dart';
 import '../../../data/draft_repository.dart';
@@ -123,7 +124,7 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
     // Determine card background based on state
     Color? cardColor;
     if (widget.isWinning) {
-      cardColor = AppTheme.draftActionPrimary.withAlpha(25);
+      cardColor = context.htColors.draftAction.withAlpha(25);
     } else if (urgency == 1) {
       cardColor = AppTheme.draftUrgent.withAlpha(20);
     } else if (urgency == 2) {
@@ -187,7 +188,7 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
                                 'Leader: ${widget.highBidderName}',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: widget.isWinning
-                                      ? AppTheme.draftActionPrimary
+                                      ? context.htColors.draftAction
                                       : theme.colorScheme.onSurfaceVariant,
                                   fontWeight:
                                       widget.isWinning ? FontWeight.w600 : null,
