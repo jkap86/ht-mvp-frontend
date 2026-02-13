@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/api/api_client.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../../dm/data/dm_repository.dart';
+import '../../../dm/data/user_search_repository.dart';
 import '../../../dm/presentation/providers/dm_inbox_provider.dart';
 
 /// Inline user search view for starting a new DM conversation.
@@ -27,7 +27,7 @@ class DmNewConversationView extends ConsumerStatefulWidget {
 
 class _DmNewConversationViewState extends ConsumerState<DmNewConversationView> {
   final TextEditingController _searchController = TextEditingController();
-  List<_UserSearchResult> _results = [];
+  List<UserSearchResult> _results = [];
   bool _isSearching = false;
   bool _isCreatingConversation = false;
   String? _error;
@@ -66,11 +66,8 @@ class _DmNewConversationViewState extends ConsumerState<DmNewConversationView> {
     });
 
     try {
-      final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.get('/auth/users/search?q=${Uri.encodeComponent(query)}');
-      final users = (response as List)
-          .map((json) => _UserSearchResult.fromJson(json as Map<String, dynamic>))
-          .toList();
+      final userSearchRepo = ref.read(userSearchRepositoryProvider);
+      final users = await userSearchRepo.searchUsers(query);
 
       if (mounted) {
         setState(() {
@@ -88,7 +85,7 @@ class _DmNewConversationViewState extends ConsumerState<DmNewConversationView> {
     }
   }
 
-  Future<void> _startConversation(_UserSearchResult user) async {
+  Future<void> _startConversation(UserSearchResult user) async {
     setState(() => _isCreatingConversation = true);
 
     try {
@@ -244,20 +241,6 @@ class _DmNewConversationViewState extends ConsumerState<DmNewConversationView> {
           onTap: () => _startConversation(user),
         );
       },
-    );
-  }
-}
-
-class _UserSearchResult {
-  final String id;
-  final String username;
-
-  _UserSearchResult({required this.id, required this.username});
-
-  factory _UserSearchResult.fromJson(Map<String, dynamic> json) {
-    return _UserSearchResult(
-      id: json['id'] as String? ?? json['userId'] as String? ?? '',
-      username: json['username'] as String? ?? 'Unknown',
     );
   }
 }

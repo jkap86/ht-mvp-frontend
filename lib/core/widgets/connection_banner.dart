@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_theme.dart';
 import '../socket/connection_state_provider.dart';
-import '../socket/socket_service.dart';
+import '../socket/reconnect_action.dart';
 
 /// A banner that displays socket connection status to the user.
 /// Shows "Connection lost" when disconnected with a "Tap to retry" action,
@@ -51,8 +51,7 @@ class _ConnectionBannerContentState
 
     setState(() => _isRetrying = true);
 
-    final socketService = ref.read(socketServiceProvider);
-    await socketService.reconnect();
+    await ref.read(socketReconnectProvider)();
 
     // Reset retrying state after a short delay to allow the connection
     // state stream to update. If still mounted, the provider state will

@@ -10,7 +10,9 @@ import '../../../../core/widgets/status_badge.dart';
 import '../../../../core/widgets/team_selector_sheet.dart';
 import '../../../leagues/presentation/providers/league_detail_provider.dart';
 import '../../../rosters/domain/roster_player.dart';
-import '../../data/trade_repository.dart';
+import '../../domain/league_chat_mode_policy.dart';
+import '../../domain/trade_validation.dart';
+import '../providers/trades_provider.dart';
 import '../widgets/player_selector_widget.dart' show PlayerSelectorWidget, tradeRosterPlayersProvider;
 import '../widgets/draft_pick_selector_widget.dart';
 
@@ -38,21 +40,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
   void _initializeLeagueChatMode(LeagueDetailState leagueState) {
     if (_leagueChatModeInitialized) return;
     _leagueChatModeInitialized = true;
-
-    final leagueSettings = leagueState.league?.leagueSettings;
-    final max = (leagueSettings?['tradeProposalLeagueChatMax'] as String?) ?? 'details';
-    final defaultMode = (leagueSettings?['tradeProposalLeagueChatDefault'] as String?) ?? 'summary';
-
-    // Clamp default to max
-    _leagueChatMode = _clampMode(defaultMode, max);
-  }
-
-  String _clampMode(String mode, String max) {
-    const order = ['none', 'summary', 'details'];
-    final modeIdx = order.indexOf(mode);
-    final maxIdx = order.indexOf(max);
-    if (modeIdx < 0 || maxIdx < 0) return 'summary';
-    return order[modeIdx.clamp(0, maxIdx)];
+    _leagueChatMode = resolveDefaultChatMode(leagueState.league?.leagueSettings);
   }
 
   @override
@@ -325,30 +313,28 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
 
   List<DropdownMenuItem<String>> _buildLeagueChatModeItems() {
     final leagueState = ref.read(leagueDetailProvider(widget.leagueId));
-    final leagueSettings = leagueState.league?.leagueSettings;
-    final max = (leagueSettings?['tradeProposalLeagueChatMax'] as String?) ?? 'details';
+    final modes = allowedChatModes(leagueState.league?.leagueSettings);
 
-    final items = <DropdownMenuItem<String>>[];
-    items.add(const DropdownMenuItem(value: 'none', child: Text('None')));
-
-    if (max == 'summary' || max == 'details') {
-      items.add(const DropdownMenuItem(value: 'summary', child: Text('Summary')));
-    }
-
-    if (max == 'details') {
-      items.add(const DropdownMenuItem(value: 'details', child: Text('Full Details')));
-    }
-
-    return items;
+    return modes.map((mode) {
+      final label = switch (mode) {
+        'none' => 'None',
+        'summary' => 'Summary',
+        'details' => 'Full Details',
+        _ => mode,
+      };
+      return DropdownMenuItem(value: mode, child: Text(label));
+    }).toList();
   }
 
   bool _canSubmit() {
-    final hasAssetsToOffer = _offeringPlayerIds.isNotEmpty || _offeringPickAssetIds.isNotEmpty;
-    final hasAssetsToRequest = _requestingPlayerIds.isNotEmpty || _requestingPickAssetIds.isNotEmpty;
     return !_isSubmitting &&
-        _selectedRecipientRosterId != null &&
-        hasAssetsToOffer &&
-        hasAssetsToRequest;
+        canSubmitTrade(
+          recipientRosterId: _selectedRecipientRosterId,
+          offeringPlayerIds: _offeringPlayerIds,
+          offeringPickAssetIds: _offeringPickAssetIds,
+          requestingPlayerIds: _requestingPlayerIds,
+          requestingPickAssetIds: _requestingPickAssetIds,
+        );
   }
 
   Future<void> _handleSubmit() async {
@@ -362,9 +348,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
 
     try {
       final key = newIdempotencyKey();
-      final tradeRepo = ref.read(tradeRepositoryProvider);
-      await tradeRepo.proposeTrade(
-        leagueId: widget.leagueId,
+      await ref.read(tradesProvider(widget.leagueId).notifier).proposeTrade(
         recipientRosterId: _selectedRecipientRosterId!,
         offeringPlayerIds: _offeringPlayerIds,
         requestingPlayerIds: _requestingPlayerIds,

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
+import '../../../../core/utils/idempotency.dart';
 
 import '../../../../core/services/invalidation_service.dart';
 import '../../../../core/services/sync_service.dart';
@@ -420,7 +420,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
     }
 
     // Generate or reuse idempotency key for retry safety
-    _movePlayerIdempotencyKey ??= idempotencyKey ?? const Uuid().v4();
+    _movePlayerIdempotencyKey ??= idempotencyKey ?? newIdempotencyKey();
 
     state = state.copyWith(isSaving: true);
 
@@ -478,7 +478,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
     }
 
     // Generate or reuse idempotency key for retry safety
-    _lineupIdempotencyKey ??= idempotencyKey ?? const Uuid().v4();
+    _lineupIdempotencyKey ??= idempotencyKey ?? newIdempotencyKey();
 
     state = state.copyWith(isSaving: true);
 
@@ -519,7 +519,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
   /// Drop a player from the roster
   Future<bool> dropPlayer(int playerId, {String? idempotencyKey}) async {
     // Generate or reuse idempotency key for retry safety
-    _dropPlayerIdempotencyKey ??= idempotencyKey ?? const Uuid().v4();
+    _dropPlayerIdempotencyKey ??= idempotencyKey ?? newIdempotencyKey();
 
     final player = state.players.where((p) => p.playerId == playerId).firstOrNull;
     final playerName = player?.fullName ?? 'Player';
@@ -583,7 +583,7 @@ class TeamNotifier extends StateNotifier<TeamState> {
     }
 
     // Generate or reuse idempotency key for retry safety
-    _lineupIdempotencyKey ??= idempotencyKey ?? const Uuid().v4();
+    _lineupIdempotencyKey ??= idempotencyKey ?? newIdempotencyKey();
 
     state = state.copyWith(isSaving: true);
 

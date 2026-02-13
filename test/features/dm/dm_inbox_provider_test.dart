@@ -97,9 +97,10 @@ void main() {
           .thenThrow(Exception('Network error'));
 
       container = createContainer();
+      final notifier = container!.read(dmInboxProvider.notifier);
 
-      // Wait for initial load
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Await load directly instead of using Future.delayed
+      await notifier.loadConversations();
 
       final state = container!.read(dmInboxProvider);
       expect(state.isLoading, false);

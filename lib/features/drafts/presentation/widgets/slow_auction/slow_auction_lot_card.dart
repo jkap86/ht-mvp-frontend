@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../config/app_theme.dart';
 import '../../../../../core/theme/app_spacing.dart';
 import '../../../../../core/theme/hype_train_colors.dart';
-import '../../../../../core/api/api_client.dart';
 import '../../../../players/domain/player.dart';
 import '../../../data/draft_repository.dart';
 import '../../../domain/auction_lot.dart';
@@ -15,7 +15,7 @@ import '../../../../../core/widgets/position_badge.dart';
 
 /// Individual auction card for the slow auction list view.
 /// Expandable to show bid history inline.
-class SlowAuctionLotCard extends StatefulWidget {
+class SlowAuctionLotCard extends ConsumerStatefulWidget {
   final AuctionLot lot;
   final Player player;
   final String highBidderName;
@@ -38,10 +38,10 @@ class SlowAuctionLotCard extends StatefulWidget {
   });
 
   @override
-  State<SlowAuctionLotCard> createState() => _SlowAuctionLotCardState();
+  ConsumerState<SlowAuctionLotCard> createState() => _SlowAuctionLotCardState();
 }
 
-class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
+class _SlowAuctionLotCardState extends ConsumerState<SlowAuctionLotCard>
     with CountdownMixin {
   bool _isExpanded = false;
   List<BidHistoryEntry>? _bidHistory;
@@ -74,7 +74,7 @@ class _SlowAuctionLotCardState extends State<SlowAuctionLotCard>
     });
 
     try {
-      final repo = DraftRepository(ApiClient());
+      final repo = ref.read(draftRepositoryProvider);
       final history = await repo.getBidHistory(
         widget.leagueId,
         widget.draftId,

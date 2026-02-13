@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/api/api_client.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../data/dm_repository.dart';
+import '../../data/user_search_repository.dart';
 import '../providers/dm_inbox_provider.dart';
 
 /// A bottom sheet for searching users and starting a new DM conversation.
@@ -28,7 +28,7 @@ class DmUserSearchSheet extends ConsumerStatefulWidget {
 
 class _DmUserSearchSheetState extends ConsumerState<DmUserSearchSheet> {
   final TextEditingController _searchController = TextEditingController();
-  List<_UserSearchResult> _results = [];
+  List<UserSearchResult> _results = [];
   bool _isSearching = false;
   bool _isCreatingConversation = false;
   String? _error;
@@ -67,11 +67,8 @@ class _DmUserSearchSheetState extends ConsumerState<DmUserSearchSheet> {
     });
 
     try {
-      final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.get('/auth/users/search?q=${Uri.encodeComponent(query)}');
-      final users = (response as List)
-          .map((json) => _UserSearchResult.fromJson(json as Map<String, dynamic>))
-          .toList();
+      final userSearchRepo = ref.read(userSearchRepositoryProvider);
+      final users = await userSearchRepo.searchUsers(query);
 
       if (mounted) {
         setState(() {
@@ -89,7 +86,7 @@ class _DmUserSearchSheetState extends ConsumerState<DmUserSearchSheet> {
     }
   }
 
-  Future<void> _startConversation(_UserSearchResult user) async {
+  Future<void> _startConversation(UserSearchResult user) async {
     setState(() => _isCreatingConversation = true);
 
     try {
@@ -247,20 +244,6 @@ class _DmUserSearchSheetState extends ConsumerState<DmUserSearchSheet> {
           onTap: () => _startConversation(user),
         );
       },
-    );
-  }
-}
-
-class _UserSearchResult {
-  final String id;
-  final String username;
-
-  _UserSearchResult({required this.id, required this.username});
-
-  factory _UserSearchResult.fromJson(Map<String, dynamic> json) {
-    return _UserSearchResult(
-      id: json['id'] as String? ?? json['userId'] as String? ?? '',
-      username: json['username'] as String? ?? 'Unknown',
     );
   }
 }

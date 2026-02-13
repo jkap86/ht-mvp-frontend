@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
+import '../../../../core/utils/idempotency.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/services/invalidation_service.dart';
 import '../../../../core/services/sync_service.dart';
@@ -398,7 +398,7 @@ class WaiversNotifier extends StateNotifier<WaiversState>
     int bidAmount = 0,
     String? idempotencyKey,
   }) async {
-    final key = idempotencyKey ?? const Uuid().v4();
+    final key = idempotencyKey ?? newIdempotencyKey();
     try {
       final claim = await _waiverRepo.submitClaim(
         leagueId: leagueId,
@@ -422,7 +422,7 @@ class WaiversNotifier extends StateNotifier<WaiversState>
     int? bidAmount,
     String? idempotencyKey,
   }) async {
-    final key = idempotencyKey ?? const Uuid().v4();
+    final key = idempotencyKey ?? newIdempotencyKey();
     try {
       final claim = await _waiverRepo.updateClaim(
         leagueId,
@@ -441,7 +441,7 @@ class WaiversNotifier extends StateNotifier<WaiversState>
 
   /// Cancel a waiver claim
   Future<bool> cancelClaim(int claimId, {String? idempotencyKey}) async {
-    final key = idempotencyKey ?? const Uuid().v4();
+    final key = idempotencyKey ?? newIdempotencyKey();
     try {
       await _waiverRepo.cancelClaim(leagueId, claimId, idempotencyKey: key);
       _removeClaim(claimId);
@@ -459,7 +459,7 @@ class WaiversNotifier extends StateNotifier<WaiversState>
     // Prevent concurrent reorders to avoid state inconsistencies
     if (state.isReordering) return false;
 
-    final key = idempotencyKey ?? const Uuid().v4();
+    final key = idempotencyKey ?? newIdempotencyKey();
     // Save previous claims for rollback on error
     final previousClaims = [...state.claims];
 

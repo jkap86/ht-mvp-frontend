@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../domain/auction_bid_calculator.dart';
 import '../../../domain/auction_budget.dart';
 import '../../../domain/auction_settings.dart';
 
@@ -10,21 +11,21 @@ class SlowAuctionBudgetCard extends StatelessWidget {
   final int totalRounds;
   /// Auction settings for min bid calculation
   final AuctionSettings? auctionSettings;
+  final AuctionBidCalculator? calculator;
 
   const SlowAuctionBudgetCard({
     super.key,
     required this.budget,
     required this.totalRounds,
     this.auctionSettings,
+    this.calculator,
   });
 
-  /// Calculate the maximum bid the user can place.
-  /// This is budget minus minimum bids ($1 each) for remaining unfilled roster spots.
   int get _maxPossibleBid {
+    if (calculator != null) return calculator!.maxPossibleBidForBudget(budget);
     final remainingSpots = totalRounds - budget.wonCount;
-    if (remainingSpots <= 1) return budget.available; // Last spot: can bid everything
+    if (remainingSpots <= 1) return budget.available;
     final minBid = auctionSettings?.minBid ?? 1;
-    // Reserve minBid for each remaining spot minus the one being bid on
     final reserved = (remainingSpots - 1) * minBid;
     final maxBid = budget.available - reserved;
     return maxBid > 0 ? maxBid : 0;

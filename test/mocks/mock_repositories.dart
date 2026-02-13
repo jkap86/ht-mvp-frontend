@@ -10,6 +10,7 @@ import 'package:hypetrain_mvp/features/dm/data/dm_repository.dart';
 import 'package:hypetrain_mvp/features/dm/domain/direct_message.dart';
 import 'package:hypetrain_mvp/features/dm/domain/conversation.dart';
 import 'package:hypetrain_mvp/core/api/api_client.dart';
+import 'package:hypetrain_mvp/core/services/snack_bar_service.dart';
 
 // Mock classes
 class MockAuthRepository extends Mock implements AuthRepository {}
@@ -25,6 +26,8 @@ class MockPlayerRepository extends Mock implements PlayerRepository {}
 class MockApiClient extends Mock implements ApiClient {}
 
 class MockDmRepository extends Mock implements DmRepository {}
+
+class MockSnackBarService extends Mock implements SnackBarService {}
 
 // Test data helpers
 User createMockUser({

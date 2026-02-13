@@ -7,10 +7,19 @@ import 'package:mocktail/mocktail.dart';
 import 'package:hypetrain_mvp/features/dm/domain/direct_message.dart';
 import 'package:hypetrain_mvp/features/dm/presentation/providers/dm_conversation_provider.dart';
 import 'package:hypetrain_mvp/features/dm/data/dm_repository.dart';
+import 'package:hypetrain_mvp/features/auth/presentation/auth_provider.dart';
 import 'package:hypetrain_mvp/core/socket/socket_service.dart';
 
 import '../../mocks/mock_repositories.dart';
 import '../../mocks/mock_socket_service.dart';
+
+// A minimal auth notifier that doesn't call _checkAuthStatus() in constructor.
+// Using StateNotifier directly avoids the async side effects of AuthNotifier.
+class _MockAuthNotifier extends StateNotifier<AuthState>
+    with Mock
+    implements AuthNotifier {
+  _MockAuthNotifier() : super(AuthState());
+}
 
 void main() {
   late MockDmRepository mockDmRepo;
@@ -24,6 +33,7 @@ void main() {
     // Set up default socket service behavior
     when(() => mockSocketService.onDmMessage(any())).thenReturn(() {});
     when(() => mockSocketService.onReconnected(any())).thenReturn(() {});
+    when(() => mockSocketService.on(any(), any())).thenReturn(() {});
   });
 
   tearDown(() {
@@ -36,6 +46,7 @@ void main() {
       overrides: [
         dmRepositoryProvider.overrideWithValue(mockDmRepo),
         socketServiceProvider.overrideWithValue(mockSocketService),
+        authStateProvider.overrideWith((_) => _MockAuthNotifier()),
       ],
     );
   }
@@ -86,6 +97,8 @@ void main() {
       when(() => mockDmRepo.markAsRead(1)).thenAnswer((_) async {});
 
       container = createContainer(1);
+      // Keep provider alive by listening
+      container!.listen(dmConversationProvider(1), (_, __) {});
       final notifier = container!.read(dmConversationProvider(1).notifier);
 
       // Await load directly instead of using Future.delayed
@@ -101,9 +114,12 @@ void main() {
           .thenThrow(Exception('Network error'));
 
       container = createContainer(1);
+      // Keep provider alive by listening
+      container!.listen(dmConversationProvider(1), (_, __) {});
+      final notifier = container!.read(dmConversationProvider(1).notifier);
 
-      // Wait for initial load
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Await load directly instead of using Future.delayed
+      await notifier.loadMessages();
 
       final state = container!.read(dmConversationProvider(1));
       expect(state.isLoading, false);
@@ -118,9 +134,10 @@ void main() {
       when(() => mockDmRepo.markAsRead(1)).thenAnswer((_) async {});
 
       container = createContainer(1);
-      await Future.delayed(const Duration(milliseconds: 100));
-
+      // Keep provider alive by listening
+      container!.listen(dmConversationProvider(1), (_, __) {});
       final notifier = container!.read(dmConversationProvider(1).notifier);
+      await notifier.loadMessages();
       final result = await notifier.sendMessage('');
 
       expect(result, false);
@@ -137,9 +154,10 @@ void main() {
           .thenAnswer((_) async => mockMessage);
 
       container = createContainer(1);
-      await Future.delayed(const Duration(milliseconds: 100));
-
+      // Keep provider alive by listening
+      container!.listen(dmConversationProvider(1), (_, __) {});
       final notifier = container!.read(dmConversationProvider(1).notifier);
+      await notifier.loadMessages();
       final result = await notifier.sendMessage('Test message');
 
       expect(result, true);
@@ -157,6 +175,8 @@ void main() {
           .thenAnswer((_) => sendCompleter.future);
 
       container = createContainer(1);
+      // Keep provider alive by listening
+      container!.listen(dmConversationProvider(1), (_, __) {});
       final notifier = container!.read(dmConversationProvider(1).notifier);
 
       // Await load directly instead of using Future.delayed
@@ -189,6 +209,8 @@ void main() {
       when(() => mockDmRepo.markAsRead(1)).thenAnswer((_) async {});
 
       container = createContainer(1);
+      // Keep provider alive by listening
+      container!.listen(dmConversationProvider(1), (_, __) {});
       final notifier = container!.read(dmConversationProvider(1).notifier);
 
       // Await load directly instead of using Future.delayed

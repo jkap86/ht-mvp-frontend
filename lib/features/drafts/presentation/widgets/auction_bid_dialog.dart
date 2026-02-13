@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../domain/auction_bid_calculator.dart';
 import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
 import '../../domain/auction_settings.dart';
@@ -79,48 +80,13 @@ class AuctionBidDialog extends ConsumerStatefulWidget {
 
 class _AuctionBidDialogState extends ConsumerState<AuctionBidDialog> {
   late final TextEditingController _bidController;
+  late final AuctionBidCalculator _calculator;
   final _formKey = GlobalKey<FormState>();
   Timer? _timer;
   final ValueNotifier<Duration> _timeRemaining = ValueNotifier(Duration.zero);
   bool _isSubmitting = false;
 
   int get _myRosterId => widget.myBudget?.rosterId ?? -1;
-
-  bool _isCurrentLeader(AuctionLot lot) => lot.currentBidderRosterId == _myRosterId;
-
-  int _getMinBid(AuctionLot lot) {
-    if (_isCurrentLeader(lot)) {
-      // Leader can raise max bid from current position
-      return lot.currentBid;
-    }
-    // Non-leader must beat currentBid + minIncrement
-    return lot.currentBid + widget.settings.minIncrement;
-  }
-
-  int? _getMaxBid(AuctionLot lot) {
-    if (widget.myBudget == null) return null;
-    int available = widget.myBudget!.available;
-    // Leader can reuse their current commitment
-    if (_isCurrentLeader(lot)) {
-      available += lot.currentBid;
-    }
-    return available;
-  }
-
-  /// Max possible bid accounting for remaining roster spots needing minimum bids
-  int? _getMaxPossibleBid(AuctionLot lot) {
-    if (widget.myBudget == null) return null;
-    final totalSpots = widget.totalRosterSpots ?? 15;
-    final remainingSpots = totalSpots - widget.myBudget!.wonCount;
-    if (remainingSpots <= 1) return _getMaxBid(lot); // Last spot: can bid everything
-    final minBidVal = widget.settings.minBid;
-    final reserved = (remainingSpots - 1) * minBidVal;
-    int available = widget.myBudget!.available - reserved;
-    if (_isCurrentLeader(lot)) {
-      available += lot.currentBid;
-    }
-    return available > 0 ? available : 0;
-  }
 
   AuctionLot? _getCurrentLot() {
     final providerKey = (leagueId: widget.leagueId, draftId: widget.draftId);
@@ -131,9 +97,13 @@ class _AuctionBidDialogState extends ConsumerState<AuctionBidDialog> {
   @override
   void initState() {
     super.initState();
+    _calculator = AuctionBidCalculator(
+      settings: widget.settings,
+      totalRosterSpots: widget.totalRosterSpots ?? 15,
+    );
     final initialLot = _getCurrentLot();
     _bidController = TextEditingController(
-      text: initialLot != null ? _getMinBid(initialLot).toString() : '0',
+      text: initialLot != null ? _calculator.minBid(initialLot, _myRosterId).toString() : '0',
     );
     _updateTimeRemaining();
     _startTimer();
@@ -186,46 +156,7 @@ class _AuctionBidDialogState extends ConsumerState<AuctionBidDialog> {
   }
 
   String? _validateBid(String? value) {
-    final currentLot = _getCurrentLot();
-
-    if (currentLot == null) {
-      return 'This lot has ended';
-    }
-
-    if (value == null || value.isEmpty) {
-      return 'Please enter a bid amount';
-    }
-
-    final bid = int.tryParse(value);
-    if (bid == null) {
-      return 'Please enter a valid number';
-    }
-
-    final isLeader = _isCurrentLeader(currentLot);
-    final minBid = _getMinBid(currentLot);
-    final maxBid = _getMaxBid(currentLot);
-
-    if (isLeader) {
-      // Leader must bid at least minBid (the system setting)
-      if (bid < widget.settings.minBid) {
-        return 'Bid must be at least \$${widget.settings.minBid}';
-      }
-      // Max bid should be >= their current commitment to be meaningful
-      if (bid < currentLot.currentBid) {
-        return 'Max bid must be at least \$${currentLot.currentBid} (your current commitment)';
-      }
-    } else {
-      // Non-leader must bid above current price + increment
-      if (bid < minBid) {
-        return 'Bid must be at least \$$minBid';
-      }
-    }
-
-    if (maxBid != null && bid > maxBid) {
-      return 'Bid exceeds your available budget (\$$maxBid)';
-    }
-
-    return null;
+    return _calculator.validateBid(value, _getCurrentLot(), widget.myBudget, _myRosterId);
   }
 
   void _onSubmit() async {
@@ -288,10 +219,10 @@ class _AuctionBidDialogState extends ConsumerState<AuctionBidDialog> {
     }
 
     final lot = currentLot;
-    final isCurrentLeader = _isCurrentLeader(lot);
-    final minBid = _getMinBid(lot);
-    final maxBid = _getMaxBid(lot);
-    final maxPossibleBid = _getMaxPossibleBid(lot);
+    final isCurrentLeader = _calculator.isLeading(lot, _myRosterId);
+    final minBid = _calculator.minBid(lot, _myRosterId);
+    final maxBid = _calculator.maxBid(lot, widget.myBudget, _myRosterId);
+    final maxPossibleBid = _calculator.maxPossibleBid(lot, widget.myBudget, _myRosterId);
 
     return AlertDialog(
       title: const Text('Place Bid'),

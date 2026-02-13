@@ -120,6 +120,8 @@ void main() {
     when(() => mockSocketService.onPickUndone(any())).thenReturn(() {});
     when(() => mockSocketService.onDraftPaused(any())).thenReturn(() {});
     when(() => mockSocketService.onDraftResumed(any())).thenReturn(() {});
+    when(() => mockSocketService.onOvernightPauseStarted(any())).thenReturn(() {});
+    when(() => mockSocketService.onOvernightPauseEnded(any())).thenReturn(() {});
     // Auction socket listeners
     when(() => mockSocketService.onAuctionLotCreated(any())).thenReturn(() {});
     when(() => mockSocketService.onAuctionLotUpdated(any())).thenReturn(() {});

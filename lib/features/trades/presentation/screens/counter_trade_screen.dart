@@ -11,8 +11,11 @@ import '../../../../core/widgets/status_badge.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../leagues/presentation/providers/league_detail_provider.dart';
 import '../../data/trade_repository.dart';
+import '../../domain/league_chat_mode_policy.dart';
 import '../../domain/trade.dart';
 import '../../domain/trade_item.dart';
+import '../../domain/trade_validation.dart';
+import '../providers/trades_provider.dart';
 import '../widgets/player_selector_widget.dart';
 import '../widgets/draft_pick_selector_widget.dart';
 
@@ -61,21 +64,7 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
   void _initializeLeagueChatMode(LeagueDetailState leagueState) {
     if (_leagueChatModeInitialized) return;
     _leagueChatModeInitialized = true;
-
-    final leagueSettings = leagueState.league?.leagueSettings;
-    final max = (leagueSettings?['tradeProposalLeagueChatMax'] as String?) ?? 'details';
-    final defaultMode = (leagueSettings?['tradeProposalLeagueChatDefault'] as String?) ?? 'summary';
-
-    // Clamp default to max
-    _leagueChatMode = _clampMode(defaultMode, max);
-  }
-
-  String _clampMode(String mode, String max) {
-    const order = ['none', 'summary', 'details'];
-    final modeIdx = order.indexOf(mode);
-    final maxIdx = order.indexOf(max);
-    if (modeIdx < 0 || maxIdx < 0) return 'summary';
-    return order[modeIdx.clamp(0, maxIdx)];
+    _leagueChatMode = resolveDefaultChatMode(leagueState.league?.leagueSettings);
   }
 
   void _initializeFromOriginalTrade(Trade originalTrade, int myRosterId) {
@@ -339,27 +328,29 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
   }
 
   List<DropdownMenuItem<String>> _buildLeagueChatModeItems(LeagueDetailState leagueState) {
-    final leagueSettings = leagueState.league?.leagueSettings;
-    final max = (leagueSettings?['tradeProposalLeagueChatMax'] as String?) ?? 'details';
+    final modes = allowedChatModes(leagueState.league?.leagueSettings);
 
-    final items = <DropdownMenuItem<String>>[];
-    items.add(const DropdownMenuItem(value: 'none', child: Text('None')));
-
-    if (max == 'summary' || max == 'details') {
-      items.add(const DropdownMenuItem(value: 'summary', child: Text('Summary')));
-    }
-
-    if (max == 'details') {
-      items.add(const DropdownMenuItem(value: 'details', child: Text('Full Details')));
-    }
-
-    return items;
+    return modes.map((mode) {
+      final label = switch (mode) {
+        'none' => 'None',
+        'summary' => 'Summary',
+        'details' => 'Full Details',
+        _ => mode,
+      };
+      return DropdownMenuItem(value: mode, child: Text(label));
+    }).toList();
   }
 
   bool _canSubmit() {
-    final hasAssetsToOffer = _offeringPlayerIds.isNotEmpty || _offeringPickAssetIds.isNotEmpty;
-    final hasAssetsToRequest = _requestingPlayerIds.isNotEmpty || _requestingPickAssetIds.isNotEmpty;
-    return !_isSubmitting && hasAssetsToOffer && hasAssetsToRequest;
+    // recipientRosterId is always set (the original proposer), pass non-null sentinel
+    return !_isSubmitting &&
+        canSubmitTrade(
+          recipientRosterId: 0, // always present in counter context
+          offeringPlayerIds: _offeringPlayerIds,
+          offeringPickAssetIds: _offeringPickAssetIds,
+          requestingPlayerIds: _requestingPlayerIds,
+          requestingPickAssetIds: _requestingPickAssetIds,
+        );
   }
 
   Future<void> _handleSubmit() async {
@@ -369,9 +360,7 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
 
     try {
       final key = newIdempotencyKey();
-      final tradeRepo = ref.read(tradeRepositoryProvider);
-      await tradeRepo.counterTrade(
-        leagueId: widget.leagueId,
+      await ref.read(tradesProvider(widget.leagueId).notifier).counterTrade(
         tradeId: widget.originalTradeId,
         offeringPlayerIds: _offeringPlayerIds,
         requestingPlayerIds: _requestingPlayerIds,

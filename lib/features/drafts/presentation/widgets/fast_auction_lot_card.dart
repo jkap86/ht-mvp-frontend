@@ -4,6 +4,7 @@ import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/hype_train_colors.dart';
 import '../../../players/domain/player.dart';
+import '../../domain/auction_bid_calculator.dart';
 import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
 import '../../domain/auction_settings.dart';
@@ -25,6 +26,7 @@ class FastAuctionLotCard extends StatefulWidget {
   final int? myRosterId;
   /// Total roster spots for max bid calculation
   final int? totalRosterSpots;
+  final AuctionBidCalculator? calculator;
 
   const FastAuctionLotCard({
     super.key,
@@ -37,6 +39,7 @@ class FastAuctionLotCard extends StatefulWidget {
     this.auctionSettings,
     this.myRosterId,
     this.totalRosterSpots,
+    this.calculator,
   });
 
   @override
@@ -45,11 +48,14 @@ class FastAuctionLotCard extends StatefulWidget {
 
 class _FastAuctionLotCardState extends State<FastAuctionLotCard>
     with SingleTickerProviderStateMixin, CountdownMixin {
+  AuctionBidCalculator? get _calc => widget.calculator;
+
   bool get _isWinning =>
       widget.myRosterId != null &&
       widget.lot.currentBidderRosterId == widget.myRosterId;
 
   int get _minBid {
+    if (_calc != null) return _calc!.minBid(widget.lot, widget.myRosterId);
     final settings = widget.auctionSettings;
     if (settings == null) return widget.lot.currentBid + 1;
     if (_isWinning) return widget.lot.currentBid;
@@ -258,6 +264,7 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
   }
 
   int? get _maxPossibleBid {
+    if (_calc != null) return _calc!.maxPossibleBid(widget.lot, widget.myBudget, widget.myRosterId);
     final budget = widget.myBudget;
     if (budget == null) return null;
     final totalSpots = widget.totalRosterSpots ?? 15;
@@ -266,7 +273,6 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
     final minBidVal = widget.auctionSettings?.minBid ?? 1;
     final reserved = (remainingSpots - 1) * minBidVal;
     final maxBid = budget.available - reserved;
-    // Leader can reuse current commitment
     if (_isWinning) {
       return (maxBid + widget.lot.currentBid).clamp(0, budget.totalBudget);
     }

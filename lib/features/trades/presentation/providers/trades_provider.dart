@@ -388,6 +388,60 @@ class TradesNotifier extends StateNotifier<TradesState> implements TradesSocketC
     }
   }
 
+  /// Propose a new trade (routes through notifier for consistent state management)
+  Future<Trade> proposeTrade({
+    required int recipientRosterId,
+    required List<int> offeringPlayerIds,
+    required List<int> requestingPlayerIds,
+    bool notifyDm = true,
+    String leagueChatMode = 'summary',
+    List<int>? offeringPickAssetIds,
+    List<int>? requestingPickAssetIds,
+    String? idempotencyKey,
+  }) async {
+    final trade = await _tradeRepo.proposeTrade(
+      leagueId: leagueId,
+      recipientRosterId: recipientRosterId,
+      offeringPlayerIds: offeringPlayerIds,
+      requestingPlayerIds: requestingPlayerIds,
+      notifyDm: notifyDm,
+      leagueChatMode: leagueChatMode,
+      offeringPickAssetIds: offeringPickAssetIds,
+      requestingPickAssetIds: requestingPickAssetIds,
+      idempotencyKey: idempotencyKey,
+    );
+    _addOrUpdateTrade(trade);
+    return trade;
+  }
+
+  /// Counter an existing trade (routes through notifier for consistent state management)
+  Future<Trade> counterTrade({
+    required int tradeId,
+    required List<int> offeringPlayerIds,
+    required List<int> requestingPlayerIds,
+    String? message,
+    bool notifyDm = true,
+    String leagueChatMode = 'summary',
+    List<int>? offeringPickAssetIds,
+    List<int>? requestingPickAssetIds,
+    String? idempotencyKey,
+  }) async {
+    final trade = await _tradeRepo.counterTrade(
+      leagueId: leagueId,
+      tradeId: tradeId,
+      offeringPlayerIds: offeringPlayerIds,
+      requestingPlayerIds: requestingPlayerIds,
+      message: message,
+      notifyDm: notifyDm,
+      leagueChatMode: leagueChatMode,
+      offeringPickAssetIds: offeringPickAssetIds,
+      requestingPickAssetIds: requestingPickAssetIds,
+      idempotencyKey: idempotencyKey,
+    );
+    _addOrUpdateTrade(trade);
+    return trade;
+  }
+
   /// Clear any error messages
   void clearError() {
     state = state.copyWith(clearError: true);
