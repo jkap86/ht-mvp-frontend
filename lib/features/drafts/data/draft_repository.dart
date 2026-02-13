@@ -9,7 +9,6 @@ import '../domain/bid_history_entry.dart';
 import '../domain/derby_state.dart';
 import '../domain/draft_order_entry.dart';
 import '../domain/draft_pick_asset.dart';
-import '../domain/matchup_draft_option.dart';
 
 final draftRepositoryProvider = Provider<DraftRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);

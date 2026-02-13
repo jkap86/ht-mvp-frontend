@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/chat_provider.dart';
-import '../../domain/chat_message.dart';
 
 /// Filter panel for league chat - allows hiding specific users or system messages
 class ChatFilterPanel extends ConsumerWidget {

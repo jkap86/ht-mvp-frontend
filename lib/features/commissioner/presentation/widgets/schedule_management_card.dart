@@ -232,7 +232,7 @@ class _ScheduleManagementCardState extends State<ScheduleManagementCard> {
                 _isProcessing = true;
               });
 
-              final draftId = await widget.onStartMatchupsDraft(
+              await widget.onStartMatchupsDraft(
                 weeks: weeks,
                 pickTimeSeconds: _pickTimeSeconds,
                 randomizeDraftOrder: _randomizeDraftOrder,

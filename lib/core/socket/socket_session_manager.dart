@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'connection_state_provider.dart';
 import 'socket_lifecycle.dart';
 import 'socket_service.dart';
 

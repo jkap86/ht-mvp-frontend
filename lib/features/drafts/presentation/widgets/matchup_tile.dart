@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/hype_train_colors.dart';
-import '../../../../core/theme/semantic_colors.dart';
 import '../../domain/matchup_draft_option.dart';
 
 /// Individual matchup display tile for matchups drafts.

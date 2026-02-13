@@ -19,14 +19,6 @@ class MyScheduleWidget extends StatelessWidget {
     this.username = 'My Team',
   });
 
-  /// Extract matchup metadata from a pick
-  Map<String, dynamic>? _getMatchupMetadata(DraftPick pick) {
-    // Pick metadata is stored as JSON in the backend
-    // The structure is: { week: int, opponentRosterId: int }
-    // We also have pickMetadata field that might be populated
-    return null; // This will be populated from pickMetadata field if available
-  }
-
   /// Get the pick for a specific week
   DraftPick? _getPickForWeek(int week) {
     // In matchups draft, the pick metadata contains the week number

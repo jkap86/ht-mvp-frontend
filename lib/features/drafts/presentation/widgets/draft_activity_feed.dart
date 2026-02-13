@@ -25,6 +25,8 @@ class DraftActivityFeed extends ConsumerWidget {
       DraftActivityType.derbySlotPicked => Icons.pin_drop,
       DraftActivityType.derbyTimeout => Icons.timer_off,
       DraftActivityType.derbyCompleted => Icons.check_circle,
+      DraftActivityType.nominationTimeout => Icons.timer_off,
+      DraftActivityType.autoNominated => Icons.smart_toy,
     };
   }
 

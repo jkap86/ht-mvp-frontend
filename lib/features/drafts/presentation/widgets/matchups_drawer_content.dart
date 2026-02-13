@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/matchup_draft_option.dart';
 import '../providers/draft_room_provider.dart';
 import 'available_matchups_widget.dart';
 import 'my_schedule_widget.dart';
