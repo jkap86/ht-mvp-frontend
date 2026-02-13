@@ -82,8 +82,10 @@ final class DraftPickEvent extends SocketEvent {
   });
 
   factory DraftPickEvent.fromJson(Map<String, dynamic> json) {
+    final payload =
+        (json['payload'] as Map?)?.cast<String, dynamic>() ?? json;
     return DraftPickEvent(
-      pick: DraftPick.fromJson(json),
+      pick: DraftPick.fromJson(payload),
       serverTime: json['serverTime'] as int?,
     );
   }
@@ -252,8 +254,10 @@ final class AuctionLotCreatedEvent extends SocketEvent {
   });
 
   factory AuctionLotCreatedEvent.fromJson(Map<String, dynamic> json) {
+    final payload =
+        (json['payload'] as Map?)?.cast<String, dynamic>() ?? json;
     return AuctionLotCreatedEvent(
-      lot: AuctionLot.fromJson(json),
+      lot: AuctionLot.fromJson(payload),
       serverTime: json['serverTime'] as int?,
     );
   }
@@ -270,8 +274,10 @@ final class AuctionLotUpdatedEvent extends SocketEvent {
   });
 
   factory AuctionLotUpdatedEvent.fromJson(Map<String, dynamic> json) {
+    final payload =
+        (json['payload'] as Map?)?.cast<String, dynamic>() ?? json;
     return AuctionLotUpdatedEvent(
-      lot: AuctionLot.fromJson(json),
+      lot: AuctionLot.fromJson(payload),
       serverTime: json['serverTime'] as int?,
     );
   }
@@ -395,7 +401,9 @@ final class TradeProposedEvent extends SocketEvent {
   const TradeProposedEvent({required this.trade});
 
   factory TradeProposedEvent.fromJson(Map<String, dynamic> json) {
-    return TradeProposedEvent(trade: Trade.fromJson(json));
+    final payload =
+        (json['payload'] as Map?)?.cast<String, dynamic>() ?? json;
+    return TradeProposedEvent(trade: Trade.fromJson(payload));
   }
 }
 
@@ -442,7 +450,9 @@ final class TradeCounteredEvent extends SocketEvent {
   const TradeCounteredEvent({required this.trade});
 
   factory TradeCounteredEvent.fromJson(Map<String, dynamic> json) {
-    return TradeCounteredEvent(trade: Trade.fromJson(json));
+    final payload =
+        (json['payload'] as Map?)?.cast<String, dynamic>() ?? json;
+    return TradeCounteredEvent(trade: Trade.fromJson(payload));
   }
 }
 
