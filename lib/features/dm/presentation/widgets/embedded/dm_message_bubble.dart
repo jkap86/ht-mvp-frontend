@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/utils/time_formatter.dart';
-import '../../../../core/widgets/user_avatar.dart';
-import 'gif_message_bubble.dart';
+import '../../../../../core/theme/app_spacing.dart';
+import '../../../../../core/utils/time_formatter.dart';
+import '../../../../../core/widgets/user_avatar.dart';
+import '../../../../chat/presentation/widgets/gif_message_bubble.dart';
 
 /// A message bubble for DM conversations with mine/theirs alignment.
 /// Shows avatar for received messages, right-aligned for sent messages.

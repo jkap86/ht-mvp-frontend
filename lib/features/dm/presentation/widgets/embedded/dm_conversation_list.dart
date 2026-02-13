@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/utils/time_formatter.dart';
-import '../../../../core/widgets/states/states.dart';
-import '../../../../core/widgets/user_avatar.dart';
-import '../../../dm/domain/conversation.dart';
-import '../../../dm/presentation/providers/dm_inbox_provider.dart';
+import '../../../../../core/utils/time_formatter.dart';
+import '../../../../../core/widgets/states/states.dart';
+import '../../../../../core/widgets/user_avatar.dart';
+import '../../../domain/conversation.dart';
+import '../../providers/dm_inbox_provider.dart';
 
 /// Compact conversation list for the floating chat widget.
 /// Shows a list of DM conversations with option to start a new one.

@@ -5,9 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../dm/presentation/providers/dm_inbox_provider.dart';
 import 'providers/unified_chat_provider.dart';
-import 'widgets/dm_conversation_list.dart';
-import 'widgets/dm_conversation_view.dart';
-import 'widgets/dm_new_conversation_view.dart';
+import '../../dm/presentation/widgets/embedded/embedded_dm_widgets.dart';
 import 'widgets/league_chat_view.dart';
 
 /// Floating chat widget that can be collapsed to a FAB or expanded to a

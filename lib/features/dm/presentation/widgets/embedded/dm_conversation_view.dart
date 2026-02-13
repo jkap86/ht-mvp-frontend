@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/utils/error_display.dart';
-import '../../../../core/widgets/states/states.dart';
-import '../../../../core/widgets/user_avatar.dart';
-import '../../../auth/presentation/auth_provider.dart';
-import '../../../chat/domain/chat_message.dart' show MessageSendStatus;
-import '../../../dm/domain/direct_message.dart';
-import '../../../dm/presentation/providers/dm_conversation_provider.dart';
-import '../../../dm/presentation/widgets/dm_date_picker.dart';
-import '../../../dm/presentation/widgets/dm_search_bar.dart';
-import '../../../../core/theme/app_spacing.dart';
-import 'chat_message_input.dart';
-import 'connection_banner.dart';
+import '../../../../../core/utils/error_display.dart';
+import '../../../../../core/widgets/states/states.dart';
+import '../../../../../core/widgets/user_avatar.dart';
+import '../../../../auth/presentation/auth_provider.dart';
+import '../../../../chat/domain/chat_message.dart' show MessageSendStatus;
+import '../../../domain/direct_message.dart';
+import '../../providers/dm_conversation_provider.dart';
+import '../dm_date_picker.dart';
+import '../dm_search_bar.dart';
+import '../../../../../core/theme/app_spacing.dart';
+import '../../../../chat/presentation/widgets/chat_message_input.dart';
+import '../../../../chat/presentation/widgets/connection_banner.dart';
 import 'dm_message_bubble.dart';
-import 'gif_picker.dart';
-import 'message_status_indicator.dart';
-import 'reaction_bar.dart';
-import 'reaction_pills.dart';
-import 'slide_in_message.dart';
+import '../../../../chat/presentation/widgets/gif_picker.dart';
+import '../../../../chat/presentation/widgets/message_status_indicator.dart';
+import '../../../../chat/presentation/widgets/reaction_bar.dart';
+import '../../../../chat/presentation/widgets/reaction_pills.dart';
+import '../../../../chat/presentation/widgets/slide_in_message.dart';
 
 /// DM conversation view for the floating chat widget.
 /// Shows messages and input field with a back button header.

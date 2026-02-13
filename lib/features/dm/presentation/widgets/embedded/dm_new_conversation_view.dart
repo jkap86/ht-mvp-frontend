@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/user_avatar.dart';
-import '../../../dm/data/dm_repository.dart';
-import '../../../dm/data/user_search_repository.dart';
-import '../../../dm/presentation/providers/dm_inbox_provider.dart';
+import '../../../../../core/theme/app_spacing.dart';
+import '../../../../../core/widgets/user_avatar.dart';
+import '../../../data/dm_repository.dart';
+import '../../../data/user_search_repository.dart';
+import '../../providers/dm_inbox_provider.dart';
 
 /// Inline user search view for starting a new DM conversation.
 /// Designed to fit inside the floating chat widget.
