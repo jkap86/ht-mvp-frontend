@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show kDebugMode, VoidCallback, debugPrint;
+import 'package:flutter/foundation.dart'
+    show kDebugMode, VoidCallback, debugPrint;
 
 import '../../../../core/socket/socket_service.dart';
 import '../../domain/auction_lot.dart';
@@ -31,12 +32,14 @@ abstract class DraftSocketCallbacks {
   void onDraftPausedReceived();
   void onDraftResumedReceived();
   // Auction callbacks
-  void onLotCreatedReceived(AuctionLot lot, {int? serverTime});
+  void onLotCreatedReceived(AuctionLot lot,
+      {int? serverTime, bool isAutoNomination = false});
   void onLotUpdatedReceived(AuctionLot lot, {int? serverTime});
   void onLotWonReceived(LotResult result);
   void onLotPassedReceived(LotResult result);
   void onOutbidReceived(OutbidNotification notification);
-  void onNominatorChangedReceived(int? rosterId, int? nominationNumber, DateTime? nominationDeadline);
+  void onNominatorChangedReceived(
+      int? rosterId, int? nominationNumber, DateTime? nominationDeadline);
   void onAuctionErrorReceived(String message);
   // Autodraft callback
   void onAutodraftToggledReceived(int rosterId, bool enabled, bool forced);
@@ -135,7 +138,10 @@ class DraftSocketHandler {
         final lot = AuctionLot.fromJson(Map<String, dynamic>.from(lotData));
         // Extract serverTime for clock synchronization (sent as milliseconds since epoch)
         final serverTime = data['serverTime'] as int?;
-        _callbacks.onLotCreatedReceived(lot, serverTime: serverTime);
+        // Extract isAutoNomination flag to indicate timeout auto-nomination
+        final isAutoNomination = data['isAutoNomination'] as bool? ?? false;
+        _callbacks.onLotCreatedReceived(lot,
+            serverTime: serverTime, isAutoNomination: isAutoNomination);
       } catch (e) {
         if (kDebugMode) debugPrint('Failed to parse auction lot created: $e');
       }
@@ -160,8 +166,10 @@ class DraftSocketHandler {
       if (lotId != null) {
         final result = LotResult(
           lotId: lotId,
-          playerId: (data['playerId'] as int? ?? data['player_id'] as int?) ?? 0,
-          winnerRosterId: data['winnerRosterId'] as int? ?? data['winner_roster_id'] as int?,
+          playerId:
+              (data['playerId'] as int? ?? data['player_id'] as int?) ?? 0,
+          winnerRosterId: data['winnerRosterId'] as int? ??
+              data['winner_roster_id'] as int?,
           price: data['price'] as int? ?? data['winning_bid'] as int?,
         );
         _callbacks.onLotWonReceived(result);
@@ -173,7 +181,8 @@ class DraftSocketHandler {
       if (lotId != null) {
         final result = LotResult(
           lotId: lotId,
-          playerId: (data['playerId'] as int? ?? data['player_id'] as int?) ?? 0,
+          playerId:
+              (data['playerId'] as int? ?? data['player_id'] as int?) ?? 0,
           isPassed: true,
         );
         _callbacks.onLotPassedReceived(result);
@@ -192,7 +201,8 @@ class DraftSocketHandler {
     _addDisposer(_socketService.onAuctionNominatorChanged((data) {
       // Parse nomination deadline from socket event
       final deadlineStr = data['nominationDeadline'] as String?;
-      final nominationDeadline = deadlineStr != null ? DateTime.tryParse(deadlineStr) : null;
+      final nominationDeadline =
+          deadlineStr != null ? DateTime.tryParse(deadlineStr) : null;
       _callbacks.onNominatorChangedReceived(
         data['nominatorRosterId'] as int?,
         data['nominationNumber'] as int?,
@@ -207,7 +217,8 @@ class DraftSocketHandler {
 
     // Autodraft listener
     _addDisposer(_socketService.onAutodraftToggled((data) {
-      final rosterId = data['rosterId'] as int? ?? data['roster_id'] as int? ?? 0;
+      final rosterId =
+          data['rosterId'] as int? ?? data['roster_id'] as int? ?? 0;
       final enabled = data['enabled'] as bool? ?? false;
       final forced = data['forced'] as bool? ?? false;
       _callbacks.onAutodraftToggledReceived(rosterId, enabled, forced);
@@ -273,9 +284,11 @@ class DraftSocketHandler {
     _addDisposer(_socketService.onDerbyPhaseTransition((data) {
       if (data is! Map) return;
       try {
-        _callbacks.onDerbyPhaseTransitionReceived(Map<String, dynamic>.from(data));
+        _callbacks
+            .onDerbyPhaseTransitionReceived(Map<String, dynamic>.from(data));
       } catch (e) {
-        if (kDebugMode) debugPrint('Failed to parse derby phase transition: $e');
+        if (kDebugMode)
+          debugPrint('Failed to parse derby phase transition: $e');
       }
     }));
 

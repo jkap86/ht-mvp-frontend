@@ -9,7 +9,7 @@ import '../../../players/domain/player.dart';
 import '../../domain/auction_lot.dart';
 import '../providers/draft_room_provider.dart';
 
-class AuctionLotsPanel extends StatelessWidget {
+class AuctionLotsPanel extends StatefulWidget {
   final DraftRoomState state;
   final void Function(AuctionLot lot) onBidTap;
   final VoidCallback onNominateTap;
@@ -22,8 +22,41 @@ class AuctionLotsPanel extends StatelessWidget {
   });
 
   @override
+  State<AuctionLotsPanel> createState() => _AuctionLotsPanelState();
+}
+
+class _AuctionLotsPanelState extends State<AuctionLotsPanel> {
+  // Cache for players map
+  Map<int, Player>? _cachedPlayersMap;
+  List<Player>? _lastPlayers;
+
+  // Cache for budgets map
+  Map<int, dynamic>? _cachedBudgetsMap;
+  List<dynamic>? _lastBudgets;
+
+  /// Get or create players map - reuses cache if players list unchanged
+  Map<int, Player> _getPlayersMap(List<Player> players) {
+    if (identical(_lastPlayers, players) && _cachedPlayersMap != null) {
+      return _cachedPlayersMap!;
+    }
+    _lastPlayers = players;
+    _cachedPlayersMap = {for (var p in players) p.id: p};
+    return _cachedPlayersMap!;
+  }
+
+  /// Get or create budgets map - reuses cache if budgets list unchanged
+  Map<int, dynamic> _getBudgetsMap(List<dynamic> budgets) {
+    if (identical(_lastBudgets, budgets) && _cachedBudgetsMap != null) {
+      return _cachedBudgetsMap!;
+    }
+    _lastBudgets = budgets;
+    _cachedBudgetsMap = {for (var b in budgets) b.rosterId: b};
+    return _cachedBudgetsMap!;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final activeLots = state.activeLots;
+    final activeLots = widget.state.activeLots;
 
     if (activeLots.isEmpty) {
       final emptyTheme = Theme.of(context);
@@ -48,7 +81,7 @@ class AuctionLotsPanel extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: onNominateTap,
+              onPressed: widget.onNominateTap,
               icon: const Icon(Icons.add),
               label: const Text('Nominate'),
             ),
@@ -57,11 +90,9 @@ class AuctionLotsPanel extends StatelessWidget {
       );
     }
 
-    // Build a map of players by ID for quick lookup
-    final playersMap = {for (var p in state.players) p.id: p};
-
-    // Build a map of budgets by rosterId for quick lookup of bidder names
-    final budgetsMap = {for (var b in state.budgets) b.rosterId: b};
+    // Build maps with caching - reuses if players/budgets lists unchanged
+    final playersMap = _getPlayersMap(widget.state.players);
+    final budgetsMap = _getBudgetsMap(widget.state.budgets);
 
     return Container(
       decoration: BoxDecoration(
@@ -89,7 +120,7 @@ class AuctionLotsPanel extends StatelessWidget {
                 ),
                 const Spacer(),
                 TextButton.icon(
-                  onPressed: onNominateTap,
+                  onPressed: widget.onNominateTap,
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Nominate'),
                   style: TextButton.styleFrom(
@@ -114,10 +145,11 @@ class AuctionLotsPanel extends StatelessWidget {
                     : null;
 
                 return _AuctionLotCard(
+                  key: ValueKey(lot.id),
                   lot: lot,
                   player: player,
                   leadingBidderName: leadingBidder,
-                  onBidTap: () => onBidTap(lot),
+                  onBidTap: () => widget.onBidTap(lot),
                 );
               },
             ),
@@ -135,6 +167,7 @@ class _AuctionLotCard extends StatefulWidget {
   final VoidCallback onBidTap;
 
   const _AuctionLotCard({
+    super.key,
     required this.lot,
     required this.player,
     required this.leadingBidderName,
@@ -147,7 +180,7 @@ class _AuctionLotCard extends StatefulWidget {
 
 class _AuctionLotCardState extends State<_AuctionLotCard> {
   Timer? _timer;
-  Duration _remaining = Duration.zero;
+  final ValueNotifier<Duration> _remaining = ValueNotifier(Duration.zero);
 
   @override
   void initState() {
@@ -170,17 +203,14 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
     // Use UTC for both to ensure correct countdown regardless of user's timezone
     final now = DateTime.now().toUtc();
     final deadline = widget.lot.bidDeadline.toUtc();
-    setState(() {
-      _remaining = deadline.difference(now);
-      if (_remaining.isNegative) {
-        _remaining = Duration.zero;
-      }
-    });
+    final diff = deadline.difference(now);
+    _remaining.value = diff.isNegative ? Duration.zero : diff;
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _remaining.dispose();
     super.dispose();
   }
 
@@ -202,9 +232,6 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
     final playerName = player?.fullName ?? 'Unknown Player';
     final position = player?.primaryPosition ?? '';
     final team = player?.team ?? '';
-
-    final isExpired = _remaining == Duration.zero;
-    final isUrgent = _remaining.inMinutes < 5 && !isExpired;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -255,59 +282,70 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
               ],
             ),
             const SizedBox(height: 4),
-            // Countdown timer
-            Builder(builder: (context) {
-              final timerColor = isExpired
-                  ? Theme.of(context).colorScheme.onSurfaceVariant
-                  : isUrgent
-                      ? AppTheme.draftUrgent
-                      : context.htColors.draftNormal;
-              final timerBgColor = isExpired
-                  ? Theme.of(context).colorScheme.surfaceContainerHighest
-                  : isUrgent
-                      ? AppTheme.draftUrgent.withAlpha(25)
-                      : context.htColors.draftNormal.withAlpha(25);
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: timerBgColor,
-                  borderRadius: AppSpacing.badgeRadius,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.timer,
-                      size: 12,
-                      color: timerColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isExpired ? 'Expired' : _formatDuration(_remaining),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
+            // Countdown timer - only this subtree rebuilds on timer tick
+            ValueListenableBuilder<Duration>(
+              valueListenable: _remaining,
+              builder: (context, remaining, _) {
+                final isExpired = remaining == Duration.zero;
+                final isUrgent = remaining.inMinutes < 5 && !isExpired;
+                final timerColor = isExpired
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : isUrgent
+                        ? AppTheme.draftUrgent
+                        : context.htColors.draftNormal;
+                final timerBgColor = isExpired
+                    ? Theme.of(context).colorScheme.surfaceContainerHighest
+                    : isUrgent
+                        ? AppTheme.draftUrgent.withAlpha(25)
+                        : context.htColors.draftNormal.withAlpha(25);
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: timerBgColor,
+                    borderRadius: AppSpacing.badgeRadius,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.timer,
+                        size: 12,
                         color: timerColor,
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }),
+                      const SizedBox(width: 4),
+                      Text(
+                        isExpired ? 'Expired' : _formatDuration(remaining),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: timerColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
             const Spacer(),
-            // Bid button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isExpired ? null : widget.onBidTap,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.htColors.auctionAccent,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  minimumSize: const Size(0, 28),
-                ),
-                child: const Text('Bid', style: TextStyle(fontSize: 12)),
-              ),
+            // Bid button - also depends on timer for expired state
+            ValueListenableBuilder<Duration>(
+              valueListenable: _remaining,
+              builder: (context, remaining, _) {
+                final isExpired = remaining == Duration.zero;
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isExpired ? null : widget.onBidTap,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.htColors.auctionAccent,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      minimumSize: const Size(0, 28),
+                    ),
+                    child: const Text('Bid', style: TextStyle(fontSize: 12)),
+                  ),
+                );
+              },
             ),
           ],
         ),

@@ -29,7 +29,6 @@ class MatchupDetailScreen extends ConsumerStatefulWidget {
 class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen>
     with WidgetsBindingObserver {
   DateTime? _lastFetchedAt;
-  Timer? _displayTimer;
   Timer? _fallbackRefreshTimer;
   bool _isFallbackActive = false;
   bool _isScreenVisible = true;
@@ -38,24 +37,16 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen>
   /// Socket-driven refresh via the notifier is the primary mechanism.
   static const _fallbackRefreshInterval = Duration(minutes: 3);
 
-  /// Duration between UI ticks to update the "last updated" text.
-  static const _displayTickInterval = Duration(seconds: 30);
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _lastFetchedAt = DateTime.now();
-    // Tick every 30s to update the "last updated" text
-    _displayTimer = Timer.periodic(_displayTickInterval, (_) {
-      if (mounted) setState(() {});
-    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _displayTimer?.cancel();
     _stopFallbackRefresh();
     super.dispose();
   }
@@ -122,21 +113,6 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen>
     if (_isFallbackActive) {
       _startFallbackRefresh();
     }
-  }
-
-  String _formatLastUpdated() {
-    if (_lastFetchedAt == null) return '';
-    final diff = DateTime.now().difference(_lastFetchedAt!);
-    if (diff.inSeconds < 60) return 'Updated just now';
-    if (diff.inMinutes < 60) return 'Updated ${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return 'Updated ${diff.inHours}h ago';
-    return 'Updated ${diff.inDays}d ago';
-  }
-
-  /// Whether data is stale (older than 5 minutes)
-  bool get _isStale {
-    if (_lastFetchedAt == null) return true;
-    return DateTime.now().difference(_lastFetchedAt!) > const Duration(minutes: 5);
   }
 
   @override
@@ -274,36 +250,10 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen>
                   ),
 
                 // Last updated indicator with auto-refresh status
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_isStale)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Icon(
-                            Icons.warning_amber_rounded,
-                            size: 13,
-                            color: colorScheme.error,
-                          ),
-                        ),
-                      Text(
-                        _formatLastUpdated(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: _isStale
-                              ? colorScheme.error
-                              : colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      if (_isFallbackActive) ...[
-                        const SizedBox(width: 6),
-                        _AutoRefreshIndicator(color: colorScheme.primary),
-                      ],
-                    ],
-                  ),
+                // Uses its own timer + ValueNotifier to avoid rebuilding the entire screen
+                _LastUpdatedWidget(
+                  lastFetchedAt: _lastFetchedAt,
+                  isFallbackActive: _isFallbackActive,
                 ),
 
                 // Lineup comparison
@@ -320,6 +270,97 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Isolated widget for the "last updated" text that uses its own timer
+/// and ValueNotifier to avoid rebuilding the entire matchup detail screen.
+class _LastUpdatedWidget extends StatefulWidget {
+  final DateTime? lastFetchedAt;
+  final bool isFallbackActive;
+
+  const _LastUpdatedWidget({
+    required this.lastFetchedAt,
+    required this.isFallbackActive,
+  });
+
+  @override
+  State<_LastUpdatedWidget> createState() => _LastUpdatedWidgetState();
+}
+
+class _LastUpdatedWidgetState extends State<_LastUpdatedWidget> {
+  Timer? _timer;
+  final ValueNotifier<DateTime> _now = ValueNotifier(DateTime.now());
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _now.value = DateTime.now();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _now.dispose();
+    super.dispose();
+  }
+
+  String _formatLastUpdated(DateTime now) {
+    if (widget.lastFetchedAt == null) return '';
+    final diff = now.difference(widget.lastFetchedAt!);
+    if (diff.inSeconds < 60) return 'Updated just now';
+    if (diff.inMinutes < 60) return 'Updated ${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return 'Updated ${diff.inHours}h ago';
+    return 'Updated ${diff.inDays}d ago';
+  }
+
+  bool _isStale(DateTime now) {
+    if (widget.lastFetchedAt == null) return true;
+    return now.difference(widget.lastFetchedAt!) > const Duration(minutes: 5);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ValueListenableBuilder<DateTime>(
+      valueListenable: _now,
+      builder: (context, now, _) {
+        final isStale = _isStale(now);
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isStale)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Icon(
+                    Icons.warning_amber_rounded,
+                    size: 13,
+                    color: colorScheme.error,
+                  ),
+                ),
+              Text(
+                _formatLastUpdated(now),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isStale
+                      ? colorScheme.error
+                      : colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (widget.isFallbackActive) ...[
+                const SizedBox(width: 6),
+                _AutoRefreshIndicator(color: colorScheme.primary),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

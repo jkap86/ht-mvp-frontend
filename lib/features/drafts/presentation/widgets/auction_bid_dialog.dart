@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -10,13 +11,14 @@ import '../../domain/auction_lot.dart';
 import '../../domain/auction_settings.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../../players/domain/player.dart';
+import '../providers/draft_room_provider.dart';
 
 /// Dialog for placing bids on auction lots.
 /// Bid history is now shown on the lot card, so this dialog is simplified.
-class AuctionBidDialog extends StatefulWidget {
+class AuctionBidDialog extends ConsumerStatefulWidget {
   final int leagueId;
   final int draftId;
-  final AuctionLot lot;
+  final int lotId;
   final Player player;
   final AuctionBudget? myBudget;
   final List<DraftOrderEntry> draftOrder;
@@ -30,7 +32,7 @@ class AuctionBidDialog extends StatefulWidget {
     super.key,
     required this.leagueId,
     required this.draftId,
-    required this.lot,
+    required this.lotId,
     required this.player,
     this.myBudget,
     required this.draftOrder,
@@ -45,7 +47,7 @@ class AuctionBidDialog extends StatefulWidget {
     BuildContext context, {
     required int leagueId,
     required int draftId,
-    required AuctionLot lot,
+    required int lotId,
     required Player player,
     AuctionBudget? myBudget,
     required List<DraftOrderEntry> draftOrder,
@@ -59,7 +61,7 @@ class AuctionBidDialog extends StatefulWidget {
       builder: (context) => AuctionBidDialog(
         leagueId: leagueId,
         draftId: draftId,
-        lot: lot,
+        lotId: lotId,
         player: player,
         myBudget: myBudget,
         draftOrder: draftOrder,
@@ -72,57 +74,67 @@ class AuctionBidDialog extends StatefulWidget {
   }
 
   @override
-  State<AuctionBidDialog> createState() => _AuctionBidDialogState();
+  ConsumerState<AuctionBidDialog> createState() => _AuctionBidDialogState();
 }
 
-class _AuctionBidDialogState extends State<AuctionBidDialog> {
+class _AuctionBidDialogState extends ConsumerState<AuctionBidDialog> {
   late final TextEditingController _bidController;
   final _formKey = GlobalKey<FormState>();
   Timer? _timer;
-  Duration _timeRemaining = Duration.zero;
+  final ValueNotifier<Duration> _timeRemaining = ValueNotifier(Duration.zero);
   bool _isSubmitting = false;
 
   int get _myRosterId => widget.myBudget?.rosterId ?? -1;
-  bool get _isCurrentLeader => widget.lot.currentBidderRosterId == _myRosterId;
 
-  int get _minBid {
-    if (_isCurrentLeader) {
+  bool _isCurrentLeader(AuctionLot lot) => lot.currentBidderRosterId == _myRosterId;
+
+  int _getMinBid(AuctionLot lot) {
+    if (_isCurrentLeader(lot)) {
       // Leader can raise max bid from current position
-      return widget.lot.currentBid;
+      return lot.currentBid;
     }
     // Non-leader must beat currentBid + minIncrement
-    return widget.lot.currentBid + widget.settings.minIncrement;
+    return lot.currentBid + widget.settings.minIncrement;
   }
 
-  int? get _maxBid {
+  int? _getMaxBid(AuctionLot lot) {
     if (widget.myBudget == null) return null;
     int available = widget.myBudget!.available;
     // Leader can reuse their current commitment
-    if (_isCurrentLeader) {
-      available += widget.lot.currentBid;
+    if (_isCurrentLeader(lot)) {
+      available += lot.currentBid;
     }
     return available;
   }
 
   /// Max possible bid accounting for remaining roster spots needing minimum bids
-  int? get _maxPossibleBid {
+  int? _getMaxPossibleBid(AuctionLot lot) {
     if (widget.myBudget == null) return null;
     final totalSpots = widget.totalRosterSpots ?? 15;
     final remainingSpots = totalSpots - widget.myBudget!.wonCount;
-    if (remainingSpots <= 1) return _maxBid; // Last spot: can bid everything
+    if (remainingSpots <= 1) return _getMaxBid(lot); // Last spot: can bid everything
     final minBidVal = widget.settings.minBid;
     final reserved = (remainingSpots - 1) * minBidVal;
     int available = widget.myBudget!.available - reserved;
-    if (_isCurrentLeader) {
-      available += widget.lot.currentBid;
+    if (_isCurrentLeader(lot)) {
+      available += lot.currentBid;
     }
     return available > 0 ? available : 0;
+  }
+
+  AuctionLot? _getCurrentLot() {
+    final providerKey = (leagueId: widget.leagueId, draftId: widget.draftId);
+    return ref.read(draftRoomProvider(providerKey))
+        .activeLots.where((l) => l.id == widget.lotId).firstOrNull;
   }
 
   @override
   void initState() {
     super.initState();
-    _bidController = TextEditingController(text: _minBid.toString());
+    final initialLot = _getCurrentLot();
+    _bidController = TextEditingController(
+      text: initialLot != null ? _getMinBid(initialLot).toString() : '0',
+    );
     _updateTimeRemaining();
     _startTimer();
   }
@@ -138,6 +150,7 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
   void dispose() {
     _bidController.dispose();
     _timer?.cancel();
+    _timeRemaining.dispose();
     super.dispose();
   }
 
@@ -148,11 +161,16 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
   }
 
   void _updateTimeRemaining() {
+    final currentLot = _getCurrentLot();
+
+    if (currentLot == null) {
+      _timeRemaining.value = Duration.zero;
+      return;
+    }
+
     final now = DateTime.now().add(Duration(milliseconds: widget.serverClockOffsetMs ?? 0));
-    final remaining = widget.lot.bidDeadline.toUtc().difference(now.toUtc());
-    setState(() {
-      _timeRemaining = remaining.isNegative ? Duration.zero : remaining;
-    });
+    final remaining = currentLot.bidDeadline.toUtc().difference(now.toUtc());
+    _timeRemaining.value = remaining.isNegative ? Duration.zero : remaining;
   }
 
   String _formatDuration(Duration duration) {
@@ -168,6 +186,12 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
   }
 
   String? _validateBid(String? value) {
+    final currentLot = _getCurrentLot();
+
+    if (currentLot == null) {
+      return 'This lot has ended';
+    }
+
     if (value == null || value.isEmpty) {
       return 'Please enter a bid amount';
     }
@@ -177,24 +201,28 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
       return 'Please enter a valid number';
     }
 
-    if (_isCurrentLeader) {
+    final isLeader = _isCurrentLeader(currentLot);
+    final minBid = _getMinBid(currentLot);
+    final maxBid = _getMaxBid(currentLot);
+
+    if (isLeader) {
       // Leader must bid at least minBid (the system setting)
       if (bid < widget.settings.minBid) {
         return 'Bid must be at least \$${widget.settings.minBid}';
       }
       // Max bid should be >= their current commitment to be meaningful
-      if (bid < widget.lot.currentBid) {
-        return 'Max bid must be at least \$${widget.lot.currentBid} (your current commitment)';
+      if (bid < currentLot.currentBid) {
+        return 'Max bid must be at least \$${currentLot.currentBid} (your current commitment)';
       }
     } else {
       // Non-leader must bid above current price + increment
-      if (bid < _minBid) {
-        return 'Bid must be at least \$$_minBid';
+      if (bid < minBid) {
+        return 'Bid must be at least \$$minBid';
       }
     }
 
-    if (_maxBid != null && bid > _maxBid!) {
-      return 'Bid exceeds your available budget (\$$_maxBid)';
+    if (maxBid != null && bid > maxBid) {
+      return 'Bid exceeds your available budget (\$$maxBid)';
     }
 
     return null;
@@ -242,7 +270,28 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isExpired = _timeRemaining == Duration.zero;
+    final providerKey = (leagueId: widget.leagueId, draftId: widget.draftId);
+
+    // Watch for lot updates in real-time
+    final currentLot = ref.watch(
+      draftRoomProvider(providerKey).select((s) =>
+        s.activeLots.where((l) => l.id == widget.lotId).firstOrNull
+      ),
+    );
+
+    // If lot is gone (ended), close dialog
+    if (currentLot == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.pop(context);
+      });
+      return const SizedBox.shrink();
+    }
+
+    final lot = currentLot;
+    final isCurrentLeader = _isCurrentLeader(lot);
+    final minBid = _getMinBid(lot);
+    final maxBid = _getMaxBid(lot);
+    final maxPossibleBid = _getMaxPossibleBid(lot);
 
     return AlertDialog(
       title: const Text('Place Bid'),
@@ -270,85 +319,98 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
               // Current bid info
               _buildInfoRow(
                 'Current Bid',
-                '\$${widget.lot.currentBid}',
+                '\$${lot.currentBid}',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,
                 ),
               ),
-              if (widget.lot.currentBidderRosterId != null)
+              if (lot.currentBidderRosterId != null)
                 _buildInfoRow(
                   'Leading Bidder',
-                  _getUsernameForRoster(widget.lot.currentBidderRosterId!),
+                  _getUsernameForRoster(lot.currentBidderRosterId!),
                 ),
 
               const SizedBox(height: 8),
 
-              // Urgent warning banner when < 30 seconds remaining
-              if (!isExpired && _timeRemaining.inSeconds < 30)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.error,
-                    borderRadius: AppSpacing.buttonRadius,
-                  ),
-                  child: Row(
+              // Timer-dependent section: urgent warning + time remaining display
+              // Only this subtree rebuilds on timer tick
+              ValueListenableBuilder<Duration>(
+                valueListenable: _timeRemaining,
+                builder: (context, timeRemaining, _) {
+                  final isExpired = timeRemaining == Duration.zero;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: theme.colorScheme.onError,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Lot closing soon! Submit your bid now.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onError,
-                            fontWeight: FontWeight.bold,
+                      // Urgent warning banner when < 30 seconds remaining
+                      if (!isExpired && timeRemaining.inSeconds < 30)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.error,
+                            borderRadius: AppSpacing.buttonRadius,
                           ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                color: theme.colorScheme.onError,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Lot closing soon! Submit your bid now.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onError,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // Time remaining
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isExpired
+                              ? theme.colorScheme.errorContainer
+                              : timeRemaining.inSeconds < 30
+                                  ? theme.colorScheme.errorContainer
+                                  : timeRemaining.inMinutes < 5
+                                      ? theme.colorScheme.errorContainer.withAlpha(128)
+                                      : theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: AppSpacing.buttonRadius,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Time Remaining',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                            Text(
+                              isExpired ? 'Expired' : _formatDuration(timeRemaining),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: isExpired
+                                    ? theme.colorScheme.error
+                                    : timeRemaining.inSeconds < 30
+                                        ? theme.colorScheme.error
+                                        : timeRemaining.inMinutes < 5
+                                            ? theme.colorScheme.error
+                                            : null,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                ),
-
-              // Time remaining
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isExpired
-                      ? theme.colorScheme.errorContainer
-                      : _timeRemaining.inSeconds < 30
-                          ? theme.colorScheme.errorContainer
-                          : _timeRemaining.inMinutes < 5
-                              ? theme.colorScheme.errorContainer.withAlpha(128)
-                              : theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: AppSpacing.buttonRadius,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Time Remaining',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    Text(
-                      isExpired ? 'Expired' : _formatDuration(_timeRemaining),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isExpired
-                            ? theme.colorScheme.error
-                            : _timeRemaining.inSeconds < 30
-                                ? theme.colorScheme.error
-                                : _timeRemaining.inMinutes < 5
-                                    ? theme.colorScheme.error
-                                    : null,
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
 
               const Divider(height: 24),
@@ -374,10 +436,10 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
                   'Leading Commitments',
                   '\$${widget.myBudget!.leadingCommitment}',
                 ),
-                if (_maxPossibleBid != null)
+                if (maxPossibleBid != null)
                   _buildInfoRow(
                     'Max Possible Bid',
-                    '\$$_maxPossibleBid',
+                    '\$$maxPossibleBid',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: theme.colorScheme.tertiary,
@@ -417,16 +479,15 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
                 decoration: InputDecoration(
                   hintText: 'Enter your maximum bid',
                   prefixText: '\$ ',
-                  helperText: _isCurrentLeader
+                  helperText: isCurrentLeader
                       ? 'You are leading. Raise your max bid to protect your position.'
-                      : 'Minimum bid: \$$_minBid${_maxBid != null ? ' | Max: \$$_maxBid' : ''}',
+                      : 'Minimum bid: \$$minBid${maxBid != null ? ' | Max: \$$maxBid' : ''}',
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
                 ],
                 validator: _validateBid,
-                enabled: !isExpired,
                 autofocus: true,
               ),
             ],
@@ -438,15 +499,22 @@ class _AuctionBidDialogState extends State<AuctionBidDialog> {
           onPressed: _isSubmitting ? null : () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        ElevatedButton(
-          onPressed: isExpired || _isSubmitting ? null : _onSubmit,
-          child: _isSubmitting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Place Bid'),
+        // Bid button depends on timer for expired state
+        ValueListenableBuilder<Duration>(
+          valueListenable: _timeRemaining,
+          builder: (context, timeRemaining, _) {
+            final isExpired = timeRemaining == Duration.zero;
+            return ElevatedButton(
+              onPressed: isExpired || _isSubmitting ? null : _onSubmit,
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Place Bid'),
+            );
+          },
         ),
       ],
     );

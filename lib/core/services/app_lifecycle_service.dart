@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../socket/socket_service.dart';
+import '../socket/socket_session_manager.dart';
 import 'sync_service.dart';
 
 /// Callback type for providers that can refresh on app resume.
@@ -15,7 +15,7 @@ typedef RefreshCallback = Future<void> Function();
 /// - Reconnects socket if needed
 /// - Notifies registered providers to refresh their data
 class AppLifecycleService with WidgetsBindingObserver {
-  final SocketService _socketService;
+  final SocketSessionManager _sessionManager;
   final SyncService _syncService;
 
   DateTime? _backgroundedAt;
@@ -25,7 +25,7 @@ class AppLifecycleService with WidgetsBindingObserver {
   /// If app was backgrounded longer than this, trigger refresh on resume.
   static const staleThreshold = Duration(seconds: 30);
 
-  AppLifecycleService(this._socketService, this._syncService, Ref _) {
+  AppLifecycleService(this._sessionManager, this._syncService, Ref _) {
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -84,9 +84,9 @@ class AppLifecycleService with WidgetsBindingObserver {
       debugPrint('App resumed after ${duration.inSeconds}s, refreshing: $wasStale');
     }
 
-    // Always try to ensure socket is connected
-    if (!_socketService.isConnected) {
-      _socketService.connect();
+    // Always try to ensure socket is connected via session manager
+    if (!_sessionManager.isConnected) {
+      _sessionManager.connect();
     }
 
     // Only refresh if we were backgrounded long enough
@@ -120,9 +120,9 @@ class AppLifecycleService with WidgetsBindingObserver {
 
 /// Provider for the app lifecycle service.
 final appLifecycleServiceProvider = Provider<AppLifecycleService>((ref) {
-  final socketService = ref.watch(socketServiceProvider);
+  final sessionManager = ref.watch(socketSessionManagerProvider);
   final syncService = ref.watch(syncServiceProvider);
-  final service = AppLifecycleService(socketService, syncService, ref);
+  final service = AppLifecycleService(sessionManager, syncService, ref);
   ref.onDispose(() => service.dispose());
   return service;
 });

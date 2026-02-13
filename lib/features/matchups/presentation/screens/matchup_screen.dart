@@ -170,9 +170,10 @@ class _MatchupScreenState extends ConsumerState<MatchupScreen> {
           if (index == 2) {
             // Show BYE card if user is on bye, otherwise show matchup card
             if (isOnBye) {
-              return const _ByeWeekCard();
+              return const _ByeWeekCard(key: ValueKey('bye-week-card'));
             }
             return _MatchupCard(
+              key: ValueKey('matchup-card-featured-${state.myMatchup!.id}'),
               matchup: state.myMatchup!,
               myRosterId: state.myRosterId,
               isFeatured: true,
@@ -238,8 +239,10 @@ class _MatchupScreenState extends ConsumerState<MatchupScreen> {
         final matchupIndex = adjustedIndex - headerItems;
         final matchup = otherMatchups[matchupIndex];
         return Padding(
+          key: ValueKey('matchup-${matchup.id}'),
           padding: const EdgeInsets.only(bottom: 8),
           child: _MatchupCard(
+            key: ValueKey('matchup-card-${matchup.id}'),
             matchup: matchup,
             myRosterId: state.myRosterId,
             onTap: () => _openMatchupDetails(context, matchup),
@@ -351,6 +354,7 @@ class _MatchupCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _MatchupCard({
+    super.key,
     required this.matchup,
     this.myRosterId,
     this.isFeatured = false,
@@ -590,7 +594,7 @@ class _MatchupCard extends StatelessWidget {
 }
 
 class _ByeWeekCard extends StatelessWidget {
-  const _ByeWeekCard();
+  const _ByeWeekCard({super.key});
 
   @override
   Widget build(BuildContext context) {

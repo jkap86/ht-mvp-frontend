@@ -42,6 +42,26 @@ class AuctionBudget {
     };
   }
 
+  AuctionBudget copyWith({
+    int? rosterId,
+    String? username,
+    int? totalBudget,
+    int? spent,
+    int? leadingCommitment,
+    int? available,
+    int? wonCount,
+  }) {
+    return AuctionBudget(
+      rosterId: rosterId ?? this.rosterId,
+      username: username ?? this.username,
+      totalBudget: totalBudget ?? this.totalBudget,
+      spent: spent ?? this.spent,
+      leadingCommitment: leadingCommitment ?? this.leadingCommitment,
+      available: available ?? this.available,
+      wonCount: wonCount ?? this.wonCount,
+    );
+  }
+
   @override
   String toString() {
     return 'AuctionBudget(rosterId: $rosterId, username: $username, available: $available, spent: $spent)';

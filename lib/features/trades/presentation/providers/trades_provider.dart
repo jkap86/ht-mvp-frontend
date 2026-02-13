@@ -9,6 +9,7 @@ import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/trade_repository.dart';
 import '../../domain/trade.dart';
 import '../../domain/trade_status.dart';
+import 'trades_socket_handler.dart';
 
 /// State for the trades list screen
 class TradesState {
@@ -95,27 +96,16 @@ class TradesState {
 }
 
 /// Notifier for managing trades state with socket integration
-class TradesNotifier extends StateNotifier<TradesState> {
+class TradesNotifier extends StateNotifier<TradesState> implements TradesSocketCallbacks {
   final TradeRepository _tradeRepo;
   final SocketService _socketService;
   final InvalidationService _invalidationService;
   final SyncService _syncService;
   final int leagueId;
 
-  // Socket listener disposers
-  VoidCallback? _proposedDisposer;
-  VoidCallback? _acceptedDisposer;
-  VoidCallback? _rejectedDisposer;
-  VoidCallback? _counteredDisposer;
-  VoidCallback? _cancelledDisposer;
-  VoidCallback? _expiredDisposer;
-  VoidCallback? _completedDisposer;
-  VoidCallback? _vetoedDisposer;
-  VoidCallback? _voteCastDisposer;
-  VoidCallback? _invalidatedDisposer;
-  VoidCallback? _memberKickedDisposer;
+  // Socket handler for managing subscriptions
+  TradesSocketHandler? _socketHandler;
   VoidCallback? _invalidationDisposer;
-  VoidCallback? _reconnectDisposer;
   VoidCallback? _syncDisposer;
 
   // Debounce timer for socket events that trigger loadTrades
@@ -152,137 +142,149 @@ class TradesNotifier extends StateNotifier<TradesState> {
   }
 
   void _setupSocketListeners() {
-    _socketService.joinLeague(leagueId);
+    _socketHandler = TradesSocketHandler(
+      socketService: _socketService,
+      leagueId: leagueId,
+      callbacks: this,
+    );
+    _socketHandler!.setupListeners();
+  }
 
-    // Helper to safely parse trade data - handles both full objects and tradeId-only
-    void handleTradeEvent(dynamic data, {bool reloadOnPartial = true}) {
-      if (!mounted) return;
-      if (data is! Map) return;
+  // Helper to safely parse trade data - handles both full objects and tradeId-only
+  void _handleTradeEvent(dynamic data, {bool reloadOnPartial = true}) {
+    if (!mounted) return;
+    if (data is! Map) return;
 
-      final dataMap = Map<String, dynamic>.from(data);
+    final dataMap = Map<String, dynamic>.from(data);
 
-      // Check if this is a full trade object (has required fields)
-      if (dataMap.containsKey('league_id') && dataMap.containsKey('status')) {
-        try {
-          final trade = Trade.fromJson(dataMap);
-          _addOrUpdateTrade(trade);
-        } catch (e) {
-          // Failed to parse, reload trades with debounce
-          if (reloadOnPartial) _debouncedLoadTrades();
-        }
-      } else if (reloadOnPartial) {
-        // Minimal payload (just tradeId) - reload to get full data with debounce
-        _debouncedLoadTrades();
+    // Check if this is a full trade object (has required fields)
+    if (dataMap.containsKey('league_id') && dataMap.containsKey('status')) {
+      try {
+        final trade = Trade.fromJson(dataMap);
+        _addOrUpdateTrade(trade);
+      } catch (e) {
+        // Failed to parse, reload trades with debounce
+        if (reloadOnPartial) _debouncedLoadTrades();
+      }
+    } else if (reloadOnPartial) {
+      // Minimal payload (just tradeId) - reload to get full data with debounce
+      _debouncedLoadTrades();
+    }
+  }
+
+  @override
+  void onTradeProposedReceived(dynamic data) {
+    _handleTradeEvent(data);
+  }
+
+  @override
+  void onTradeAcceptedReceived(dynamic data) {
+    _handleTradeEvent(data);
+    // Trigger cross-provider invalidation for socket-delivered trade acceptance
+    _invalidationService.invalidate(InvalidationEvent.tradeAccepted, leagueId);
+  }
+
+  @override
+  void onTradeRejectedReceived(dynamic data) {
+    // Backend sends { tradeId } - reload for full data
+    _handleTradeEvent(data);
+  }
+
+  @override
+  void onTradeCounteredReceived(dynamic data) {
+    if (!mounted) return;
+    if (data is! Map) return;
+
+    // Counter creates a new trade, update both original and new
+    final dataMap = Map<String, dynamic>.from(data);
+    if (dataMap['originalTrade'] != null) {
+      try {
+        final original =
+            Trade.fromJson(Map<String, dynamic>.from(dataMap['originalTrade']));
+        _addOrUpdateTrade(original);
+      } catch (e) {
+        // Ignore parse errors
       }
     }
-
-    _proposedDisposer = _socketService.onTradeProposed((data) {
-      handleTradeEvent(data);
-    });
-
-    _acceptedDisposer = _socketService.onTradeAccepted((data) {
-      handleTradeEvent(data);
-      // Trigger cross-provider invalidation for socket-delivered trade acceptance
-      _invalidationService.invalidate(InvalidationEvent.tradeAccepted, leagueId);
-    });
-
-    _rejectedDisposer = _socketService.onTradeRejected((data) {
-      // Backend sends { tradeId } - reload for full data
-      handleTradeEvent(data);
-    });
-
-    _counteredDisposer = _socketService.onTradeCountered((data) {
-      if (!mounted) return;
-      if (data is! Map) return;
-
-      // Counter creates a new trade, update both original and new
-      final dataMap = Map<String, dynamic>.from(data);
-      if (dataMap['originalTrade'] != null) {
-        try {
-          final original =
-              Trade.fromJson(Map<String, dynamic>.from(dataMap['originalTrade']));
-          _addOrUpdateTrade(original);
-        } catch (e) {
-          // Ignore parse errors
-        }
+    if (dataMap['newTrade'] != null) {
+      try {
+        final newTrade =
+            Trade.fromJson(Map<String, dynamic>.from(dataMap['newTrade']));
+        _addOrUpdateTrade(newTrade);
+      } catch (e) {
+        // Ignore parse errors
       }
-      if (dataMap['newTrade'] != null) {
-        try {
-          final newTrade =
-              Trade.fromJson(Map<String, dynamic>.from(dataMap['newTrade']));
-          _addOrUpdateTrade(newTrade);
-        } catch (e) {
-          // Ignore parse errors
-        }
-      }
-      // Always reload to ensure consistency (with debounce)
-      _debouncedLoadTrades();
-    });
+    }
+    // Always reload to ensure consistency (with debounce)
+    _debouncedLoadTrades();
+  }
 
-    _cancelledDisposer = _socketService.onTradeCancelled((data) {
-      // Backend sends { tradeId } - reload for full data
-      handleTradeEvent(data);
-    });
+  @override
+  void onTradeCancelledReceived(dynamic data) {
+    // Backend sends { tradeId } - reload for full data
+    _handleTradeEvent(data);
+  }
 
-    _expiredDisposer = _socketService.onTradeExpired((data) {
-      // Backend sends { tradeId } - reload for full data
-      handleTradeEvent(data);
-    });
+  @override
+  void onTradeExpiredReceived(dynamic data) {
+    // Backend sends { tradeId } - reload for full data
+    _handleTradeEvent(data);
+  }
 
-    _completedDisposer = _socketService.onTradeCompleted((data) {
-      handleTradeEvent(data);
-      // Trigger cross-provider invalidation for socket-delivered trade completion
-      _invalidationService.invalidate(InvalidationEvent.tradeCompleted, leagueId);
-    });
+  @override
+  void onTradeCompletedReceived(dynamic data) {
+    _handleTradeEvent(data);
+    // Trigger cross-provider invalidation for socket-delivered trade completion
+    _invalidationService.invalidate(InvalidationEvent.tradeCompleted, leagueId);
+  }
 
-    _vetoedDisposer = _socketService.onTradeVetoed((data) {
-      // Backend sends { tradeId } - reload for full data
-      handleTradeEvent(data);
-    });
+  @override
+  void onTradeVetoedReceived(dynamic data) {
+    // Backend sends { tradeId } - reload for full data
+    _handleTradeEvent(data);
+  }
 
-    _voteCastDisposer = _socketService.onTradeVoteCast((data) {
-      if (!mounted) return;
-      if (data is! Map) return;
+  @override
+  void onTradeVoteCastReceived(dynamic data) {
+    if (!mounted) return;
+    if (data is! Map) return;
 
-      final dataMap = Map<String, dynamic>.from(data);
-      if (dataMap['trade'] != null) {
-        try {
-          final trade =
-              Trade.fromJson(Map<String, dynamic>.from(dataMap['trade']));
-          _addOrUpdateTrade(trade);
-        } catch (e) {
-          // Failed to parse, reload with debounce
-          _debouncedLoadTrades();
-        }
-      } else {
-        // Just vote count update, reload with debounce
+    final dataMap = Map<String, dynamic>.from(data);
+    if (dataMap['trade'] != null) {
+      try {
+        final trade =
+            Trade.fromJson(Map<String, dynamic>.from(dataMap['trade']));
+        _addOrUpdateTrade(trade);
+      } catch (e) {
+        // Failed to parse, reload with debounce
         _debouncedLoadTrades();
       }
-    });
-
-    _invalidatedDisposer = _socketService.onTradeInvalidated((data) {
-      if (!mounted) return;
-      // Reload trades to get updated status after invalidation (with debounce)
+    } else {
+      // Just vote count update, reload with debounce
       _debouncedLoadTrades();
-    });
+    }
+  }
 
-    // Listen for member kicked events - trades involving kicked member become invalid
-    _memberKickedDisposer = _socketService.onMemberKicked((data) {
-      if (!mounted) return;
-      // Reload to get updated trade statuses (with debounce)
-      _debouncedLoadTrades();
-    });
+  @override
+  void onTradeInvalidatedReceived(dynamic data) {
+    if (!mounted) return;
+    // Reload trades to get updated status after invalidation (with debounce)
+    _debouncedLoadTrades();
+  }
 
-    // Resync trades on socket reconnection (both short and long disconnects)
-    _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
-      if (!mounted) return;
-      if (kDebugMode) {
-        debugPrint('Trades: Socket reconnected, needsFullRefresh=$needsFullRefresh');
-      }
-      // Always reload trades on reconnect to ensure consistency.
-      // Short disconnects may have missed trade status transitions.
-      loadTrades();
-    });
+  @override
+  void onMemberKickedReceived(dynamic data) {
+    if (!mounted) return;
+    // Reload to get updated trade statuses (with debounce)
+    _debouncedLoadTrades();
+  }
+
+  @override
+  void onReconnectedReceived(bool needsFullRefresh) {
+    if (!mounted) return;
+    // Always reload trades on reconnect to ensure consistency.
+    // Short disconnects may have missed trade status transitions.
+    loadTrades();
   }
 
   /// Add or update a trade in the list, maintaining deterministic sort order.
@@ -394,20 +396,8 @@ class TradesNotifier extends StateNotifier<TradesState> {
   @override
   void dispose() {
     _loadTradesDebounceTimer?.cancel();
-    _socketService.leaveLeague(leagueId);
-    _proposedDisposer?.call();
-    _acceptedDisposer?.call();
-    _rejectedDisposer?.call();
-    _counteredDisposer?.call();
-    _cancelledDisposer?.call();
-    _expiredDisposer?.call();
-    _completedDisposer?.call();
-    _vetoedDisposer?.call();
-    _voteCastDisposer?.call();
-    _invalidatedDisposer?.call();
-    _memberKickedDisposer?.call();
+    _socketHandler?.dispose();
     _invalidationDisposer?.call();
-    _reconnectDisposer?.call();
     _syncDisposer?.call();
     super.dispose();
   }

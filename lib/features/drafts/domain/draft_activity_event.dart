@@ -12,6 +12,9 @@ enum DraftActivityType {
   derbySlotPicked,
   derbyTimeout,
   derbyCompleted,
+  // Auction-specific activity types
+  nominationTimeout,
+  autoNominated,
 }
 
 class DraftActivityEvent {

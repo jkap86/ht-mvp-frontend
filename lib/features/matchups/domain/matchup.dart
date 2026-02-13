@@ -169,6 +169,10 @@ class MatchupPlayer {
   final String slot;
   final double points;
   final bool isStarter;
+  // Projection fields for live scoring
+  final double? projectedPoints;
+  final String? gameStatus;
+  final double? remainingProjected;
 
   MatchupPlayer({
     required this.playerId,
@@ -178,6 +182,9 @@ class MatchupPlayer {
     required this.slot,
     required this.points,
     required this.isStarter,
+    this.projectedPoints,
+    this.gameStatus,
+    this.remainingProjected,
   });
 
   factory MatchupPlayer.fromJson(Map<String, dynamic> json) {
@@ -189,6 +196,9 @@ class MatchupPlayer {
       slot: json['slot'] as String? ?? 'BN',
       points: (json['points'] as num?)?.toDouble() ?? 0,
       isStarter: json['is_starter'] as bool? ?? false,
+      projectedPoints: (json['projected_points'] as num?)?.toDouble(),
+      gameStatus: json['game_status'] as String?,
+      remainingProjected: (json['remaining_projected'] as num?)?.toDouble(),
     );
   }
 }

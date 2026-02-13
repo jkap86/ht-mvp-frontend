@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/theme/app_spacing.dart';
 import '../../../../../core/theme/semantic_colors.dart';
 import '../../../../../core/widgets/data_freshness_bar.dart';
+import '../../../../leagues/domain/league.dart';
 import '../../../../players/domain/player.dart';
 import '../../../domain/auction_budget.dart';
 import '../../../domain/auction_lot.dart';
@@ -16,6 +17,83 @@ import '../auction_bid_dialog.dart';
 import 'slow_auction_action_section.dart';
 import 'slow_auction_budget_card.dart';
 import 'slow_auction_lot_card.dart';
+
+/// View state for SlowAuctionScreen - consolidates all watched fields
+class _SlowAuctionViewState {
+  final List<AuctionLot> activeLots;
+  final AuctionBudget? myBudget;
+  final int? myRosterId;
+  final List<Player> players;
+  final List<DraftOrderEntry> draftOrder;
+  final Draft? draft;
+  final int? dailyNominationsRemaining;
+  final int? dailyNominationLimit;
+  final bool globalCapReached;
+  final AuctionSettings? auctionSettings;
+  final int? serverClockOffsetMs;
+  final bool isCommissioner;
+  final String lastUpdatedDisplay;
+  final bool isStale;
+  final bool isDraftActive;
+
+  _SlowAuctionViewState({
+    required this.activeLots,
+    this.myBudget,
+    this.myRosterId,
+    required this.players,
+    required this.draftOrder,
+    this.draft,
+    this.dailyNominationsRemaining,
+    this.dailyNominationLimit,
+    required this.globalCapReached,
+    this.auctionSettings,
+    this.serverClockOffsetMs,
+    required this.isCommissioner,
+    required this.lastUpdatedDisplay,
+    required this.isStale,
+    required this.isDraftActive,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _SlowAuctionViewState &&
+          runtimeType == other.runtimeType &&
+          activeLots == other.activeLots &&
+          myBudget == other.myBudget &&
+          myRosterId == other.myRosterId &&
+          players == other.players &&
+          draftOrder == other.draftOrder &&
+          draft == other.draft &&
+          dailyNominationsRemaining == other.dailyNominationsRemaining &&
+          dailyNominationLimit == other.dailyNominationLimit &&
+          globalCapReached == other.globalCapReached &&
+          auctionSettings == other.auctionSettings &&
+          serverClockOffsetMs == other.serverClockOffsetMs &&
+          isCommissioner == other.isCommissioner &&
+          lastUpdatedDisplay == other.lastUpdatedDisplay &&
+          isStale == other.isStale &&
+          isDraftActive == other.isDraftActive;
+
+  @override
+  int get hashCode => Object.hash(
+        activeLots,
+        myBudget,
+        myRosterId,
+        players,
+        draftOrder,
+        draft,
+        dailyNominationsRemaining,
+        dailyNominationLimit,
+        globalCapReached,
+        auctionSettings,
+        serverClockOffsetMs,
+        isCommissioner,
+        lastUpdatedDisplay,
+        isStale,
+        isDraftActive,
+      );
+}
 
 /// Main screen for slow auction drafts.
 /// Replaces the grid view with a task-list/inbox paradigm.
@@ -63,66 +141,41 @@ class _SlowAuctionScreenState extends ConsumerState<SlowAuctionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeLots = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.activeLots),
-    );
-    final myBudget = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.myBudget),
-    );
-    final myRosterId = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.myRosterId),
-    );
-    final players = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.players),
-    );
-    final draftOrder = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.draftOrder),
-    );
-    final draft = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.draft),
-    );
-    final dailyNominationsRemaining = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.dailyNominationsRemaining),
-    );
-    final dailyNominationLimit = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.dailyNominationLimit),
-    );
-    final globalCapReached = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.globalCapReached),
-    );
-    final auctionSettings = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.auctionSettings),
-    );
-    final serverClockOffsetMs = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.serverClockOffsetMs),
-    );
-    final isCommissioner = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.isCommissioner),
-    );
-    final lastUpdatedDisplay = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.lastUpdatedDisplay),
-    );
-    final isStale = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.isStale),
-    );
-    final isDraftActive = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.draft?.status.isActive ?? false),
+    // Single consolidated selector for all slow auction state
+    final auctionState = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => _SlowAuctionViewState(
+        activeLots: s.activeLots,
+        myBudget: s.myBudget,
+        myRosterId: s.myRosterId,
+        players: s.players,
+        draftOrder: s.draftOrder,
+        draft: s.draft,
+        dailyNominationsRemaining: s.dailyNominationsRemaining,
+        dailyNominationLimit: s.dailyNominationLimit,
+        globalCapReached: s.globalCapReached,
+        auctionSettings: s.auctionSettings,
+        serverClockOffsetMs: s.serverClockOffsetMs,
+        isCommissioner: s.isCommissioner,
+        lastUpdatedDisplay: s.lastUpdatedDisplay,
+        isStale: s.isStale,
+        isDraftActive: s.draft?.status.isActive ?? false,
+      )),
     );
 
     // Check if draft can be started (slow auctions don't require order confirmation)
-    final isDraftNotStarted = draft?.status.canStart ?? false;
-    final canStartDraft = isDraftNotStarted && isCommissioner;
+    final isDraftNotStarted = auctionState.draft?.status.canStart ?? false;
+    final canStartDraft = isDraftNotStarted && auctionState.isCommissioner;
 
     // Find lots where user has bid but is outbid (not currently winning)
-    final outbidLots = activeLots.where((lot) {
+    final outbidLots = auctionState.activeLots.where((lot) {
       // User has placed a bid (myMaxBid is not null) but is not the high bidder
       return lot.myMaxBid != null &&
           lot.myMaxBid! > 0 &&
-          lot.currentBidderRosterId != myRosterId;
+          lot.currentBidderRosterId != auctionState.myRosterId;
     }).toList();
 
     // Sort active lots by deadline (ending soonest first)
-    final sortedLots = [...activeLots]
+    final sortedLots = [...auctionState.activeLots]
       ..sort((a, b) => a.bidDeadline.compareTo(b.bidDeadline));
 
     return Column(
@@ -160,11 +213,11 @@ class _SlowAuctionScreenState extends ConsumerState<SlowAuctionScreen> {
           ),
         // Freshness indicator
         DataFreshnessBar(
-          lastUpdatedDisplay: lastUpdatedDisplay,
-          isStale: isStale,
-          label: isDraftActive ? 'Live Auction' : null,
-          labelIcon: isDraftActive ? Icons.circle : null,
-          labelColor: isDraftActive ? Theme.of(context).colorScheme.error : null,
+          lastUpdatedDisplay: auctionState.lastUpdatedDisplay,
+          isStale: auctionState.isStale,
+          label: auctionState.isDraftActive ? 'Live Auction' : null,
+          labelIcon: auctionState.isDraftActive ? Icons.circle : null,
+          labelColor: auctionState.isDraftActive ? Theme.of(context).colorScheme.error : null,
         ),
         Expanded(
           child: RefreshIndicator(
@@ -176,27 +229,27 @@ class _SlowAuctionScreenState extends ConsumerState<SlowAuctionScreen> {
                 // Action needed section
                 SliverToBoxAdapter(
                   child: SlowAuctionActionSection(
-                    activeLots: activeLots,
+                    activeLots: auctionState.activeLots,
                     outbidLots: outbidLots,
-                    myRosterId: myRosterId,
-                    players: players,
-                    draftOrder: draftOrder,
+                    myRosterId: auctionState.myRosterId,
+                    players: auctionState.players,
+                    draftOrder: auctionState.draftOrder,
                     onNominate: () => _showNominateSheet(context),
                     onViewLot: (lot) => _showBidDialog(
                       context,
                       lot,
-                      players,
-                      draftOrder,
-                      myBudget,
-                      auctionSettings,
-                      serverClockOffsetMs,
-                      totalRosterSpots: draft?.rounds,
+                      auctionState.players,
+                      auctionState.draftOrder,
+                      auctionState.myBudget,
+                      auctionState.auctionSettings,
+                      auctionState.serverClockOffsetMs,
+                      totalRosterSpots: auctionState.draft?.rounds,
                     ),
-                    dailyNominationsRemaining: dailyNominationsRemaining,
-                    dailyNominationLimit: dailyNominationLimit,
-                    globalCapReached: globalCapReached,
-                    minBid: auctionSettings?.minBid,
-                    hasMaxBidsSet: activeLots.any((lot) =>
+                    dailyNominationsRemaining: auctionState.dailyNominationsRemaining,
+                    dailyNominationLimit: auctionState.dailyNominationLimit,
+                    globalCapReached: auctionState.globalCapReached,
+                    minBid: auctionState.auctionSettings?.minBid,
+                    hasMaxBidsSet: auctionState.activeLots.any((lot) =>
                       lot.myMaxBid != null && lot.myMaxBid! > 0),
                   ),
                 ),
@@ -210,7 +263,7 @@ class _SlowAuctionScreenState extends ConsumerState<SlowAuctionScreen> {
                         const Icon(Icons.gavel, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Active Auctions (${activeLots.length})',
+                          'Active Auctions (${auctionState.activeLots.length})',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -239,13 +292,13 @@ class _SlowAuctionScreenState extends ConsumerState<SlowAuctionScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final lot = sortedLots[index];
-                        final player = players
+                        final player = auctionState.players
                             .where((p) => p.id == lot.playerId)
                             .firstOrNull;
-                        final highBidder = draftOrder
+                        final highBidder = auctionState.draftOrder
                             .where((entry) => entry.rosterId == lot.currentBidderRosterId)
                             .firstOrNull;
-                        final isWinning = lot.currentBidderRosterId == myRosterId;
+                        final isWinning = lot.currentBidderRosterId == auctionState.myRosterId;
 
                         // Skip if player not found
                         if (player == null) {
@@ -253,6 +306,7 @@ class _SlowAuctionScreenState extends ConsumerState<SlowAuctionScreen> {
                         }
 
                         return Padding(
+                          key: ValueKey(lot.id),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 4,
@@ -264,16 +318,16 @@ class _SlowAuctionScreenState extends ConsumerState<SlowAuctionScreen> {
                             isWinning: isWinning,
                             leagueId: widget.leagueId,
                             draftId: widget.draftId,
-                            draftOrder: draftOrder,
+                            draftOrder: auctionState.draftOrder,
                             onBidTap: () => _showBidDialog(
                               context,
                               lot,
-                              players,
-                              draftOrder,
-                              myBudget,
-                              auctionSettings,
-                              serverClockOffsetMs,
-                              totalRosterSpots: draft?.rounds,
+                              auctionState.players,
+                              auctionState.draftOrder,
+                              auctionState.myBudget,
+                              auctionState.auctionSettings,
+                              auctionState.serverClockOffsetMs,
+                              totalRosterSpots: auctionState.draft?.rounds,
                             ),
                           ),
                         );
@@ -292,11 +346,11 @@ class _SlowAuctionScreenState extends ConsumerState<SlowAuctionScreen> {
         ),
 
         // Budget card at bottom
-        if (myBudget != null)
+        if (auctionState.myBudget != null)
           SlowAuctionBudgetCard(
-            budget: myBudget,
-            totalRounds: draft?.rounds ?? 15,
-            auctionSettings: auctionSettings,
+            budget: auctionState.myBudget!,
+            totalRounds: auctionState.draft?.rounds ?? 15,
+            auctionSettings: auctionState.auctionSettings,
           ),
       ],
     );
@@ -319,7 +373,7 @@ class _SlowAuctionScreenState extends ConsumerState<SlowAuctionScreen> {
       context,
       leagueId: widget.leagueId,
       draftId: widget.draftId,
-      lot: lot,
+      lotId: lot.id,
       player: player,
       myBudget: myBudget,
       draftOrder: draftOrder,
@@ -375,26 +429,47 @@ class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
   bool _isSubmitting = false;
   static const int _browseLimit = 50; // Limit when not searching
 
-  @override
-  Widget build(BuildContext context) {
-    final players = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.players),
-    );
-    final draftedPlayerIds = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.draftedPlayerIds),
-    );
-    final activeLots = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.activeLots),
-    );
+  // Cache for filtered/sorted players to avoid recomputing on every build
+  List<Player>? _cachedPlayers;
+  List<Player>? _cachedAllPlayers;
+  String _cachedSearchQuery = '';
+  String _cachedPosFilter = '';
+  String _cachedSortBy = '';
+  Set<int> _cachedDraftedIds = {};
+  Set<int> _cachedUnavailableIds = {};
 
-    // Get players already in active auction
-    final activePlayerIds = activeLots.map((l) => l.playerId).toSet();
+  /// Returns filtered and sorted players, using a cached result when inputs
+  /// have not changed since the last call.
+  List<Player> _getFilteredSortedPlayers({
+    required List<Player> allPlayers,
+    required Set<int> draftedIds,
+    required Set<int> unavailableIds,
+  }) {
+    // Check if cache is still valid
+    final sameAllPlayers = identical(_cachedAllPlayers, allPlayers);
+    final sameDrafted = _cachedDraftedIds.length == draftedIds.length &&
+        _cachedDraftedIds.containsAll(draftedIds);
+    final sameUnavailable =
+        _cachedUnavailableIds.length == unavailableIds.length &&
+            _cachedUnavailableIds.containsAll(unavailableIds);
 
-    // Filter available players
-    var availablePlayers = players.where((p) {
-      // Not drafted and not in active auction
-      if (draftedPlayerIds.contains(p.id)) return false;
-      if (activePlayerIds.contains(p.id)) return false;
+    final needsRefresh = _cachedPlayers == null ||
+        !sameAllPlayers ||
+        _cachedSearchQuery != _searchQuery ||
+        _cachedPosFilter != _positionFilter ||
+        _cachedSortBy != _sortBy ||
+        !sameDrafted ||
+        !sameUnavailable;
+
+    if (!needsRefresh) {
+      return _cachedPlayers!;
+    }
+
+    // Rebuild cache — filter available players
+    var filtered = allPlayers.where((p) {
+      // Not drafted and not in active auction or pending
+      if (draftedIds.contains(p.id)) return false;
+      if (unavailableIds.contains(p.id)) return false;
 
       // Position filter
       if (_positionFilter != 'All' && p.primaryPosition != _positionFilter) {
@@ -412,7 +487,7 @@ class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
     }).toList();
 
     // Sort available players
-    availablePlayers.sort((a, b) {
+    filtered.sort((a, b) {
       switch (_sortBy) {
         case 'Projected':
           // Sort by remaining projected points (highest first)
@@ -425,6 +500,44 @@ class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
           return a.fullName.compareTo(b.fullName);
       }
     });
+
+    // Update cache
+    _cachedPlayers = filtered;
+    _cachedAllPlayers = allPlayers;
+    _cachedSearchQuery = _searchQuery;
+    _cachedPosFilter = _positionFilter;
+    _cachedSortBy = _sortBy;
+    _cachedDraftedIds = Set<int>.of(draftedIds);
+    _cachedUnavailableIds = Set<int>.of(unavailableIds);
+
+    return filtered;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final players = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.players),
+    );
+    final draftedPlayerIds = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.draftedPlayerIds),
+    );
+    final activeLots = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.activeLots),
+    );
+    final pendingNominations = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.pendingNominations),
+    );
+
+    // Get players already in active auction OR pending nomination
+    final activePlayerIds = activeLots.map((l) => l.playerId).toSet();
+    final unavailableIds = {...activePlayerIds, ...pendingNominations};
+
+    // Use cached filtered/sorted results — only recomputes when inputs change
+    var availablePlayers = _getFilteredSortedPlayers(
+      allPlayers: players,
+      draftedIds: draftedPlayerIds,
+      unavailableIds: unavailableIds,
+    );
 
     // Limit results when browsing (no search query) for better performance
     final isSearching = _searchQuery.isNotEmpty;
@@ -553,6 +666,7 @@ class _NominatePlayerSheetState extends ConsumerState<_NominatePlayerSheet> {
                 final player = availablePlayers[index];
                 final projPts = player.remainingProjectedPts?.toStringAsFixed(1);
                 return ListTile(
+                  key: ValueKey(player.id),
                   leading: CircleAvatar(
                     backgroundColor: getPositionColor(player.primaryPosition),
                     child: Text(

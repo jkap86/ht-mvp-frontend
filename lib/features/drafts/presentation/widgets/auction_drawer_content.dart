@@ -65,7 +65,7 @@ class AuctionDrawerContent extends ConsumerWidget {
                 context,
                 leagueId: providerKey.leagueId,
                 draftId: providerKey.draftId,
-                lot: lot,
+                lotId: lot.id,
                 player: player,
                 myBudget: myBudget,
                 draftOrder: state.draftOrder,

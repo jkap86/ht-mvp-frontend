@@ -128,7 +128,7 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
       context,
       leagueId: widget.leagueId,
       draftId: widget.draftId,
-      lot: lot,
+      lotId: lot.id,
       player: player,
       myBudget: draftState.myBudget,
       draftOrder: draftState.draftOrder,

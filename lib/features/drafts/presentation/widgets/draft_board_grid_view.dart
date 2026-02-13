@@ -96,6 +96,7 @@ class DraftBoardGridView extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final round = index + 1;
                     return _buildRoundRow(
+                      key: ValueKey('round-$round'),
                       context: context,
                       round: round,
                       draftOrder: state.draftOrder,
@@ -142,6 +143,7 @@ class DraftBoardGridView extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final entry = state.draftOrder[index];
                     return _buildTeamRow(
+                      key: ValueKey('team-${entry.rosterId}'),
                       context: context,
                       entry: entry,
                       roundPicks: grid[entry.rosterId] ?? {},
@@ -302,6 +304,7 @@ class DraftBoardGridView extends ConsumerWidget {
 
   /// Row of picks for a single round (for teams-on-X-axis layout)
   Widget _buildRoundRow({
+    Key? key,
     required BuildContext context,
     required int round,
     required List<DraftOrderEntry> draftOrder,
@@ -313,6 +316,7 @@ class DraftBoardGridView extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Row(
+      key: key,
       children: [
         // Round label
         Container(
@@ -350,6 +354,7 @@ class DraftBoardGridView extends ConsumerWidget {
   }
 
   Widget _buildTeamRow({
+    Key? key,
     required BuildContext context,
     required DraftOrderEntry entry,
     required Map<int, DraftPick?> roundPicks,
@@ -362,6 +367,7 @@ class DraftBoardGridView extends ConsumerWidget {
     final isCurrentTeam = currentCell?.rosterId == entry.rosterId;
 
     return Row(
+      key: key,
       children: [
         // Team name cell
         Container(

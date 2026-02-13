@@ -10,6 +10,7 @@ import '../../data/waiver_repository.dart';
 import '../../domain/waiver_claim.dart';
 import '../../domain/waiver_priority.dart';
 import '../../domain/faab_budget.dart';
+import 'waivers_socket_handler.dart';
 
 /// State for the waivers feature
 class WaiversState {
@@ -107,7 +108,7 @@ class WaiversState {
 }
 
 /// Notifier for managing waivers state with socket integration
-class WaiversNotifier extends StateNotifier<WaiversState> {
+class WaiversNotifier extends StateNotifier<WaiversState> implements WaiversSocketCallbacks {
   final WaiverRepository _waiverRepo;
   final SocketService _socketService;
   final InvalidationService _invalidationService;
@@ -115,19 +116,9 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
   final int leagueId;
   final int? userRosterId;
 
-  // Socket listener disposers
-  VoidCallback? _claimSubmittedDisposer;
-  VoidCallback? _claimCancelledDisposer;
-  VoidCallback? _claimUpdatedDisposer;
-  VoidCallback? _claimsReorderedDisposer;
-  VoidCallback? _processedDisposer;
-  VoidCallback? _claimSuccessfulDisposer;
-  VoidCallback? _claimFailedDisposer;
-  VoidCallback? _priorityUpdatedDisposer;
-  VoidCallback? _budgetUpdatedDisposer;
-  VoidCallback? _memberKickedDisposer;
+  // Socket handler for managing subscriptions
+  WaiversSocketHandler? _socketHandler;
   VoidCallback? _invalidationDisposer;
-  VoidCallback? _reconnectDisposer;
   VoidCallback? _syncDisposer;
 
   // Debounce timer for reload operations
@@ -165,155 +156,166 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
   }
 
   void _setupSocketListeners() {
-    _socketService.joinLeague(leagueId);
+    _socketHandler = WaiversSocketHandler(
+      socketService: _socketService,
+      leagueId: leagueId,
+      callbacks: this,
+    );
+    _socketHandler!.setupListeners();
+  }
 
-    // Helper to safely parse waiver claim data - handles both full objects and minimal payloads
-    void handleClaimEvent(dynamic data, {bool reloadOnPartial = true}) {
-      if (!mounted) return;
-      if (data is! Map) return;
+  // Helper to safely parse waiver claim data - handles both full objects and minimal payloads
+  void _handleClaimEvent(dynamic data, {bool reloadOnPartial = true}) {
+    if (!mounted) return;
+    if (data is! Map) return;
 
-      final dataMap = Map<String, dynamic>.from(data);
+    final dataMap = Map<String, dynamic>.from(data);
 
-      // Check if this is a full claim object (has required fields)
-      if (dataMap.containsKey('league_id') && dataMap.containsKey('status')) {
-        try {
-          final claim = WaiverClaim.fromJson(dataMap);
-          _addOrUpdateClaim(claim);
-        } catch (e) {
-          // Failed to parse, reload waiver data
-          if (reloadOnPartial) _debouncedLoadWaiverData();
-        }
-      } else if (reloadOnPartial) {
-        // Minimal payload (just claimId) - reload to get full data
-        _debouncedLoadWaiverData();
+    // Check if this is a full claim object (has required fields)
+    if (dataMap.containsKey('league_id') && dataMap.containsKey('status')) {
+      try {
+        final claim = WaiverClaim.fromJson(dataMap);
+        _addOrUpdateClaim(claim);
+      } catch (e) {
+        // Failed to parse, reload waiver data
+        if (reloadOnPartial) _debouncedLoadWaiverData();
       }
+    } else if (reloadOnPartial) {
+      // Minimal payload (just claimId) - reload to get full data
+      _debouncedLoadWaiverData();
+    }
+  }
+
+  @override
+  void onClaimSubmittedReceived(dynamic data) {
+    _handleClaimEvent(data);
+  }
+
+  @override
+  void onClaimCancelledReceived(dynamic data) {
+    if (!mounted) return;
+    if (data is! Map) return;
+
+    final dataMap = Map<String, dynamic>.from(data);
+    final claimId = dataMap['claimId'] as int? ?? dataMap['claim_id'] as int?;
+    if (claimId != null) {
+      _removeClaim(claimId);
+    } else {
+      // No claim ID, reload to sync state
+      _debouncedLoadWaiverData();
+    }
+  }
+
+  @override
+  void onClaimUpdatedReceived(dynamic data) {
+    _handleClaimEvent(data);
+  }
+
+  @override
+  void onClaimsReorderedReceived(dynamic data) {
+    if (!mounted) return;
+    if (data is! Map) {
+      _debouncedLoadWaiverData();
+      return;
     }
 
-    _claimSubmittedDisposer = _socketService.onWaiverClaimSubmitted((data) {
-      handleClaimEvent(data);
-    });
-
-    _claimCancelledDisposer = _socketService.onWaiverClaimCancelled((data) {
-      if (!mounted) return;
-      if (data is! Map) return;
-
-      final dataMap = Map<String, dynamic>.from(data);
-      final claimId = dataMap['claimId'] as int? ?? dataMap['claim_id'] as int?;
-      if (claimId != null) {
-        _removeClaim(claimId);
-      } else {
-        // No claim ID, reload to sync state
-        _debouncedLoadWaiverData();
-      }
-    });
-
-    _claimUpdatedDisposer = _socketService.onWaiverClaimUpdated((data) {
-      handleClaimEvent(data);
-    });
-
-    _claimsReorderedDisposer = _socketService.onWaiverClaimsReordered((data) {
-      if (!mounted) return;
-      if (data is! Map) {
-        _debouncedLoadWaiverData();
-        return;
-      }
-
-      try {
-        final claimsList = (data['claims'] as List?)
-                ?.cast<Map<String, dynamic>>()
-                .map((json) => WaiverClaim.fromJson(json))
-                .toList() ??
-            [];
-        // Update claims with new order
-        final currentClaims = [...state.claims];
-        for (final updated in claimsList) {
-          final index = currentClaims.indexWhere((c) => c.id == updated.id);
-          if (index >= 0) {
-            currentClaims[index] = updated;
-          }
+    try {
+      final claimsList = (data['claims'] as List?)
+              ?.cast<Map<String, dynamic>>()
+              .map((json) => WaiverClaim.fromJson(json))
+              .toList() ??
+          [];
+      // Update claims with new order
+      final currentClaims = [...state.claims];
+      for (final updated in claimsList) {
+        final index = currentClaims.indexWhere((c) => c.id == updated.id);
+        if (index >= 0) {
+          currentClaims[index] = updated;
         }
-        state = state.copyWith(claims: currentClaims);
-      } catch (e) {
-        // Failed to parse, reload to sync
-        _debouncedLoadWaiverData();
       }
-    });
-
-    _processedDisposer = _socketService.onWaiverProcessed((data) {
-      if (!mounted) return;
-      // Reload all waiver data after processing
+      state = state.copyWith(claims: currentClaims);
+    } catch (e) {
+      // Failed to parse, reload to sync
       _debouncedLoadWaiverData();
-      // Trigger cross-provider invalidation (rosters, free agents, matchups changed)
-      _invalidationService.invalidate(InvalidationEvent.waiverProcessed, leagueId);
-    });
+    }
+  }
 
-    _claimSuccessfulDisposer = _socketService.onWaiverClaimSuccessful((data) {
-      handleClaimEvent(data);
-      // Trigger cross-provider invalidation (roster changed)
-      _invalidationService.invalidate(InvalidationEvent.waiverClaimSuccessful, leagueId);
-    });
+  @override
+  void onWaiverProcessedReceived(dynamic data) {
+    if (!mounted) return;
+    // Reload all waiver data after processing
+    _debouncedLoadWaiverData();
+    // Trigger cross-provider invalidation (rosters, free agents, matchups changed)
+    _invalidationService.invalidate(InvalidationEvent.waiverProcessed, leagueId);
+  }
 
-    _claimFailedDisposer = _socketService.onWaiverClaimFailed((data) {
-      handleClaimEvent(data);
-    });
+  @override
+  void onClaimSuccessfulReceived(dynamic data) {
+    _handleClaimEvent(data);
+    // Trigger cross-provider invalidation (roster changed)
+    _invalidationService.invalidate(InvalidationEvent.waiverClaimSuccessful, leagueId);
+  }
 
-    _priorityUpdatedDisposer = _socketService.onWaiverPriorityUpdated((data) {
-      if (!mounted) return;
-      if (data is! Map) {
-        _debouncedLoadWaiverData();
-        return;
-      }
+  @override
+  void onClaimFailedReceived(dynamic data) {
+    _handleClaimEvent(data);
+  }
 
-      try {
-        final prioritiesList = (data['priorities'] as List?)
-                ?.cast<Map<String, dynamic>>()
-                .map((json) => WaiverPriority.fromJson(json))
-                .toList() ??
-            [];
-        state = state.copyWith(priorities: prioritiesList);
-      } catch (e) {
-        // Failed to parse, reload to sync
-        _debouncedLoadWaiverData();
-      }
-    });
-
-    _budgetUpdatedDisposer = _socketService.onWaiverBudgetUpdated((data) {
-      if (!mounted) return;
-      if (data is! Map) {
-        _debouncedLoadWaiverData();
-        return;
-      }
-
-      try {
-        final budgetsList = (data['budgets'] as List?)
-                ?.cast<Map<String, dynamic>>()
-                .map((json) => FaabBudget.fromJson(json))
-                .toList() ??
-            [];
-        state = state.copyWith(budgets: budgetsList);
-      } catch (e) {
-        // Failed to parse, reload to sync
-        _debouncedLoadWaiverData();
-      }
-    });
-
-    // Listen for member kicked events - refresh if kicked user had waiver claims
-    _memberKickedDisposer = _socketService.onMemberKicked((data) {
-      if (!mounted) return;
-      // Reload waiver data as kicked member's claims may have been affected
+  @override
+  void onPriorityUpdatedReceived(dynamic data) {
+    if (!mounted) return;
+    if (data is! Map) {
       _debouncedLoadWaiverData();
-    });
+      return;
+    }
 
-    // Resync waivers on socket reconnection (both short and long disconnects)
-    _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
-      if (!mounted) return;
-      if (kDebugMode) {
-        debugPrint('Waivers: Socket reconnected, needsFullRefresh=$needsFullRefresh');
-      }
-      // Always reload waiver data on reconnect to ensure consistency.
-      // Short disconnects may have missed claim status changes.
-      loadWaiverData();
-    });
+    try {
+      final prioritiesList = (data['priorities'] as List?)
+              ?.cast<Map<String, dynamic>>()
+              .map((json) => WaiverPriority.fromJson(json))
+              .toList() ??
+          [];
+      state = state.copyWith(priorities: prioritiesList);
+    } catch (e) {
+      // Failed to parse, reload to sync
+      _debouncedLoadWaiverData();
+    }
+  }
+
+  @override
+  void onBudgetUpdatedReceived(dynamic data) {
+    if (!mounted) return;
+    if (data is! Map) {
+      _debouncedLoadWaiverData();
+      return;
+    }
+
+    try {
+      final budgetsList = (data['budgets'] as List?)
+              ?.cast<Map<String, dynamic>>()
+              .map((json) => FaabBudget.fromJson(json))
+              .toList() ??
+          [];
+      state = state.copyWith(budgets: budgetsList);
+    } catch (e) {
+      // Failed to parse, reload to sync
+      _debouncedLoadWaiverData();
+    }
+  }
+
+  @override
+  void onMemberKickedReceived(dynamic data) {
+    if (!mounted) return;
+    // Reload waiver data as kicked member's claims may have been affected
+    _debouncedLoadWaiverData();
+  }
+
+  @override
+  void onReconnectedReceived(bool needsFullRefresh) {
+    if (!mounted) return;
+    // Always reload waiver data on reconnect to ensure consistency.
+    // Short disconnects may have missed claim status changes.
+    loadWaiverData();
   }
 
   /// Add or update a claim in the list
@@ -512,19 +514,8 @@ class WaiversNotifier extends StateNotifier<WaiversState> {
   @override
   void dispose() {
     _loadWaiverDataDebounceTimer?.cancel();
-    _socketService.leaveLeague(leagueId);
-    _claimSubmittedDisposer?.call();
-    _claimCancelledDisposer?.call();
-    _claimUpdatedDisposer?.call();
-    _claimsReorderedDisposer?.call();
-    _processedDisposer?.call();
-    _claimSuccessfulDisposer?.call();
-    _claimFailedDisposer?.call();
-    _priorityUpdatedDisposer?.call();
-    _budgetUpdatedDisposer?.call();
-    _memberKickedDisposer?.call();
+    _socketHandler?.dispose();
     _invalidationDisposer?.call();
-    _reconnectDisposer?.call();
     _syncDisposer?.call();
     super.dispose();
   }

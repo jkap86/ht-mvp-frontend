@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/constants/socket_events.dart';
 import '../../../../core/services/sync_service.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/api/api_exceptions.dart';
@@ -9,6 +8,7 @@ import '../../../../core/utils/error_sanitizer.dart';
 import '../../../auth/presentation/auth_provider.dart';
 import '../../data/chat_repository.dart';
 import '../../domain/chat_message.dart';
+import 'chat_socket_handler.dart';
 
 class ChatState {
   final List<ChatMessage> messages;
@@ -110,7 +110,7 @@ class ChatState {
   }
 }
 
-class ChatNotifier extends StateNotifier<ChatState> {
+class ChatNotifier extends StateNotifier<ChatState> implements ChatSocketCallbacks {
   final ChatRepository _chatRepo;
   final SocketService _socketService;
   final SyncService _syncService;
@@ -118,12 +118,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
   final String? _currentUserId;
   final String? _currentUsername;
 
-  // Store disposers for proper cleanup
-  VoidCallback? _chatMessageDisposer;
-  VoidCallback? _reconnectDisposer;
+  // Socket handler for managing subscriptions
+  ChatSocketHandler? _socketHandler;
   VoidCallback? _syncDisposer;
-  VoidCallback? _reactionAddedDisposer;
-  VoidCallback? _reactionRemovedDisposer;
 
   ChatNotifier(
     this._chatRepo,
@@ -141,43 +138,38 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   void _setupSocketListeners() {
-    _socketService.joinLeague(leagueId);
+    _socketHandler = ChatSocketHandler(
+      socketService: _socketService,
+      leagueId: leagueId,
+      callbacks: this,
+    );
+    _socketHandler!.setupListeners();
+  }
 
-    _reactionAddedDisposer =
-        _socketService.on(SocketEvents.chatReactionAdded, (data) {
-      if (!mounted) return;
-      _handleReactionSocket(data, added: true);
-    });
+  @override
+  void onChatMessageReceived(ChatMessage message) {
+    if (!mounted) return;
+    _addMessageWithDedupe(message);
+  }
 
-    _reactionRemovedDisposer =
-        _socketService.on(SocketEvents.chatReactionRemoved, (data) {
-      if (!mounted) return;
-      _handleReactionSocket(data, added: false);
-    });
+  @override
+  void onReactionAddedReceived(Map<String, dynamic> data) {
+    if (!mounted) return;
+    _handleReactionSocket(data, added: true);
+  }
 
-    _chatMessageDisposer = _socketService.onChatMessage((data) {
-      if (!mounted) return;
-      try {
-        final message = ChatMessage.fromJson(Map<String, dynamic>.from(data));
-        _addMessageWithDedupe(message);
-      } catch (e) {
-        // Log error but don't crash - malformed socket data should not break chat
-        if (kDebugMode) {
-          debugPrint('Failed to parse chat message from socket: $e');
-        }
-      }
-    });
+  @override
+  void onReactionRemovedReceived(Map<String, dynamic> data) {
+    if (!mounted) return;
+    _handleReactionSocket(data, added: false);
+  }
 
-    // Resync messages on socket reconnection (both short and long disconnects)
-    _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
-      if (!mounted) return;
-      if (kDebugMode) {
-        debugPrint('Chat: Socket reconnected, needsFullRefresh=$needsFullRefresh');
-      }
-      // Always reload messages on reconnect to avoid stale chat state.
-      // Short disconnects may have missed socket events.
-      loadMessages();
-    });
+  @override
+  void onReconnectedReceived(bool needsFullRefresh) {
+    if (!mounted) return;
+    // Always reload messages on reconnect to avoid stale chat state.
+    // Short disconnects may have missed socket events.
+    loadMessages();
   }
 
   /// Adds a message to state with deduplication check
@@ -659,12 +651,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   @override
   void dispose() {
-    _socketService.leaveLeague(leagueId);
-    _chatMessageDisposer?.call();
-    _reconnectDisposer?.call();
+    _socketHandler?.dispose();
     _syncDisposer?.call();
-    _reactionAddedDisposer?.call();
-    _reactionRemovedDisposer?.call();
     super.dispose();
   }
 }

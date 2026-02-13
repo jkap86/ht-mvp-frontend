@@ -1,10 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show VoidCallback, kDebugMode, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/api/api_exceptions.dart';
-import '../../../../core/constants/socket_events.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 
 import '../../../../core/socket/socket_service.dart';
@@ -13,6 +11,7 @@ import '../../../chat/domain/chat_message.dart' show MessageSendStatus, Reaction
 import '../../data/dm_repository.dart';
 import '../../domain/direct_message.dart';
 import 'dm_inbox_provider.dart';
+import 'dm_socket_handler.dart';
 
 class DmConversationState {
   final List<DirectMessage> messages;
@@ -83,7 +82,7 @@ class DmConversationState {
   }
 }
 
-class DmConversationNotifier extends StateNotifier<DmConversationState> {
+class DmConversationNotifier extends StateNotifier<DmConversationState> implements DmSocketCallbacks {
   final DmRepository _dmRepo;
   final SocketService _socketService;
   final int conversationId;
@@ -91,10 +90,8 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
   final String? _currentUserId;
   final String? _currentUsername;
 
-  VoidCallback? _dmMessageDisposer;
-  VoidCallback? _reconnectDisposer;
-  VoidCallback? _reactionAddedDisposer;
-  VoidCallback? _reactionRemovedDisposer;
+  // Socket handler for managing subscriptions
+  DmSocketHandler? _socketHandler;
   Timer? _markAsReadDebounce;
 
   DmConversationNotifier(
@@ -113,57 +110,50 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
   }
 
   void _setupSocketListeners() {
-    // Refresh messages on socket reconnection (both short and long disconnects)
-    _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
-      if (!mounted) return;
-      if (kDebugMode) {
-        debugPrint('DmConversation($conversationId): Socket reconnected, needsFullRefresh=$needsFullRefresh');
-      }
-      // Always reload messages on reconnect to ensure no gaps.
-      // Short disconnects may have missed incoming messages.
-      loadMessages();
-    });
+    _socketHandler = DmSocketHandler(
+      socketService: _socketService,
+      conversationId: conversationId,
+      callbacks: this,
+    );
+    _socketHandler!.setupListeners();
+  }
 
-    _reactionAddedDisposer = _socketService.on(SocketEvents.dmReactionAdded, (data) {
-      if (!mounted) return;
-      if (data is! Map) return;
-      final msgConvId = data['conversationId'] as int?;
-      if (msgConvId != conversationId) return;
-      _handleReactionSocket(data, added: true);
-    });
+  @override
+  void onDmMessageReceived(DirectMessage message, int conversationId) {
+    if (!mounted) return;
 
-    _reactionRemovedDisposer = _socketService.on(SocketEvents.dmReactionRemoved, (data) {
-      if (!mounted) return;
-      if (data is! Map) return;
-      final msgConvId = data['conversationId'] as int?;
-      if (msgConvId != conversationId) return;
-      _handleReactionSocket(data, added: false);
-    });
+    // Insert message in correct position (sorted by timestamp)
+    final messages = [...state.messages, message];
+    messages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-    _dmMessageDisposer = _socketService.onDmMessage((data) {
-      if (!mounted) return;
+    // Deduplicate by ID (in case message received via both REST and socket)
+    final seen = <int>{};
+    final deduped = messages.where((m) => seen.add(m.id)).toList();
 
-      final msgConvId = data['conversationId'] as int?;
-      if (msgConvId != conversationId) return;
+    state = state.copyWith(messages: deduped);
 
-      final messageData = data['message'] as Map<String, dynamic>?;
-      if (messageData == null) return;
+    // Mark as read since user is viewing this conversation
+    _markAsRead();
+  }
 
-      final message = DirectMessage.fromJson(messageData);
+  @override
+  void onReactionAddedReceived(Map<String, dynamic> data) {
+    if (!mounted) return;
+    _handleReactionSocket(data, added: true);
+  }
 
-      // Insert message in correct position (sorted by timestamp)
-      final messages = [...state.messages, message];
-      messages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  @override
+  void onReactionRemovedReceived(Map<String, dynamic> data) {
+    if (!mounted) return;
+    _handleReactionSocket(data, added: false);
+  }
 
-      // Deduplicate by ID (in case message received via both REST and socket)
-      final seen = <int>{};
-      final deduped = messages.where((m) => seen.add(m.id)).toList();
-
-      state = state.copyWith(messages: deduped);
-
-      // Mark as read since user is viewing this conversation
-      _markAsRead();
-    });
+  @override
+  void onReconnectedReceived(bool needsFullRefresh) {
+    if (!mounted) return;
+    // Always reload messages on reconnect to ensure no gaps.
+    // Short disconnects may have missed incoming messages.
+    loadMessages();
   }
 
   static const int _pageSize = 50;
@@ -599,10 +589,7 @@ class DmConversationNotifier extends StateNotifier<DmConversationState> {
 
   @override
   void dispose() {
-    _dmMessageDisposer?.call();
-    _reconnectDisposer?.call();
-    _reactionAddedDisposer?.call();
-    _reactionRemovedDisposer?.call();
+    _socketHandler?.dispose();
     _markAsReadDebounce?.cancel();
     super.dispose();
   }

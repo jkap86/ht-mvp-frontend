@@ -135,6 +135,7 @@ class LineupComparisonWidget extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
+      key: ValueKey('section-$title'),
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
       width: double.infinity,
       color: context.htColors.surfaceContainer,
@@ -157,7 +158,11 @@ class LineupComparisonWidget extends StatelessWidget {
     final points1Won = player1 != null && player2 != null && player1.points > player2.points;
     final points2Won = player1 != null && player2 != null && player2.points > player1.points;
 
+    // Generate stable key based on player IDs
+    final key = ValueKey('player-row-${player1?.playerId ?? 0}-${player2?.playerId ?? 0}');
+
     return Container(
+      key: key,
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
@@ -229,6 +234,8 @@ class _PlayerCell extends StatelessWidget {
     }
 
     final isLeftAligned = alignment == CrossAxisAlignment.start;
+    final showProjection = player!.gameStatus == 'in_progress' ||
+                           player!.gameStatus == 'not_started';
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.sm),
@@ -241,7 +248,23 @@ class _PlayerCell extends StatelessWidget {
         children: [
           if (!isLeftAligned) ...[
             // Points (right side - show first)
-            _PointsDisplay(points: player!.points, isWinning: isWinning),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _PointsDisplay(points: player!.points, isWinning: isWinning),
+                if (showProjection && player!.projectedPoints != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      'Proj: ${player!.projectedPoints!.toStringAsFixed(1)}',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(width: AppSpacing.sm),
           ],
 
@@ -259,12 +282,30 @@ class _PlayerCell extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: isLeftAligned ? TextAlign.left : TextAlign.right,
                 ),
-                Text(
-                  '${player!.position ?? ''} - ${player!.team ?? 'FA'}',
-                  style: AppTypography.label.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: isLeftAligned ? TextAlign.left : TextAlign.right,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${player!.position ?? ''} - ${player!.team ?? 'FA'}',
+                      style: AppTypography.label.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: isLeftAligned ? TextAlign.left : TextAlign.right,
+                    ),
+                    // Game status indicator
+                    if (player!.gameStatus == 'in_progress')
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.error,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
@@ -273,7 +314,23 @@ class _PlayerCell extends StatelessWidget {
           if (isLeftAligned) ...[
             const SizedBox(width: AppSpacing.sm),
             // Points (left side - show last)
-            _PointsDisplay(points: player!.points, isWinning: isWinning),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _PointsDisplay(points: player!.points, isWinning: isWinning),
+                if (showProjection && player!.projectedPoints != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      'Proj: ${player!.projectedPoints!.toStringAsFixed(1)}',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ],
       ),
@@ -319,7 +376,7 @@ class _PointsDisplay extends StatelessWidget {
 class _PositionBadge extends StatelessWidget {
   final String slot;
 
-  const _PositionBadge({required this.slot});
+  const _PositionBadge({super.key, required this.slot});
 
   @override
   Widget build(BuildContext context) {

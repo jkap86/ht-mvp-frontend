@@ -349,7 +349,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
                       context,
                       leagueId: widget.leagueId,
                       draftId: widget.draftId,
-                      lot: lot,
+                      lotId: lot.id,
                       player: lotPlayer,
                       myBudget: currentState.myBudget,
                       draftOrder: currentState.draftOrder,
@@ -580,22 +580,6 @@ class _DraftRoomBody extends ConsumerStatefulWidget {
 
 class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
   final GlobalKey<_DraftBottomDrawerWithControllerState> _drawerKey = GlobalKey();
-  Timer? _refreshTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    // Tick every 30s to update the "last updated" relative time text
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    super.dispose();
-  }
 
   void expandDrawer() {
     _drawerKey.currentState?.expand();
@@ -728,12 +712,6 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
     final autopickExplanation = ref.watch(
       draftRoomProvider(widget.providerKey).select((s) => s.autopickExplanation),
     );
-    final lastUpdatedDisplay = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.lastUpdatedDisplay),
-    );
-    final isStale = ref.watch(
-      draftRoomProvider(widget.providerKey).select((s) => s.isStale),
-    );
     final isDraftActive = ref.watch(
       draftRoomProvider(widget.providerKey).select((s) => s.draft?.status.isActive ?? false),
     );
@@ -858,13 +836,10 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
                   ],
                 ),
               ),
-            // Freshness indicator
-            DataFreshnessBar(
-              lastUpdatedDisplay: lastUpdatedDisplay,
-              isStale: isStale,
-              label: isDraftActive ? 'Live' : null,
-              labelIcon: isDraftActive ? Icons.circle : null,
-              labelColor: isDraftActive ? Theme.of(context).colorScheme.error : null,
+            // Freshness indicator - isolated widget with its own timer
+            _DraftFreshnessBar(
+              providerKey: widget.providerKey,
+              isDraftActive: isDraftActive,
             ),
             _buildDraftStatusBar(
               ref: ref,
@@ -909,6 +884,78 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
           isPickAssetQueueSubmitting: widget.isPickAssetQueueSubmitting,
         ),
       ],
+    );
+  }
+}
+
+/// Isolated widget for the DataFreshnessBar that uses its own timer
+/// and ValueNotifier to avoid rebuilding the entire draft room body.
+class _DraftFreshnessBar extends ConsumerStatefulWidget {
+  final DraftRoomKey providerKey;
+  final bool isDraftActive;
+
+  const _DraftFreshnessBar({
+    required this.providerKey,
+    required this.isDraftActive,
+  });
+
+  @override
+  ConsumerState<_DraftFreshnessBar> createState() => _DraftFreshnessBarState();
+}
+
+class _DraftFreshnessBarState extends ConsumerState<_DraftFreshnessBar> {
+  Timer? _timer;
+  final ValueNotifier<DateTime> _now = ValueNotifier(DateTime.now());
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _now.value = DateTime.now();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _now.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final lastUpdated = ref.watch(
+      draftRoomProvider(widget.providerKey).select((s) => s.lastUpdated),
+    );
+
+    return ValueListenableBuilder<DateTime>(
+      valueListenable: _now,
+      builder: (context, now, _) {
+        String lastUpdatedDisplay = '';
+        bool isStale = true;
+
+        if (lastUpdated != null) {
+          final diff = now.difference(lastUpdated);
+          if (diff.inSeconds < 60) {
+            lastUpdatedDisplay = 'Updated just now';
+          } else if (diff.inMinutes < 60) {
+            lastUpdatedDisplay = 'Updated ${diff.inMinutes}m ago';
+          } else if (diff.inHours < 24) {
+            lastUpdatedDisplay = 'Updated ${diff.inHours}h ago';
+          } else {
+            lastUpdatedDisplay = 'Updated ${diff.inDays}d ago';
+          }
+          isStale = diff > const Duration(minutes: 5);
+        }
+
+        return DataFreshnessBar(
+          lastUpdatedDisplay: lastUpdatedDisplay,
+          isStale: isStale,
+          label: widget.isDraftActive ? 'Live' : null,
+          labelIcon: widget.isDraftActive ? Icons.circle : null,
+          labelColor: widget.isDraftActive ? Theme.of(context).colorScheme.error : null,
+        );
+      },
     );
   }
 }
