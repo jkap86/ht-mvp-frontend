@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/services/invalidation_service.dart';
 import '../../../../core/services/sync_service.dart';
@@ -108,7 +109,8 @@ class WaiversState {
 }
 
 /// Notifier for managing waivers state with socket integration
-class WaiversNotifier extends StateNotifier<WaiversState> implements WaiversSocketCallbacks {
+class WaiversNotifier extends StateNotifier<WaiversState>
+    implements WaiversSocketCallbacks {
   final WaiverRepository _waiverRepo;
   final SocketService _socketService;
   final InvalidationService _invalidationService;
@@ -246,14 +248,16 @@ class WaiversNotifier extends StateNotifier<WaiversState> implements WaiversSock
     // Reload all waiver data after processing
     _debouncedLoadWaiverData();
     // Trigger cross-provider invalidation (rosters, free agents, matchups changed)
-    _invalidationService.invalidate(InvalidationEvent.waiverProcessed, leagueId);
+    _invalidationService.invalidate(
+        InvalidationEvent.waiverProcessed, leagueId);
   }
 
   @override
   void onClaimSuccessfulReceived(dynamic data) {
     _handleClaimEvent(data);
     // Trigger cross-provider invalidation (roster changed)
-    _invalidationService.invalidate(InvalidationEvent.waiverClaimSuccessful, leagueId);
+    _invalidationService.invalidate(
+        InvalidationEvent.waiverClaimSuccessful, leagueId);
   }
 
   @override
@@ -369,10 +373,16 @@ class WaiversNotifier extends StateNotifier<WaiversState> implements WaiversSock
       );
     } on ForbiddenException {
       if (!mounted) return;
-      state = state.copyWith(isForbidden: true, isLoading: false, claims: [], priorities: [], budgets: []);
+      state = state.copyWith(
+          isForbidden: true,
+          isLoading: false,
+          claims: [],
+          priorities: [],
+          budgets: []);
     } catch (e) {
       if (!mounted) return;
-      state = state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
+      state =
+          state.copyWith(error: ErrorSanitizer.sanitize(e), isLoading: false);
     }
   }
 
@@ -388,13 +398,14 @@ class WaiversNotifier extends StateNotifier<WaiversState> implements WaiversSock
     int bidAmount = 0,
     String? idempotencyKey,
   }) async {
+    final key = idempotencyKey ?? const Uuid().v4();
     try {
       final claim = await _waiverRepo.submitClaim(
         leagueId: leagueId,
         playerId: playerId,
         dropPlayerId: dropPlayerId,
         bidAmount: bidAmount,
-        idempotencyKey: idempotencyKey,
+        idempotencyKey: key,
       );
       _addOrUpdateClaim(claim);
       return claim;
@@ -411,13 +422,14 @@ class WaiversNotifier extends StateNotifier<WaiversState> implements WaiversSock
     int? bidAmount,
     String? idempotencyKey,
   }) async {
+    final key = idempotencyKey ?? const Uuid().v4();
     try {
       final claim = await _waiverRepo.updateClaim(
         leagueId,
         claimId,
         dropPlayerId: dropPlayerId,
         bidAmount: bidAmount,
-        idempotencyKey: idempotencyKey,
+        idempotencyKey: key,
       );
       _addOrUpdateClaim(claim);
       return claim;
@@ -429,8 +441,9 @@ class WaiversNotifier extends StateNotifier<WaiversState> implements WaiversSock
 
   /// Cancel a waiver claim
   Future<bool> cancelClaim(int claimId, {String? idempotencyKey}) async {
+    final key = idempotencyKey ?? const Uuid().v4();
     try {
-      await _waiverRepo.cancelClaim(leagueId, claimId, idempotencyKey: idempotencyKey);
+      await _waiverRepo.cancelClaim(leagueId, claimId, idempotencyKey: key);
       _removeClaim(claimId);
       return true;
     } catch (e) {
@@ -441,7 +454,12 @@ class WaiversNotifier extends StateNotifier<WaiversState> implements WaiversSock
 
   /// Reorder waiver claims
   /// Takes a list of claim IDs in the desired order
-  Future<bool> reorderClaims(List<int> claimIds, {String? idempotencyKey}) async {
+  Future<bool> reorderClaims(List<int> claimIds,
+      {String? idempotencyKey}) async {
+    // Prevent concurrent reorders to avoid state inconsistencies
+    if (state.isReordering) return false;
+
+    final key = idempotencyKey ?? const Uuid().v4();
     // Save previous claims for rollback on error
     final previousClaims = [...state.claims];
 
@@ -450,13 +468,15 @@ class WaiversNotifier extends StateNotifier<WaiversState> implements WaiversSock
     for (int i = 0; i < claimIds.length; i++) {
       final index = optimisticClaims.indexWhere((c) => c.id == claimIds[i]);
       if (index >= 0) {
-        optimisticClaims[index] = optimisticClaims[index].copyWith(claimOrder: i + 1);
+        optimisticClaims[index] =
+            optimisticClaims[index].copyWith(claimOrder: i + 1);
       }
     }
     state = state.copyWith(claims: optimisticClaims, isReordering: true);
 
     try {
-      final updatedClaims = await _waiverRepo.reorderClaims(leagueId, claimIds, idempotencyKey: idempotencyKey);
+      final updatedClaims = await _waiverRepo.reorderClaims(leagueId, claimIds,
+          idempotencyKey: key);
       if (!mounted) return true;
       // Update local state with server-confirmed claim orders
       final currentClaims = [...state.claims];
@@ -471,7 +491,10 @@ class WaiversNotifier extends StateNotifier<WaiversState> implements WaiversSock
     } catch (e) {
       if (!mounted) return false;
       // Rollback to previous claim order on error
-      state = state.copyWith(claims: previousClaims, error: ErrorSanitizer.sanitize(e), isReordering: false);
+      state = state.copyWith(
+          claims: previousClaims,
+          error: ErrorSanitizer.sanitize(e),
+          isReordering: false);
       return false;
     }
   }
@@ -495,7 +518,8 @@ class WaiversNotifier extends StateNotifier<WaiversState> implements WaiversSock
   Future<bool> moveClaimDown(int claimId) async {
     final pending = state.sortedPendingClaims;
     final index = pending.indexWhere((c) => c.id == claimId);
-    if (index < 0 || index >= pending.length - 1) return false; // At bottom or not found
+    if (index < 0 || index >= pending.length - 1)
+      return false; // At bottom or not found
 
     final ids = pending.map((c) => c.id).toList();
     // Swap with next
@@ -522,8 +546,8 @@ class WaiversNotifier extends StateNotifier<WaiversState> implements WaiversSock
 }
 
 /// Provider for waivers in a specific league
-final waiversProvider =
-    StateNotifierProvider.autoDispose.family<WaiversNotifier, WaiversState, ({int leagueId, int? userRosterId})>(
+final waiversProvider = StateNotifierProvider.autoDispose
+    .family<WaiversNotifier, WaiversState, ({int leagueId, int? userRosterId})>(
   (ref, params) => WaiversNotifier(
     ref.watch(waiverRepositoryProvider),
     ref.watch(socketServiceProvider),

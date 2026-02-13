@@ -24,13 +24,16 @@ class MyClaimsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)), (prev, next) {
+    ref.listen(
+        waiversProvider((leagueId: leagueId, userRosterId: userRosterId)),
+        (prev, next) {
       if (next.isForbidden && prev?.isForbidden != true) {
         handleForbiddenNavigation(context, ref);
       }
     });
 
-    final state = ref.watch(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)));
+    final state = ref.watch(
+        waiversProvider((leagueId: leagueId, userRosterId: userRosterId)));
 
     return Scaffold(
       appBar: AppBar(
@@ -55,7 +58,8 @@ class MyClaimsScreen extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(right: 12),
       child: Chip(
-        avatar: Icon(Icons.account_balance_wallet, size: 16, color: colorScheme.primary),
+        avatar: Icon(Icons.account_balance_wallet,
+            size: 16, color: colorScheme.primary),
         label: Text(
           '\$${budget.remainingBudget} / \$${budget.initialBudget}',
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
@@ -65,16 +69,19 @@ class MyClaimsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFilterChips(BuildContext context, WidgetRef ref, WaiversState state) {
+  Widget _buildFilterChips(
+      BuildContext context, WidgetRef ref, WaiversState state) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
           AppFilterChip(
-            label: 'Pending${state.pendingCount > 0 ? ' (${state.pendingCount})' : ''}',
+            label:
+                'Pending${state.pendingCount > 0 ? ' (${state.pendingCount})' : ''}',
             selected: state.filter == 'pending',
             onSelected: () => ref
-                .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                .read(waiversProvider(
+                    (leagueId: leagueId, userRosterId: userRosterId)).notifier)
                 .setFilter('pending'),
           ),
           const SizedBox(width: 8),
@@ -82,7 +89,8 @@ class MyClaimsScreen extends ConsumerWidget {
             label: 'All',
             selected: state.filter == 'all',
             onSelected: () => ref
-                .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                .read(waiversProvider(
+                    (leagueId: leagueId, userRosterId: userRosterId)).notifier)
                 .setFilter('all'),
           ),
           const SizedBox(width: 8),
@@ -90,7 +98,8 @@ class MyClaimsScreen extends ConsumerWidget {
             label: 'Completed',
             selected: state.filter == 'completed',
             onSelected: () => ref
-                .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                .read(waiversProvider(
+                    (leagueId: leagueId, userRosterId: userRosterId)).notifier)
                 .setFilter('completed'),
           ),
         ],
@@ -107,29 +116,53 @@ class MyClaimsScreen extends ConsumerWidget {
       return AppErrorView(
         message: state.error!,
         onRetry: () => ref
-            .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+            .read(waiversProvider(
+                (leagueId: leagueId, userRosterId: userRosterId)).notifier)
             .loadWaiverData(),
       );
     }
 
     // Use sortedPendingClaims for pending filter, filteredClaims for others
-    final claims = state.filter == 'pending' ? state.sortedPendingClaims : state.filteredClaims;
+    final claims = state.filter == 'pending'
+        ? state.sortedPendingClaims
+        : state.filteredClaims;
 
     if (claims.isEmpty) {
       return AppEmptyView(
-        icon: state.filter == 'pending' ? Icons.hourglass_empty : Icons.receipt_long,
-        title: state.filter == 'pending' ? 'No Pending Claims' : 'No Claims Found',
+        icon: state.filter == 'pending'
+            ? Icons.hourglass_empty
+            : Icons.receipt_long,
+        title:
+            state.filter == 'pending' ? 'No Pending Claims' : 'No Claims Found',
         subtitle: state.filter == 'pending'
             ? 'Submit waiver claims from the player list to add players to your roster'
             : 'No waiver claims match this filter',
       );
     }
 
+    // Calculate conditional claims (those dropping a player already dropped by a higher priority claim)
+    final conditionalMap = <int, int>{}; // claimId -> blockingClaimOrder
+    if (state.filter == 'pending') {
+      final dropPlayerToOrder = <int, int>{}; // dropPlayerId -> order (1-based)
+      for (int i = 0; i < claims.length; i++) {
+        final claim = claims[i];
+        final order = i + 1;
+        if (claim.dropPlayerId != null) {
+          if (dropPlayerToOrder.containsKey(claim.dropPlayerId)) {
+            conditionalMap[claim.id] = dropPlayerToOrder[claim.dropPlayerId]!;
+          } else {
+            dropPlayerToOrder[claim.dropPlayerId!] = order;
+          }
+        }
+      }
+    }
+
     // For pending claims, show info header + reorderable list
     if (state.filter == 'pending') {
       return RefreshIndicator(
         onRefresh: () => ref
-            .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+            .read(waiversProvider(
+                (leagueId: leagueId, userRosterId: userRosterId)).notifier)
             .loadWaiverData(),
         child: CustomScrollView(
           slivers: [
@@ -147,7 +180,8 @@ class MyClaimsScreen extends ConsumerWidget {
               ),
             // Claims list
             if (claims.length > 1)
-              _buildReorderableSliverList(context, ref, claims, state)
+              _buildReorderableSliverList(
+                  context, ref, claims, state, conditionalMap)
             else
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -161,6 +195,7 @@ class MyClaimsScreen extends ConsumerWidget {
                           claim: claim,
                           claimOrder: index + 1,
                           onCancel: () => _handleCancel(context, ref, claim),
+                          conditionalOnOrder: conditionalMap[claim.id],
                         ),
                       );
                     },
@@ -176,7 +211,9 @@ class MyClaimsScreen extends ConsumerWidget {
     // Non-pending views: simple list
     return RefreshIndicator(
       onRefresh: () => ref
-          .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+          .read(
+              waiversProvider((leagueId: leagueId, userRosterId: userRosterId))
+                  .notifier)
           .loadWaiverData(),
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -191,6 +228,7 @@ class MyClaimsScreen extends ConsumerWidget {
               onCancel: claim.status.isPending
                   ? () => _handleCancel(context, ref, claim)
                   : null,
+              conditionalOnOrder: conditionalMap[claim.id],
             ),
           );
         },
@@ -198,69 +236,89 @@ class MyClaimsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildReorderableSliverList(BuildContext context, WidgetRef ref, List<WaiverClaim> claims, WaiversState state) {
+  Widget _buildReorderableSliverList(
+      BuildContext context,
+      WidgetRef ref,
+      List<WaiverClaim> claims,
+      WaiversState state,
+      Map<int, int> conditionalMap) {
     // SliverReorderableList is not available, so we wrap ReorderableListView in a SliverFillRemaining
     return SliverFillRemaining(
-      child: ReorderableListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: claims.length,
-        onReorder: (oldIndex, newIndex) async {
-          if (newIndex > oldIndex) newIndex--;
-          final ids = claims.map((c) => c.id).toList();
-          final item = ids.removeAt(oldIndex);
-          ids.insert(newIndex, item);
-          final success = await ref
-              .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
-              .reorderClaims(ids);
-          if (!success && context.mounted) {
-            'Failed to reorder claims. Please try again.'.showAsError(ref);
-          }
-        },
-        itemBuilder: (context, index) {
-          final claim = claims[index];
-          return Padding(
-            key: ValueKey('claim-${claim.id}'),
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _ReorderableClaimCard(
-              claim: claim,
-              claimOrder: index + 1,
-              isFirst: index == 0,
-              isLast: index == claims.length - 1,
-              isReordering: state.isReordering,
-              onMoveUp: index > 0
-                  ? () async {
-                      final success = await ref
-                          .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
-                          .moveClaimUp(claim.id);
-                      if (!success && context.mounted) {
-                        'Failed to reorder claims. Please try again.'.showAsError(ref);
+      child: IgnorePointer(
+        ignoring: state.isReordering,
+        child: ReorderableListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: claims.length,
+          onReorder: (oldIndex, newIndex) async {
+            if (newIndex > oldIndex) newIndex--;
+            final ids = claims.map((c) => c.id).toList();
+            final item = ids.removeAt(oldIndex);
+            ids.insert(newIndex, item);
+            final success = await ref
+                .read(waiversProvider(
+                    (leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                .reorderClaims(ids);
+            if (!success && context.mounted) {
+              'Failed to reorder claims. Please try again.'.showAsError(ref);
+            }
+          },
+          itemBuilder: (context, index) {
+            final claim = claims[index];
+            return Padding(
+              key: ValueKey('claim-${claim.id}'),
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ReorderableClaimCard(
+                claim: claim,
+                claimOrder: index + 1,
+                isFirst: index == 0,
+                isLast: index == claims.length - 1,
+                isReordering: state.isReordering,
+                onMoveUp: index > 0
+                    ? () async {
+                        final success = await ref
+                            .read(waiversProvider((
+                              leagueId: leagueId,
+                              userRosterId: userRosterId
+                            )).notifier)
+                            .moveClaimUp(claim.id);
+                        if (!success && context.mounted) {
+                          'Failed to reorder claims. Please try again.'
+                              .showAsError(ref);
+                        }
                       }
-                    }
-                  : null,
-              onMoveDown: index < claims.length - 1
-                  ? () async {
-                      final success = await ref
-                          .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
-                          .moveClaimDown(claim.id);
-                      if (!success && context.mounted) {
-                        'Failed to reorder claims. Please try again.'.showAsError(ref);
+                    : null,
+                onMoveDown: index < claims.length - 1
+                    ? () async {
+                        final success = await ref
+                            .read(waiversProvider((
+                              leagueId: leagueId,
+                              userRosterId: userRosterId
+                            )).notifier)
+                            .moveClaimDown(claim.id);
+                        if (!success && context.mounted) {
+                          'Failed to reorder claims. Please try again.'
+                              .showAsError(ref);
+                        }
                       }
-                    }
-                  : null,
-              onCancel: () => _handleCancel(context, ref, claim),
-            ),
-          );
-        },
+                    : null,
+                onCancel: () => _handleCancel(context, ref, claim),
+                conditionalOnOrder: conditionalMap[claim.id],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
-  Future<void> _handleCancel(BuildContext context, WidgetRef ref, WaiverClaim claim) async {
+  Future<void> _handleCancel(
+      BuildContext context, WidgetRef ref, WaiverClaim claim) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cancel Claim?'),
-        content: Text('Are you sure you want to cancel your claim for ${claim.playerName}?'),
+        content: Text(
+            'Are you sure you want to cancel your claim for ${claim.playerName}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -268,7 +326,8 @@ class MyClaimsScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Cancel Claim'),
           ),
         ],
@@ -277,7 +336,9 @@ class MyClaimsScreen extends ConsumerWidget {
 
     if (confirmed == true) {
       final success = await ref
-          .read(waiversProvider((leagueId: leagueId, userRosterId: userRosterId)).notifier)
+          .read(
+              waiversProvider((leagueId: leagueId, userRosterId: userRosterId))
+                  .notifier)
           .cancelClaim(claim.id);
       if (success && context.mounted) {
         showSuccess(ref, 'Claim cancelled');
@@ -309,7 +370,8 @@ class _WaiverInfoHeader extends StatelessWidget {
           _buildScheduleInfo(context, colorScheme),
           const SizedBox(height: 8),
           // Priority or FAAB info
-          if (userRosterId != null) _buildPriorityOrBudgetInfo(context, colorScheme),
+          if (userRosterId != null)
+            _buildPriorityOrBudgetInfo(context, colorScheme),
         ],
       ),
     );
@@ -357,7 +419,8 @@ class _WaiverInfoHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildPriorityOrBudgetInfo(BuildContext context, ColorScheme colorScheme) {
+  Widget _buildPriorityOrBudgetInfo(
+      BuildContext context, ColorScheme colorScheme) {
     if (state.isFaabLeague) {
       return _buildFaabInfo(context, colorScheme);
     }
@@ -409,7 +472,8 @@ class _WaiverInfoHeader extends StatelessWidget {
           ClipRRect(
             borderRadius: AppSpacing.badgeRadius,
             child: LinearProgressIndicator(
-              value: budget.remainingBudget / (budget.initialBudget > 0 ? budget.initialBudget : 1),
+              value: budget.remainingBudget /
+                  (budget.initialBudget > 0 ? budget.initialBudget : 1),
               backgroundColor: colorScheme.surfaceContainerLow,
               color: budgetColor,
               minHeight: 6,
@@ -529,11 +593,13 @@ class _ClaimCard extends StatelessWidget {
   final WaiverClaim claim;
   final int? claimOrder;
   final VoidCallback? onCancel;
+  final int? conditionalOnOrder;
 
   const _ClaimCard({
     required this.claim,
     this.claimOrder,
     this.onCancel,
+    this.conditionalOnOrder,
   });
 
   @override
@@ -551,7 +617,8 @@ class _ClaimCard extends StatelessWidget {
               children: [
                 if (claimOrder != null) ...[
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: colorScheme.primary,
                       borderRadius: AppSpacing.badgeRadius,
@@ -582,7 +649,8 @@ class _ClaimCard extends StatelessWidget {
               children: [
                 if (claim.playerPosition != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: getPositionColor(claim.playerPosition!),
                       borderRadius: AppSpacing.badgeRadius,
@@ -603,9 +671,10 @@ class _ClaimCard extends StatelessWidget {
                     children: [
                       Text(
                         claim.playerName,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       if (claim.playerTeam != null)
                         Text(
@@ -626,7 +695,8 @@ class _ClaimCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: AppSpacing.badgeRadius,
-                  border: Border.all(color: colorScheme.primary.withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: colorScheme.primary.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   'Bid: \$${claim.bidAmount}',
@@ -663,6 +733,35 @@ class _ClaimCard extends StatelessWidget {
               ),
             ],
 
+            // Conditional warning
+            if (conditionalOnOrder != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colorScheme.tertiaryContainer.withValues(alpha: 0.5),
+                  borderRadius: AppSpacing.badgeRadius,
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.alt_route,
+                        size: 16, color: colorScheme.onTertiaryContainer),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Conditional: Depends on Claim #$conditionalOnOrder failing',
+                        style: TextStyle(
+                          color: colorScheme.onTertiaryContainer,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             // Failure reason (if failed)
             if (claim.status.isFailed && claim.failureReason != null) ...[
               const SizedBox(height: 8),
@@ -674,7 +773,8 @@ class _ClaimCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline, size: 16, color: colorScheme.error),
+                    Icon(Icons.error_outline,
+                        size: 16, color: colorScheme.error),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -801,6 +901,7 @@ class _ReorderableClaimCard extends StatelessWidget {
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
   final VoidCallback onCancel;
+  final int? conditionalOnOrder;
 
   const _ReorderableClaimCard({
     required this.claim,
@@ -811,6 +912,7 @@ class _ReorderableClaimCard extends StatelessWidget {
     this.onMoveUp,
     this.onMoveDown,
     required this.onCancel,
+    this.conditionalOnOrder,
   });
 
   @override
@@ -862,7 +964,8 @@ class _ReorderableClaimCard extends StatelessWidget {
                     children: [
                       if (claim.playerPosition != null) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: getPositionColor(claim.playerPosition!),
                             borderRadius: AppSpacing.badgeRadius,
@@ -881,9 +984,10 @@ class _ReorderableClaimCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           claim.playerName,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -901,7 +1005,8 @@ class _ReorderableClaimCard extends StatelessWidget {
                       ],
                       if (claim.bidAmount > 0)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: colorScheme.primary.withValues(alpha: 0.1),
                             borderRadius: AppSpacing.badgeRadius,
@@ -933,6 +1038,34 @@ class _ReorderableClaimCard extends StatelessWidget {
                       ],
                     ],
                   ),
+                  if (conditionalOnOrder != null) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: colorScheme.tertiaryContainer
+                            .withValues(alpha: 0.5),
+                        borderRadius: AppSpacing.badgeRadius,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.alt_route,
+                              size: 10, color: colorScheme.onTertiaryContainer),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Conditional on #$conditionalOnOrder',
+                            style: TextStyle(
+                              color: colorScheme.onTertiaryContainer,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
