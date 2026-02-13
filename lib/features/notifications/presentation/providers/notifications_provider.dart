@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/utils/error_sanitizer.dart';
+import '../../../auth/presentation/auth_provider.dart';
+import '../../../leagues/data/league_repository.dart';
 import '../../data/notifications_repository.dart';
 import '../../domain/notification_model.dart';
 
@@ -69,9 +71,21 @@ class NotificationsState {
 class NotificationsNotifier extends StateNotifier<NotificationsState> {
   final NotificationsRepository _repository;
   final SocketService _socketService;
+  final Set<int> _userRosterIds;
+  final String? _currentUserId;
+  final int? Function() _getActiveLeagueChat;
   final List<VoidCallback> _disposers = [];
 
-  NotificationsNotifier(this._repository, this._socketService) : super(NotificationsState()) {
+  NotificationsNotifier(
+    this._repository,
+    this._socketService, {
+    required Set<int> userRosterIds,
+    required String? currentUserId,
+    required int? Function() getActiveLeagueChat,
+  })  : _userRosterIds = userRosterIds,
+        _currentUserId = currentUserId,
+        _getActiveLeagueChat = getActiveLeagueChat,
+        super(NotificationsState()) {
     _setupSocketListeners();
     loadNotifications();
   }
@@ -125,11 +139,17 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
     }));
 
     _disposers.add(_socketService.onNextPick((data) {
-      // Only notify if it's the user's turn (data should contain current picker info)
+      // Only notify if it's the user's turn
+      if (data is Map<String, dynamic>) {
+        final currentRosterId = data['currentRosterId'] as int?;
+        if (currentRosterId == null || !_userRosterIds.contains(currentRosterId)) {
+          return;
+        }
+      }
       _addNotificationFromSocket(
         type: NotificationType.draftPick,
-        title: 'Draft Update',
-        body: 'A new pick is on the clock',
+        title: 'Your Turn to Pick',
+        body: 'You are on the clock!',
         data: data,
       );
     }));
@@ -137,10 +157,24 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
     // Listen for chat messages
     _disposers.add(_socketService.onChatMessage((data) {
       if (data is Map<String, dynamic>) {
+        // Skip if user sent this message
+        final senderId = data['senderId'] as String? ?? data['sender_id'] as String?;
+        if (senderId != null && senderId == _currentUserId) return;
+
+        // Skip if user is currently viewing this league's chat
+        final leagueId = data['leagueId'] as int? ?? data['league_id'] as int?;
+        final activeChat = _getActiveLeagueChat();
+        if (leagueId != null && leagueId == activeChat) return;
+
+        final senderName = data['senderName'] as String? ?? data['sender_name'] as String?;
+        final body = (data['content'] as String?)
+            ?? (data['message'] is String ? data['message'] as String : null)
+            ?? 'You have a new message';
+
         _addNotificationFromSocket(
           type: NotificationType.messageReceived,
-          title: 'New Message',
-          body: data['message'] as String? ?? 'You have a new message',
+          title: senderName != null ? 'Message from $senderName' : 'New Message',
+          body: body,
           data: data,
         );
       }
@@ -184,16 +218,7 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
       );
     }));
 
-    // Listen for scoring events
-    _disposers.add(_socketService.onScoresUpdated((data) {
-      _addNotificationFromSocket(
-        type: NotificationType.scoresUpdated,
-        title: 'Scores Updated',
-        body: 'Player scores have been updated',
-        data: data,
-      );
-    }));
-
+    // Listen for scoring events (only week finalized — scores:updated is too noisy)
     _disposers.add(_socketService.onWeekFinalized((data) {
       _addNotificationFromSocket(
         type: NotificationType.weekFinalized,
@@ -202,6 +227,18 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
         data: data,
       );
     }));
+  }
+
+  /// Generate a deterministic notification ID to prevent duplicates.
+  String _generateNotificationId(NotificationType type, Map<String, dynamic> data) {
+    // Prefer server-provided ID
+    final eventId = data['eventId'] ?? data['id'];
+    if (eventId != null) return '${type.value}_$eventId';
+
+    // Derive from type + entity IDs
+    final entityId = data['tradeId'] ?? data['draftId'] ?? data['claimId'] ?? data['leagueId'];
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    return '${type.value}_${entityId ?? ''}_$timestamp';
   }
 
   void _addNotificationFromSocket({
@@ -213,8 +250,10 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
     if (!mounted) return;
     final dataMap = data is Map<String, dynamic> ? data : <String, dynamic>{};
 
+    final id = _generateNotificationId(type, dataMap);
+
     final notification = AppNotification(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: id,
       type: type,
       title: title,
       body: body,
@@ -243,6 +282,10 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
 
   Future<void> addNotification(AppNotification notification) async {
     if (!mounted) return;
+
+    // Skip if duplicate (same ID already exists)
+    if (state.notifications.any((n) => n.id == notification.id)) return;
+
     // Add to state immediately
     final updated = [notification, ...state.notifications];
     state = state.copyWith(notifications: updated);
@@ -292,11 +335,30 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
   }
 }
 
+/// Tracks which league chat the user is currently viewing.
+/// Set when entering a chat screen, cleared on exit.
+final activeLeagueChatProvider = StateProvider<int?>((ref) => null);
+
+/// Set of roster IDs belonging to the current user across all leagues.
+final userRosterIdsProvider = Provider<Set<int>>((ref) {
+  final leaguesState = ref.watch(myLeaguesProvider);
+  return leaguesState.leagues
+      .where((l) => l.userRosterId != null)
+      .map((l) => l.userRosterId!)
+      .toSet();
+});
+
 final notificationsProvider =
-    StateNotifierProvider.autoDispose<NotificationsNotifier, NotificationsState>((ref) {
+    StateNotifierProvider<NotificationsNotifier, NotificationsState>((ref) {
+  final userRosterIds = ref.watch(userRosterIdsProvider);
+  final currentUserId = ref.watch(authStateProvider).user?.id;
+
   return NotificationsNotifier(
     ref.watch(notificationsRepositoryProvider),
     ref.watch(socketServiceProvider),
+    userRosterIds: userRosterIds,
+    currentUserId: currentUserId,
+    getActiveLeagueChat: () => ref.read(activeLeagueChatProvider),
   );
 });
 

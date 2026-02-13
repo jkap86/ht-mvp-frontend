@@ -8,6 +8,7 @@ import '../../../core/utils/time_formatter.dart';
 import '../../../core/widgets/states/states.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../domain/chat_message.dart';
+import '../../notifications/presentation/providers/notifications_provider.dart';
 import 'providers/chat_provider.dart';
 import 'widgets/chat_message_input.dart';
 import 'widgets/connection_banner.dart';
@@ -41,6 +42,10 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // Mark this league chat as active to suppress notifications
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(activeLeagueChatProvider.notifier).state = widget.leagueId;
+    });
   }
 
   void _onScroll() {
@@ -56,6 +61,8 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
     _scrollController.removeListener(_onScroll);
     _messageController.dispose();
     _scrollController.dispose();
+    // Clear active chat on exit
+    ref.read(activeLeagueChatProvider.notifier).state = null;
     super.dispose();
   }
 
