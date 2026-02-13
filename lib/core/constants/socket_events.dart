@@ -86,7 +86,7 @@ class SocketEvents {
 
   // Scoring events
   static const scoringScoresUpdated = 'scoring:scores_updated';
-  static const scoringScoresUpdatedV2 = 'scoring:scores_updated_v2';
+  static const scoringScoresUpdatedV2 = 'scoring:scores_updated:v2';
   static const scoringWeekFinalized = 'scoring:week_finalized';
 
   // Member events

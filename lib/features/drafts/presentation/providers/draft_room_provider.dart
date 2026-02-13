@@ -39,6 +39,7 @@ class DraftRoomState {
   final String? currentUserId;
   final bool isLoading;
   final String? error;
+  final String? snackbarMessage;
   // Auction-specific fields
   final List<AuctionLot> activeLots;
   final List<AuctionBudget> budgets;
@@ -106,6 +107,7 @@ class DraftRoomState {
     this.currentUserId,
     this.isLoading = true,
     this.error,
+    this.snackbarMessage,
     this.activeLots = const [],
     this.budgets = const [],
     this.outbidNotification,
@@ -290,6 +292,8 @@ class DraftRoomState {
     bool? isLoading,
     String? error,
     bool clearError = false,
+    String? snackbarMessage,
+    bool clearSnackbarMessage = false,
     List<AuctionLot>? activeLots,
     List<AuctionBudget>? budgets,
     OutbidNotification? outbidNotification,
@@ -339,6 +343,7 @@ class DraftRoomState {
       currentUserId: currentUserId ?? this.currentUserId,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
+      snackbarMessage: clearSnackbarMessage ? null : (snackbarMessage ?? this.snackbarMessage),
       activeLots: activeLots ?? this.activeLots,
       budgets: budgets ?? this.budgets,
       outbidNotification: clearOutbidNotification
@@ -760,7 +765,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       // Show snackbar notification if current user was auto-nominated
       if (nominatorRosterId == state.myRosterId) {
         state = state.copyWith(
-          error:
+          snackbarMessage:
               'You missed your nomination window - $playerName was auto-nominated',
         );
       }
@@ -900,15 +905,16 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   @override
   void onAuctionErrorReceived(String message) {
     if (!mounted) return;
-    state = state.copyWith(error: message);
-
-    // If server says lot expired/ended, refresh auction state so UI isn't stuck
     final lower = message.toLowerCase();
     if (lower.contains('expired') ||
         lower.contains('ended') ||
         lower.contains('closed') ||
         lower.contains('closing')) {
+      // Transient auction errors -> snackbar (not full error page)
+      state = state.copyWith(snackbarMessage: message);
       loadAuctionData();
+    } else {
+      state = state.copyWith(error: message);
     }
   }
 
@@ -1043,9 +1049,9 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     } catch (e) {
       // Auction data is supplemental - log for debugging but don't block UI
       if (kDebugMode) debugPrint('Failed to load auction data: $e');
-      // Still update state with error for potential UI feedback
+      // Still update state with snackbar for potential UI feedback
       if (mounted) {
-        state = state.copyWith(error: 'Failed to load auction data');
+        state = state.copyWith(snackbarMessage: 'Failed to load auction data');
       }
     }
   }
@@ -1168,6 +1174,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
   void clearError() {
     state = state.copyWith(clearError: true);
+  }
+
+  void clearSnackbarMessage() {
+    state = state.copyWith(clearSnackbarMessage: true);
   }
 
   /// Toggle the grid axis orientation

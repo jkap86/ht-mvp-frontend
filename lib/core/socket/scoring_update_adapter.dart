@@ -69,10 +69,13 @@ class ScoringUpdateAdapter {
       _handleScoresUpdated(data);
     }));
 
-    // scoring:scores_updated_v2 (future backend support)
+    // scoring:scores_updated:v2 (enhanced payload with inline scores)
     _disposers.add(_socketService.on(
       SocketEvents.scoringScoresUpdatedV2,
       (data) {
+        if (kDebugMode) {
+          debugPrint('ScoringAdapter: received V2 event: $data');
+        }
         _handleScoresUpdated(data);
       },
     ));

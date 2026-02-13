@@ -46,6 +46,7 @@ class DraftRoomScreen extends ConsumerStatefulWidget {
 
 class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
   final GlobalKey<_DraftRoomBodyState> _bodyKey = GlobalKey();
+  final List<ProviderSubscription> _subscriptions = [];
 
   // Separate flags per operation to prevent one failed operation from blocking others
   // _isPickSubmitting moved to DraftRoomState to survive navigation
@@ -59,6 +60,94 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
 
   DraftRoomKey get _providerKey => (leagueId: widget.leagueId, draftId: widget.draftId);
   DraftQueueKey get _queueKey => (leagueId: widget.leagueId, draftId: widget.draftId);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Listener 1: isForbidden navigation redirect
+      _subscriptions.add(ref.listenManual(
+        draftRoomProvider(_providerKey).select((s) => s.isForbidden),
+        (prev, next) {
+          if (next && prev != true) {
+            handleForbiddenNavigation(context, ref);
+          }
+        },
+      ));
+
+      // Listener 2: outbidNotification snackbar
+      _subscriptions.add(ref.listenManual(
+        draftRoomProvider(_providerKey).select((s) => s.outbidNotification),
+        (previous, next) {
+          if (next != null) {
+            final state = ref.read(draftRoomProvider(_providerKey));
+            final players = state.players;
+            final player = players.where((p) => p.id == next.playerId).firstOrNull;
+            final playerName = player?.fullName ?? 'Player';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('You were outbid on $playerName! New bid: \$${next.newBid}'),
+                backgroundColor: AppTheme.draftWarning,
+                action: SnackBarAction(
+                  label: 'View',
+                  textColor: Theme.of(context).colorScheme.onPrimary,
+                  onPressed: () {
+                    final currentState = ref.read(draftRoomProvider(_providerKey));
+                    final lot = currentState.activeLots.where((l) => l.id == next.lotId).firstOrNull;
+                    final lotPlayer = lot != null
+                        ? currentState.players.where((p) => p.id == lot.playerId).firstOrNull
+                        : null;
+                    if (lot != null && lotPlayer != null && context.mounted) {
+                      _bodyKey.currentState?.expandDrawer();
+                      AuctionBidDialog.show(
+                        context,
+                        leagueId: widget.leagueId,
+                        draftId: widget.draftId,
+                        lotId: lot.id,
+                        player: lotPlayer,
+                        myBudget: currentState.myBudget,
+                        draftOrder: currentState.draftOrder,
+                        settings: currentState.auctionSettings ?? AuctionSettings.defaults,
+                        onSubmit: (maxBid) async => await _handleSetMaxBid(lot.id, maxBid),
+                        serverClockOffsetMs: currentState.serverClockOffsetMs,
+                        totalRosterSpots: currentState.draft?.rounds,
+                      );
+                    }
+                  },
+                ),
+              ),
+            );
+            ref.read(draftRoomProvider(_providerKey).notifier).clearOutbidNotification();
+          }
+        },
+      ));
+
+      // Listener 3: snackbarMessage snackbar (transient auction errors)
+      _subscriptions.add(ref.listenManual(
+        draftRoomProvider(_providerKey).select((s) => s.snackbarMessage),
+        (previous, next) {
+          if (next != null && previous != next) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(next),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+            ref.read(draftRoomProvider(_providerKey).notifier).clearSnackbarMessage();
+          }
+        },
+      ));
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final sub in _subscriptions) {
+      sub.close();
+    }
+    _subscriptions.clear();
+    super.dispose();
+  }
 
   Future<void> _makePick(int playerId) async {
     final draftState = ref.read(draftRoomProvider(_providerKey));
@@ -219,12 +308,6 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(draftRoomProvider(_providerKey), (prev, next) {
-      if (next.isForbidden && prev?.isForbidden != true) {
-        handleForbiddenNavigation(context, ref);
-      }
-    });
-
     // Use select() for loading state - only rebuilds when isLoading changes
     final isLoading = ref.watch(
       draftRoomProvider(_providerKey).select((s) => s.isLoading),
@@ -318,76 +401,6 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     );
     final isDraftPaused = ref.watch(
       draftRoomProvider(_providerKey).select((s) => s.draft?.status == DraftStatus.paused),
-    );
-
-    // Listen for outbid notifications
-    ref.listen<OutbidNotification?>(
-      draftRoomProvider(_providerKey).select((s) => s.outbidNotification),
-      (previous, next) {
-        if (next != null) {
-          final state = ref.read(draftRoomProvider(_providerKey));
-          final players = state.players;
-          final player = players.where((p) => p.id == next.playerId).firstOrNull;
-          final playerName = player?.fullName ?? 'Player';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('You were outbid on $playerName! New bid: \$${next.newBid}'),
-              backgroundColor: AppTheme.draftWarning,
-              action: SnackBarAction(
-                label: 'View',
-                textColor: Theme.of(context).colorScheme.onPrimary,
-                onPressed: () {
-                  // Find the lot user was outbid on and open bid dialog
-                  final currentState = ref.read(draftRoomProvider(_providerKey));
-                  final lot = currentState.activeLots.where((l) => l.id == next.lotId).firstOrNull;
-                  final lotPlayer = lot != null
-                      ? currentState.players.where((p) => p.id == lot.playerId).firstOrNull
-                      : null;
-                  if (lot != null && lotPlayer != null && context.mounted) {
-                    _bodyKey.currentState?.expandDrawer();
-                    AuctionBidDialog.show(
-                      context,
-                      leagueId: widget.leagueId,
-                      draftId: widget.draftId,
-                      lotId: lot.id,
-                      player: lotPlayer,
-                      myBudget: currentState.myBudget,
-                      draftOrder: currentState.draftOrder,
-                      settings: currentState.auctionSettings ?? AuctionSettings.defaults,
-                      onSubmit: (maxBid) async => await _handleSetMaxBid(lot.id, maxBid),
-                      serverClockOffsetMs: currentState.serverClockOffsetMs,
-                      totalRosterSpots: currentState.draft?.rounds,
-                    );
-                  }
-                },
-              ),
-            ),
-          );
-          ref.read(draftRoomProvider(_providerKey).notifier).clearOutbidNotification();
-        }
-      },
-    );
-
-    // Listen for auction errors (expired/closed lots) and show snackbar
-    ref.listen<String?>(
-      draftRoomProvider(_providerKey).select((s) => s.error),
-      (previous, next) {
-        if (next != null && previous != next) {
-          final lower = next.toLowerCase();
-          if (lower.contains('expired') ||
-              lower.contains('ended') ||
-              lower.contains('closed') ||
-              lower.contains('closing')) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(next),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-            );
-          }
-          ref.read(draftRoomProvider(_providerKey).notifier).clearError();
-        }
-      },
     );
 
     return Scaffold(
