@@ -6,11 +6,10 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/utils/app_layout.dart';
 import '../../../../core/utils/navigation_utils.dart';
-import '../../../../core/utils/error_sanitizer.dart';
 import '../../../../core/widgets/live_badge.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../../domain/matchup.dart';
-import '../providers/matchup_provider.dart';
+import '../providers/matchup_detail_provider.dart';
 import '../widgets/lineup_comparison_widget.dart';
 
 class MatchupDetailScreen extends ConsumerStatefulWidget {
@@ -31,12 +30,13 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen>
     with WidgetsBindingObserver {
   DateTime? _lastFetchedAt;
   Timer? _displayTimer;
-  Timer? _autoRefreshTimer;
-  bool _isAutoRefreshActive = false;
+  Timer? _fallbackRefreshTimer;
+  bool _isFallbackActive = false;
   bool _isScreenVisible = true;
 
-  /// Duration between auto-refresh data fetches during live games.
-  static const _autoRefreshInterval = Duration(seconds: 60);
+  /// Safety net: if socket events stop arriving, fetch data every 3 minutes.
+  /// Socket-driven refresh via the notifier is the primary mechanism.
+  static const _fallbackRefreshInterval = Duration(minutes: 3);
 
   /// Duration between UI ticks to update the "last updated" text.
   static const _displayTickInterval = Duration(seconds: 30);
@@ -56,7 +56,7 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _displayTimer?.cancel();
-    _stopAutoRefresh();
+    _stopFallbackRefresh();
     super.dispose();
   }
 
@@ -65,68 +65,62 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen>
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       _isScreenVisible = true;
-      // Re-evaluate auto-refresh when returning to foreground
-      if (_isAutoRefreshActive) {
-        _startAutoRefresh();
+      // Re-evaluate fallback refresh when returning to foreground
+      if (_isFallbackActive) {
+        _startFallbackRefresh();
       }
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
       _isScreenVisible = false;
-      // Pause auto-refresh when screen is not visible
-      _autoRefreshTimer?.cancel();
-      _autoRefreshTimer = null;
+      // Pause fallback refresh when screen is not visible
+      _fallbackRefreshTimer?.cancel();
+      _fallbackRefreshTimer = null;
     }
   }
 
-  /// Start the periodic auto-refresh timer for live data.
-  void _startAutoRefresh() {
-    _autoRefreshTimer?.cancel();
+  /// Start the fallback safety-net timer for live data.
+  /// Only fires if socket events have stopped arriving.
+  void _startFallbackRefresh() {
+    _fallbackRefreshTimer?.cancel();
     if (!_isScreenVisible || !mounted) return;
-    _isAutoRefreshActive = true;
-    _autoRefreshTimer = Timer.periodic(_autoRefreshInterval, (_) {
+    _isFallbackActive = true;
+    _fallbackRefreshTimer = Timer.periodic(_fallbackRefreshInterval, (_) {
       if (mounted && _isScreenVisible) {
-        _performAutoRefresh();
+        _performFallbackRefresh();
       }
     });
     if (mounted) setState(() {});
   }
 
-  /// Stop the periodic auto-refresh timer.
-  void _stopAutoRefresh() {
-    _autoRefreshTimer?.cancel();
-    _autoRefreshTimer = null;
-    _isAutoRefreshActive = false;
+  /// Stop the fallback safety-net timer.
+  void _stopFallbackRefresh() {
+    _fallbackRefreshTimer?.cancel();
+    _fallbackRefreshTimer = null;
+    _isFallbackActive = false;
   }
 
-  /// Re-fetch matchup data in the background.
-  Future<void> _performAutoRefresh() async {
+  /// Fallback refresh: fetch data as a safety net when socket may be silent.
+  Future<void> _performFallbackRefresh() async {
     final key = (leagueId: widget.leagueId, matchupId: widget.matchupId);
-    ref.invalidate(matchupDetailsProvider(key));
-    // Wait for the new data to arrive so we can update the timestamp
-    try {
-      await ref.read(matchupDetailsProvider(key).future);
-      if (mounted) setState(() => _lastFetchedAt = DateTime.now());
-    } catch (_) {
-      // Silently ignore errors on auto-refresh; stale indicator will show
-    }
+    final notifier = ref.read(matchupDetailProvider(key).notifier);
+    await notifier.loadData();
   }
 
-  /// Evaluate whether auto-refresh should be active based on matchup state.
-  /// Called each time new data arrives.
+  /// Evaluate whether the fallback timer should be active based on matchup state.
   void _evaluateAutoRefresh(MatchupDetails details) {
-    final shouldAutoRefresh = details.matchup.hasLiveData;
-    if (shouldAutoRefresh && !_isAutoRefreshActive) {
-      _startAutoRefresh();
-    } else if (!shouldAutoRefresh && _isAutoRefreshActive) {
-      _stopAutoRefresh();
+    final shouldBeActive = details.matchup.hasLiveData;
+    if (shouldBeActive && !_isFallbackActive) {
+      _startFallbackRefresh();
+    } else if (!shouldBeActive && _isFallbackActive) {
+      _stopFallbackRefresh();
       if (mounted) setState(() {});
     }
   }
 
-  /// Reset the auto-refresh timer (e.g., after a manual refresh).
-  void _resetAutoRefreshTimer() {
-    if (_isAutoRefreshActive) {
-      _startAutoRefresh();
+  /// Reset the fallback timer (e.g., after a manual refresh).
+  void _resetFallbackTimer() {
+    if (_isFallbackActive) {
+      _startFallbackRefresh();
     }
   }
 
@@ -147,9 +141,21 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final detailsAsync = ref.watch(
-      matchupDetailsProvider((leagueId: widget.leagueId, matchupId: widget.matchupId)),
+    final state = ref.watch(
+      matchupDetailProvider((leagueId: widget.leagueId, matchupId: widget.matchupId)),
     );
+
+    // Update local timestamp when provider state updates
+    if (state.lastUpdated != null && state.lastUpdated != _lastFetchedAt) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _lastFetchedAt = state.lastUpdated);
+          if (state.details != null) {
+            _evaluateAutoRefresh(state.details!);
+          }
+        }
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -163,39 +169,39 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen>
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
             onPressed: () {
-              ref.invalidate(matchupDetailsProvider(
+              ref.read(matchupDetailProvider(
                 (leagueId: widget.leagueId, matchupId: widget.matchupId),
-              ));
-              setState(() => _lastFetchedAt = DateTime.now());
-              _resetAutoRefreshTimer();
+              ).notifier).loadData();
+              _resetFallbackTimer();
             },
           ),
         ],
       ),
-      body: detailsAsync.when(
-        data: (details) {
-          // Update timestamp when data arrives and evaluate auto-refresh
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            if (_lastFetchedAt == null) {
-              setState(() => _lastFetchedAt = DateTime.now());
-            }
-            _evaluateAutoRefresh(details);
-          });
-          return _buildContent(context, details);
-        },
-        loading: () => const AppLoadingView(),
-        error: (error, _) => AppErrorView(
-          message: ErrorSanitizer.sanitize(error),
-          onRetry: () {
-            ref.invalidate(matchupDetailsProvider(
-              (leagueId: widget.leagueId, matchupId: widget.matchupId),
-            ));
-            setState(() => _lastFetchedAt = DateTime.now());
-          },
-        ),
-      ),
+      body: _buildBody(context, state),
     );
+  }
+
+  Widget _buildBody(BuildContext context, MatchupDetailState state) {
+    if (state.isLoading && state.details == null) {
+      return const AppLoadingView();
+    }
+
+    if (state.error != null && state.details == null) {
+      return AppErrorView(
+        message: state.error!,
+        onRetry: () {
+          ref.read(matchupDetailProvider(
+            (leagueId: widget.leagueId, matchupId: widget.matchupId),
+          ).notifier).loadData();
+        },
+      );
+    }
+
+    if (state.details == null) {
+      return const AppLoadingView();
+    }
+
+    return _buildContent(context, state.details!);
   }
 
   Widget _buildContent(BuildContext context, MatchupDetails details) {
@@ -219,11 +225,9 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen>
     return RefreshIndicator(
       onRefresh: () async {
         final key = (leagueId: widget.leagueId, matchupId: widget.matchupId);
-        ref.invalidate(matchupDetailsProvider(key));
-        await ref.read(matchupDetailsProvider(key).future);
+        await ref.read(matchupDetailProvider(key).notifier).loadData();
         if (mounted) {
-          setState(() => _lastFetchedAt = DateTime.now());
-          _resetAutoRefreshTimer();
+          _resetFallbackTimer();
         }
       },
       child: Center(
@@ -294,7 +298,7 @@ class _MatchupDetailScreenState extends ConsumerState<MatchupDetailScreen>
                               : colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      if (_isAutoRefreshActive) ...[
+                      if (_isFallbackActive) ...[
                         const SizedBox(width: 6),
                         _AutoRefreshIndicator(color: colorScheme.primary),
                       ],

@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kDebugMode, VoidCallback, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/socket/socket_service.dart';
+import '../../../../core/socket/scoring_update_adapter.dart';
 import '../../../../core/services/invalidation_service.dart';
 import '../../../../core/services/sync_service.dart';
 import '../../../../core/services/app_lifecycle_service.dart';
@@ -97,28 +100,36 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
   final MatchupRepository _matchupRepo;
   final LeagueRepository _leagueRepo;
   final SocketService _socketService;
+  final ScoringUpdateAdapter _scoringAdapter;
   final InvalidationService _invalidationService;
   final SyncService _syncService;
   final AppLifecycleService _lifecycleService;
   final int leagueId;
 
-  final List<VoidCallback> _socketDisposers = [];
   VoidCallback? _invalidationDisposer;
   VoidCallback? _reconnectDisposer;
   VoidCallback? _syncDisposer;
   VoidCallback? _lifecycleDisposer;
+  StreamSubscription<ScoringUpdate>? _scoringSubscription;
+
+  /// Throttle: minimum interval between HTTP refreshes from scoring events.
+  static const _throttleInterval = Duration(seconds: 5);
+  DateTime? _lastRefreshAt;
+  Timer? _throttleTimer;
 
   MatchupNotifier(
     this._matchupRepo,
     this._leagueRepo,
     this._socketService,
+    this._scoringAdapter,
     this._invalidationService,
     this._syncService,
     this._lifecycleService,
     this.leagueId,
   ) : super(MatchupState()) {
     _socketService.joinLeague(leagueId);
-    _setupSocketListeners();
+    _setupScoringListener();
+    _setupReconnectListener();
     _registerInvalidationCallback();
     _syncDisposer = _syncService.registerLeagueSync(leagueId, loadData);
     _lifecycleDisposer = _lifecycleService.registerRefreshCallback(_onAppResumed);
@@ -143,24 +154,21 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
     );
   }
 
-  void _setupSocketListeners() {
-    // Listen for score updates from stats sync
-    _socketDisposers.add(_socketService.onScoresUpdated((data) {
-      final week = data['week'] as int?;
-      // Refresh if the update is for the current week we're viewing
-      if (week == null || week == state.currentWeek) {
-        _refreshMatchups();
+  void _setupScoringListener() {
+    _scoringSubscription = _scoringAdapter.updates
+        .where((update) => update.leagueId == leagueId)
+        .where((update) =>
+            update.week == null || update.week == state.currentWeek)
+        .listen((update) {
+      if (!mounted) return;
+      if (kDebugMode) {
+        debugPrint('Matchups: Scoring update received: $update');
       }
-    }));
+      _throttledRefresh();
+    });
+  }
 
-    // Listen for week finalized events
-    _socketDisposers.add(_socketService.onWeekFinalized((data) {
-      final week = data['week'] as int?;
-      if (week == null || week == state.currentWeek) {
-        _refreshMatchups();
-      }
-    }));
-
+  void _setupReconnectListener() {
     // Resync matchups on socket reconnection (both short and long disconnects)
     _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
       if (!mounted) return;
@@ -174,6 +182,31 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
         _refreshMatchups();
       }
     });
+  }
+
+  /// Throttled refresh: leading edge fires immediately if enough time has passed,
+  /// trailing edge schedules a final refresh for any events arriving during cooldown.
+  void _throttledRefresh() {
+    final now = DateTime.now();
+    if (_lastRefreshAt == null ||
+        now.difference(_lastRefreshAt!) >= _throttleInterval) {
+      // Leading edge: fire immediately
+      _lastRefreshAt = now;
+      _throttleTimer?.cancel();
+      _throttleTimer = null;
+      _refreshMatchups();
+    } else {
+      // During cooldown: schedule trailing edge
+      if (_throttleTimer == null || !_throttleTimer!.isActive) {
+        final remaining = _throttleInterval - now.difference(_lastRefreshAt!);
+        _throttleTimer = Timer(remaining, () {
+          if (!mounted) return;
+          _lastRefreshAt = DateTime.now();
+          _throttleTimer = null;
+          _refreshMatchups();
+        });
+      }
+    }
   }
 
   /// Refresh matchups without showing loading state (background refresh).
@@ -195,10 +228,8 @@ class MatchupNotifier extends StateNotifier<MatchupState> {
 
   @override
   void dispose() {
-    for (final disposer in _socketDisposers) {
-      disposer();
-    }
-    _socketDisposers.clear();
+    _scoringSubscription?.cancel();
+    _throttleTimer?.cancel();
     _invalidationDisposer?.call();
     _reconnectDisposer?.call();
     _syncDisposer?.call();
@@ -272,6 +303,7 @@ final matchupProvider = StateNotifierProvider.autoDispose.family<MatchupNotifier
     ref.watch(matchupRepositoryProvider),
     ref.watch(leagueRepositoryProvider),
     ref.watch(socketServiceProvider),
+    ref.watch(scoringUpdateAdapterProvider),
     ref.watch(invalidationServiceProvider),
     ref.watch(syncServiceProvider),
     ref.watch(appLifecycleServiceProvider),
@@ -280,6 +312,9 @@ final matchupProvider = StateNotifierProvider.autoDispose.family<MatchupNotifier
 );
 
 /// Provider for matchup details (single matchup with lineups)
+/// DEPRECATED: Use matchupDetailProvider from matchup_detail_provider.dart instead
+/// This old FutureProvider doesn't listen to socket events for real-time updates
+@Deprecated('Use matchupDetailProvider from matchup_detail_provider.dart for real-time socket updates')
 final matchupDetailsProvider = FutureProvider.family<MatchupDetails, ({int leagueId, int matchupId})>(
   (ref, key) async {
     final repo = ref.watch(matchupRepositoryProvider);
