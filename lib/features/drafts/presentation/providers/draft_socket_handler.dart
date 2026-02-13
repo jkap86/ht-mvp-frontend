@@ -39,7 +39,8 @@ abstract class DraftSocketCallbacks {
   void onLotPassedReceived(LotResult result);
   void onOutbidReceived(OutbidNotification notification);
   void onNominatorChangedReceived(
-      int? rosterId, int? nominationNumber, DateTime? nominationDeadline);
+      int? rosterId, int? nominationNumber, DateTime? nominationDeadline,
+      {int? timeoutSkippedRosterId});
   void onAuctionErrorReceived(String message);
   // Autodraft callback
   void onAutodraftToggledReceived(int rosterId, bool enabled, bool forced);
@@ -203,10 +204,12 @@ class DraftSocketHandler {
       final deadlineStr = data['nominationDeadline'] as String?;
       final nominationDeadline =
           deadlineStr != null ? DateTime.tryParse(deadlineStr) : null;
+      final timeoutSkippedRosterId = data['timeoutSkippedRosterId'] as int?;
       _callbacks.onNominatorChangedReceived(
         data['nominatorRosterId'] as int?,
         data['nominationNumber'] as int?,
         nominationDeadline,
+        timeoutSkippedRosterId: timeoutSkippedRosterId,
       );
     }));
 

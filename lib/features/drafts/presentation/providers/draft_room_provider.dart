@@ -756,17 +756,27 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
           state.players.where((p) => p.id == lot.playerId).firstOrNull;
       final playerName = player?.fullName ?? 'a player';
 
-      // Add activity event for auto-nomination
-      _addActivityEvent(
-        DraftActivityType.autoNominated,
-        '$teamName auto-nominated $playerName (timeout)',
-      );
+      // Distinguish between auto_nominate_no_open_bid and auto_nominate_and_open_bid
+      if (lot.currentBidderRosterId == null) {
+        // auto_nominate_no_open_bid mode
+        _addActivityEvent(
+          DraftActivityType.autoNominated,
+          '$teamName auto-nominated $playerName (no opening bid)',
+        );
+      } else {
+        // auto_nominate_and_open_bid mode (default behavior)
+        _addActivityEvent(
+          DraftActivityType.autoNominated,
+          '$teamName auto-nominated $playerName (timeout)',
+        );
+      }
 
       // Show snackbar notification if current user was auto-nominated
       if (nominatorRosterId == state.myRosterId) {
         state = state.copyWith(
-          snackbarMessage:
-              'You missed your nomination window - $playerName was auto-nominated',
+          snackbarMessage: lot.currentBidderRosterId == null
+              ? 'You missed your nomination window - $playerName was auto-nominated (no opening bid)'
+              : 'You missed your nomination window - $playerName was auto-nominated',
         );
       }
     }
@@ -804,34 +814,16 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     if (!mounted) return;
 
     final isMyWin = result.winnerRosterId == state.myRosterId;
-    final currentBudget = state.myBudget;
-
-    // Optimistic budget update for user's win
-    AuctionBudget? optimisticBudget;
-    if (isMyWin && currentBudget != null && result.price != null) {
-      optimisticBudget = currentBudget.copyWith(
-        spent: currentBudget.spent + result.price!,
-        available: currentBudget.available - result.price!,
-        wonCount: currentBudget.wonCount + 1,
-        leadingCommitment: currentBudget.leadingCommitment -
-            (result.price! > 0 ? result.price! : 0),
-      );
-    }
 
     state = state.copyWith(
       activeLots: state.activeLots.where((l) => l.id != result.lotId).toList(),
       lastLotResult: result,
       completedLotResults: [...state.completedLotResults, result],
-      budgets: optimisticBudget != null
-          ? state.budgets
-              .map(
-                  (b) => b.rosterId == state.myRosterId ? optimisticBudget! : b)
-              .toList()
-          : state.budgets,
     );
     _startLotResultDismissTimer(result.lotId);
 
     // Instant refresh for user's own wins (critical for next bid decision)
+    // Budget updates come from the authoritative API response
     if (isMyWin) {
       _budgetRefreshTimer?.cancel();
       if (mounted) loadAuctionData(); // Immediate budget update
@@ -890,8 +882,24 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
   @override
   void onNominatorChangedReceived(
-      int? rosterId, int? nominationNumber, DateTime? nominationDeadline) {
+      int? rosterId, int? nominationNumber, DateTime? nominationDeadline,
+      {int? timeoutSkippedRosterId}) {
     if (!mounted) return;
+
+    // Handle timeout skip notification
+    if (timeoutSkippedRosterId != null) {
+      final teamName = _teamNameForRoster(timeoutSkippedRosterId);
+      _addActivityEvent(
+        DraftActivityType.nominationTimeout,
+        '$teamName missed nomination (skipped)',
+      );
+      if (timeoutSkippedRosterId == state.myRosterId) {
+        state = state.copyWith(
+          snackbarMessage: 'You missed your nomination window (skipped)',
+        );
+      }
+    }
+
     state = state.copyWith(
       currentNominatorRosterId: rosterId,
       clearNominator: rosterId == null,
