@@ -1,27 +1,6 @@
-/// Item type for trade items
-enum TradeItemType {
-  player,
-  draftPick;
+export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show TradeItemType;
 
-  static TradeItemType fromString(String? value) {
-    switch (value) {
-      case 'draft_pick':
-        return TradeItemType.draftPick;
-      case 'player':
-      default:
-        return TradeItemType.player;
-    }
-  }
-
-  String get value {
-    switch (this) {
-      case TradeItemType.player:
-        return 'player';
-      case TradeItemType.draftPick:
-        return 'draft_pick';
-    }
-  }
-}
+import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
 /// Trade item model representing a player or draft pick being traded
 class TradeItem {

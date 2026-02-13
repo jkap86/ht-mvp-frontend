@@ -1,22 +1,15 @@
-/// Activity types matching backend ActivityType
-enum ActivityType {
-  trade('trade', 'Trade'),
-  waiver('waiver', 'Waiver Claim'),
-  add('add', 'Free Agency'),
-  drop('drop', 'Drop'),
-  draft('draft', 'Draft');
+export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show ActivityType;
 
-  final String value;
-  final String label;
+import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
-  const ActivityType(this.value, this.label);
-
-  static ActivityType fromString(String? value) {
-    return ActivityType.values.firstWhere(
-      (e) => e.value == value,
-      orElse: () => ActivityType.add,
-    );
-  }
+extension ActivityTypeUI on ActivityType {
+  String get label => switch (this) {
+    ActivityType.trade => 'Trade',
+    ActivityType.waiver => 'Waiver Claim',
+    ActivityType.add => 'Free Agency',
+    ActivityType.drop => 'Drop',
+    ActivityType.draft => 'Draft',
+  };
 }
 
 /// Unified activity feed item from the backend

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../players/domain/player.dart';
 import '../../domain/draft_pick_asset.dart';
+import '../../domain/draft_status.dart';
 import '../providers/draft_room_provider.dart';
 import '../providers/draft_queue_provider.dart';
 import '../utils/player_filtering.dart';

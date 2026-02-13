@@ -1,38 +1,28 @@
-/// Trade status enum matching backend trade_status type
-enum TradeStatus {
-  pending('pending', 'Pending'),
-  countered('countered', 'Countered'),
-  accepted('accepted', 'Accepted'),
-  inReview('in_review', 'In Review'),
-  completed('completed', 'Completed'),
-  rejected('rejected', 'Rejected'),
-  cancelled('cancelled', 'Cancelled'),
-  expired('expired', 'Expired'),
-  vetoed('vetoed', 'Vetoed');
+export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show TradeStatus;
 
-  final String value;
-  final String label;
+import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
-  const TradeStatus(this.value, this.label);
+extension TradeStatusUI on TradeStatus {
+  String get label => switch (this) {
+    TradeStatus.pending => 'Pending',
+    TradeStatus.countered => 'Countered',
+    TradeStatus.accepted => 'Accepted',
+    TradeStatus.inReview => 'In Review',
+    TradeStatus.completed => 'Completed',
+    TradeStatus.rejected => 'Rejected',
+    TradeStatus.cancelled => 'Cancelled',
+    TradeStatus.expired => 'Expired',
+    TradeStatus.vetoed => 'Vetoed',
+  };
 
-  static TradeStatus fromString(String? value) {
-    return TradeStatus.values.firstWhere(
-      (e) => e.value == value,
-      orElse: () => TradeStatus.pending,
-    );
-  }
-
-  /// Whether the trade is still pending a response
   bool get isPending =>
       this == TradeStatus.pending || this == TradeStatus.countered;
 
-  /// Whether the trade is still active (not finalized)
   bool get isActive =>
       isPending ||
       this == TradeStatus.accepted ||
       this == TradeStatus.inReview;
 
-  /// Whether the trade has reached a final state
   bool get isFinal =>
       this == TradeStatus.completed ||
       this == TradeStatus.rejected ||

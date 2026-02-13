@@ -1,27 +1,23 @@
-/// Draft type enumeration matching backend values
-enum DraftType {
-  snake('snake', 'Snake', 'Pick order reverses each round'),
-  linear('linear', 'Linear', 'Same pick order every round'),
-  auction('auction', 'Auction', 'Bid on players with a budget'),
-  matchups('matchups', 'Matchups', 'Draft your schedule strategically');
+export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show DraftType;
 
-  final String value;
-  final String label;
-  final String description;
+import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
-  const DraftType(this.value, this.label, this.description);
+extension DraftTypeUI on DraftType {
+  String get label => switch (this) {
+    DraftType.snake => 'Snake',
+    DraftType.linear => 'Linear',
+    DraftType.auction => 'Auction',
+    DraftType.matchups => 'Matchups',
+  };
 
-  /// Parse draft type from API string value
-  static DraftType fromString(String? value) {
-    return DraftType.values.firstWhere(
-      (e) => e.value == value,
-      orElse: () => DraftType.snake,
-    );
-  }
+  String get description => switch (this) {
+    DraftType.snake => 'Pick order reverses each round',
+    DraftType.linear => 'Same pick order every round',
+    DraftType.auction => 'Bid on players with a budget',
+    DraftType.matchups => 'Draft your schedule strategically',
+  };
 
-  /// Check if this is an auction draft
   bool get isAuction => this == DraftType.auction;
 
-  /// Check if this is a matchups draft
   bool get isMatchups => this == DraftType.matchups;
 }

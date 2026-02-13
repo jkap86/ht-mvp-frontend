@@ -1,39 +1,17 @@
 import '../../drafts/domain/auction_settings.dart';
-import '../../drafts/domain/draft_phase.dart';
-import '../../drafts/domain/draft_status.dart';
 import '../../drafts/domain/draft_type.dart';
 
-enum SeasonStatus {
-  preSeason,
-  regularSeason,
-  playoffs,
-  offseason;
+export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show SeasonStatus, FillStatus;
 
-  static SeasonStatus fromString(String? value) {
-    switch (value) {
-      case 'regular_season':
-        return SeasonStatus.regularSeason;
-      case 'playoffs':
-        return SeasonStatus.playoffs;
-      case 'offseason':
-        return SeasonStatus.offseason;
-      default:
-        return SeasonStatus.preSeason;
-    }
-  }
+import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
-  String get displayName {
-    switch (this) {
-      case SeasonStatus.preSeason:
-        return 'Pre-Season';
-      case SeasonStatus.regularSeason:
-        return 'Regular Season';
-      case SeasonStatus.playoffs:
-        return 'Playoffs';
-      case SeasonStatus.offseason:
-        return 'Offseason';
-    }
-  }
+extension SeasonStatusUI on SeasonStatus {
+  String get displayName => switch (this) {
+    SeasonStatus.preSeason => 'Pre-Season',
+    SeasonStatus.regularSeason => 'Regular Season',
+    SeasonStatus.playoffs => 'Playoffs',
+    SeasonStatus.offseason => 'Offseason',
+  };
 }
 
 class League {
@@ -138,35 +116,12 @@ class League {
   }
 }
 
-/// Fill status for a public league
-enum FillStatus {
-  open,
-  waitingPayment,
-  filled;
-
-  static FillStatus fromString(String? value) {
-    switch (value) {
-      case 'open':
-        return FillStatus.open;
-      case 'waiting_payment':
-        return FillStatus.waitingPayment;
-      case 'filled':
-        return FillStatus.filled;
-      default:
-        return FillStatus.open;
-    }
-  }
-
-  String get displayName {
-    switch (this) {
-      case FillStatus.open:
-        return 'Open';
-      case FillStatus.waitingPayment:
-        return 'Waiting for Payment';
-      case FillStatus.filled:
-        return 'Full';
-    }
-  }
+extension FillStatusUI on FillStatus {
+  String get displayName => switch (this) {
+    FillStatus.open => 'Open',
+    FillStatus.waitingPayment => 'Waiting for Payment',
+    FillStatus.filled => 'Full',
+  };
 }
 
 /// Represents a public league available for discovery

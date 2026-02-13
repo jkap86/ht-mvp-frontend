@@ -1,95 +1,9 @@
-/// Message types for league chat
-enum MessageType {
-  chat,
-  tradeProposed,
-  tradeCountered,
-  tradeAccepted,
-  tradeCompleted,
-  tradeRejected,
-  tradeCancelled,
-  tradeVetoed,
-  tradeInvalidated,
-  waiverSuccessful,
-  waiverProcessed,
-  settingsUpdated,
-  memberJoined,
-  memberKicked,
-  duesPaid,
-  duesUnpaid;
+export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show MessageType;
 
-  static MessageType fromString(String? value) {
-    switch (value) {
-      case 'trade_proposed':
-        return MessageType.tradeProposed;
-      case 'trade_countered':
-        return MessageType.tradeCountered;
-      case 'trade_accepted':
-        return MessageType.tradeAccepted;
-      case 'trade_completed':
-        return MessageType.tradeCompleted;
-      case 'trade_rejected':
-        return MessageType.tradeRejected;
-      case 'trade_cancelled':
-        return MessageType.tradeCancelled;
-      case 'trade_vetoed':
-        return MessageType.tradeVetoed;
-      case 'trade_invalidated':
-        return MessageType.tradeInvalidated;
-      case 'waiver_successful':
-        return MessageType.waiverSuccessful;
-      case 'waiver_processed':
-        return MessageType.waiverProcessed;
-      case 'settings_updated':
-        return MessageType.settingsUpdated;
-      case 'member_joined':
-        return MessageType.memberJoined;
-      case 'member_kicked':
-        return MessageType.memberKicked;
-      case 'dues_paid':
-        return MessageType.duesPaid;
-      case 'dues_unpaid':
-        return MessageType.duesUnpaid;
-      default:
-        return MessageType.chat;
-    }
-  }
+import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
-  String toSnakeCase() {
-    switch (this) {
-      case MessageType.chat:
-        return 'chat';
-      case MessageType.tradeProposed:
-        return 'trade_proposed';
-      case MessageType.tradeCountered:
-        return 'trade_countered';
-      case MessageType.tradeAccepted:
-        return 'trade_accepted';
-      case MessageType.tradeCompleted:
-        return 'trade_completed';
-      case MessageType.tradeRejected:
-        return 'trade_rejected';
-      case MessageType.tradeCancelled:
-        return 'trade_cancelled';
-      case MessageType.tradeVetoed:
-        return 'trade_vetoed';
-      case MessageType.tradeInvalidated:
-        return 'trade_invalidated';
-      case MessageType.waiverSuccessful:
-        return 'waiver_successful';
-      case MessageType.waiverProcessed:
-        return 'waiver_processed';
-      case MessageType.settingsUpdated:
-        return 'settings_updated';
-      case MessageType.memberJoined:
-        return 'member_joined';
-      case MessageType.memberKicked:
-        return 'member_kicked';
-      case MessageType.duesPaid:
-        return 'dues_paid';
-      case MessageType.duesUnpaid:
-        return 'dues_unpaid';
-    }
-  }
+extension MessageTypeUI on MessageType {
+  String toSnakeCase() => value;
 }
 
 /// Metadata for system messages

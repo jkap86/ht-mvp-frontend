@@ -9,6 +9,7 @@ import '../../../../core/api/api_exceptions.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/waiver_repository.dart';
 import '../../domain/waiver_claim.dart';
+import '../../domain/waiver_claim_status.dart';
 import '../../domain/waiver_priority.dart';
 import '../../domain/faab_budget.dart';
 import 'waivers_socket_handler.dart';

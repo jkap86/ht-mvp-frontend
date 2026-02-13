@@ -9,6 +9,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/hype_train_colors.dart';
 import '../../../drafts/domain/draft_order_entry.dart';
 import '../../../drafts/domain/draft_status.dart';
+import '../../../drafts/domain/draft_type.dart';
 import '../../domain/league.dart';
 
 /// Helper class for tracking team positions during shuffle animation

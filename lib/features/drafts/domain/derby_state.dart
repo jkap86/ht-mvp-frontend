@@ -1,32 +1,13 @@
-import 'draft_phase.dart';
+export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show DerbyTimeoutPolicy;
 
-/// Timeout policy options for derby phase
-enum DerbyTimeoutPolicy {
-  autoRandomSlot('AUTO_RANDOM_SLOT'),
-  pushBackOne('PUSH_BACK_ONE'),
-  pushToEnd('PUSH_TO_END');
+import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
-  final String value;
-  const DerbyTimeoutPolicy(this.value);
-
-  static DerbyTimeoutPolicy fromString(String? policy) {
-    if (policy == null) return DerbyTimeoutPolicy.autoRandomSlot;
-    return DerbyTimeoutPolicy.values.firstWhere(
-      (p) => p.value == policy,
-      orElse: () => DerbyTimeoutPolicy.autoRandomSlot,
-    );
-  }
-
-  String get displayName {
-    switch (this) {
-      case DerbyTimeoutPolicy.autoRandomSlot:
-        return 'Auto-assign random slot';
-      case DerbyTimeoutPolicy.pushBackOne:
-        return 'Move back one position';
-      case DerbyTimeoutPolicy.pushToEnd:
-        return 'Move to end of order';
-    }
-  }
+extension DerbyTimeoutPolicyUI on DerbyTimeoutPolicy {
+  String get displayName => switch (this) {
+    DerbyTimeoutPolicy.autoRandomSlot => 'Auto-assign random slot',
+    DerbyTimeoutPolicy.pushBackOne => 'Move back one position',
+    DerbyTimeoutPolicy.pushToEnd => 'Move to end of order',
+  };
 }
 
 /// State for derby draft order mode

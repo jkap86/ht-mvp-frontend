@@ -1,103 +1,47 @@
-/// Lineup slot positions
-enum LineupSlot {
-  qb('QB'),
-  rb('RB'),
-  wr('WR'),
-  te('TE'),
-  flex('FLEX'),
-  superFlex('SUPER_FLEX'),
-  recFlex('REC_FLEX'),
-  k('K'),
-  def('DEF'),
-  dl('DL'),
-  lb('LB'),
-  db('DB'),
-  idpFlex('IDP_FLEX'),
-  bn('BN'),
-  ir('IR'),
-  taxi('TAXI');
+export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show LineupSlot;
 
-  final String code;
-  const LineupSlot(this.code);
+import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
-  static LineupSlot? fromCode(String? code) {
-    if (code == null) return null;
-    return LineupSlot.values.where((s) => s.code == code.toUpperCase()).firstOrNull;
-  }
-
-  String get displayName {
-    switch (this) {
-      case LineupSlot.qb:
-        return 'Quarterback';
-      case LineupSlot.rb:
-        return 'Running Back';
-      case LineupSlot.wr:
-        return 'Wide Receiver';
-      case LineupSlot.te:
-        return 'Tight End';
-      case LineupSlot.flex:
-        return 'Flex';
-      case LineupSlot.superFlex:
-        return 'Super Flex';
-      case LineupSlot.recFlex:
-        return 'Rec Flex';
-      case LineupSlot.k:
-        return 'Kicker';
-      case LineupSlot.def:
-        return 'Defense/ST';
-      case LineupSlot.dl:
-        return 'Defensive Line';
-      case LineupSlot.lb:
-        return 'Linebacker';
-      case LineupSlot.db:
-        return 'Defensive Back';
-      case LineupSlot.idpFlex:
-        return 'IDP Flex';
-      case LineupSlot.bn:
-        return 'Bench';
-      case LineupSlot.ir:
-        return 'Injured Reserve';
-      case LineupSlot.taxi:
-        return 'Taxi Squad';
-    }
-  }
+extension LineupSlotUI on LineupSlot {
+  String get displayName => switch (this) {
+    LineupSlot.qb => 'Quarterback',
+    LineupSlot.rb => 'Running Back',
+    LineupSlot.wr => 'Wide Receiver',
+    LineupSlot.te => 'Tight End',
+    LineupSlot.flex => 'Flex',
+    LineupSlot.superFlex => 'Super Flex',
+    LineupSlot.recFlex => 'Rec Flex',
+    LineupSlot.k => 'Kicker',
+    LineupSlot.def => 'Defense/ST',
+    LineupSlot.dl => 'Defensive Line',
+    LineupSlot.lb => 'Linebacker',
+    LineupSlot.db => 'Defensive Back',
+    LineupSlot.idpFlex => 'IDP Flex',
+    LineupSlot.bn => 'Bench',
+    LineupSlot.ir => 'Injured Reserve',
+    LineupSlot.taxi => 'Taxi Squad',
+  };
 
   /// Check if a player position can fill this slot
   bool canFill(String? position) {
     if (position == null) return false;
     final pos = position.toUpperCase();
-    switch (this) {
-      case LineupSlot.qb:
-        return pos == 'QB';
-      case LineupSlot.rb:
-        return pos == 'RB';
-      case LineupSlot.wr:
-        return pos == 'WR';
-      case LineupSlot.te:
-        return pos == 'TE';
-      case LineupSlot.flex:
-        return ['RB', 'WR', 'TE'].contains(pos);
-      case LineupSlot.superFlex:
-        return ['QB', 'RB', 'WR', 'TE'].contains(pos);
-      case LineupSlot.recFlex:
-        return ['WR', 'TE'].contains(pos);
-      case LineupSlot.k:
-        return pos == 'K';
-      case LineupSlot.def:
-        return pos == 'DEF';
-      case LineupSlot.dl:
-        return pos == 'DL';
-      case LineupSlot.lb:
-        return pos == 'LB';
-      case LineupSlot.db:
-        return pos == 'DB';
-      case LineupSlot.idpFlex:
-        return ['DL', 'LB', 'DB'].contains(pos);
-      case LineupSlot.bn:
-      case LineupSlot.ir:
-      case LineupSlot.taxi:
-        return true; // Can hold any player
-    }
+    return switch (this) {
+      LineupSlot.qb => pos == 'QB',
+      LineupSlot.rb => pos == 'RB',
+      LineupSlot.wr => pos == 'WR',
+      LineupSlot.te => pos == 'TE',
+      LineupSlot.flex => ['RB', 'WR', 'TE'].contains(pos),
+      LineupSlot.superFlex => ['QB', 'RB', 'WR', 'TE'].contains(pos),
+      LineupSlot.recFlex => ['WR', 'TE'].contains(pos),
+      LineupSlot.k => pos == 'K',
+      LineupSlot.def => pos == 'DEF',
+      LineupSlot.dl => pos == 'DL',
+      LineupSlot.lb => pos == 'LB',
+      LineupSlot.db => pos == 'DB',
+      LineupSlot.idpFlex => ['DL', 'LB', 'DB'].contains(pos),
+      LineupSlot.bn || LineupSlot.ir || LineupSlot.taxi => true,
+    };
   }
 }
 

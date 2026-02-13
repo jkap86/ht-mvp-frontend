@@ -1,23 +1,16 @@
-/// Waiver claim status enum
-enum WaiverClaimStatus {
-  pending('pending', 'Pending'),
-  processing('processing', 'Processing'),
-  successful('successful', 'Successful'),
-  failed('failed', 'Failed'),
-  cancelled('cancelled', 'Cancelled'),
-  invalid('invalid', 'Invalid');
+export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show WaiverClaimStatus;
 
-  final String value;
-  final String label;
+import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
-  const WaiverClaimStatus(this.value, this.label);
-
-  static WaiverClaimStatus fromString(String? value) {
-    return WaiverClaimStatus.values.firstWhere(
-      (e) => e.value == value,
-      orElse: () => WaiverClaimStatus.pending,
-    );
-  }
+extension WaiverClaimStatusUI on WaiverClaimStatus {
+  String get label => switch (this) {
+    WaiverClaimStatus.pending => 'Pending',
+    WaiverClaimStatus.processing => 'Processing',
+    WaiverClaimStatus.successful => 'Successful',
+    WaiverClaimStatus.failed => 'Failed',
+    WaiverClaimStatus.cancelled => 'Cancelled',
+    WaiverClaimStatus.invalid => 'Invalid',
+  };
 
   bool get isPending => this == WaiverClaimStatus.pending;
   bool get isProcessing => this == WaiverClaimStatus.processing;
@@ -30,21 +23,12 @@ enum WaiverClaimStatus {
       this == WaiverClaimStatus.cancelled ||
       this == WaiverClaimStatus.invalid;
 
-  /// A human-readable description of what this status means
-  String get description {
-    switch (this) {
-      case WaiverClaimStatus.pending:
-        return 'Waiting for next waiver processing run';
-      case WaiverClaimStatus.processing:
-        return 'Currently being processed';
-      case WaiverClaimStatus.successful:
-        return 'Player added to your roster';
-      case WaiverClaimStatus.failed:
-        return 'Claim was not successful';
-      case WaiverClaimStatus.cancelled:
-        return 'Claim was cancelled';
-      case WaiverClaimStatus.invalid:
-        return 'Claim is no longer valid';
-    }
-  }
+  String get description => switch (this) {
+    WaiverClaimStatus.pending => 'Waiting for next waiver processing run',
+    WaiverClaimStatus.processing => 'Currently being processed',
+    WaiverClaimStatus.successful => 'Player added to your roster',
+    WaiverClaimStatus.failed => 'Claim was not successful',
+    WaiverClaimStatus.cancelled => 'Claim was cancelled',
+    WaiverClaimStatus.invalid => 'Claim is no longer valid',
+  };
 }

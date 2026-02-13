@@ -6,6 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/hype_train_colors.dart';
 import '../../../../core/socket/connection_state_provider.dart';
 import '../../../leagues/domain/league.dart';
+import '../../domain/draft_status.dart';
 import 'autodraft_toggle_widget.dart';
 import 'draft_timer_widget.dart';
 import 'overnight_pause_countdown.dart';

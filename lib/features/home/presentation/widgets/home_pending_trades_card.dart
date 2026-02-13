@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../trades/domain/trade_status.dart';
 import '../providers/home_dashboard_provider.dart';
 
 /// Card showing pending trades requiring user action

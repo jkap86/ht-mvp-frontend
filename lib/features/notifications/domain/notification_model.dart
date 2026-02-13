@@ -1,33 +1,26 @@
-/// Types of notifications that can be received
-enum NotificationType {
-  tradePending('trade_pending', 'Trade awaiting your vote'),
-  tradeAccepted('trade_accepted', 'Your trade was accepted'),
-  tradeRejected('trade_rejected', 'Your trade was rejected'),
-  tradeCompleted('trade_completed', 'Trade completed'),
-  draftStarting('draft_starting', 'Draft begins soon'),
-  draftStarted('draft_started', 'Draft has started'),
-  draftPick('draft_pick', 'Your pick in draft'),
-  waiverProcessed('waiver_processed', 'Waiver results available'),
-  waiverSuccess('waiver_success', 'Waiver claim successful'),
-  waiverFailed('waiver_failed', 'Waiver claim failed'),
-  scoresUpdated('scores_updated', 'Player scores updated'),
-  weekFinalized('week_finalized', 'Week finalized'),
-  messageReceived('message_received', 'New league chat message'),
-  leagueInvite('league_invite', 'League invitation received'),
-  invitationReceived('invitation_received', 'League invitation received'),
-  matchupResult('matchup_result', 'Matchup result');
+export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show NotificationType;
 
-  final String value;
-  final String description;
+import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
-  const NotificationType(this.value, this.description);
-
-  static NotificationType fromString(String value) {
-    return NotificationType.values.firstWhere(
-      (t) => t.value == value,
-      orElse: () => NotificationType.messageReceived,
-    );
-  }
+extension NotificationTypeUI on NotificationType {
+  String get description => switch (this) {
+    NotificationType.tradePending => 'Trade awaiting your vote',
+    NotificationType.tradeAccepted => 'Your trade was accepted',
+    NotificationType.tradeRejected => 'Your trade was rejected',
+    NotificationType.tradeCompleted => 'Trade completed',
+    NotificationType.draftStarting => 'Draft begins soon',
+    NotificationType.draftStarted => 'Draft has started',
+    NotificationType.draftPick => 'Your pick in draft',
+    NotificationType.waiverProcessed => 'Waiver results available',
+    NotificationType.waiverSuccess => 'Waiver claim successful',
+    NotificationType.waiverFailed => 'Waiver claim failed',
+    NotificationType.scoresUpdated => 'Player scores updated',
+    NotificationType.weekFinalized => 'Week finalized',
+    NotificationType.messageReceived => 'New league chat message',
+    NotificationType.leagueInvite => 'League invitation received',
+    NotificationType.invitationReceived => 'League invitation received',
+    NotificationType.matchupResult => 'Matchup result',
+  };
 }
 
 /// A notification to be displayed to the user

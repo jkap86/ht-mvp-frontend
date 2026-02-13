@@ -1,37 +1,14 @@
-/// How a player was acquired
-enum AcquiredType {
-  draft,
-  freeAgent,
-  trade,
-  waiver;
+export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show AcquiredType, TransactionType;
 
-  static AcquiredType fromString(String? value) {
-    switch (value) {
-      case 'draft':
-        return AcquiredType.draft;
-      case 'free_agent':
-        return AcquiredType.freeAgent;
-      case 'trade':
-        return AcquiredType.trade;
-      case 'waiver':
-        return AcquiredType.waiver;
-      default:
-        return AcquiredType.freeAgent;
-    }
-  }
+import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
-  String get displayName {
-    switch (this) {
-      case AcquiredType.draft:
-        return 'Drafted';
-      case AcquiredType.freeAgent:
-        return 'Free Agent';
-      case AcquiredType.trade:
-        return 'Trade';
-      case AcquiredType.waiver:
-        return 'Waivers';
-    }
-  }
+extension AcquiredTypeUI on AcquiredType {
+  String get displayName => switch (this) {
+    AcquiredType.draft => 'Drafted',
+    AcquiredType.freeAgent => 'Free Agent',
+    AcquiredType.trade => 'Trade',
+    AcquiredType.waiver => 'Waivers',
+  };
 }
 
 /// A player on a roster
@@ -84,26 +61,6 @@ class RosterPlayer {
       seasonPoints: (json['season_points'] as num?)?.toDouble(),
       byeWeek: json['bye_week'] as int?,
     );
-  }
-}
-
-/// Transaction type
-enum TransactionType {
-  add,
-  drop,
-  trade;
-
-  static TransactionType fromString(String? value) {
-    switch (value) {
-      case 'add':
-        return TransactionType.add;
-      case 'drop':
-        return TransactionType.drop;
-      case 'trade':
-        return TransactionType.trade;
-      default:
-        return TransactionType.add;
-    }
   }
 }
 
