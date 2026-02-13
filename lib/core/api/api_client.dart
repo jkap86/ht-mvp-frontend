@@ -146,7 +146,8 @@ class ApiClient {
   /// [auth] indicates whether to attempt token refresh on 401.
   /// [idempotencyKey] is passed to headers for safe retries on mutating requests.
   Future<dynamic> _executeWithRetry({
-    required Future<http.Response> Function(Map<String, String> headers) executeRequest,
+    required Future<http.Response> Function(Map<String, String> headers)
+        executeRequest,
     required bool auth,
     String? idempotencyKey,
   }) async {
@@ -154,15 +155,18 @@ class ApiClient {
 
     for (int attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        final headers = await _getHeaders(auth: auth, idempotencyKey: idempotencyKey);
+        final headers =
+            await _getHeaders(auth: auth, idempotencyKey: idempotencyKey);
         final response = await executeRequest(headers).timeout(requestTimeout);
         return _handleResponse(response);
       } on UnauthorizedException {
         // Attempt token refresh and retry once (not part of exponential backoff)
         if (auth && await _attemptTokenRefresh()) {
           try {
-            final headers = await _getHeaders(auth: auth, idempotencyKey: idempotencyKey);
-            final response = await executeRequest(headers).timeout(requestTimeout);
+            final headers =
+                await _getHeaders(auth: auth, idempotencyKey: idempotencyKey);
+            final response =
+                await executeRequest(headers).timeout(requestTimeout);
             return _handleResponse(response);
           } on UnauthorizedException {
             // Refreshed token was also rejected — session is truly expired
@@ -183,7 +187,9 @@ class ApiClient {
         rethrow;
       } catch (e) {
         // Convert raw network errors to our exception type
-        final error = e is ApiException ? e : NetworkException('Failed to connect to server');
+        final error = e is ApiException
+            ? e
+            : NetworkException('Failed to connect to server');
         lastError = error;
 
         // Check if we should retry
@@ -310,7 +316,9 @@ class ApiClient {
       message = errorField['message'] as String? ?? 'An error occurred';
       errorCode = errorField['code'] as String?;
     } else {
-      message = errorField as String? ?? body?['message'] as String? ?? 'An error occurred';
+      message = errorField as String? ??
+          body?['message'] as String? ??
+          'An error occurred';
       errorCode = null;
     }
 
@@ -323,10 +331,10 @@ class ApiClient {
         throw ForbiddenException(message, errorCode);
       case 404:
         throw NotFoundException(message, errorCode);
-      case 409:
-        throw ConflictException(message, errorCode);
-      default:
+      case 500:
         throw ServerException(message, errorCode);
+      default:
+        throw ApiException(message, response.statusCode, errorCode);
     }
   }
 }
