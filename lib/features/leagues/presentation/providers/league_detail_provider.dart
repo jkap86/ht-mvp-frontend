@@ -131,6 +131,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
   VoidCallback? _memberBenchedDisposer;
   VoidCallback? _draftCreatedDisposer;
   VoidCallback? _leagueSettingsDisposer;
+  VoidCallback? _seasonRolledOverDisposer;
   VoidCallback? _invalidationDisposer;
   VoidCallback? _reconnectDisposer;
 
@@ -170,6 +171,12 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
       if (!mounted) return;
       loadData(); // Full refresh when settings change
     });
+    _seasonRolledOverDisposer = _socketService.onSeasonRolledOver((data) {
+      if (!mounted) return;
+      // Season rollover changes everything - invalidate all caches and full refresh
+      _invalidationService.invalidate(InvalidationEvent.seasonRolledOver, leagueId);
+      loadData();
+    });
 
     // Resync league detail on socket reconnection
     _reconnectDisposer = _socketService.onReconnected((needsFullRefresh) {
@@ -207,6 +214,7 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     _memberBenchedDisposer?.call();
     _draftCreatedDisposer?.call();
     _leagueSettingsDisposer?.call();
+    _seasonRolledOverDisposer?.call();
     _invalidationDisposer?.call();
     _reconnectDisposer?.call();
     _socketService.leaveLeague(leagueId);

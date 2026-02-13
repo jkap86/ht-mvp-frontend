@@ -26,6 +26,7 @@ enum InvalidationEvent {
   memberJoined,
   memberKicked,
   scoresUpdated,
+  seasonRolledOver,
 }
 
 /// Callback type for invalidation handlers.
@@ -99,6 +100,7 @@ class InvalidationService {
       InvalidationType.matchups,
       InvalidationType.standings,
     ],
+    InvalidationEvent.seasonRolledOver: InvalidationType.values,
   };
 
   InvalidationService(Ref _);

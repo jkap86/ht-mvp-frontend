@@ -717,6 +717,10 @@ class SocketService {
     return on(SocketEvents.leagueSettingsUpdated, callback);
   }
 
+  VoidCallback onSeasonRolledOver(void Function(dynamic) callback) {
+    return on(SocketEvents.seasonRolledOver, callback);
+  }
+
   // Invitation event listeners
   VoidCallback onInvitationReceived(void Function(dynamic) callback) {
     return on(SocketEvents.invitationReceived, callback);
