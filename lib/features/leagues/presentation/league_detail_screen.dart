@@ -26,6 +26,7 @@ import 'widgets/action_alerts_banner.dart';
 import 'widgets/next_up_card.dart';
 import 'widgets/pending_counts_row.dart';
 import 'widgets/announcements_block.dart';
+import 'widgets/league_lifecycle_progress_bar.dart';
 import '../../drafts/presentation/widgets/edit_draft_settings_dialog.dart';
 
 class LeagueDetailScreen extends ConsumerStatefulWidget {
@@ -262,6 +263,16 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen> {
         onSettingsTap: () {
           context.push('/leagues/${widget.leagueId}/commissioner');
         },
+      ),
+      const SizedBox(height: 12),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: LeagueLifecycleProgressBar(
+          league: state.league!,
+          members: state.members,
+          drafts: state.drafts,
+          hasSchedule: state.currentMatchup != null || state.isInSeason,
+        ),
       ),
       const SizedBox(height: 16),
     ];
