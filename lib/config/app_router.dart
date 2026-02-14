@@ -23,6 +23,7 @@ import '../features/trades/presentation/screens/trades_list_screen.dart';
 import '../features/trades/presentation/screens/trade_detail_screen.dart';
 import '../features/trades/presentation/screens/propose_trade_screen.dart';
 import '../features/trades/presentation/screens/counter_trade_screen.dart';
+import '../features/trade_block/presentation/screens/trade_block_screen.dart';
 import '../features/commissioner/presentation/screens/commissioner_screen.dart';
 import '../features/commissioner/presentation/screens/season_summary_screen.dart';
 import '../features/playoffs/presentation/screens/playoff_bracket_screen.dart';
@@ -427,6 +428,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                       return TradesListScreen(leagueId: leagueId);
                     },
                     routes: [
+                      GoRoute(
+                        path: 'block',
+                        builder: (context, state) {
+                          final leagueId = _parseIntParam(state.pathParameters['leagueId'])!;
+                          return TradeBlockScreen(leagueId: leagueId);
+                        },
+                      ),
                       GoRoute(
                         path: 'propose',
                         pageBuilder: (context, state) {

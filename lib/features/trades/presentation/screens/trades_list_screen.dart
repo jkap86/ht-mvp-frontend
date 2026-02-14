@@ -62,6 +62,13 @@ class TradesListScreen extends ConsumerWidget {
         child: Row(
           children: [
             AppFilterChip(
+              label: 'Trade Block',
+              selected: false,
+              onSelected: () =>
+                  context.push('/leagues/$leagueId/trades/block'),
+            ),
+            const SizedBox(width: 8),
+            AppFilterChip(
               label: 'My Trades',
               selected: state.filter == 'mine',
               onSelected: () =>

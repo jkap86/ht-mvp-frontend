@@ -73,6 +73,7 @@ class SocketEvents {
   static const tradeVetoed = 'trade:vetoed';
   static const tradeVoteCast = 'trade:vote_cast';
   static const tradeInvalidated = 'trade:invalidated';
+  static const tradeBlockUpdated = 'trade_block:updated';
 
   // Waiver events
   static const waiverClaimSubmitted = 'waiver:claim_submitted';

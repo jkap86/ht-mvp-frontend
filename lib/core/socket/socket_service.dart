@@ -653,6 +653,10 @@ class SocketService {
     return on(SocketEvents.tradeInvalidated, callback);
   }
 
+  VoidCallback onTradeBlockUpdated(void Function(dynamic) callback) {
+    return on(SocketEvents.tradeBlockUpdated, callback);
+  }
+
   // Waiver event listeners
   VoidCallback onWaiverClaimSubmitted(void Function(dynamic) callback) {
     return on(SocketEvents.waiverClaimSubmitted, callback);
