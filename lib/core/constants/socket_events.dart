@@ -12,7 +12,7 @@ class SocketEvents {
   static const leagueJoin = 'join:league';
   static const leagueLeave = 'leave:league';
   static const leagueSettingsUpdated = 'league:settings_updated';
-  static const seasonRolledOver = 'league:seasonRolledOver';
+  static const seasonRolledOver = 'league:season_rolled_over';
 
   // Draft events
   static const draftJoin = 'join:draft';
