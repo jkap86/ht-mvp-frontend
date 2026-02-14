@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/services/invalidation_service.dart';
 import '../../../../core/services/sync_service.dart';
+import '../../../../core/idempotency/action_idempotency_provider.dart';
+import '../../../../core/idempotency/action_ids.dart';
 import '../../../../core/api/api_exceptions.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/trade_repository.dart';
@@ -101,6 +103,7 @@ class TradesNotifier extends StateNotifier<TradesState> implements TradesSocketC
   final SocketService _socketService;
   final InvalidationService _invalidationService;
   final SyncService _syncService;
+  final ActionIdempotencyNotifier _idempotency;
   final int leagueId;
 
   // Socket handler for managing subscriptions
@@ -117,6 +120,7 @@ class TradesNotifier extends StateNotifier<TradesState> implements TradesSocketC
     this._socketService,
     this._invalidationService,
     this._syncService,
+    this._idempotency,
     this.leagueId,
   ) : super(TradesState()) {
     _setupSocketListeners();
@@ -333,13 +337,19 @@ class TradesNotifier extends StateNotifier<TradesState> implements TradesSocketC
 
   /// Accept a trade
   Future<Trade?> acceptTrade(int tradeId, {String? idempotencyKey}) async {
+    final rosterId = state.userRosterId ?? 0;
+    final actionId = ActionIds.tradeAction('accept', tradeId, rosterId);
+    if (_idempotency.isInFlight(actionId)) return null;
+
     try {
-      final trade = await _tradeRepo.acceptTrade(leagueId, tradeId, idempotencyKey: idempotencyKey);
-      _addOrUpdateTrade(trade);
-
-      // Trigger cross-provider invalidation when trade is accepted
-      _invalidationService.invalidate(InvalidationEvent.tradeAccepted, leagueId);
-
+      final trade = await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _tradeRepo.acceptTrade(leagueId, tradeId, idempotencyKey: key),
+      );
+      if (trade != null) {
+        _addOrUpdateTrade(trade);
+        _invalidationService.invalidate(InvalidationEvent.tradeAccepted, leagueId);
+      }
       return trade;
     } catch (e) {
       state = state.copyWith(error: ErrorSanitizer.sanitize(e));
@@ -349,9 +359,16 @@ class TradesNotifier extends StateNotifier<TradesState> implements TradesSocketC
 
   /// Reject a trade
   Future<Trade?> rejectTrade(int tradeId, {String? idempotencyKey}) async {
+    final rosterId = state.userRosterId ?? 0;
+    final actionId = ActionIds.tradeAction('decline', tradeId, rosterId);
+    if (_idempotency.isInFlight(actionId)) return null;
+
     try {
-      final trade = await _tradeRepo.rejectTrade(leagueId, tradeId, idempotencyKey: idempotencyKey);
-      _addOrUpdateTrade(trade);
+      final trade = await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _tradeRepo.rejectTrade(leagueId, tradeId, idempotencyKey: key),
+      );
+      if (trade != null) _addOrUpdateTrade(trade);
       return trade;
     } catch (e) {
       state = state.copyWith(error: ErrorSanitizer.sanitize(e));
@@ -361,9 +378,16 @@ class TradesNotifier extends StateNotifier<TradesState> implements TradesSocketC
 
   /// Cancel a trade (proposer only)
   Future<Trade?> cancelTrade(int tradeId, {String? idempotencyKey}) async {
+    final rosterId = state.userRosterId ?? 0;
+    final actionId = ActionIds.tradeAction('cancel', tradeId, rosterId);
+    if (_idempotency.isInFlight(actionId)) return null;
+
     try {
-      final trade = await _tradeRepo.cancelTrade(leagueId, tradeId, idempotencyKey: idempotencyKey);
-      _addOrUpdateTrade(trade);
+      final trade = await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _tradeRepo.cancelTrade(leagueId, tradeId, idempotencyKey: key),
+      );
+      if (trade != null) _addOrUpdateTrade(trade);
       return trade;
     } catch (e) {
       state = state.copyWith(error: ErrorSanitizer.sanitize(e));
@@ -399,19 +423,29 @@ class TradesNotifier extends StateNotifier<TradesState> implements TradesSocketC
     List<int>? requestingPickAssetIds,
     String? idempotencyKey,
   }) async {
-    final trade = await _tradeRepo.proposeTrade(
-      leagueId: leagueId,
-      recipientRosterId: recipientRosterId,
-      offeringPlayerIds: offeringPlayerIds,
-      requestingPlayerIds: requestingPlayerIds,
-      notifyDm: notifyDm,
-      leagueChatMode: leagueChatMode,
-      offeringPickAssetIds: offeringPickAssetIds,
-      requestingPickAssetIds: requestingPickAssetIds,
-      idempotencyKey: idempotencyKey,
+    final fromRosterId = state.userRosterId ?? 0;
+    final actionId = ActionIds.tradePropose(leagueId, fromRosterId, {
+      'recipientRosterId': recipientRosterId,
+      'offeringPlayerIds': offeringPlayerIds,
+      'requestingPlayerIds': requestingPlayerIds,
+    });
+
+    final trade = await _idempotency.run(
+      actionId: actionId,
+      op: (key) => _tradeRepo.proposeTrade(
+        leagueId: leagueId,
+        recipientRosterId: recipientRosterId,
+        offeringPlayerIds: offeringPlayerIds,
+        requestingPlayerIds: requestingPlayerIds,
+        notifyDm: notifyDm,
+        leagueChatMode: leagueChatMode,
+        offeringPickAssetIds: offeringPickAssetIds,
+        requestingPickAssetIds: requestingPickAssetIds,
+        idempotencyKey: key,
+      ),
     );
-    _addOrUpdateTrade(trade);
-    return trade;
+    if (trade != null) _addOrUpdateTrade(trade);
+    return trade!;
   }
 
   /// Counter an existing trade (routes through notifier for consistent state management)
@@ -426,20 +460,29 @@ class TradesNotifier extends StateNotifier<TradesState> implements TradesSocketC
     List<int>? requestingPickAssetIds,
     String? idempotencyKey,
   }) async {
-    final trade = await _tradeRepo.counterTrade(
-      leagueId: leagueId,
-      tradeId: tradeId,
-      offeringPlayerIds: offeringPlayerIds,
-      requestingPlayerIds: requestingPlayerIds,
-      message: message,
-      notifyDm: notifyDm,
-      leagueChatMode: leagueChatMode,
-      offeringPickAssetIds: offeringPickAssetIds,
-      requestingPickAssetIds: requestingPickAssetIds,
-      idempotencyKey: idempotencyKey,
+    final fromRosterId = state.userRosterId ?? 0;
+    final actionId = ActionIds.tradeCounter(tradeId, fromRosterId, {
+      'offeringPlayerIds': offeringPlayerIds,
+      'requestingPlayerIds': requestingPlayerIds,
+    });
+
+    final trade = await _idempotency.run(
+      actionId: actionId,
+      op: (key) => _tradeRepo.counterTrade(
+        leagueId: leagueId,
+        tradeId: tradeId,
+        offeringPlayerIds: offeringPlayerIds,
+        requestingPlayerIds: requestingPlayerIds,
+        message: message,
+        notifyDm: notifyDm,
+        leagueChatMode: leagueChatMode,
+        offeringPickAssetIds: offeringPickAssetIds,
+        requestingPickAssetIds: requestingPickAssetIds,
+        idempotencyKey: key,
+      ),
     );
-    _addOrUpdateTrade(trade);
-    return trade;
+    if (trade != null) _addOrUpdateTrade(trade);
+    return trade!;
   }
 
   /// Clear any error messages
@@ -465,6 +508,7 @@ final tradesProvider =
     ref.watch(socketServiceProvider),
     ref.watch(invalidationServiceProvider),
     ref.watch(syncServiceProvider),
+    ref.read(actionIdempotencyProvider.notifier),
     leagueId,
   ),
 );

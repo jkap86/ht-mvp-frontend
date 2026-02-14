@@ -134,6 +134,8 @@ void main() {
     when(() => mockSocketService.onAutodraftToggled(any())).thenReturn(() {});
     when(() => mockSocketService.onDraftPickTraded(any())).thenReturn(() {});
     when(() => mockSocketService.onDraftSettingsUpdated(any())).thenReturn(() {});
+    when(() => mockSocketService.onDraftChessClockUpdated(any())).thenReturn(() {});
+    when(() => mockSocketService.onQueueUpdated(any())).thenReturn(() {});
     // Derby socket listeners
     when(() => mockSocketService.onDerbyState(any())).thenReturn(() {});
     when(() => mockSocketService.onDerbySlotPicked(any())).thenReturn(() {});
@@ -293,7 +295,7 @@ void main() {
           .thenAnswer((_) async => <Map<String, dynamic>>[]);
       when(() => mockDraftRepo.getDraftPicks(1, 1))
           .thenAnswer((_) async => <Map<String, dynamic>>[]);
-      when(() => mockDraftRepo.makePick(1, 1, 100))
+      when(() => mockDraftRepo.makePick(1, 1, 100, idempotencyKey: any(named: 'idempotencyKey')))
           .thenAnswer((_) async => {'success': true});
 
       container = createContainer();
@@ -306,7 +308,7 @@ void main() {
 
       // Assert - null means success
       expect(result, isNull);
-      verify(() => mockDraftRepo.makePick(1, 1, 100)).called(1);
+      verify(() => mockDraftRepo.makePick(1, 1, 100, idempotencyKey: any(named: 'idempotencyKey'))).called(1);
     });
 
     test('makePick failure should return error message', () async {
@@ -321,7 +323,7 @@ void main() {
           .thenAnswer((_) async => <Map<String, dynamic>>[]);
       when(() => mockDraftRepo.getDraftPicks(1, 1))
           .thenAnswer((_) async => <Map<String, dynamic>>[]);
-      when(() => mockDraftRepo.makePick(1, 1, 100))
+      when(() => mockDraftRepo.makePick(1, 1, 100, idempotencyKey: any(named: 'idempotencyKey')))
           .thenThrow(ValidationException('Not your turn'));
 
       container = createContainer();

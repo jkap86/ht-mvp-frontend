@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/idempotency.dart';
+import '../../../../core/idempotency/action_idempotency_provider.dart';
+import '../../../../core/idempotency/action_ids.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../../core/services/invalidation_service.dart';
 import '../../../../core/services/sync_service.dart';
@@ -116,6 +118,7 @@ class WaiversNotifier extends StateNotifier<WaiversState>
   final SocketService _socketService;
   final InvalidationService _invalidationService;
   final SyncService _syncService;
+  final ActionIdempotencyNotifier _idempotency;
   final int leagueId;
   final int? userRosterId;
 
@@ -133,6 +136,7 @@ class WaiversNotifier extends StateNotifier<WaiversState>
     this._socketService,
     this._invalidationService,
     this._syncService,
+    this._idempotency,
     this.leagueId,
     this.userRosterId,
   ) : super(WaiversState()) {
@@ -400,17 +404,32 @@ class WaiversNotifier extends StateNotifier<WaiversState>
     int bidAmount = 0,
     String? idempotencyKey,
   }) async {
-    final key = idempotencyKey ?? newIdempotencyKey();
+    final rosterId = userRosterId ?? 0;
+    final actionId = ActionIds.waiverSubmit(leagueId, rosterId, 0, {
+      'playerId': playerId,
+      'dropPlayerId': dropPlayerId,
+      'bidAmount': bidAmount,
+    });
+    if (_idempotency.isInFlight(actionId)) {
+      return (claim: null, warnings: <String>[]);
+    }
+
     try {
-      final result = await _waiverRepo.submitClaim(
-        leagueId: leagueId,
-        playerId: playerId,
-        dropPlayerId: dropPlayerId,
-        bidAmount: bidAmount,
-        idempotencyKey: key,
+      final result = await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _waiverRepo.submitClaim(
+          leagueId: leagueId,
+          playerId: playerId,
+          dropPlayerId: dropPlayerId,
+          bidAmount: bidAmount,
+          idempotencyKey: key,
+        ),
       );
-      _addOrUpdateClaim(result.claim);
-      return (claim: result.claim, warnings: result.warnings);
+      if (result != null) {
+        _addOrUpdateClaim(result.claim);
+        return (claim: result.claim, warnings: result.warnings);
+      }
+      return (claim: null, warnings: <String>[]);
     } catch (e) {
       state = state.copyWith(error: ErrorSanitizer.sanitize(e));
       return (claim: null, warnings: <String>[]);
@@ -543,6 +562,7 @@ class WaiversNotifier extends StateNotifier<WaiversState>
     _socketHandler?.dispose();
     _invalidationDisposer?.call();
     _syncDisposer?.call();
+    _idempotency.clearPrefix('waiver.submit:$leagueId:');
     super.dispose();
   }
 }
@@ -555,6 +575,7 @@ final waiversProvider = StateNotifierProvider.autoDispose
     ref.watch(socketServiceProvider),
     ref.watch(invalidationServiceProvider),
     ref.watch(syncServiceProvider),
+    ref.read(actionIdempotencyProvider.notifier),
     params.leagueId,
     params.userRosterId,
   ),

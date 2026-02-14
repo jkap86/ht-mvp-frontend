@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/services/invalidation_service.dart';
+import '../../../../core/idempotency/action_idempotency_provider.dart';
+import '../../../../core/idempotency/action_ids.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/commissioner_repository.dart';
 import '../../../leagues/domain/league.dart';
@@ -60,11 +62,13 @@ class CommissionerState {
 class CommissionerNotifier extends StateNotifier<CommissionerState> {
   final CommissionerRepository _repo;
   final InvalidationService _invalidationService;
+  final ActionIdempotencyNotifier _idempotency;
   final int leagueId;
 
   CommissionerNotifier(
     this._repo,
     this._invalidationService,
+    this._idempotency,
     this.leagueId,
   ) : super(CommissionerState()) {
     loadData();
@@ -283,21 +287,37 @@ class CommissionerNotifier extends StateNotifier<CommissionerState> {
     int? totalRosters,
     String? idempotencyKey,
   }) async {
+    final actionId = ActionIds.commishSave(leagueId, {
+      if (name != null) 'name': name,
+      if (mode != null) 'mode': mode,
+      if (settings != null) 'settings': settings,
+      if (leagueSettings != null) 'leagueSettings': leagueSettings,
+      if (scoringSettings != null) 'scoringSettings': scoringSettings,
+    });
+    if (_idempotency.isInFlight(actionId)) return false;
+
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
 
     try {
-      final updatedLeague = await _repo.updateLeague(
-        leagueId,
-        name: name,
-        mode: mode,
-        isPublic: isPublic,
-        settings: settings,
-        leagueSettings: leagueSettings,
-        scoringSettings: scoringSettings,
-        totalRosters: totalRosters,
-        idempotencyKey: idempotencyKey,
+      final updatedLeague = await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _repo.updateLeague(
+          leagueId,
+          name: name,
+          mode: mode,
+          isPublic: isPublic,
+          settings: settings,
+          leagueSettings: leagueSettings,
+          scoringSettings: scoringSettings,
+          totalRosters: totalRosters,
+          idempotencyKey: key,
+        ),
       );
       if (!mounted) return false;
+      if (updatedLeague == null) {
+        state = state.copyWith(isProcessing: false);
+        return false;
+      }
       // Reload members to reflect benching changes
       final members = await _repo.getMembers(leagueId);
       if (!mounted) return false;
@@ -463,6 +483,7 @@ final commissionerProvider = StateNotifierProvider.autoDispose.family<Commission
   (ref, leagueId) => CommissionerNotifier(
     ref.watch(commissionerRepositoryProvider),
     ref.watch(invalidationServiceProvider),
+    ref.read(actionIdempotencyProvider.notifier),
     leagueId,
   ),
 );

@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/api/api_exceptions.dart';
 import '../../../../core/services/invalidation_service.dart';
+import '../../../../core/idempotency/action_idempotency_provider.dart';
+import '../../../../core/idempotency/action_ids.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../../players/domain/player.dart';
 import '../../data/roster_repository.dart';
@@ -80,6 +82,7 @@ class FreeAgentsState {
 class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
   final RosterRepository _rosterRepo;
   final InvalidationService _invalidationService;
+  final ActionIdempotencyNotifier _idempotency;
   final int leagueId;
   final int rosterId;
 
@@ -89,6 +92,7 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
   FreeAgentsNotifier(
     this._rosterRepo,
     this._invalidationService,
+    this._idempotency,
     this.leagueId,
     this.rosterId,
   ) : super(FreeAgentsState()) {
@@ -168,6 +172,9 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
 
   /// Add a player to the roster with optimistic update and rollback on failure
   Future<bool> addPlayer(int playerId, {String? idempotencyKey}) async {
+    final actionId = ActionIds.faAddDrop(leagueId, rosterId, playerId, null);
+    if (_idempotency.isInFlight(actionId)) return false;
+
     // Save state for rollback
     final previousState = state;
     final playerName = state.players.where((p) => p.id == playerId).firstOrNull?.fullName ?? 'Player';
@@ -180,7 +187,10 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
     );
 
     try {
-      await _rosterRepo.addPlayer(leagueId, rosterId, playerId, idempotencyKey: idempotencyKey);
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _rosterRepo.addPlayer(leagueId, rosterId, playerId, idempotencyKey: key),
+      );
 
       // Success - just clear loading state
       state = state.copyWith(
@@ -215,6 +225,9 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
 
   /// Add a player and drop another in the same transaction with optimistic update
   Future<bool> addDropPlayer(int addPlayerId, int dropPlayerId, {String? idempotencyKey}) async {
+    final actionId = ActionIds.faAddDrop(leagueId, rosterId, addPlayerId, dropPlayerId);
+    if (_idempotency.isInFlight(actionId)) return false;
+
     // Save state for rollback
     final previousState = state;
     final playerName = state.players.where((p) => p.id == addPlayerId).firstOrNull?.fullName ?? 'Player';
@@ -227,7 +240,10 @@ class FreeAgentsNotifier extends StateNotifier<FreeAgentsState> {
     );
 
     try {
-      await _rosterRepo.addDropPlayer(leagueId, rosterId, addPlayerId, dropPlayerId, idempotencyKey: idempotencyKey);
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _rosterRepo.addDropPlayer(leagueId, rosterId, addPlayerId, dropPlayerId, idempotencyKey: key),
+      );
 
       // Success - just clear loading state
       state = state.copyWith(
@@ -274,6 +290,7 @@ final freeAgentsProvider =
   (ref, key) => FreeAgentsNotifier(
     ref.watch(rosterRepositoryProvider),
     ref.watch(invalidationServiceProvider),
+    ref.read(actionIdempotencyProvider.notifier),
     key.leagueId,
     key.rosterId,
   ),

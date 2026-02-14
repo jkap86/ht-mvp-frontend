@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/league_context_provider.dart';
 import '../../../../core/api/api_exceptions.dart';
+import '../../../../core/idempotency/action_idempotency_provider.dart';
+import '../../../../core/idempotency/action_ids.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../../auth/presentation/auth_provider.dart';
@@ -423,6 +425,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   final DraftPickAssetRepository _pickAssetRepo;
   final LeagueRepository _leagueRepo;
   final SocketService _socketService;
+  final ActionIdempotencyNotifier _idempotency;
   final int leagueId;
   final int draftId;
 
@@ -450,6 +453,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     this._pickAssetRepo,
     this._leagueRepo,
     this._socketService,
+    this._idempotency,
     String? currentUserId,
     this.leagueId,
     this.draftId,
@@ -1140,9 +1144,16 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   // Action methods
   Future<String?> makePick(int playerId) async {
     if (state.isPickSubmitting) return 'Pick already in progress';
+    final pickNumber = state.picks.length + 1;
+    final rosterId = state.myRosterId ?? 0;
+    final actionId = ActionIds.draftPick(draftId, rosterId, pickNumber);
+    if (_idempotency.isInFlight(actionId)) return 'Pick already in progress';
     state = state.copyWith(isPickSubmitting: true);
     try {
-      await _draftRepo.makePick(leagueId, draftId, playerId);
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _draftRepo.makePick(leagueId, draftId, playerId, idempotencyKey: key),
+      );
       // Resync to ensure UI is updated even if socket event was missed
       if (mounted) await _refreshDraftState();
       return null;
@@ -1169,6 +1180,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   }
 
   Future<String?> nominate(int playerId) async {
+    final rosterId = state.myRosterId ?? 0;
+    final nominationNumber = state.activeLots.length;
+    final actionId = ActionIds.auctionNominate(draftId, rosterId, nominationNumber);
+    if (_idempotency.isInFlight(actionId)) return 'Nomination already in progress';
+
     // Optimistically add to pending nominations
     if (mounted) {
       state = state.copyWith(
@@ -1177,12 +1193,14 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     }
 
     try {
-      final lot = await _draftRepo.nominate(leagueId, draftId, playerId);
+      final lot = await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _draftRepo.nominate(leagueId, draftId, playerId, idempotencyKey: key),
+      );
       // Immediately add the new lot to state (don't wait for WebSocket)
       // Use upsert to prevent duplicates if socket message arrives first
-      if (mounted) {
+      if (mounted && lot != null) {
         _upsertAndSortLot(lot);
-        // Keep in pending until socket confirms (prevents duplicates if API succeeds but socket delayed)
       }
       return null;
     } catch (e) {
@@ -1196,9 +1214,13 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   }
 
   Future<String?> setMaxBid(int lotId, int maxBid) async {
+    final rosterId = state.myRosterId ?? 0;
+    final lot = state.activeLots.where((l) => l.id == lotId).firstOrNull;
+    final actionId = ActionIds.auctionMaxBid(draftId, rosterId, lot?.playerId ?? 0);
+    if (_idempotency.isInFlight(actionId)) return 'Bid already in progress';
+
     // Save previous myMaxBid for this specific lot (for targeted rollback)
-    final previousMaxBid =
-        state.activeLots.where((l) => l.id == lotId).firstOrNull?.myMaxBid;
+    final previousMaxBid = lot?.myMaxBid;
 
     // Optimistic update: immediately reflect user's max bid in state
     if (mounted) {
@@ -1211,7 +1233,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     }
 
     try {
-      await _draftRepo.setMaxBid(leagueId, draftId, lotId, maxBid);
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _draftRepo.setMaxBid(leagueId, draftId, lotId, maxBid, idempotencyKey: key),
+      );
       return null;
     } catch (e) {
       // Rollback only the specific myMaxBid change, preserving any socket updates
@@ -1647,6 +1672,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     _memberKickedDisposer?.call();
     _socketService.leaveLeague(leagueId);
     _socketHandler.dispose();
+    _idempotency.clearPrefix('draft.pick:$draftId:');
+    _idempotency.clearPrefix('auction.nominate:$draftId:');
+    _idempotency.clearPrefix('auction.maxBid:$draftId:');
+    _idempotency.clearPrefix('auction.bid:');
     super.dispose();
   }
 }
@@ -1663,6 +1692,7 @@ final draftRoomProvider = StateNotifierProvider.autoDispose
       ref.watch(draftPickAssetRepositoryProvider),
       ref.watch(leagueRepositoryProvider),
       ref.watch(socketServiceProvider),
+      ref.read(actionIdempotencyProvider.notifier),
       currentUserId,
       key.leagueId,
       key.draftId,

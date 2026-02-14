@@ -41,6 +41,9 @@ dependencies:
   # UUID generation
   uuid: ^4.5.1
 
+  # Deterministic hashing for idempotency keys
+  crypto: ^3.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
