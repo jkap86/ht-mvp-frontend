@@ -56,6 +56,8 @@ abstract class DraftSocketCallbacks {
   // Overnight pause callbacks (snake/linear drafts)
   void onOvernightPauseStartedReceived();
   void onOvernightPauseEndedReceived();
+  // Chess clock callbacks (commissioner adjustments)
+  void onChessClockUpdatedReceived(Map<String, dynamic> data);
 }
 
 /// Handles all socket event subscriptions for the draft room
@@ -310,6 +312,18 @@ class DraftSocketHandler {
 
     _addDisposer(_socketService.onOvernightPauseEnded((data) {
       _callbacks.onOvernightPauseEndedReceived();
+    }));
+
+    // Chess clock updated listener (commissioner adjustments)
+    _addDisposer(_socketService.onDraftChessClockUpdated((data) {
+      if (data is! Map) return;
+      try {
+        _callbacks.onChessClockUpdatedReceived(
+          Map<String, dynamic>.from(data),
+        );
+      } catch (e) {
+        if (kDebugMode) debugPrint('Failed to parse chess clock update: $e');
+      }
     }));
   }
 

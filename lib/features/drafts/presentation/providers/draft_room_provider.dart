@@ -1621,6 +1621,23 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
   }
 
   @override
+  void onChessClockUpdatedReceived(Map<String, dynamic> data) {
+    if (!mounted) return;
+    final clocksData = data['chessClocks'] ?? data['chess_clocks'];
+    if (clocksData is Map) {
+      final chessClocks = <int, double>{};
+      for (final entry in clocksData.entries) {
+        final rosterId = int.tryParse(entry.key.toString());
+        final seconds = (entry.value as num?)?.toDouble();
+        if (rosterId != null && seconds != null) {
+          chessClocks[rosterId] = seconds;
+        }
+      }
+      state = state.copyWith(chessClocks: chessClocks);
+    }
+  }
+
+  @override
   void dispose() {
     _budgetRefreshTimer?.cancel();
     _outbidDismissTimer?.cancel();

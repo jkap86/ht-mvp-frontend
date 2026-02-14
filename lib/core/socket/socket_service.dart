@@ -542,6 +542,11 @@ class SocketService {
     return on(SocketEvents.draftSettingsUpdated, callback);
   }
 
+  /// Listen for chess clock updated events (commissioner adjustments)
+  VoidCallback onDraftChessClockUpdated(void Function(dynamic) callback) {
+    return on(SocketEvents.draftChessClockUpdated, callback);
+  }
+
   /// Listen for server-side errors (e.g., authorization failures)
   VoidCallback onAppError(void Function(dynamic) callback) {
     return on(SocketEvents.appError, callback);

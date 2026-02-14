@@ -18,6 +18,10 @@ import '../widgets/scoring_card.dart';
 import '../widgets/season_controls_card.dart';
 import '../widgets/season_reset_card.dart';
 import '../widgets/waiver_management_card.dart';
+import '../widgets/commissioner_tools_waivers_card.dart';
+import '../widgets/commissioner_tools_trades_card.dart';
+import '../widgets/commissioner_tools_dues_card.dart';
+import '../providers/commissioner_tools_provider.dart';
 import '../../../dues/presentation/widgets/dues_config_card.dart';
 import '../../../dues/presentation/widgets/dues_tracker_card.dart';
 
@@ -63,9 +67,38 @@ class CommissionerScreen extends ConsumerWidget {
 
   Widget _buildCommissionerContent(BuildContext context, WidgetRef ref) {
     final state = ref.watch(commissionerProvider(leagueId));
+    final toolsState = ref.watch(commissionerToolsProvider(leagueId));
+
+    // Initialize trading locked state from league settings
+    final tradingLocked = state.league?.leagueSettings['trading_locked'] == true;
+    if (toolsState.tradingLocked != tradingLocked && !toolsState.isProcessing) {
+      Future.microtask(() {
+        ref.read(commissionerToolsProvider(leagueId).notifier).setTradingLocked(tradingLocked);
+      });
+    }
 
     // Show snackbar for success/error messages
     ref.listen(commissionerProvider(leagueId), (prev, next) {
+      if (next.successMessage != null && prev?.successMessage != next.successMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.successMessage!),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+      }
+      if (next.error != null && prev?.error != next.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.error!),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    });
+
+    // Show snackbar for tools provider messages
+    ref.listen(commissionerToolsProvider(leagueId), (prev, next) {
       if (next.successMessage != null && prev?.successMessage != next.successMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -114,7 +147,7 @@ class CommissionerScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                if (state.isProcessing)
+                if (state.isProcessing || toolsState.isProcessing)
                   Container(
                     color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.26),
                     child: const Center(
@@ -128,6 +161,9 @@ class CommissionerScreen extends ConsumerWidget {
 
   List<Widget> _buildCommissionerCards(BuildContext context, WidgetRef ref, CommissionerState state) {
     const spacing = SizedBox(height: 16);
+    final toolsState = ref.watch(commissionerToolsProvider(leagueId));
+    final hasFaab = (state.league?.leagueSettings['faabBudget'] as num?) != null &&
+        (state.league?.leagueSettings['faabBudget'] as num) > 0;
     return [
       LeagueInfoCard(state: state),
       spacing,
@@ -192,9 +228,38 @@ class CommissionerScreen extends ConsumerWidget {
         },
       ),
       spacing,
+      CommissionerToolsWaiversCard(
+        members: state.members,
+        hasFaab: hasFaab,
+        onResetPriority: () {
+          final key = newIdempotencyKey();
+          ref.read(commissionerToolsProvider(leagueId).notifier).resetWaiverPriority(idempotencyKey: key);
+        },
+        onSetPriority: (rosterId, priority) {
+          final key = newIdempotencyKey();
+          ref.read(commissionerToolsProvider(leagueId).notifier).setWaiverPriority(rosterId, priority, idempotencyKey: key);
+        },
+        onSetFaabBudget: (rosterId, setTo) {
+          final key = newIdempotencyKey();
+          ref.read(commissionerToolsProvider(leagueId).notifier).setFaabBudget(rosterId, setTo, idempotencyKey: key);
+        },
+      ),
+      spacing,
+      CommissionerToolsTradesCard(
+        tradingLocked: toolsState.tradingLocked,
+        onToggleTradingLocked: (locked) {
+          final key = newIdempotencyKey();
+          ref.read(commissionerToolsProvider(leagueId).notifier).updateTradingLocked(locked, idempotencyKey: key);
+        },
+      ),
+      spacing,
       DuesConfigCard(leagueId: leagueId, totalRosters: state.league?.totalRosters ?? 12),
       spacing,
       DuesTrackerCard(leagueId: leagueId),
+      spacing,
+      CommissionerToolsDuesCard(
+        onExportCsv: () => ref.read(commissionerToolsProvider(leagueId).notifier).exportDuesCsv(),
+      ),
       spacing,
       PlayoffManagementCard(
         state: state,
