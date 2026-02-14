@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/idempotency/action_idempotency_provider.dart';
+import '../../../../core/idempotency/action_ids.dart';
 import '../../../../core/utils/error_sanitizer.dart';
 import '../../data/commissioner_tools_repository.dart';
 
@@ -37,9 +39,10 @@ class CommissionerToolsState {
 /// Notifier for commissioner admin tool actions
 class CommissionerToolsNotifier extends StateNotifier<CommissionerToolsState> {
   final CommissionerToolsRepository _repo;
+  final ActionIdempotencyNotifier _idempotency;
   final int leagueId;
 
-  CommissionerToolsNotifier(this._repo, this.leagueId)
+  CommissionerToolsNotifier(this._repo, this._idempotency, this.leagueId)
       : super(CommissionerToolsState());
 
   /// Initialize from league settings (call from widget)
@@ -62,12 +65,17 @@ class CommissionerToolsNotifier extends StateNotifier<CommissionerToolsState> {
     String? reason,
     String? idempotencyKey,
   }) async {
+    final actionId = ActionIds.commishTool('chessClock:$draftId:$rosterId', leagueId);
+    if (_idempotency.isInFlight(actionId)) return false;
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
     try {
-      await _repo.adjustChessClock(
-        leagueId, draftId, rosterId, deltaSeconds,
-        reason: reason,
-        idempotencyKey: idempotencyKey,
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _repo.adjustChessClock(
+          leagueId, draftId, rosterId, deltaSeconds,
+          reason: reason,
+          idempotencyKey: key,
+        ),
       );
       if (!mounted) return false;
       final direction = deltaSeconds > 0 ? 'Added' : 'Removed';
@@ -91,9 +99,14 @@ class CommissionerToolsNotifier extends StateNotifier<CommissionerToolsState> {
     int draftId, {
     String? idempotencyKey,
   }) async {
+    final actionId = ActionIds.commishTool('forceAutopick:$draftId', leagueId);
+    if (_idempotency.isInFlight(actionId)) return false;
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
     try {
-      await _repo.forceAutopick(leagueId, draftId, idempotencyKey: idempotencyKey);
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _repo.forceAutopick(leagueId, draftId, idempotencyKey: key),
+      );
       if (!mounted) return false;
       state = state.copyWith(
         isProcessing: false,
@@ -114,9 +127,14 @@ class CommissionerToolsNotifier extends StateNotifier<CommissionerToolsState> {
     int draftId, {
     String? idempotencyKey,
   }) async {
+    final actionId = ActionIds.commishTool('undoPick:$draftId', leagueId);
+    if (_idempotency.isInFlight(actionId)) return false;
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
     try {
-      await _repo.undoLastPick(leagueId, draftId, idempotencyKey: idempotencyKey);
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _repo.undoLastPick(leagueId, draftId, idempotencyKey: key),
+      );
       if (!mounted) return false;
       state = state.copyWith(
         isProcessing: false,
@@ -138,9 +156,14 @@ class CommissionerToolsNotifier extends StateNotifier<CommissionerToolsState> {
   // ============================================================
 
   Future<bool> resetWaiverPriority({String? idempotencyKey}) async {
+    final actionId = ActionIds.commishTool('resetWaiverPriority', leagueId);
+    if (_idempotency.isInFlight(actionId)) return false;
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
     try {
-      await _repo.resetWaiverPriority(leagueId, idempotencyKey: idempotencyKey);
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _repo.resetWaiverPriority(leagueId, idempotencyKey: key),
+      );
       if (!mounted) return false;
       state = state.copyWith(
         isProcessing: false,
@@ -162,11 +185,16 @@ class CommissionerToolsNotifier extends StateNotifier<CommissionerToolsState> {
     int priority, {
     String? idempotencyKey,
   }) async {
+    final actionId = ActionIds.commishTool('setWaiverPriority:$rosterId', leagueId);
+    if (_idempotency.isInFlight(actionId)) return false;
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
     try {
-      await _repo.setWaiverPriority(
-        leagueId, rosterId, priority,
-        idempotencyKey: idempotencyKey,
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _repo.setWaiverPriority(
+          leagueId, rosterId, priority,
+          idempotencyKey: key,
+        ),
       );
       if (!mounted) return false;
       state = state.copyWith(
@@ -189,11 +217,16 @@ class CommissionerToolsNotifier extends StateNotifier<CommissionerToolsState> {
     num setTo, {
     String? idempotencyKey,
   }) async {
+    final actionId = ActionIds.commishTool('setFaab:$rosterId', leagueId);
+    if (_idempotency.isInFlight(actionId)) return false;
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
     try {
-      await _repo.setFaabBudget(
-        leagueId, rosterId, setTo,
-        idempotencyKey: idempotencyKey,
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _repo.setFaabBudget(
+          leagueId, rosterId, setTo,
+          idempotencyKey: key,
+        ),
       );
       if (!mounted) return false;
       state = state.copyWith(
@@ -220,12 +253,17 @@ class CommissionerToolsNotifier extends StateNotifier<CommissionerToolsState> {
     String? reason,
     String? idempotencyKey,
   }) async {
+    final actionId = ActionIds.commishTool('cancelTrade:$tradeId', leagueId);
+    if (_idempotency.isInFlight(actionId)) return false;
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
     try {
-      await _repo.adminCancelTrade(
-        leagueId, tradeId,
-        reason: reason,
-        idempotencyKey: idempotencyKey,
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _repo.adminCancelTrade(
+          leagueId, tradeId,
+          reason: reason,
+          idempotencyKey: key,
+        ),
       );
       if (!mounted) return false;
       state = state.copyWith(
@@ -247,11 +285,16 @@ class CommissionerToolsNotifier extends StateNotifier<CommissionerToolsState> {
     bool tradingLocked, {
     String? idempotencyKey,
   }) async {
+    final actionId = ActionIds.commishTool('tradingLocked', leagueId);
+    if (_idempotency.isInFlight(actionId)) return false;
     state = state.copyWith(isProcessing: true, clearError: true, clearSuccess: true);
     try {
-      await _repo.updateTradingLocked(
-        leagueId, tradingLocked,
-        idempotencyKey: idempotencyKey,
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _repo.updateTradingLocked(
+          leagueId, tradingLocked,
+          idempotencyKey: key,
+        ),
       );
       if (!mounted) return false;
       state = state.copyWith(
@@ -308,6 +351,12 @@ class CommissionerToolsNotifier extends StateNotifier<CommissionerToolsState> {
     }
     return '${totalSeconds}s';
   }
+
+  @override
+  void dispose() {
+    _idempotency.clearPrefix('commish.tool.');
+    super.dispose();
+  }
 }
 
 /// Provider for commissioner tools
@@ -315,6 +364,7 @@ final commissionerToolsProvider = StateNotifierProvider.autoDispose
     .family<CommissionerToolsNotifier, CommissionerToolsState, int>(
   (ref, leagueId) => CommissionerToolsNotifier(
     ref.watch(commissionerToolsRepositoryProvider),
+    ref.read(actionIdempotencyProvider.notifier),
     leagueId,
   ),
 );

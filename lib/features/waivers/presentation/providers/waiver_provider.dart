@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/utils/idempotency.dart';
 import '../../../../core/idempotency/action_idempotency_provider.dart';
 import '../../../../core/idempotency/action_ids.dart';
 import '../../../../core/socket/socket_service.dart';
@@ -443,16 +442,21 @@ class WaiversNotifier extends StateNotifier<WaiversState>
     int? bidAmount,
     String? idempotencyKey,
   }) async {
-    final key = idempotencyKey ?? newIdempotencyKey();
+    final actionId = ActionIds.waiverUpdate(leagueId, claimId);
+    if (_idempotency.isInFlight(actionId)) return null;
+
     try {
-      final claim = await _waiverRepo.updateClaim(
-        leagueId,
-        claimId,
-        dropPlayerId: dropPlayerId,
-        bidAmount: bidAmount,
-        idempotencyKey: key,
+      final claim = await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _waiverRepo.updateClaim(
+          leagueId,
+          claimId,
+          dropPlayerId: dropPlayerId,
+          bidAmount: bidAmount,
+          idempotencyKey: key,
+        ),
       );
-      _addOrUpdateClaim(claim);
+      if (claim != null) _addOrUpdateClaim(claim);
       return claim;
     } catch (e) {
       state = state.copyWith(error: ErrorSanitizer.sanitize(e));
@@ -462,9 +466,14 @@ class WaiversNotifier extends StateNotifier<WaiversState>
 
   /// Cancel a waiver claim
   Future<bool> cancelClaim(int claimId, {String? idempotencyKey}) async {
-    final key = idempotencyKey ?? newIdempotencyKey();
+    final actionId = ActionIds.waiverCancel(leagueId, claimId);
+    if (_idempotency.isInFlight(actionId)) return false;
+
     try {
-      await _waiverRepo.cancelClaim(leagueId, claimId, idempotencyKey: key);
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _waiverRepo.cancelClaim(leagueId, claimId, idempotencyKey: key),
+      );
       _removeClaim(claimId);
       return true;
     } catch (e) {
@@ -480,7 +489,10 @@ class WaiversNotifier extends StateNotifier<WaiversState>
     // Prevent concurrent reorders to avoid state inconsistencies
     if (state.isReordering) return false;
 
-    final key = idempotencyKey ?? newIdempotencyKey();
+    final rosterId = userRosterId ?? 0;
+    final actionId = ActionIds.waiverReorder(leagueId, rosterId);
+    if (_idempotency.isInFlight(actionId)) return false;
+
     // Save previous claims for rollback on error
     final previousClaims = [...state.claims];
 
@@ -496,18 +508,25 @@ class WaiversNotifier extends StateNotifier<WaiversState>
     state = state.copyWith(claims: optimisticClaims, isReordering: true);
 
     try {
-      final updatedClaims = await _waiverRepo.reorderClaims(leagueId, claimIds,
-          idempotencyKey: key);
+      final updatedClaims = await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _waiverRepo.reorderClaims(leagueId, claimIds,
+            idempotencyKey: key),
+      );
       if (!mounted) return true;
-      // Update local state with server-confirmed claim orders
-      final currentClaims = [...state.claims];
-      for (final updated in updatedClaims) {
-        final index = currentClaims.indexWhere((c) => c.id == updated.id);
-        if (index >= 0) {
-          currentClaims[index] = updated;
+      if (updatedClaims != null) {
+        // Update local state with server-confirmed claim orders
+        final currentClaims = [...state.claims];
+        for (final updated in updatedClaims) {
+          final index = currentClaims.indexWhere((c) => c.id == updated.id);
+          if (index >= 0) {
+            currentClaims[index] = updated;
+          }
         }
+        state = state.copyWith(claims: currentClaims, isReordering: false);
+      } else {
+        state = state.copyWith(isReordering: false);
       }
-      state = state.copyWith(claims: currentClaims, isReordering: false);
       return true;
     } catch (e) {
       if (!mounted) return false;
@@ -563,6 +582,9 @@ class WaiversNotifier extends StateNotifier<WaiversState>
     _invalidationDisposer?.call();
     _syncDisposer?.call();
     _idempotency.clearPrefix('waiver.submit:$leagueId:');
+    _idempotency.clearPrefix('waiver.update:$leagueId:');
+    _idempotency.clearPrefix('waiver.cancel:$leagueId:');
+    _idempotency.clearPrefix('waiver.reorder:$leagueId:');
     super.dispose();
   }
 }

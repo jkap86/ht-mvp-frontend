@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/semantic_colors.dart';
 import '../../../../core/utils/error_display.dart';
-import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../../core/widgets/status_badge.dart';
 import '../../../../core/widgets/team_selector_sheet.dart';
@@ -347,7 +346,6 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final key = newIdempotencyKey();
       await ref.read(tradesProvider(widget.leagueId).notifier).proposeTrade(
         recipientRosterId: _selectedRecipientRosterId!,
         offeringPlayerIds: _offeringPlayerIds,
@@ -356,7 +354,6 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
         leagueChatMode: _leagueChatMode,
         offeringPickAssetIds: _offeringPickAssetIds.toList(),
         requestingPickAssetIds: _requestingPickAssetIds.toList(),
-        idempotencyKey: key,
       );
 
       if (mounted) {

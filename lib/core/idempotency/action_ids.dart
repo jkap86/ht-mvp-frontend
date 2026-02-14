@@ -11,6 +11,9 @@ class ActionIds {
   static String draftPick(int draftId, int rosterId, int pickNumber) =>
       'draft.pick:$draftId:$rosterId:$pickNumber';
 
+  static String draftPickAsset(int draftId, int rosterId, int pickNumber) =>
+      'draft.pickAsset:$draftId:$rosterId:$pickNumber';
+
   static String auctionNominate(
           int draftId, int rosterId, int nominationNumber) =>
       'auction.nominate:$draftId:$rosterId:$nominationNumber';
@@ -56,4 +59,21 @@ class ActionIds {
     int? dropPlayerId,
   ) =>
       'fa.addDrop:$leagueId:$rosterId:$addPlayerId:${dropPlayerId ?? 0}';
+
+  // Waiver operations
+  static String waiverUpdate(int leagueId, int claimId) =>
+      'waiver.update:$leagueId:$claimId';
+
+  static String waiverCancel(int leagueId, int claimId) =>
+      'waiver.cancel:$leagueId:$claimId';
+
+  static String waiverReorder(int leagueId, int rosterId) =>
+      'waiver.reorder:$leagueId:$rosterId';
+
+  // Commissioner operations
+  static String commishAction(String action, int leagueId) =>
+      'commish.$action:$leagueId';
+
+  static String commishTool(String action, int leagueId) =>
+      'commish.tool.$action:$leagueId';
 }

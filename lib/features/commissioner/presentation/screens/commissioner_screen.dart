@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/providers/league_context_provider.dart';
 import '../../../../core/utils/app_layout.dart';
-import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/skeletons/skeletons.dart';
 import '../../../../core/widgets/states/states.dart';
 import '../providers/commissioner_provider.dart';
@@ -172,12 +171,10 @@ class CommissionerScreen extends ConsumerWidget {
       MemberManagementCard(
         state: state,
         onKickMember: (rosterId, teamName, username) {
-          final key = newIdempotencyKey();
-          ref.read(commissionerProvider(leagueId).notifier).kickMember(rosterId, teamName, idempotencyKey: key);
+          ref.read(commissionerProvider(leagueId).notifier).kickMember(rosterId, teamName);
         },
         onReinstateMember: (rosterId, teamName) {
-          final key = newIdempotencyKey();
-          ref.read(commissionerProvider(leagueId).notifier).reinstateMember(rosterId, teamName, idempotencyKey: key);
+          ref.read(commissionerProvider(leagueId).notifier).reinstateMember(rosterId, teamName);
         },
       ),
       spacing,
@@ -185,20 +182,17 @@ class CommissionerScreen extends ConsumerWidget {
       spacing,
       ScheduleManagementCard(
         onGenerateSchedule: (weeks) {
-          final key = newIdempotencyKey();
-          ref.read(commissionerProvider(leagueId).notifier).generateSchedule(weeks, idempotencyKey: key);
+          ref.read(commissionerProvider(leagueId).notifier).generateSchedule(weeks);
         },
         onStartMatchupsDraft: ({
           required int weeks,
           required int pickTimeSeconds,
           required bool randomizeDraftOrder,
         }) async {
-          final key = newIdempotencyKey();
           final draftId = await ref.read(commissionerProvider(leagueId).notifier).startMatchupsDraft(
             weeks: weeks,
             pickTimeSeconds: pickTimeSeconds,
             randomizeDraftOrder: randomizeDraftOrder,
-            idempotencyKey: key,
           );
           if (draftId != null && context.mounted) {
             context.push('/leagues/$leagueId/drafts/$draftId');
@@ -211,20 +205,17 @@ class CommissionerScreen extends ConsumerWidget {
       ScoringCard(
         currentWeek: state.league?.currentWeek ?? 1,
         onFinalizeWeek: (week) {
-          final key = newIdempotencyKey();
-          ref.read(commissionerProvider(leagueId).notifier).finalizeWeek(week, idempotencyKey: key);
+          ref.read(commissionerProvider(leagueId).notifier).finalizeWeek(week);
         },
       ),
       spacing,
       WaiverManagementCard(
         waiversInitialized: state.waiversInitialized,
         onInitializeWaivers: ({int? faabBudget}) {
-          final key = newIdempotencyKey();
-          ref.read(commissionerProvider(leagueId).notifier).initializeWaivers(faabBudget: faabBudget, idempotencyKey: key);
+          ref.read(commissionerProvider(leagueId).notifier).initializeWaivers(faabBudget: faabBudget);
         },
         onProcessWaivers: () {
-          final key = newIdempotencyKey();
-          ref.read(commissionerProvider(leagueId).notifier).processWaivers(idempotencyKey: key);
+          ref.read(commissionerProvider(leagueId).notifier).processWaivers();
         },
       ),
       spacing,
@@ -232,24 +223,20 @@ class CommissionerScreen extends ConsumerWidget {
         members: state.members,
         hasFaab: hasFaab,
         onResetPriority: () {
-          final key = newIdempotencyKey();
-          ref.read(commissionerToolsProvider(leagueId).notifier).resetWaiverPriority(idempotencyKey: key);
+          ref.read(commissionerToolsProvider(leagueId).notifier).resetWaiverPriority();
         },
         onSetPriority: (rosterId, priority) {
-          final key = newIdempotencyKey();
-          ref.read(commissionerToolsProvider(leagueId).notifier).setWaiverPriority(rosterId, priority, idempotencyKey: key);
+          ref.read(commissionerToolsProvider(leagueId).notifier).setWaiverPriority(rosterId, priority);
         },
         onSetFaabBudget: (rosterId, setTo) {
-          final key = newIdempotencyKey();
-          ref.read(commissionerToolsProvider(leagueId).notifier).setFaabBudget(rosterId, setTo, idempotencyKey: key);
+          ref.read(commissionerToolsProvider(leagueId).notifier).setFaabBudget(rosterId, setTo);
         },
       ),
       spacing,
       CommissionerToolsTradesCard(
         tradingLocked: toolsState.tradingLocked,
         onToggleTradingLocked: (locked) {
-          final key = newIdempotencyKey();
-          ref.read(commissionerToolsProvider(leagueId).notifier).updateTradingLocked(locked, idempotencyKey: key);
+          ref.read(commissionerToolsProvider(leagueId).notifier).updateTradingLocked(locked);
         },
       ),
       spacing,
@@ -272,7 +259,6 @@ class CommissionerScreen extends ConsumerWidget {
           String? consolationType,
           int? consolationTeams,
         }) {
-          final key = newIdempotencyKey();
           ref.read(commissionerProvider(leagueId).notifier).generatePlayoffBracket(
             playoffTeams: playoffTeams,
             startWeek: startWeek,
@@ -280,12 +266,10 @@ class CommissionerScreen extends ConsumerWidget {
             enableThirdPlaceGame: enableThirdPlaceGame,
             consolationType: consolationType,
             consolationTeams: consolationTeams,
-            idempotencyKey: key,
           );
         },
         onAdvanceWinners: (week) {
-          final key = newIdempotencyKey();
-          ref.read(commissionerProvider(leagueId).notifier).advanceWinners(week, idempotencyKey: key);
+          ref.read(commissionerProvider(leagueId).notifier).advanceWinners(week);
         },
         onViewBracket: () {
           context.push('/leagues/$leagueId/playoffs');
@@ -303,13 +287,11 @@ class CommissionerScreen extends ConsumerWidget {
           bool keepMembers = false,
           bool clearChat = true,
         }) {
-          final key = newIdempotencyKey();
           return ref.read(commissionerProvider(leagueId).notifier).resetLeague(
             newSeason: newSeason,
             confirmationName: confirmationName,
             keepMembers: keepMembers,
             clearChat: clearChat,
-            idempotencyKey: key,
           );
         },
       ),
@@ -400,10 +382,9 @@ class CommissionerScreen extends ConsumerWidget {
                 onPressed: matches
                     ? () async {
                         Navigator.of(dialogContext).pop();
-                        final key = newIdempotencyKey();
                         final success = await ref
                             .read(commissionerProvider(leagueId).notifier)
-                            .deleteLeague(confirmationName: controller.text.trim(), idempotencyKey: key);
+                            .deleteLeague(confirmationName: controller.text.trim());
                         if (success && context.mounted) {
                           context.go('/');
                         }

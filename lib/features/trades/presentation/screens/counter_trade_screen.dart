@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/utils/app_layout.dart';
 import '../../../../core/utils/error_display.dart';
-import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/position_badge.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../../core/widgets/states/app_error_view.dart';
@@ -359,7 +358,6 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final key = newIdempotencyKey();
       await ref.read(tradesProvider(widget.leagueId).notifier).counterTrade(
         tradeId: widget.originalTradeId,
         offeringPlayerIds: _offeringPlayerIds,
@@ -371,7 +369,6 @@ class _CounterTradeScreenState extends ConsumerState<CounterTradeScreen> {
         leagueChatMode: _leagueChatMode,
         offeringPickAssetIds: _offeringPickAssetIds.toList(),
         requestingPickAssetIds: _requestingPickAssetIds.toList(),
-        idempotencyKey: key,
       );
 
       if (mounted) {

@@ -9,6 +9,7 @@ import '../../../config/app_theme.dart';
 import '../../../core/theme/hype_train_colors.dart';
 import '../../../core/providers/league_context_provider.dart';
 import '../../../core/utils/error_display.dart';
+import '../../../core/idempotency/action_idempotency_provider.dart';
 import '../../../core/utils/idempotency.dart';
 import '../../../core/widgets/data_freshness_bar.dart';
 import '../../../core/widgets/skeletons/skeletons.dart';
@@ -244,11 +245,19 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
     if (_isStartingDraft) return; // Prevent double-tap
     setState(() => _isStartingDraft = true);
     try {
-      final key = newIdempotencyKey();
-      final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
-      final error = await notifier.startDraft(idempotencyKey: key);
-      if (error != null && context.mounted) {
-        error.showAsError(ref);
+      final idempo = ref.read(actionIdempotencyProvider.notifier);
+      final actionId = 'draft.start:${widget.draftId}';
+      await idempo.run(
+        actionId: actionId,
+        op: (key) async {
+          final notifier = ref.read(draftRoomProvider(_providerKey).notifier);
+          final error = await notifier.startDraft(idempotencyKey: key);
+          if (error != null) throw Exception(error);
+        },
+      );
+    } catch (e) {
+      if (context.mounted) {
+        e.toString().replaceFirst('Exception: ', '').showAsError(ref);
       }
     } finally {
       _isStartingDraft = false; // Always reset flag
@@ -669,11 +678,21 @@ class _DraftRoomBodyState extends ConsumerState<_DraftRoomBody> {
       isMyTurn: isMyTurn,
       isAutodraftEnabled: isAutodraftEnabled,
       onToggleAutodraft: () async {
-        final key = newIdempotencyKey();
-        final notifier = ref.read(draftRoomProvider(widget.providerKey).notifier);
-        final error = await notifier.toggleAutodraft(!isAutodraftEnabled, idempotencyKey: key);
-        if (error != null && context.mounted) {
-          error.showAsError(ref);
+        final idempo = ref.read(actionIdempotencyProvider.notifier);
+        final actionId = 'draft.autodraft:${widget.providerKey.draftId}:${!isAutodraftEnabled}';
+        try {
+          await idempo.run(
+            actionId: actionId,
+            op: (key) async {
+              final notifier = ref.read(draftRoomProvider(widget.providerKey).notifier);
+              final error = await notifier.toggleAutodraft(!isAutodraftEnabled, idempotencyKey: key);
+              if (error != null) throw Exception(error);
+            },
+          );
+        } catch (e) {
+          if (context.mounted) {
+            e.toString().replaceFirst('Exception: ', '').showAsError(ref);
+          }
         }
       },
       topQueuedPlayerName: topQueuedPlayerName,

@@ -1166,8 +1166,19 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
   /// Make a pick using a draft pick asset instead of a player
   Future<String?> makePickAssetSelection(int pickAssetId) async {
+    if (state.isPickSubmitting) return 'Pick already in progress';
+    final pickNumber = state.picks.length + 1;
+    final rosterId = state.myRosterId ?? 0;
+    final actionId = ActionIds.draftPickAsset(draftId, rosterId, pickNumber);
+    if (_idempotency.isInFlight(actionId)) return 'Pick already in progress';
+    state = state.copyWith(isPickSubmitting: true);
     try {
-      await _draftRepo.makePickAssetSelection(leagueId, draftId, pickAssetId);
+      await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _draftRepo.makePickAssetSelection(
+            leagueId, draftId, pickAssetId,
+            idempotencyKey: key),
+      );
       // Resync state and reload available pick assets
       if (mounted) {
         await _refreshDraftState();
@@ -1176,6 +1187,8 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       return null;
     } catch (e) {
       return ErrorSanitizer.sanitize(e);
+    } finally {
+      if (mounted) state = state.copyWith(isPickSubmitting: false);
     }
   }
 
@@ -1673,6 +1686,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     _socketService.leaveLeague(leagueId);
     _socketHandler.dispose();
     _idempotency.clearPrefix('draft.pick:$draftId:');
+    _idempotency.clearPrefix('draft.pickAsset:$draftId:');
     _idempotency.clearPrefix('auction.nominate:$draftId:');
     _idempotency.clearPrefix('auction.maxBid:$draftId:');
     _idempotency.clearPrefix('auction.bid:');

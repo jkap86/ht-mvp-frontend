@@ -397,14 +397,23 @@ class TradesNotifier extends StateNotifier<TradesState> implements TradesSocketC
 
   /// Vote on a trade during review period
   Future<bool> voteTrade(int tradeId, String vote, {String? idempotencyKey}) async {
+    final rosterId = state.userRosterId ?? 0;
+    final actionId = ActionIds.tradeAction('vote.$vote', tradeId, rosterId);
+    if (_idempotency.isInFlight(actionId)) return false;
+
     try {
-      final result = await _tradeRepo.voteTrade(leagueId, tradeId, vote, idempotencyKey: idempotencyKey);
-      final tradeData = result['trade'];
-      if (tradeData == null) {
-        throw Exception('Vote response missing trade data');
+      final result = await _idempotency.run(
+        actionId: actionId,
+        op: (key) => _tradeRepo.voteTrade(leagueId, tradeId, vote, idempotencyKey: key),
+      );
+      if (result != null) {
+        final tradeData = result['trade'];
+        if (tradeData == null) {
+          throw Exception('Vote response missing trade data');
+        }
+        final trade = tradeData as Trade;
+        _addOrUpdateTrade(trade);
       }
-      final trade = tradeData as Trade;
-      _addOrUpdateTrade(trade);
       return true;
     } catch (e) {
       state = state.copyWith(error: ErrorSanitizer.sanitize(e));
@@ -496,6 +505,7 @@ class TradesNotifier extends StateNotifier<TradesState> implements TradesSocketC
     _socketHandler?.dispose();
     _invalidationDisposer?.call();
     _syncDisposer?.call();
+    _idempotency.clearPrefix('trade.');
     super.dispose();
   }
 }

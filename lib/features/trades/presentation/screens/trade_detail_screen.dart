@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/utils/app_layout.dart';
 import '../../../../core/utils/error_display.dart';
 import '../../../../core/utils/error_sanitizer.dart';
-import '../../../../core/utils/idempotency.dart';
 import '../../../../core/widgets/states/app_loading_view.dart';
 import '../../../../core/widgets/states/app_error_view.dart';
 import '../../data/trade_repository.dart';
@@ -155,10 +154,9 @@ class _TradeDetailScreenState extends ConsumerState<TradeDetailScreen> {
     setState(() => _isActionInFlight = true);
 
     try {
-      final key = newIdempotencyKey();
       final result = await ref
           .read(tradesProvider(widget.leagueId).notifier)
-          .acceptTrade(trade.id, idempotencyKey: key);
+          .acceptTrade(trade.id);
       if (mounted) {
         if (result != null) {
           ref.invalidate(tradeDetailProvider(
@@ -206,10 +204,9 @@ class _TradeDetailScreenState extends ConsumerState<TradeDetailScreen> {
     setState(() => _isActionInFlight = true);
 
     try {
-      final key = newIdempotencyKey();
       final result = await ref
           .read(tradesProvider(widget.leagueId).notifier)
-          .rejectTrade(trade.id, idempotencyKey: key);
+          .rejectTrade(trade.id);
       if (mounted) {
         if (result != null) {
           ref.invalidate(tradeDetailProvider(
@@ -258,10 +255,9 @@ class _TradeDetailScreenState extends ConsumerState<TradeDetailScreen> {
     setState(() => _isActionInFlight = true);
 
     try {
-      final key = newIdempotencyKey();
       final result = await ref
           .read(tradesProvider(widget.leagueId).notifier)
-          .cancelTrade(trade.id, idempotencyKey: key);
+          .cancelTrade(trade.id);
       if (mounted) {
         if (result != null) {
           ref.invalidate(tradeDetailProvider(
@@ -288,10 +284,9 @@ class _TradeDetailScreenState extends ConsumerState<TradeDetailScreen> {
     setState(() => _isActionInFlight = true);
 
     try {
-      final key = newIdempotencyKey();
       final success = await ref
           .read(tradesProvider(widget.leagueId).notifier)
-          .voteTrade(trade.id, vote, idempotencyKey: key);
+          .voteTrade(trade.id, vote);
       if (mounted) {
         if (success) {
           ref.invalidate(tradeDetailProvider(

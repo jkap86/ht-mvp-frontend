@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/app_layout.dart';
 import '../../../../core/utils/error_display.dart';
-import '../../../../core/utils/idempotency.dart';
+
 import '../../../../core/utils/navigation_utils.dart';
 import '../../../../core/widgets/skeletons/skeletons.dart';
 import '../../../../core/widgets/states/states.dart';
@@ -248,9 +248,8 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     );
 
     if (confirmed == true) {
-      final key = newIdempotencyKey();
       final waiversKey = (leagueId: widget.leagueId, userRosterId: widget.rosterId);
-      final success = await ref.read(waiversProvider(waiversKey).notifier).cancelClaim(claimId, idempotencyKey: key);
+      final success = await ref.read(waiversProvider(waiversKey).notifier).cancelClaim(claimId);
       if (success && mounted) {
         showSuccess(ref, 'Claim cancelled');
       }
@@ -401,8 +400,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
             FilledButton(
               onPressed: () async {
                 Navigator.of(context).pop();
-                final key = newIdempotencyKey();
-                final success = await ref.read(freeAgentsProvider(_key).notifier).addPlayer(player.id, idempotencyKey: key);
+                final success = await ref.read(freeAgentsProvider(_key).notifier).addPlayer(player.id);
                 if (success && mounted) {
                   showSuccess(ref, '${player.fullName} added to roster');
                   ref.read(teamProvider(_teamKey).notifier).loadData();
@@ -420,8 +418,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         rosterPlayers: rosterPlayers,
         maxRosterSize: maxRosterSize,
         onDropSelected: (dropPlayerId) async {
-          final key = newIdempotencyKey();
-          return await ref.read(freeAgentsProvider(_key).notifier).addDropPlayer(player.id, dropPlayerId, idempotencyKey: key);
+          return await ref.read(freeAgentsProvider(_key).notifier).addDropPlayer(player.id, dropPlayerId);
         },
         onSuccess: () {
           if (mounted) {
@@ -459,13 +456,11 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         int? dropPlayerId,
         int bidAmount = 0,
       }) async {
-        final key = newIdempotencyKey();
         final waiversKey = (leagueId: widget.leagueId, userRosterId: widget.rosterId);
         final result = await ref.read(waiversProvider(waiversKey).notifier).submitClaim(
           playerId: playerId,
           dropPlayerId: dropPlayerId,
           bidAmount: bidAmount,
-          idempotencyKey: key,
         );
         if (result.claim != null && mounted) {
           showSuccess(ref, 'Waiver claim submitted for ${player.fullName}');
