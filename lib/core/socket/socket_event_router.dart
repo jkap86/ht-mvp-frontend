@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'socket_service.dart';
 import 'socket_events_typed.dart';
 import '../constants/socket_events.dart';
+import '../../api_contracts/v1/socket/socket_event_envelope.dart';
 
 /// Callback type for handling typed socket events.
 typedef SocketEventHandler<T extends SocketEvent> = void Function(T event);
@@ -224,7 +225,9 @@ class SocketEventRouter {
         return;
       }
 
-      final event = factory(json);
+      final socketEvent = _eventTypeToSocketEvent[eventType] ?? '';
+      final envelope = SocketEventEnvelope.fromRaw(socketEvent, json);
+      final event = factory(envelope.payload);
       final handlers = _handlers[eventType];
 
       if (handlers != null) {

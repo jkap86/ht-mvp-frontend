@@ -82,10 +82,8 @@ final class DraftPickEvent extends SocketEvent {
   });
 
   factory DraftPickEvent.fromJson(Map<String, dynamic> json) {
-    final payload =
-        (json['payload'] as Map?)?.cast<String, dynamic>() ?? json;
     return DraftPickEvent(
-      pick: DraftPick.fromJson(payload),
+      pick: DraftPick.fromJson(json),
       serverTime: json['serverTime'] as int?,
     );
   }
@@ -254,10 +252,8 @@ final class AuctionLotCreatedEvent extends SocketEvent {
   });
 
   factory AuctionLotCreatedEvent.fromJson(Map<String, dynamic> json) {
-    final payload =
-        (json['payload'] as Map?)?.cast<String, dynamic>() ?? json;
     return AuctionLotCreatedEvent(
-      lot: AuctionLot.fromJson(payload),
+      lot: AuctionLot.fromJson(json),
       serverTime: json['serverTime'] as int?,
     );
   }
@@ -274,10 +270,8 @@ final class AuctionLotUpdatedEvent extends SocketEvent {
   });
 
   factory AuctionLotUpdatedEvent.fromJson(Map<String, dynamic> json) {
-    final payload =
-        (json['payload'] as Map?)?.cast<String, dynamic>() ?? json;
     return AuctionLotUpdatedEvent(
-      lot: AuctionLot.fromJson(payload),
+      lot: AuctionLot.fromJson(json),
       serverTime: json['serverTime'] as int?,
     );
   }
@@ -401,9 +395,7 @@ final class TradeProposedEvent extends SocketEvent {
   const TradeProposedEvent({required this.trade});
 
   factory TradeProposedEvent.fromJson(Map<String, dynamic> json) {
-    final payload =
-        (json['payload'] as Map?)?.cast<String, dynamic>() ?? json;
-    return TradeProposedEvent(trade: Trade.fromJson(payload));
+    return TradeProposedEvent(trade: Trade.fromJson(json));
   }
 }
 
@@ -450,9 +442,7 @@ final class TradeCounteredEvent extends SocketEvent {
   const TradeCounteredEvent({required this.trade});
 
   factory TradeCounteredEvent.fromJson(Map<String, dynamic> json) {
-    final payload =
-        (json['payload'] as Map?)?.cast<String, dynamic>() ?? json;
-    return TradeCounteredEvent(trade: Trade.fromJson(payload));
+    return TradeCounteredEvent(trade: Trade.fromJson(json));
   }
 }
 
