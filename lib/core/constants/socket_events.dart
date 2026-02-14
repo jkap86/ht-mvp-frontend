@@ -87,6 +87,9 @@ class SocketEvents {
   static const waiverPriorityUpdated = 'waiver:priority_updated';
   static const waiverBudgetUpdated = 'waiver:budget_updated';
 
+  // Player events
+  static const playerNews = 'player:news';
+
   // Scoring events
   static const scoringScoresUpdated = 'scoring:scores_updated';
   static const scoringScoresUpdatedV2 = 'scoring:scores_updated:v2';

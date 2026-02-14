@@ -8,6 +8,7 @@ class DraftPick {
   final int rosterId;
   final int? playerId;  // Nullable: null for pick asset selections
   final bool isAutoPick;
+  final String? autoPickReason; // 'timeout', 'autodraft', 'empty_roster'
   final DateTime? pickedAt;
   final String? playerName;
   final String? playerPosition;
@@ -30,6 +31,7 @@ class DraftPick {
     required this.rosterId,
     this.playerId,  // Now optional
     this.isAutoPick = false,
+    this.autoPickReason,
     this.pickedAt,
     this.playerName,
     this.playerPosition,
@@ -52,6 +54,7 @@ class DraftPick {
       rosterId: json['roster_id'] as int? ?? json['rosterId'] as int? ?? 0,
       playerId: json['player_id'] as int? ?? json['playerId'] as int?,  // No default to 0
       isAutoPick: json['is_auto_pick'] as bool? ?? json['isAutoPick'] as bool? ?? false,
+      autoPickReason: json['auto_pick_reason'] as String? ?? json['autoPickReason'] as String?,
       pickedAt: json['picked_at'] != null
           ? DateTime.tryParse(json['picked_at'].toString())
           : json['pickedAt'] != null
@@ -79,6 +82,7 @@ class DraftPick {
       'roster_id': rosterId,
       'player_id': playerId,
       'is_auto_pick': isAutoPick,
+      'auto_pick_reason': autoPickReason,
       'picked_at': pickedAt?.toIso8601String(),
       'player_name': playerName,
       'player_position': playerPosition,

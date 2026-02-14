@@ -74,4 +74,13 @@ class ChatRepository {
       body: {'emoji': emoji},
     );
   }
+
+  Future<void> markAsRead(int leagueId) async {
+    await _apiClient.post('/leagues/$leagueId/chat/read');
+  }
+
+  Future<int> getUnreadCount(int leagueId) async {
+    final response = await _apiClient.get('/leagues/$leagueId/chat/unread');
+    return response['unreadCount'] as int;
+  }
 }
