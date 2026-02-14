@@ -83,7 +83,15 @@ class DraftSocketHandler {
       // Defensive parsing: ensure data is a valid Map before processing
       if (data is! Map) return;
       try {
-        final pick = DraftPick.fromJson(Map<String, dynamic>.from(data));
+        final rawData = Map<String, dynamic>.from(data);
+        // Defensive unwrapping: if payload still has nested 'pick' key (backward compat),
+        // merge it into top level so DraftPick.fromJson always gets flat data
+        if (rawData.containsKey('pick') && rawData['pick'] is Map) {
+          final nested = Map<String, dynamic>.from(rawData['pick'] as Map);
+          rawData.addAll(nested);
+          rawData.remove('pick');
+        }
+        final pick = DraftPick.fromJson(rawData);
         _callbacks.onPickReceived(pick);
       } catch (e) {
         // Log parsing error but don't crash - malformed socket data shouldn't break UI
