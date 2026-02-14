@@ -50,11 +50,11 @@ class DraftRepository {
   }
 
   Future<Map<String, dynamic>> makePick(
-      int leagueId, int draftId, int playerId) async {
+      int leagueId, int draftId, int playerId, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/pick',
       body: {'player_id': playerId},
-      idempotencyKey: _apiClient.generateIdempotencyKey(),
+      idempotencyKey: idempotencyKey ?? _apiClient.generateIdempotencyKey(),
     );
     final pickData = response as Map<String, dynamic>?;
     if (pickData == null) throw Exception('Invalid response: missing pick data');
@@ -169,11 +169,11 @@ class DraftRepository {
         .toList();
   }
 
-  Future<AuctionLot> nominate(int leagueId, int draftId, int playerId) async {
+  Future<AuctionLot> nominate(int leagueId, int draftId, int playerId, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/actions',
       body: {'action': 'nominate', 'playerId': playerId},
-      idempotencyKey: _apiClient.generateIdempotencyKey(),
+      idempotencyKey: idempotencyKey ?? _apiClient.generateIdempotencyKey(),
     );
     final lotData = response['data']?['lot'] ?? response['lot'];
     if (lotData == null) {
@@ -183,11 +183,11 @@ class DraftRepository {
   }
 
   Future<AuctionLot> setMaxBid(
-      int leagueId, int draftId, int lotId, int maxBid) async {
+      int leagueId, int draftId, int lotId, int maxBid, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/actions',
       body: {'action': 'set_max_bid', 'lotId': lotId, 'maxBid': maxBid},
-      idempotencyKey: _apiClient.generateIdempotencyKey(),
+      idempotencyKey: idempotencyKey ?? _apiClient.generateIdempotencyKey(),
     );
     final lotData = response['data']?['lot'] ?? response['lot'];
     if (lotData == null) {
@@ -301,15 +301,16 @@ class DraftRepository {
   Future<Map<String, dynamic>> makePickAssetSelection(
     int leagueId,
     int draftId,
-    int pickAssetId,
-  ) async {
+    int pickAssetId, {
+    String? idempotencyKey,
+  }) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/actions',
       body: {
         'action': 'pick',
         'draftPickAssetId': pickAssetId,
       },
-      idempotencyKey: _apiClient.generateIdempotencyKey(),
+      idempotencyKey: idempotencyKey ?? _apiClient.generateIdempotencyKey(),
     );
     final pickData = response['data']?['pick'] as Map<String, dynamic>?;
     if (pickData == null) throw Exception('Invalid response: missing pick data');
@@ -351,11 +352,11 @@ class DraftRepository {
   }
 
   /// Pick a slot during derby phase
-  Future<void> pickDerbySlot(int leagueId, int draftId, int slotNumber) async {
+  Future<void> pickDerbySlot(int leagueId, int draftId, int slotNumber, {String? idempotencyKey}) async {
     await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/derby/pick-slot',
       body: {'slot_number': slotNumber},
-      idempotencyKey: _apiClient.generateIdempotencyKey(),
+      idempotencyKey: idempotencyKey ?? _apiClient.generateIdempotencyKey(),
     );
   }
 
@@ -393,14 +394,14 @@ class DraftRepository {
 
   /// Pick a matchup (week/opponent combination)
   Future<Map<String, dynamic>> pickMatchup(
-      int leagueId, int draftId, int week, int opponentRosterId) async {
+      int leagueId, int draftId, int week, int opponentRosterId, {String? idempotencyKey}) async {
     final response = await _apiClient.post(
       '/leagues/$leagueId/drafts/$draftId/pick-matchup',
       body: {
         'week': week,
         'opponent_roster_id': opponentRosterId,
       },
-      idempotencyKey: _apiClient.generateIdempotencyKey(),
+      idempotencyKey: idempotencyKey ?? _apiClient.generateIdempotencyKey(),
     );
     final pickData = response as Map<String, dynamic>?;
     if (pickData == null) throw Exception('Invalid response: missing pick data');
