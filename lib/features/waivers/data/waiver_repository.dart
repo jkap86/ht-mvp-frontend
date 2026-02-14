@@ -9,6 +9,14 @@ final waiverRepositoryProvider = Provider<WaiverRepository>((ref) {
   return WaiverRepository(apiClient);
 });
 
+/// Result of submitting a waiver claim, including any chain warnings.
+class SubmitClaimResult {
+  final WaiverClaim claim;
+  final List<String> warnings;
+
+  SubmitClaimResult({required this.claim, this.warnings = const []});
+}
+
 /// Repository for waiver-related API calls
 class WaiverRepository {
   final ApiClient _apiClient;
@@ -16,7 +24,7 @@ class WaiverRepository {
   WaiverRepository(this._apiClient);
 
   /// Submit a waiver claim
-  Future<WaiverClaim> submitClaim({
+  Future<SubmitClaimResult> submitClaim({
     required int leagueId,
     required int playerId,
     int? dropPlayerId,
@@ -32,7 +40,12 @@ class WaiverRepository {
       },
       idempotencyKey: idempotencyKey,
     );
-    return WaiverClaim.fromJson(response);
+    final claim = WaiverClaim.fromJson(response);
+    final warnings = (response['warnings'] as List<dynamic>?)
+            ?.map((w) => w.toString())
+            .toList() ??
+        [];
+    return SubmitClaimResult(claim: claim, warnings: warnings);
   }
 
   /// Get user's waiver claims

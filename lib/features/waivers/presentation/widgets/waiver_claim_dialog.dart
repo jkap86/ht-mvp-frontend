@@ -19,7 +19,7 @@ class WaiverClaimDialog extends ConsumerStatefulWidget {
   final FaabBudget? faabBudget;
   final bool isFaabLeague;
   final int maxRosterSize;
-  final Future<void> Function({
+  final Future<List<String>> Function({
     required int playerId,
     int? dropPlayerId,
     int bidAmount,
@@ -281,7 +281,7 @@ class _WaiverClaimDialogState extends ConsumerState<WaiverClaimDialog> {
           ? int.tryParse(_bidController.text) ?? 0
           : 0;
 
-      await widget.onSubmit(
+      final warnings = await widget.onSubmit(
         playerId: widget.playerId,
         dropPlayerId: _selectedDropPlayerId,
         bidAmount: bidAmount,
@@ -289,6 +289,17 @@ class _WaiverClaimDialogState extends ConsumerState<WaiverClaimDialog> {
 
       if (mounted) {
         Navigator.pop(context, true);
+      }
+
+      if (mounted && warnings.isNotEmpty) {
+        for (final warning in warnings) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(warning),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -316,7 +327,7 @@ Future<bool?> showWaiverClaimDialog({
   FaabBudget? faabBudget,
   required bool isFaabLeague,
   required int maxRosterSize,
-  required Future<void> Function({
+  required Future<List<String>> Function({
     required int playerId,
     int? dropPlayerId,
     int bidAmount,

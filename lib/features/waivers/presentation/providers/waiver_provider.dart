@@ -392,8 +392,9 @@ class WaiversNotifier extends StateNotifier<WaiversState>
     state = state.copyWith(filter: filter);
   }
 
-  /// Submit a new waiver claim
-  Future<WaiverClaim?> submitClaim({
+  /// Submit a new waiver claim.
+  /// Returns a record with the claim (nullable on error) and any chain warnings.
+  Future<({WaiverClaim? claim, List<String> warnings})> submitClaim({
     required int playerId,
     int? dropPlayerId,
     int bidAmount = 0,
@@ -401,18 +402,18 @@ class WaiversNotifier extends StateNotifier<WaiversState>
   }) async {
     final key = idempotencyKey ?? newIdempotencyKey();
     try {
-      final claim = await _waiverRepo.submitClaim(
+      final result = await _waiverRepo.submitClaim(
         leagueId: leagueId,
         playerId: playerId,
         dropPlayerId: dropPlayerId,
         bidAmount: bidAmount,
         idempotencyKey: key,
       );
-      _addOrUpdateClaim(claim);
-      return claim;
+      _addOrUpdateClaim(result.claim);
+      return (claim: result.claim, warnings: result.warnings);
     } catch (e) {
       state = state.copyWith(error: ErrorSanitizer.sanitize(e));
-      return null;
+      return (claim: null, warnings: <String>[]);
     }
   }
 

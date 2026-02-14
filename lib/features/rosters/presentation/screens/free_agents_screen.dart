@@ -461,15 +461,16 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
       }) async {
         final key = newIdempotencyKey();
         final waiversKey = (leagueId: widget.leagueId, userRosterId: widget.rosterId);
-        final claim = await ref.read(waiversProvider(waiversKey).notifier).submitClaim(
+        final result = await ref.read(waiversProvider(waiversKey).notifier).submitClaim(
           playerId: playerId,
           dropPlayerId: dropPlayerId,
           bidAmount: bidAmount,
           idempotencyKey: key,
         );
-        if (claim != null && mounted) {
+        if (result.claim != null && mounted) {
           showSuccess(ref, 'Waiver claim submitted for ${player.fullName}');
         }
+        return result.warnings;
       },
     );
   }
