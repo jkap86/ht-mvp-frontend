@@ -67,6 +67,7 @@ class NextPickPayload {
   final String? teamName;
   final DateTime? pickDeadline;
   final int? timeRemainingMs;
+  final Map<int, double>? chessClocks;
 
   const NextPickPayload({
     required this.pickNumber,
@@ -77,9 +78,24 @@ class NextPickPayload {
     this.teamName,
     this.pickDeadline,
     this.timeRemainingMs,
+    this.chessClocks,
   });
 
   factory NextPickPayload.fromJson(Map<String, dynamic> json) {
+    // Parse chess clocks map: { rosterId: remainingSeconds }
+    Map<int, double>? chessClocks;
+    final clocksRaw = json['chessClocks'] ?? json['chess_clocks'];
+    if (clocksRaw is Map) {
+      chessClocks = {};
+      for (final entry in clocksRaw.entries) {
+        final key = entry.key is int ? entry.key as int : int.tryParse(entry.key.toString());
+        final value = entry.value is num ? (entry.value as num).toDouble() : double.tryParse(entry.value.toString());
+        if (key != null && value != null) {
+          chessClocks[key] = value;
+        }
+      }
+    }
+
     return NextPickPayload(
       pickNumber: json['pickNumber'] as int? ?? json['pick_number'] as int? ?? 0,
       round: json['round'] as int? ?? 0,
@@ -91,6 +107,7 @@ class NextPickPayload {
           ? DateTime.tryParse(json['pickDeadline'].toString())
           : null,
       timeRemainingMs: json['timeRemainingMs'] as int? ?? json['time_remaining_ms'] as int?,
+      chessClocks: chessClocks,
     );
   }
 }

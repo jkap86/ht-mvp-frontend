@@ -4,6 +4,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/hype_train_colors.dart';
 import '../../domain/draft_order_entry.dart';
 import '../../domain/draft_type.dart';
+import 'chess_clock_display.dart';
 
 class DraftOrderPanel extends StatelessWidget {
   final List<DraftOrderEntry> draftOrder;
@@ -11,6 +12,8 @@ class DraftOrderPanel extends StatelessWidget {
   final int currentRound;
   final DraftType draftType;
   final int? myRosterId;
+  final Map<int, double> chessClocks;
+  final double? chessClockTotalSeconds;
 
   const DraftOrderPanel({
     super.key,
@@ -19,6 +22,8 @@ class DraftOrderPanel extends StatelessWidget {
     required this.currentRound,
     required this.draftType,
     this.myRosterId,
+    this.chessClocks = const {},
+    this.chessClockTotalSeconds,
   });
 
   List<DraftOrderEntry> get _orderedList {
@@ -62,11 +67,15 @@ class DraftOrderPanel extends StatelessWidget {
               final isCurrentPicker = entry.rosterId == currentRosterId;
               final isMyTeam = entry.rosterId == myRosterId;
 
+              final clockRemaining = chessClocks[entry.rosterId];
+
               return _DraftOrderTile(
                 entry: entry,
                 position: index + 1,
                 isCurrentPicker: isCurrentPicker,
                 isMyTeam: isMyTeam,
+                chessClockRemaining: clockRemaining,
+                chessClockTotal: chessClockTotalSeconds,
               );
             },
           ),
@@ -112,12 +121,16 @@ class _DraftOrderTile extends StatelessWidget {
   final int position;
   final bool isCurrentPicker;
   final bool isMyTeam;
+  final double? chessClockRemaining;
+  final double? chessClockTotal;
 
   const _DraftOrderTile({
     required this.entry,
     required this.position,
     required this.isCurrentPicker,
     required this.isMyTeam,
+    this.chessClockRemaining,
+    this.chessClockTotal,
   });
 
   @override
@@ -169,6 +182,14 @@ class _DraftOrderTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            if (chessClockRemaining != null && chessClockTotal != null) ...[
+              const SizedBox(width: 4),
+              ChessClockBadge(
+                remainingSeconds: chessClockRemaining!,
+                totalSeconds: chessClockTotal!,
+              ),
+              const SizedBox(width: 4),
+            ],
             if (isMyTeam && !isCurrentPicker)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

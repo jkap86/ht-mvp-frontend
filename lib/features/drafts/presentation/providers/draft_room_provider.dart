@@ -94,6 +94,8 @@ class DraftRoomState {
   // Player IDs with pending nominations (optimistic local state)
   // Cleared when lot_created socket event confirms or after cleanup timeout
   final Set<int> pendingNominations;
+  // Chess clock remaining seconds per roster (rosterId -> seconds)
+  final Map<int, double> chessClocks;
 
   // Cache for currentRoundOrder computation
   List<DraftOrderEntry>? _cachedRoundOrder;
@@ -139,6 +141,7 @@ class DraftRoomState {
     this.isInOvernightPause = false,
     this.availableMatchups = const [],
     this.pendingNominations = const {},
+    this.chessClocks = const {},
   });
 
   /// Check if data is stale (older than 5 minutes)
@@ -160,6 +163,14 @@ class DraftRoomState {
   bool get isAuction => draft?.draftType == DraftType.auction;
   bool get isFastAuction => isAuction && auctionMode == 'fast';
   bool get isMatchupsDraft => draft?.draftType == DraftType.matchups;
+  bool get isChessClockMode => draft?.isChessClockMode ?? false;
+
+  /// Get remaining chess clock seconds for the current user
+  double? get myChessClockRemaining {
+    final rid = myRosterId;
+    if (rid == null || chessClocks.isEmpty) return null;
+    return chessClocks[rid];
+  }
 
   /// Whether the draft is currently in derby phase (draft order selection)
   bool get isDerbyPhase => draft?.phase == DraftPhase.derby;
@@ -334,6 +345,7 @@ class DraftRoomState {
     bool? isInOvernightPause,
     List<MatchupDraftOption>? availableMatchups,
     Set<int>? pendingNominations,
+    Map<int, double>? chessClocks,
   }) {
     final newState = DraftRoomState(
       draft: draft ?? this.draft,
@@ -390,6 +402,7 @@ class DraftRoomState {
       isInOvernightPause: isInOvernightPause ?? this.isInOvernightPause,
       availableMatchups: availableMatchups ?? this.availableMatchups,
       pendingNominations: pendingNominations ?? this.pendingNominations,
+      chessClocks: chessClocks ?? this.chessClocks,
     );
 
     // Invalidate cache if draftOrder or draft changed
@@ -626,6 +639,21 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     final currentDraft = state.draft;
     if (currentDraft != null) {
       final statusStr = data['status'] as String?;
+
+      // Parse chess clocks if present
+      Map<int, double>? chessClocks;
+      final clocksRaw = data['chessClocks'] ?? data['chess_clocks'];
+      if (clocksRaw is Map) {
+        chessClocks = {};
+        for (final entry in clocksRaw.entries) {
+          final key = entry.key is int ? entry.key as int : int.tryParse(entry.key.toString());
+          final value = entry.value is num ? (entry.value as num).toDouble() : double.tryParse(entry.value.toString());
+          if (key != null && value != null) {
+            chessClocks[key] = value;
+          }
+        }
+      }
+
       state = state.copyWith(
         draft: currentDraft.copyWith(
           status: statusStr != null ? DraftStatus.fromString(statusStr) : null,
@@ -637,6 +665,7 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
               ? DateTime.tryParse(data['pickDeadline'].toString())
               : null,
         ),
+        chessClocks: chessClocks,
       );
     }
   }
@@ -666,6 +695,20 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
     if (draftData != null) {
       state = state.copyWith(draft: Draft.fromJson(draftData));
+    }
+
+    // Parse chess clocks if present
+    final clocksRaw = data['chessClocks'] ?? data['chess_clocks'];
+    if (clocksRaw is Map) {
+      final chessClocks = <int, double>{};
+      for (final entry in clocksRaw.entries) {
+        final key = entry.key is int ? entry.key as int : int.tryParse(entry.key.toString());
+        final value = entry.value is num ? (entry.value as num).toDouble() : double.tryParse(entry.value.toString());
+        if (key != null && value != null) {
+          chessClocks[key] = value;
+        }
+      }
+      state = state.copyWith(chessClocks: chessClocks);
     }
 
     _addActivityEvent(
@@ -698,6 +741,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
     // Refresh auction data to get restored lot deadlines
     if (state.isAuction) {
       loadAuctionData();
+    }
+    // Refresh chess clocks on resume
+    if (state.isChessClockMode) {
+      loadChessClocks();
     }
   }
 
@@ -1006,6 +1053,11 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
       // Load available matchups for matchups drafts
       if (mounted && draft.draftType == DraftType.matchups) {
         loadAvailableMatchups();
+      }
+
+      // Load chess clocks if chess clock mode
+      if (mounted && draft.isChessClockMode) {
+        loadChessClocks();
       }
     } on ForbiddenException {
       if (!mounted) return;
@@ -1502,6 +1554,18 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
           state.copyWith(derbyState: derbyState, lastUpdated: DateTime.now());
     } catch (e) {
       if (kDebugMode) debugPrint('Failed to load derby state: $e');
+    }
+  }
+
+  /// Load chess clock remaining times from the server
+  Future<void> loadChessClocks() async {
+    if (state.draft?.isChessClockMode != true) return;
+    try {
+      final clocks = await _draftRepo.getChessClocks(leagueId, draftId);
+      if (!mounted) return;
+      state = state.copyWith(chessClocks: clocks);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Failed to load chess clocks: $e');
     }
   }
 

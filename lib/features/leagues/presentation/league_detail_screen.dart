@@ -137,6 +137,9 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen> {
         bool? overnightPauseEnabled,
         String? overnightPauseStart,
         String? overnightPauseEnd,
+        String? timerMode,
+        int? chessClockTotalSeconds,
+        int? chessClockMinPickSeconds,
       }) async {
         final key = newIdempotencyKey();
         final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
@@ -153,6 +156,9 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen> {
           overnightPauseEnabled: overnightPauseEnabled,
           overnightPauseStart: overnightPauseStart,
           overnightPauseEnd: overnightPauseEnd,
+          timerMode: timerMode,
+          chessClockTotalSeconds: chessClockTotalSeconds,
+          chessClockMinPickSeconds: chessClockMinPickSeconds,
           idempotencyKey: key,
         );
       },

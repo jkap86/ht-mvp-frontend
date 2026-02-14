@@ -245,6 +245,9 @@ class DraftRepository {
     bool? overnightPauseEnabled,
     String? overnightPauseStart,
     String? overnightPauseEnd,
+    String? timerMode,
+    int? chessClockTotalSeconds,
+    int? chessClockMinPickSeconds,
     String? idempotencyKey,
   }) async {
     final body = <String, dynamic>{};
@@ -268,6 +271,9 @@ class DraftRepository {
     if (overnightPauseEnd != null) {
       body['overnight_pause_end'] = overnightPauseEnd.isEmpty ? null : overnightPauseEnd;
     }
+    if (timerMode != null) body['timer_mode'] = timerMode;
+    if (chessClockTotalSeconds != null) body['chess_clock_total_seconds'] = chessClockTotalSeconds;
+    if (chessClockMinPickSeconds != null) body['chess_clock_min_pick_seconds'] = chessClockMinPickSeconds;
 
     final response = await _apiClient.patch(
       '/leagues/$leagueId/drafts/$draftId/settings',
@@ -351,6 +357,26 @@ class DraftRepository {
       body: {'slot_number': slotNumber},
       idempotencyKey: _apiClient.generateIdempotencyKey(),
     );
+  }
+
+  // Chess clock methods
+
+  /// Get chess clock remaining times for all rosters in a draft
+  Future<Map<int, double>> getChessClocks(int leagueId, int draftId) async {
+    final response = await _apiClient.get(
+      '/leagues/$leagueId/drafts/$draftId/chess-clocks',
+    );
+    final clocksRaw = (response as Map<String, dynamic>?)?['chess_clocks'];
+    if (clocksRaw is! Map) return {};
+    final result = <int, double>{};
+    for (final entry in clocksRaw.entries) {
+      final key = entry.key is int ? entry.key as int : int.tryParse(entry.key.toString());
+      final value = entry.value is num ? (entry.value as num).toDouble() : double.tryParse(entry.value.toString());
+      if (key != null && value != null) {
+        result[key] = value;
+      }
+    }
+    return result;
   }
 
   // Matchups draft methods

@@ -385,6 +385,9 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
     bool? overnightPauseEnabled,
     String? overnightPauseStart,
     String? overnightPauseEnd,
+    String? timerMode,
+    int? chessClockTotalSeconds,
+    int? chessClockMinPickSeconds,
     String? idempotencyKey,
   }) async {
     try {
@@ -397,13 +400,16 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
         auctionSettings: auctionSettings,
         playerPool: playerPool,
         scheduledStart: scheduledStart,
-        clearScheduledStart: scheduledStart == null && draftType == null && rounds == null && pickTimeSeconds == null && auctionSettings == null && playerPool == null && includeRookiePicks == null && rookiePicksSeason == null && rookiePicksRounds == null && overnightPauseEnabled == null && overnightPauseStart == null && overnightPauseEnd == null,
+        clearScheduledStart: scheduledStart == null && draftType == null && rounds == null && pickTimeSeconds == null && auctionSettings == null && playerPool == null && includeRookiePicks == null && rookiePicksSeason == null && rookiePicksRounds == null && overnightPauseEnabled == null && overnightPauseStart == null && overnightPauseEnd == null && timerMode == null && chessClockTotalSeconds == null && chessClockMinPickSeconds == null,
         includeRookiePicks: includeRookiePicks,
         rookiePicksSeason: rookiePicksSeason,
         rookiePicksRounds: rookiePicksRounds,
         overnightPauseEnabled: overnightPauseEnabled,
         overnightPauseStart: overnightPauseStart,
         overnightPauseEnd: overnightPauseEnd,
+        timerMode: timerMode,
+        chessClockTotalSeconds: chessClockTotalSeconds,
+        chessClockMinPickSeconds: chessClockMinPickSeconds,
         idempotencyKey: idempotencyKey,
       );
       // Update the draft in state

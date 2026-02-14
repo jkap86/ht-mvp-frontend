@@ -255,6 +255,10 @@ class Draft {
   final bool overnightPauseEnabled;
   final String? overnightPauseStart; // HH:MM format (UTC)
   final String? overnightPauseEnd; // HH:MM format (UTC)
+  // Chess clock settings
+  final String timerMode; // 'per_pick' or 'chess_clock'
+  final int? chessClockTotalSeconds;
+  final int? chessClockMinPickSeconds;
 
   Draft({
     required this.id,
@@ -278,6 +282,9 @@ class Draft {
     this.overnightPauseEnabled = false,
     this.overnightPauseStart,
     this.overnightPauseEnd,
+    this.timerMode = 'per_pick',
+    this.chessClockTotalSeconds,
+    this.chessClockMinPickSeconds,
   });
 
   /// Display name - uses label if available, falls back to "Draft #id"
@@ -285,6 +292,9 @@ class Draft {
 
   /// Check if this is an auction draft
   bool get isAuction => draftType.isAuction;
+
+  /// Check if this draft uses chess clock mode
+  bool get isChessClockMode => timerMode == 'chess_clock';
 
   /// Check if this is a rookie-only draft
   bool get isRookieDraft {
@@ -327,6 +337,9 @@ class Draft {
       overnightPauseEnabled: json['overnight_pause_enabled'] as bool? ?? false,
       overnightPauseStart: json['overnight_pause_start'] as String?,
       overnightPauseEnd: json['overnight_pause_end'] as String?,
+      timerMode: settingsJson?['timerMode'] as String? ?? 'per_pick',
+      chessClockTotalSeconds: settingsJson?['chessClockTotalSeconds'] as int?,
+      chessClockMinPickSeconds: settingsJson?['chessClockMinPickSeconds'] as int?,
     );
   }
 
@@ -352,6 +365,9 @@ class Draft {
     bool? overnightPauseEnabled,
     String? overnightPauseStart,
     String? overnightPauseEnd,
+    String? timerMode,
+    int? chessClockTotalSeconds,
+    int? chessClockMinPickSeconds,
     bool clearCurrentPick = false,
     bool clearCurrentRound = false,
     bool clearCurrentRosterId = false,
@@ -383,6 +399,9 @@ class Draft {
       overnightPauseEnabled: overnightPauseEnabled ?? this.overnightPauseEnabled,
       overnightPauseStart: clearOvernightPauseStart ? null : (overnightPauseStart ?? this.overnightPauseStart),
       overnightPauseEnd: clearOvernightPauseEnd ? null : (overnightPauseEnd ?? this.overnightPauseEnd),
+      timerMode: timerMode ?? this.timerMode,
+      chessClockTotalSeconds: chessClockTotalSeconds ?? this.chessClockTotalSeconds,
+      chessClockMinPickSeconds: chessClockMinPickSeconds ?? this.chessClockMinPickSeconds,
     );
   }
 }

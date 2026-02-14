@@ -28,6 +28,9 @@ class EditDraftSettingsDialog extends StatefulWidget {
     bool? overnightPauseEnabled,
     String? overnightPauseStart,
     String? overnightPauseEnd,
+    String? timerMode,
+    int? chessClockTotalSeconds,
+    int? chessClockMinPickSeconds,
   }) onSave;
 
   const EditDraftSettingsDialog({
@@ -54,6 +57,9 @@ class EditDraftSettingsDialog extends StatefulWidget {
       bool? overnightPauseEnabled,
       String? overnightPauseStart,
       String? overnightPauseEnd,
+      String? timerMode,
+      int? chessClockTotalSeconds,
+      int? chessClockMinPickSeconds,
     }) onSave,
   }) {
     return showDialog(
@@ -104,6 +110,11 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
   late bool _overnightPauseEnabled;
   TimeOfDay? _overnightPauseStart;
   TimeOfDay? _overnightPauseEnd;
+
+  // Chess clock settings
+  late String _timerMode;
+  late TextEditingController _chessClockTotalMinutesController;
+  late TextEditingController _chessClockMinPickSecondsController;
 
   bool get _isNotStarted => widget.draft.status == DraftStatus.notStarted;
   bool get _isPaused => widget.draft.status == DraftStatus.paused;
@@ -164,6 +175,16 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
     _rookiePicksSeasonController = TextEditingController(text: rookiePicksSeason.toString());
     _rookiePicksRounds = widget.draft.rawSettings?['rookiePicksRounds'] ?? 5;
 
+    // Chess clock settings - read from draft model
+    _timerMode = widget.draft.timerMode;
+    final totalSeconds = widget.draft.chessClockTotalSeconds ?? 1800;
+    _chessClockTotalMinutesController = TextEditingController(
+      text: (totalSeconds ~/ 60).toString(),
+    );
+    _chessClockMinPickSecondsController = TextEditingController(
+      text: (widget.draft.chessClockMinPickSeconds ?? 10).toString(),
+    );
+
     // Overnight pause settings - read from draft model
     _overnightPauseEnabled = widget.draft.overnightPauseEnabled;
     // Parse HH:MM format to TimeOfDay
@@ -199,6 +220,8 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
     _maxActiveGlobalController.dispose();
     _dailyNominationLimitController.dispose();
     _rookiePicksSeasonController.dispose();
+    _chessClockTotalMinutesController.dispose();
+    _chessClockMinPickSecondsController.dispose();
     super.dispose();
   }
 
@@ -383,6 +406,31 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
         }
       }
 
+      // Check for chess clock changes
+      String? timerMode;
+      int? chessClockTotalSeconds;
+      int? chessClockMinPickSeconds;
+      if (_canEditStructural && !_isAuction) {
+        if (_timerMode != widget.draft.timerMode) {
+          timerMode = _timerMode;
+        }
+        if (_timerMode == 'chess_clock') {
+          final newTotalMinutes = int.tryParse(_chessClockTotalMinutesController.text) ?? 30;
+          final newTotalSeconds = newTotalMinutes * 60;
+          if (newTotalSeconds != (widget.draft.chessClockTotalSeconds ?? 1800)) {
+            chessClockTotalSeconds = newTotalSeconds;
+          }
+          // Also send total seconds when timer mode is being changed to chess_clock
+          if (timerMode == 'chess_clock' && chessClockTotalSeconds == null) {
+            chessClockTotalSeconds = newTotalSeconds;
+          }
+          final newMinPick = int.tryParse(_chessClockMinPickSecondsController.text) ?? 10;
+          if (newMinPick != (widget.draft.chessClockMinPickSeconds ?? 10)) {
+            chessClockMinPickSeconds = newMinPick;
+          }
+        }
+      }
+
       // Only call onSave if there are changes
       if (draftType != null ||
           rounds != null ||
@@ -394,7 +442,10 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
           rookiePicksRounds != null ||
           overnightPauseEnabled != null ||
           overnightPauseStart != null ||
-          overnightPauseEnd != null) {
+          overnightPauseEnd != null ||
+          timerMode != null ||
+          chessClockTotalSeconds != null ||
+          chessClockMinPickSeconds != null) {
         await widget.onSave(
           draftType: draftType,
           rounds: rounds,
@@ -407,6 +458,9 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
           overnightPauseEnabled: overnightPauseEnabled,
           overnightPauseStart: overnightPauseStart,
           overnightPauseEnd: overnightPauseEnd,
+          timerMode: timerMode,
+          chessClockTotalSeconds: chessClockTotalSeconds,
+          chessClockMinPickSeconds: chessClockMinPickSeconds,
         );
       }
 
@@ -481,6 +535,16 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
                       setState(() => _overnightPauseStart = time),
                   onPauseEndChanged: (time) =>
                       setState(() => _overnightPauseEnd = time),
+                  timerMode: _timerMode,
+                  onTimerModeChanged: _canEditStructural
+                      ? (mode) => setState(() => _timerMode = mode)
+                      : null,
+                  chessClockTotalMinutesController: _chessClockTotalMinutesController,
+                  chessClockMinPickSecondsController: _chessClockMinPickSecondsController,
+                  chessClockTotalValidator: (v) => _validatePositiveInt(v,
+                      min: 1, max: 120, fieldName: 'Total time'),
+                  chessClockMinPickValidator: (v) => _validatePositiveInt(v,
+                      min: 5, max: 60, fieldName: 'Min pick time'),
                 ),
 
               // Auction settings
