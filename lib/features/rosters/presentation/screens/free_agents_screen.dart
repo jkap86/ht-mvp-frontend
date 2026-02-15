@@ -36,12 +36,48 @@ class FreeAgentsScreen extends ConsumerStatefulWidget {
 class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
   final _searchController = TextEditingController();
   _PlayerTab _selectedTab = _PlayerTab.freeAgents;
+  final List<ProviderSubscription> _subscriptions = [];
 
   FreeAgentsKey get _key => (leagueId: widget.leagueId, rosterId: widget.rosterId);
   TeamKey get _teamKey => (leagueId: widget.leagueId, rosterId: widget.rosterId);
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _subscriptions.add(ref.listenManual(
+        freeAgentsProvider(_key),
+        (prev, next) {
+          if (next.isForbidden && prev?.isForbidden != true) {
+            handleForbiddenNavigation(context, ref);
+          }
+        },
+      ));
+      _subscriptions.add(ref.listenManual<FreeAgentsState>(
+        freeAgentsProvider(_key),
+        (previous, next) {
+          if (next.error != null && previous?.error != next.error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(next.error!),
+                action: SnackBarAction(
+                  label: 'Dismiss',
+                  onPressed: () {
+                    ref.read(freeAgentsProvider(_key).notifier).clearError();
+                  },
+                ),
+              ),
+            );
+          }
+        },
+      ));
+    });
+  }
+
+  @override
   void dispose() {
+    for (final sub in _subscriptions) sub.close();
+    _subscriptions.clear();
     _searchController.dispose();
     super.dispose();
   }
@@ -63,30 +99,6 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
 
     final waiversEnabled = _waiversEnabled(teamState.league?.settings);
     final isFaabLeague = _getWaiverType(teamState.league?.settings) == 'faab';
-
-    // Navigate away if access is lost
-    ref.listen(freeAgentsProvider(_key), (prev, next) {
-      if (next.isForbidden && prev?.isForbidden != true) {
-        handleForbiddenNavigation(context, ref);
-      }
-    });
-
-    // Show error snackbar
-    ref.listen<FreeAgentsState>(freeAgentsProvider(_key), (previous, next) {
-      if (next.error != null && previous?.error != next.error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error!),
-            action: SnackBarAction(
-              label: 'Dismiss',
-              onPressed: () {
-                ref.read(freeAgentsProvider(_key).notifier).clearError();
-              },
-            ),
-          ),
-        );
-      }
-    });
 
     final showTabs = waiversEnabled;
 

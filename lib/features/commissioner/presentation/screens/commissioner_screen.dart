@@ -24,15 +24,78 @@ import '../providers/commissioner_tools_provider.dart';
 import '../../../dues/presentation/widgets/dues_config_card.dart';
 import '../../../dues/presentation/widgets/dues_tracker_card.dart';
 
-class CommissionerScreen extends ConsumerWidget {
+class CommissionerScreen extends ConsumerStatefulWidget {
   final int leagueId;
 
   const CommissionerScreen({super.key, required this.leagueId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CommissionerScreen> createState() => _CommissionerScreenState();
+}
+
+class _CommissionerScreenState extends ConsumerState<CommissionerScreen> {
+  final List<ProviderSubscription> _subscriptions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _subscriptions.add(ref.listenManual(
+        commissionerProvider(widget.leagueId),
+        (prev, next) {
+          if (next.successMessage != null && prev?.successMessage != next.successMessage) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(next.successMessage!),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+              ),
+            );
+          }
+          if (next.error != null && prev?.error != next.error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(next.error!),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+        },
+      ));
+      _subscriptions.add(ref.listenManual(
+        commissionerToolsProvider(widget.leagueId),
+        (prev, next) {
+          if (next.successMessage != null && prev?.successMessage != next.successMessage) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(next.successMessage!),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+              ),
+            );
+          }
+          if (next.error != null && prev?.error != next.error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(next.error!),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+        },
+      ));
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final sub in _subscriptions) sub.close();
+    _subscriptions.clear();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Commissioner access guard
-    final leagueContext = ref.watch(leagueContextProvider(leagueId));
+    final leagueContext = ref.watch(leagueContextProvider(widget.leagueId));
 
     return leagueContext.when(
       loading: () => Scaffold(
@@ -43,14 +106,14 @@ class CommissionerScreen extends ConsumerWidget {
         appBar: AppBar(title: const Text('Commissioner Tools')),
         body: AppErrorView(
           message: 'Failed to verify access.',
-          onRetry: () => ref.invalidate(leagueContextProvider(leagueId)),
+          onRetry: () => ref.invalidate(leagueContextProvider(widget.leagueId)),
         ),
       ),
       data: (ctx) {
         if (!ctx.isCommissioner) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
-              context.go('/leagues/$leagueId');
+              context.go('/leagues/${widget.leagueId}');
             }
           });
           return Scaffold(
@@ -59,62 +122,22 @@ class CommissionerScreen extends ConsumerWidget {
           );
         }
 
-        return _buildCommissionerContent(context, ref);
+        return _buildCommissionerContent();
       },
     );
   }
 
-  Widget _buildCommissionerContent(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(commissionerProvider(leagueId));
-    final toolsState = ref.watch(commissionerToolsProvider(leagueId));
+  Widget _buildCommissionerContent() {
+    final state = ref.watch(commissionerProvider(widget.leagueId));
+    final toolsState = ref.watch(commissionerToolsProvider(widget.leagueId));
 
     // Initialize trading locked state from league settings
     final tradingLocked = state.league?.leagueSettings['trading_locked'] == true;
     if (toolsState.tradingLocked != tradingLocked && !toolsState.isProcessing) {
       Future.microtask(() {
-        ref.read(commissionerToolsProvider(leagueId).notifier).setTradingLocked(tradingLocked);
+        ref.read(commissionerToolsProvider(widget.leagueId).notifier).setTradingLocked(tradingLocked);
       });
     }
-
-    // Show snackbar for success/error messages
-    ref.listen(commissionerProvider(leagueId), (prev, next) {
-      if (next.successMessage != null && prev?.successMessage != next.successMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.successMessage!),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-          ),
-        );
-      }
-      if (next.error != null && prev?.error != next.error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error!),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    });
-
-    // Show snackbar for tools provider messages
-    ref.listen(commissionerToolsProvider(leagueId), (prev, next) {
-      if (next.successMessage != null && prev?.successMessage != next.successMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.successMessage!),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-          ),
-        );
-      }
-      if (next.error != null && prev?.error != next.error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error!),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(
@@ -124,7 +147,7 @@ class CommissionerScreen extends ConsumerWidget {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go('/leagues/$leagueId');
+              context.go('/leagues/${widget.leagueId}');
             }
           },
         ),
@@ -138,10 +161,10 @@ class CommissionerScreen extends ConsumerWidget {
                   child: ConstrainedBox(
                     constraints: AppLayout.contentConstraints(context),
                     child: RefreshIndicator(
-                      onRefresh: () => ref.read(commissionerProvider(leagueId).notifier).loadData(),
+                      onRefresh: () => ref.read(commissionerProvider(widget.leagueId).notifier).loadData(),
                       child: ListView(
                         padding: const EdgeInsets.all(16),
-                        children: _buildCommissionerCards(context, ref, state),
+                        children: _buildCommissionerCards(state),
                       ),
                     ),
                   ),
@@ -158,44 +181,44 @@ class CommissionerScreen extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildCommissionerCards(BuildContext context, WidgetRef ref, CommissionerState state) {
+  List<Widget> _buildCommissionerCards(CommissionerState state) {
     const spacing = SizedBox(height: 16);
-    final toolsState = ref.watch(commissionerToolsProvider(leagueId));
+    final toolsState = ref.watch(commissionerToolsProvider(widget.leagueId));
     final hasFaab = (state.league?.leagueSettings['faabBudget'] as num?) != null &&
         (state.league?.leagueSettings['faabBudget'] as num) > 0;
     return [
       LeagueInfoCard(state: state),
       spacing,
-      EditLeagueCard(leagueId: leagueId, state: state),
+      EditLeagueCard(leagueId: widget.leagueId, state: state),
       spacing,
       MemberManagementCard(
         state: state,
         onKickMember: (rosterId, teamName, username) {
-          ref.read(commissionerProvider(leagueId).notifier).kickMember(rosterId, teamName);
+          ref.read(commissionerProvider(widget.leagueId).notifier).kickMember(rosterId, teamName);
         },
         onReinstateMember: (rosterId, teamName) {
-          ref.read(commissionerProvider(leagueId).notifier).reinstateMember(rosterId, teamName);
+          ref.read(commissionerProvider(widget.leagueId).notifier).reinstateMember(rosterId, teamName);
         },
       ),
       spacing,
-      InviteMemberCard(leagueId: leagueId),
+      InviteMemberCard(leagueId: widget.leagueId),
       spacing,
       ScheduleManagementCard(
         onGenerateSchedule: (weeks) {
-          ref.read(commissionerProvider(leagueId).notifier).generateSchedule(weeks);
+          ref.read(commissionerProvider(widget.leagueId).notifier).generateSchedule(weeks);
         },
         onStartMatchupsDraft: ({
           required int weeks,
           required int pickTimeSeconds,
           required bool randomizeDraftOrder,
         }) async {
-          final draftId = await ref.read(commissionerProvider(leagueId).notifier).startMatchupsDraft(
+          final draftId = await ref.read(commissionerProvider(widget.leagueId).notifier).startMatchupsDraft(
             weeks: weeks,
             pickTimeSeconds: pickTimeSeconds,
             randomizeDraftOrder: randomizeDraftOrder,
           );
           if (draftId != null && context.mounted) {
-            context.push('/leagues/$leagueId/drafts/$draftId');
+            context.push('/leagues/${widget.leagueId}/drafts/$draftId');
           }
           return draftId;
         },
@@ -205,17 +228,17 @@ class CommissionerScreen extends ConsumerWidget {
       ScoringCard(
         currentWeek: state.league?.currentWeek ?? 1,
         onFinalizeWeek: (week) {
-          ref.read(commissionerProvider(leagueId).notifier).finalizeWeek(week);
+          ref.read(commissionerProvider(widget.leagueId).notifier).finalizeWeek(week);
         },
       ),
       spacing,
       WaiverManagementCard(
         waiversInitialized: state.waiversInitialized,
         onInitializeWaivers: ({int? faabBudget}) {
-          ref.read(commissionerProvider(leagueId).notifier).initializeWaivers(faabBudget: faabBudget);
+          ref.read(commissionerProvider(widget.leagueId).notifier).initializeWaivers(faabBudget: faabBudget);
         },
         onProcessWaivers: () {
-          ref.read(commissionerProvider(leagueId).notifier).processWaivers();
+          ref.read(commissionerProvider(widget.leagueId).notifier).processWaivers();
         },
       ),
       spacing,
@@ -223,34 +246,34 @@ class CommissionerScreen extends ConsumerWidget {
         members: state.members,
         hasFaab: hasFaab,
         onResetPriority: () {
-          ref.read(commissionerToolsProvider(leagueId).notifier).resetWaiverPriority();
+          ref.read(commissionerToolsProvider(widget.leagueId).notifier).resetWaiverPriority();
         },
         onSetPriority: (rosterId, priority) {
-          ref.read(commissionerToolsProvider(leagueId).notifier).setWaiverPriority(rosterId, priority);
+          ref.read(commissionerToolsProvider(widget.leagueId).notifier).setWaiverPriority(rosterId, priority);
         },
         onSetFaabBudget: (rosterId, setTo) {
-          ref.read(commissionerToolsProvider(leagueId).notifier).setFaabBudget(rosterId, setTo);
+          ref.read(commissionerToolsProvider(widget.leagueId).notifier).setFaabBudget(rosterId, setTo);
         },
       ),
       spacing,
       CommissionerToolsTradesCard(
         tradingLocked: toolsState.tradingLocked,
         onToggleTradingLocked: (locked) {
-          ref.read(commissionerToolsProvider(leagueId).notifier).updateTradingLocked(locked);
+          ref.read(commissionerToolsProvider(widget.leagueId).notifier).updateTradingLocked(locked);
         },
       ),
       spacing,
-      DuesConfigCard(leagueId: leagueId, totalRosters: state.league?.totalRosters ?? 12),
+      DuesConfigCard(leagueId: widget.leagueId, totalRosters: state.league?.totalRosters ?? 12),
       spacing,
-      DuesTrackerCard(leagueId: leagueId),
+      DuesTrackerCard(leagueId: widget.leagueId),
       spacing,
       CommissionerToolsDuesCard(
-        onExportCsv: () => ref.read(commissionerToolsProvider(leagueId).notifier).exportDuesCsv(),
+        onExportCsv: () => ref.read(commissionerToolsProvider(widget.leagueId).notifier).exportDuesCsv(),
       ),
       spacing,
       PlayoffManagementCard(
         state: state,
-        leagueId: leagueId,
+        leagueId: widget.leagueId,
         onGeneratePlayoffBracket: ({
           required int playoffTeams,
           required int startWeek,
@@ -259,7 +282,7 @@ class CommissionerScreen extends ConsumerWidget {
           String? consolationType,
           int? consolationTeams,
         }) {
-          ref.read(commissionerProvider(leagueId).notifier).generatePlayoffBracket(
+          ref.read(commissionerProvider(widget.leagueId).notifier).generatePlayoffBracket(
             playoffTeams: playoffTeams,
             startWeek: startWeek,
             weeksByRound: weeksByRound,
@@ -269,17 +292,17 @@ class CommissionerScreen extends ConsumerWidget {
           );
         },
         onAdvanceWinners: (week) {
-          ref.read(commissionerProvider(leagueId).notifier).advanceWinners(week);
+          ref.read(commissionerProvider(widget.leagueId).notifier).advanceWinners(week);
         },
         onViewBracket: () {
-          context.push('/leagues/$leagueId/playoffs');
+          context.push('/leagues/${widget.leagueId}/playoffs');
         },
       ),
       spacing,
-      SeasonControlsCard(leagueId: leagueId, state: state),
+      SeasonControlsCard(leagueId: widget.leagueId, state: state),
       spacing,
       SeasonResetCard(
-        leagueId: leagueId,
+        leagueId: widget.leagueId,
         state: state,
         onReset: ({
           required String newSeason,
@@ -287,7 +310,7 @@ class CommissionerScreen extends ConsumerWidget {
           bool keepMembers = false,
           bool clearChat = true,
         }) {
-          return ref.read(commissionerProvider(leagueId).notifier).resetLeague(
+          return ref.read(commissionerProvider(widget.leagueId).notifier).resetLeague(
             newSeason: newSeason,
             confirmationName: confirmationName,
             keepMembers: keepMembers,
@@ -332,7 +355,7 @@ class CommissionerScreen extends ConsumerWidget {
                   ),
                   icon: const Icon(Icons.delete_forever),
                   label: const Text('Delete League'),
-                  onPressed: () => _showDeleteConfirmation(context, ref, state.league?.name ?? ''),
+                  onPressed: () => _showDeleteConfirmation(state.league?.name ?? ''),
                 ),
               ),
             ],
@@ -342,7 +365,7 @@ class CommissionerScreen extends ConsumerWidget {
     ];
   }
 
-  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, String leagueName) {
+  void _showDeleteConfirmation(String leagueName) {
     final controller = TextEditingController();
     showDialog(
       context: context,
@@ -383,7 +406,7 @@ class CommissionerScreen extends ConsumerWidget {
                     ? () async {
                         Navigator.of(dialogContext).pop();
                         final success = await ref
-                            .read(commissionerProvider(leagueId).notifier)
+                            .read(commissionerProvider(widget.leagueId).notifier)
                             .deleteLeague(confirmationName: controller.text.trim());
                         if (success && context.mounted) {
                           context.go('/');

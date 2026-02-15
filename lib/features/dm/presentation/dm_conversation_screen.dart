@@ -35,11 +35,22 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   bool _searchBarVisible = false;
+  final List<ProviderSubscription> _subscriptions = [];
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _subscriptions.add(ref.listenManual(
+        dmConversationProvider(widget.conversationId),
+        (prev, next) {
+          if (next.isForbidden && prev?.isForbidden != true) {
+            handleForbiddenNavigation(context, ref);
+          }
+        },
+      ));
+    });
   }
 
   void _onScroll() {
@@ -56,6 +67,8 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
 
   @override
   void dispose() {
+    for (final sub in _subscriptions) sub.close();
+    _subscriptions.clear();
     _scrollController.removeListener(_onScroll);
     _messageController.dispose();
     _scrollController.dispose();
@@ -78,12 +91,6 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(dmConversationProvider(widget.conversationId), (prev, next) {
-      if (next.isForbidden && prev?.isForbidden != true) {
-        handleForbiddenNavigation(context, ref);
-      }
-    });
-
     final state = ref.watch(dmConversationProvider(widget.conversationId));
     final currentUserId = ref.watch(authStateProvider.select((s) => s.user?.id));
 

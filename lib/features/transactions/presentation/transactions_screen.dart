@@ -91,20 +91,43 @@ class _PendingTradesView extends ConsumerWidget {
 }
 
 /// League-specific activity feed view
-class _LeagueActivityFeed extends ConsumerWidget {
+class _LeagueActivityFeed extends ConsumerStatefulWidget {
   final int leagueId;
 
   const _LeagueActivityFeed({required this.leagueId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(transactionsProvider(leagueId), (prev, next) {
-      if (next.isForbidden && prev?.isForbidden != true) {
-        handleForbiddenNavigation(context, ref);
-      }
-    });
+  ConsumerState<_LeagueActivityFeed> createState() => _LeagueActivityFeedState();
+}
 
-    final state = ref.watch(transactionsProvider(leagueId));
+class _LeagueActivityFeedState extends ConsumerState<_LeagueActivityFeed> {
+  final List<ProviderSubscription> _subscriptions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _subscriptions.add(ref.listenManual(
+        transactionsProvider(widget.leagueId),
+        (prev, next) {
+          if (next.isForbidden && prev?.isForbidden != true) {
+            handleForbiddenNavigation(context, ref);
+          }
+        },
+      ));
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final sub in _subscriptions) sub.close();
+    _subscriptions.clear();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(transactionsProvider(widget.leagueId));
 
     return Scaffold(
       appBar: AppBar(
@@ -131,37 +154,37 @@ class _LeagueActivityFeed extends ConsumerWidget {
           AppFilterChip(
             label: 'All',
             selected: state.typeFilter == 'all',
-            onSelected: () => ref.read(transactionsProvider(leagueId).notifier).setTypeFilter('all'),
+            onSelected: () => ref.read(transactionsProvider(widget.leagueId).notifier).setTypeFilter('all'),
           ),
           const SizedBox(width: 8),
           AppFilterChip(
             label: 'Trades',
             selected: state.typeFilter == 'trade',
-            onSelected: () => ref.read(transactionsProvider(leagueId).notifier).setTypeFilter('trade'),
+            onSelected: () => ref.read(transactionsProvider(widget.leagueId).notifier).setTypeFilter('trade'),
           ),
           const SizedBox(width: 8),
           AppFilterChip(
             label: 'Waivers',
             selected: state.typeFilter == 'waiver',
-            onSelected: () => ref.read(transactionsProvider(leagueId).notifier).setTypeFilter('waiver'),
+            onSelected: () => ref.read(transactionsProvider(widget.leagueId).notifier).setTypeFilter('waiver'),
           ),
           const SizedBox(width: 8),
           AppFilterChip(
             label: 'Adds',
             selected: state.typeFilter == 'add',
-            onSelected: () => ref.read(transactionsProvider(leagueId).notifier).setTypeFilter('add'),
+            onSelected: () => ref.read(transactionsProvider(widget.leagueId).notifier).setTypeFilter('add'),
           ),
           const SizedBox(width: 8),
           AppFilterChip(
             label: 'Drops',
             selected: state.typeFilter == 'drop',
-            onSelected: () => ref.read(transactionsProvider(leagueId).notifier).setTypeFilter('drop'),
+            onSelected: () => ref.read(transactionsProvider(widget.leagueId).notifier).setTypeFilter('drop'),
           ),
           const SizedBox(width: 8),
           AppFilterChip(
             label: 'Draft',
             selected: state.typeFilter == 'draft',
-            onSelected: () => ref.read(transactionsProvider(leagueId).notifier).setTypeFilter('draft'),
+            onSelected: () => ref.read(transactionsProvider(widget.leagueId).notifier).setTypeFilter('draft'),
           ),
         ],
       ),
@@ -176,7 +199,7 @@ class _LeagueActivityFeed extends ConsumerWidget {
     if (state.error != null) {
       return AppErrorView(
         message: state.error!,
-        onRetry: () => ref.read(transactionsProvider(leagueId).notifier).loadActivities(),
+        onRetry: () => ref.read(transactionsProvider(widget.leagueId).notifier).loadActivities(),
       );
     }
 
@@ -189,14 +212,14 @@ class _LeagueActivityFeed extends ConsumerWidget {
     }
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(transactionsProvider(leagueId).notifier).loadActivities(),
+      onRefresh: () => ref.read(transactionsProvider(widget.leagueId).notifier).loadActivities(),
       child: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           if (notification is ScrollEndNotification &&
               notification.metrics.extentAfter < 200 &&
               state.hasMore &&
               !state.isLoadingMore) {
-            ref.read(transactionsProvider(leagueId).notifier).loadMore();
+            ref.read(transactionsProvider(widget.leagueId).notifier).loadMore();
           }
           return false;
         },

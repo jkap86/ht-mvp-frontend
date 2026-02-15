@@ -12,26 +12,49 @@ import '../providers/trades_provider.dart';
 import '../widgets/trade_card.dart';
 
 /// Screen displaying all trades for a league
-class TradesListScreen extends ConsumerWidget {
+class TradesListScreen extends ConsumerStatefulWidget {
   final int leagueId;
 
   const TradesListScreen({super.key, required this.leagueId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(tradesProvider(leagueId), (prev, next) {
-      if (next.isForbidden && prev?.isForbidden != true) {
-        handleForbiddenNavigation(context, ref);
-      }
-    });
+  ConsumerState<TradesListScreen> createState() => _TradesListScreenState();
+}
 
-    final state = ref.watch(tradesProvider(leagueId));
+class _TradesListScreenState extends ConsumerState<TradesListScreen> {
+  final List<ProviderSubscription> _subscriptions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _subscriptions.add(ref.listenManual(
+        tradesProvider(widget.leagueId),
+        (prev, next) {
+          if (next.isForbidden && prev?.isForbidden != true) {
+            handleForbiddenNavigation(context, ref);
+          }
+        },
+      ));
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final sub in _subscriptions) sub.close();
+    _subscriptions.clear();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(tradesProvider(widget.leagueId));
 
     // Pass user roster ID to enable "My Trades" filter
-    final leagueState = ref.watch(leagueDetailProvider(leagueId));
+    final leagueState = ref.watch(leagueDetailProvider(widget.leagueId));
     final userRosterId = leagueState.league?.userRosterId;
     if (userRosterId != null) {
-      ref.read(tradesProvider(leagueId).notifier).setUserRosterId(userRosterId);
+      ref.read(tradesProvider(widget.leagueId).notifier).setUserRosterId(userRosterId);
     }
 
     return Scaffold(
@@ -41,7 +64,7 @@ class TradesListScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Propose Trade',
-            onPressed: () => context.push('/leagues/$leagueId/trades/propose'),
+            onPressed: () => context.push('/leagues/${widget.leagueId}/trades/propose'),
           ),
         ],
         bottom: PreferredSize(
@@ -65,28 +88,28 @@ class TradesListScreen extends ConsumerWidget {
               label: 'Trade Block',
               selected: false,
               onSelected: () =>
-                  context.push('/leagues/$leagueId/trades/block'),
+                  context.push('/leagues/${widget.leagueId}/trades/block'),
             ),
             const SizedBox(width: 8),
             AppFilterChip(
               label: 'My Trades',
               selected: state.filter == 'mine',
               onSelected: () =>
-                  ref.read(tradesProvider(leagueId).notifier).setFilter('mine'),
+                  ref.read(tradesProvider(widget.leagueId).notifier).setFilter('mine'),
             ),
             const SizedBox(width: 8),
             AppFilterChip(
               label: 'All',
               selected: state.filter == 'all',
               onSelected: () =>
-                  ref.read(tradesProvider(leagueId).notifier).setFilter('all'),
+                  ref.read(tradesProvider(widget.leagueId).notifier).setFilter('all'),
             ),
             const SizedBox(width: 8),
             AppFilterChip(
               label: 'Pending',
               selected: state.filter == 'pending',
               onSelected: () => ref
-                  .read(tradesProvider(leagueId).notifier)
+                  .read(tradesProvider(widget.leagueId).notifier)
                   .setFilter('pending'),
             ),
             const SizedBox(width: 8),
@@ -94,7 +117,7 @@ class TradesListScreen extends ConsumerWidget {
               label: 'Completed',
               selected: state.filter == 'completed',
               onSelected: () => ref
-                  .read(tradesProvider(leagueId).notifier)
+                  .read(tradesProvider(widget.leagueId).notifier)
                   .setFilter('completed'),
             ),
           ],
@@ -111,7 +134,7 @@ class TradesListScreen extends ConsumerWidget {
     if (state.error != null) {
       return AppErrorView(
         message: state.error!,
-        onRetry: () => ref.read(tradesProvider(leagueId).notifier).loadTrades(),
+        onRetry: () => ref.read(tradesProvider(widget.leagueId).notifier).loadTrades(),
       );
     }
 
@@ -127,7 +150,7 @@ class TradesListScreen extends ConsumerWidget {
                 ? 'No pending trades at the moment'
                 : 'No trades have been made yet',
         action: ElevatedButton.icon(
-          onPressed: () => context.push('/leagues/$leagueId/trades/propose'),
+          onPressed: () => context.push('/leagues/${widget.leagueId}/trades/propose'),
           icon: const Icon(Icons.add),
           label: const Text('Propose a Trade'),
         ),
@@ -135,7 +158,7 @@ class TradesListScreen extends ConsumerWidget {
     }
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(tradesProvider(leagueId).notifier).loadTrades(),
+      onRefresh: () => ref.read(tradesProvider(widget.leagueId).notifier).loadTrades(),
       child: Center(
         child: ConstrainedBox(
           constraints: AppLayout.contentConstraints(context),
@@ -149,7 +172,7 @@ class TradesListScreen extends ConsumerWidget {
                 child: TradeCard(
                   trade: trade,
                   onTap: () =>
-                      context.push('/leagues/$leagueId/trades/${trade.id}'),
+                      context.push('/leagues/${widget.leagueId}/trades/${trade.id}'),
                 ),
               );
             },

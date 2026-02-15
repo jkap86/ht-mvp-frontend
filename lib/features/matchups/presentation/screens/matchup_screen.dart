@@ -31,6 +31,7 @@ class MatchupScreen extends ConsumerStatefulWidget {
 
 class _MatchupScreenState extends ConsumerState<MatchupScreen> {
   Timer? _refreshTimer;
+  final List<ProviderSubscription> _subscriptions = [];
 
   @override
   void initState() {
@@ -39,22 +40,28 @@ class _MatchupScreenState extends ConsumerState<MatchupScreen> {
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) setState(() {});
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _subscriptions.add(ref.listenManual(
+        matchupProvider(widget.leagueId),
+        (prev, next) {
+          if (next.isForbidden && prev?.isForbidden != true) {
+            handleForbiddenNavigation(context, ref);
+          }
+        },
+      ));
+    });
   }
 
   @override
   void dispose() {
+    for (final sub in _subscriptions) sub.close();
+    _subscriptions.clear();
     _refreshTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(matchupProvider(widget.leagueId), (prev, next) {
-      if (next.isForbidden && prev?.isForbidden != true) {
-        handleForbiddenNavigation(context, ref);
-      }
-    });
-
     final state = ref.watch(matchupProvider(widget.leagueId));
 
     if (state.isLoading && state.matchups.isEmpty) {

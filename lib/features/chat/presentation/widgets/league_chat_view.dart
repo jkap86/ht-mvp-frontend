@@ -45,6 +45,7 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
 
   /// Track the newest message ID so we only animate truly new arrivals.
   int? _lastSeenMessageId;
+  final List<ProviderSubscription> _subscriptions = [];
 
   @override
   void initState() {
@@ -53,6 +54,14 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
     // Mark this league chat as active to suppress notifications
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(activeLeagueChatProvider.notifier).state = widget.leagueId;
+      _subscriptions.add(ref.listenManual(
+        chatProvider(widget.leagueId),
+        (prev, next) {
+          if (next.isForbidden && prev?.isForbidden != true) {
+            handleForbiddenNavigation(context, ref);
+          }
+        },
+      ));
     });
   }
 
@@ -66,6 +75,8 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
 
   @override
   void dispose() {
+    for (final sub in _subscriptions) sub.close();
+    _subscriptions.clear();
     _scrollController.removeListener(_onScroll);
     _messageController.dispose();
     _scrollController.dispose();
@@ -98,12 +109,6 @@ class _LeagueChatViewState extends ConsumerState<LeagueChatView> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(chatProvider(widget.leagueId), (prev, next) {
-      if (next.isForbidden && prev?.isForbidden != true) {
-        handleForbiddenNavigation(context, ref);
-      }
-    });
-
     final state = ref.watch(chatProvider(widget.leagueId));
 
     return Column(

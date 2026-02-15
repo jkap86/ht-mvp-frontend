@@ -9,10 +9,39 @@ import '../../domain/dues.dart';
 import '../providers/dues_provider.dart';
 
 /// Card for tracking payment status (commissioner only)
-class DuesTrackerCard extends ConsumerWidget {
+class DuesTrackerCard extends ConsumerStatefulWidget {
   final int leagueId;
 
   const DuesTrackerCard({super.key, required this.leagueId});
+
+  @override
+  ConsumerState<DuesTrackerCard> createState() => _DuesTrackerCardState();
+}
+
+class _DuesTrackerCardState extends ConsumerState<DuesTrackerCard> {
+  final List<ProviderSubscription> _subscriptions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _subscriptions.add(ref.listenManual<DuesState>(
+        duesProvider(widget.leagueId),
+        (prev, next) {
+          if (next.error != null && prev?.error != next.error) {
+            next.error!.showAsErrorWithContext(context);
+          }
+        },
+      ));
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final sub in _subscriptions) sub.close();
+    _subscriptions.clear();
+    super.dispose();
+  }
 
   String _formatDate(DateTime? date) {
     if (date == null) return '';
@@ -31,8 +60,8 @@ class DuesTrackerCard extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(duesProvider(leagueId));
+  Widget build(BuildContext context) {
+    final state = ref.watch(duesProvider(widget.leagueId));
     final colorScheme = Theme.of(context).colorScheme;
 
     // Don't show tracker if dues is not enabled
@@ -43,13 +72,6 @@ class DuesTrackerCard extends ConsumerWidget {
     final summary = state.summary;
     final payments = state.payments;
     final buyIn = state.config!.buyInAmount;
-
-    // Listen for errors to show snackbar feedback
-    ref.listen<DuesState>(duesProvider(leagueId), (prev, next) {
-      if (next.error != null && prev?.error != next.error) {
-        next.error!.showAsErrorWithContext(context);
-      }
-    });
 
     return Card(
       child: Padding(
@@ -149,7 +171,7 @@ class DuesTrackerCard extends ConsumerWidget {
                           style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
                       ),
-                      _buildStatusBadge(context, payment),
+                      _buildStatusBadge(payment),
                     ],
                   ),
                   subtitle: payment.isPaid && payment.paidAt != null
@@ -179,8 +201,6 @@ class DuesTrackerCard extends ConsumerWidget {
                               onPressed: anyUpdating
                                   ? null
                                   : () => _showMarkUnpaidConfirmation(
-                                        context,
-                                        ref,
                                         payment,
                                         buyIn,
                                       ),
@@ -190,8 +210,6 @@ class DuesTrackerCard extends ConsumerWidget {
                               onPressed: anyUpdating
                                   ? null
                                   : () => _showMarkPaidConfirmation(
-                                        context,
-                                        ref,
                                         payment,
                                         buyIn,
                                       ),
@@ -215,7 +233,7 @@ class DuesTrackerCard extends ConsumerWidget {
   }
 
   /// Builds a colored status badge for the payment row.
-  Widget _buildStatusBadge(BuildContext context, DuesPayment payment) {
+  Widget _buildStatusBadge(DuesPayment payment) {
     final Color bgColor;
     final Color textColor;
     final String label;
@@ -249,8 +267,6 @@ class DuesTrackerCard extends ConsumerWidget {
 
   /// Shows a confirmation dialog before marking a member as paid.
   void _showMarkPaidConfirmation(
-    BuildContext context,
-    WidgetRef ref,
     DuesPayment payment,
     double buyIn,
   ) {
@@ -271,7 +287,7 @@ class DuesTrackerCard extends ConsumerWidget {
           FilledButton(
             onPressed: () {
               Navigator.pop(dialogContext);
-              _executePaymentToggle(ref, context, payment.rosterId, true, payment.teamName);
+              _executePaymentToggle(payment.rosterId, true, payment.teamName);
             },
             child: const Text('Mark Paid'),
           ),
@@ -282,8 +298,6 @@ class DuesTrackerCard extends ConsumerWidget {
 
   /// Shows a confirmation dialog before marking a member as unpaid.
   void _showMarkUnpaidConfirmation(
-    BuildContext context,
-    WidgetRef ref,
     DuesPayment payment,
     double buyIn,
   ) {
@@ -303,7 +317,7 @@ class DuesTrackerCard extends ConsumerWidget {
           FilledButton(
             onPressed: () {
               Navigator.pop(dialogContext);
-              _executePaymentToggle(ref, context, payment.rosterId, false, payment.teamName);
+              _executePaymentToggle(payment.rosterId, false, payment.teamName);
             },
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(dialogContext).colorScheme.error,
@@ -317,15 +331,13 @@ class DuesTrackerCard extends ConsumerWidget {
 
   /// Executes the payment status toggle and shows feedback.
   Future<void> _executePaymentToggle(
-    WidgetRef ref,
-    BuildContext context,
     int rosterId,
     bool isPaid,
     String teamName,
   ) async {
     final key = newIdempotencyKey();
     final success = await ref
-        .read(duesProvider(leagueId).notifier)
+        .read(duesProvider(widget.leagueId).notifier)
         .markPayment(rosterId, isPaid, idempotencyKey: key);
 
     if (!context.mounted) return;

@@ -12,7 +12,7 @@ import '../../domain/waiver_claim.dart';
 import '../../domain/waiver_claim_status.dart';
 import '../providers/waiver_provider.dart';
 
-class MyClaimsScreen extends ConsumerWidget {
+class MyClaimsScreen extends ConsumerStatefulWidget {
   final int leagueId;
   final int? userRosterId;
 
@@ -23,23 +23,44 @@ class MyClaimsScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(
-        waiversProvider((leagueId: leagueId, userRosterId: userRosterId)),
-        (prev, next) {
-      if (next.isForbidden && prev?.isForbidden != true) {
-        handleForbiddenNavigation(context, ref);
-      }
-    });
+  ConsumerState<MyClaimsScreen> createState() => _MyClaimsScreenState();
+}
 
+class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
+  final List<ProviderSubscription> _subscriptions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _subscriptions.add(ref.listenManual(
+        waiversProvider((leagueId: widget.leagueId, userRosterId: widget.userRosterId)),
+        (prev, next) {
+          if (next.isForbidden && prev?.isForbidden != true) {
+            handleForbiddenNavigation(context, ref);
+          }
+        },
+      ));
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final sub in _subscriptions) sub.close();
+    _subscriptions.clear();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(
-        waiversProvider((leagueId: leagueId, userRosterId: userRosterId)));
+        waiversProvider((leagueId: widget.leagueId, userRosterId: widget.userRosterId)));
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Waiver Claims'),
         actions: [
-          if (userRosterId != null) _buildBudgetChip(context, state),
+          if (widget.userRosterId != null) _buildBudgetChip(context, state),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
@@ -51,7 +72,7 @@ class MyClaimsScreen extends ConsumerWidget {
   }
 
   Widget _buildBudgetChip(BuildContext context, WaiversState state) {
-    final budget = state.getBudgetForRoster(userRosterId!);
+    final budget = state.getBudgetForRoster(widget.userRosterId!);
     if (budget == null) return const SizedBox.shrink();
 
     final colorScheme = Theme.of(context).colorScheme;
@@ -81,7 +102,7 @@ class MyClaimsScreen extends ConsumerWidget {
             selected: state.filter == 'pending',
             onSelected: () => ref
                 .read(waiversProvider(
-                    (leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                    (leagueId: widget.leagueId, userRosterId: widget.userRosterId)).notifier)
                 .setFilter('pending'),
           ),
           const SizedBox(width: 8),
@@ -90,7 +111,7 @@ class MyClaimsScreen extends ConsumerWidget {
             selected: state.filter == 'all',
             onSelected: () => ref
                 .read(waiversProvider(
-                    (leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                    (leagueId: widget.leagueId, userRosterId: widget.userRosterId)).notifier)
                 .setFilter('all'),
           ),
           const SizedBox(width: 8),
@@ -99,7 +120,7 @@ class MyClaimsScreen extends ConsumerWidget {
             selected: state.filter == 'completed',
             onSelected: () => ref
                 .read(waiversProvider(
-                    (leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                    (leagueId: widget.leagueId, userRosterId: widget.userRosterId)).notifier)
                 .setFilter('completed'),
           ),
         ],
@@ -117,7 +138,7 @@ class MyClaimsScreen extends ConsumerWidget {
         message: state.error!,
         onRetry: () => ref
             .read(waiversProvider(
-                (leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                (leagueId: widget.leagueId, userRosterId: widget.userRosterId)).notifier)
             .loadWaiverData(),
       );
     }
@@ -162,7 +183,7 @@ class MyClaimsScreen extends ConsumerWidget {
       return RefreshIndicator(
         onRefresh: () => ref
             .read(waiversProvider(
-                (leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                (leagueId: widget.leagueId, userRosterId: widget.userRosterId)).notifier)
             .loadWaiverData(),
         child: CustomScrollView(
           slivers: [
@@ -170,7 +191,7 @@ class MyClaimsScreen extends ConsumerWidget {
             SliverToBoxAdapter(
               child: _WaiverInfoHeader(
                 state: state,
-                userRosterId: userRosterId,
+                userRosterId: widget.userRosterId,
               ),
             ),
             // Reorder explanation (only when multiple pending)
@@ -212,7 +233,7 @@ class MyClaimsScreen extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () => ref
           .read(
-              waiversProvider((leagueId: leagueId, userRosterId: userRosterId))
+              waiversProvider((leagueId: widget.leagueId, userRosterId: widget.userRosterId))
                   .notifier)
           .loadWaiverData(),
       child: ListView.builder(
@@ -256,7 +277,7 @@ class MyClaimsScreen extends ConsumerWidget {
             ids.insert(newIndex, item);
             final success = await ref
                 .read(waiversProvider(
-                    (leagueId: leagueId, userRosterId: userRosterId)).notifier)
+                    (leagueId: widget.leagueId, userRosterId: widget.userRosterId)).notifier)
                 .reorderClaims(ids);
             if (!success && context.mounted) {
               'Failed to reorder claims. Please try again.'.showAsError(ref);
@@ -277,8 +298,8 @@ class MyClaimsScreen extends ConsumerWidget {
                     ? () async {
                         final success = await ref
                             .read(waiversProvider((
-                              leagueId: leagueId,
-                              userRosterId: userRosterId
+                              leagueId: widget.leagueId,
+                              userRosterId: widget.userRosterId
                             )).notifier)
                             .moveClaimUp(claim.id);
                         if (!success && context.mounted) {
@@ -291,8 +312,8 @@ class MyClaimsScreen extends ConsumerWidget {
                     ? () async {
                         final success = await ref
                             .read(waiversProvider((
-                              leagueId: leagueId,
-                              userRosterId: userRosterId
+                              leagueId: widget.leagueId,
+                              userRosterId: widget.userRosterId
                             )).notifier)
                             .moveClaimDown(claim.id);
                         if (!success && context.mounted) {
@@ -337,7 +358,7 @@ class MyClaimsScreen extends ConsumerWidget {
     if (confirmed == true) {
       final success = await ref
           .read(
-              waiversProvider((leagueId: leagueId, userRosterId: userRosterId))
+              waiversProvider((leagueId: widget.leagueId, userRosterId: widget.userRosterId))
                   .notifier)
           .cancelClaim(claim.id);
       if (success && context.mounted) {

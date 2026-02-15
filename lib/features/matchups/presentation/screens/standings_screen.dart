@@ -8,7 +8,7 @@ import '../../../../core/widgets/states/states.dart';
 import '../../../leagues/domain/league.dart';
 import '../providers/standings_provider.dart';
 
-class StandingsScreen extends ConsumerWidget {
+class StandingsScreen extends ConsumerStatefulWidget {
   final int leagueId;
 
   const StandingsScreen({
@@ -17,21 +17,44 @@ class StandingsScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(standingsProvider(leagueId), (prev, next) {
-      if (next.isForbidden && prev?.isForbidden != true) {
-        handleForbiddenNavigation(context, ref);
-      }
-    });
+  ConsumerState<StandingsScreen> createState() => _StandingsScreenState();
+}
 
-    final state = ref.watch(standingsProvider(leagueId));
+class _StandingsScreenState extends ConsumerState<StandingsScreen> {
+  final List<ProviderSubscription> _subscriptions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _subscriptions.add(ref.listenManual(
+        standingsProvider(widget.leagueId),
+        (prev, next) {
+          if (next.isForbidden && prev?.isForbidden != true) {
+            handleForbiddenNavigation(context, ref);
+          }
+        },
+      ));
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final sub in _subscriptions) sub.close();
+    _subscriptions.clear();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(standingsProvider(widget.leagueId));
 
     if (state.isLoading) {
       return Scaffold(
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => navigateBack(context, fallback: '/leagues/$leagueId'),
+            onPressed: () => navigateBack(context, fallback: '/leagues/${widget.leagueId}'),
           ),
           title: const Text('Standings'),
         ),
@@ -44,13 +67,13 @@ class StandingsScreen extends ConsumerWidget {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => navigateBack(context, fallback: '/leagues/$leagueId'),
+            onPressed: () => navigateBack(context, fallback: '/leagues/${widget.leagueId}'),
           ),
           title: const Text('Standings'),
         ),
         body: AppErrorView(
           message: state.error!,
-          onRetry: () => ref.read(standingsProvider(leagueId).notifier).loadData(),
+          onRetry: () => ref.read(standingsProvider(widget.leagueId).notifier).loadData(),
         ),
       );
     }
@@ -61,12 +84,12 @@ class StandingsScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => navigateBack(context, fallback: '/leagues/$leagueId'),
+          onPressed: () => navigateBack(context, fallback: '/leagues/${widget.leagueId}'),
         ),
         title: Text(state.league?.name ?? 'Standings'),
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.read(standingsProvider(leagueId).notifier).loadData(),
+        onRefresh: () => ref.read(standingsProvider(widget.leagueId).notifier).loadData(),
         child: state.standings.isEmpty
             ? _buildEmptyState(state)
             : Column(

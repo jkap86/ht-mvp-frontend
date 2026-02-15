@@ -49,6 +49,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
   // Onboarding tooltip state
   bool _showSwapOnboarding = false;
   Timer? _onboardingDismissTimer;
+  final List<ProviderSubscription> _subscriptions = [];
 
   TeamKey get _key => (leagueId: widget.leagueId, rosterId: widget.rosterId);
 
@@ -56,6 +57,41 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
   void initState() {
     super.initState();
     _checkSwapOnboarding();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _subscriptions.add(ref.listenManual(
+        teamProvider(_key),
+        (prev, next) {
+          if (next.isForbidden && prev?.isForbidden != true) {
+            handleForbiddenNavigation(context, ref);
+          }
+        },
+      ));
+      _subscriptions.add(ref.listenManual<TeamState>(
+        teamProvider(_key),
+        (previous, next) {
+          if (next.error != null && previous?.error != next.error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.white, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(next.error!)),
+                  ],
+                ),
+                duration: const Duration(seconds: 5),
+                action: SnackBarAction(
+                  label: 'Dismiss',
+                  onPressed: () {
+                    ref.read(teamProvider(_key).notifier).clearError();
+                  },
+                ),
+              ),
+            );
+          }
+        },
+      ));
+    });
   }
 
   Future<void> _checkSwapOnboarding() async {
@@ -109,6 +145,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
   @override
   void dispose() {
+    for (final sub in _subscriptions) sub.close();
+    _subscriptions.clear();
     _onboardingDismissTimer?.cancel();
     _tabController?.removeListener(_onTabChanged);
     _tabController?.dispose();
@@ -133,41 +171,11 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(teamProvider(_key), (prev, next) {
-      if (next.isForbidden && prev?.isForbidden != true) {
-        handleForbiddenNavigation(context, ref);
-      }
-    });
-
     final state = ref.watch(teamProvider(_key));
     final isOwnTeam = _isOwnTeam(state);
 
     // Initialize or update tab controller based on own team status
     _initTabController(isOwnTeam);
-
-    // Show error snackbar when error occurs - with descriptive messages
-    ref.listen<TeamState>(teamProvider(_key), (previous, next) {
-      if (next.error != null && previous?.error != next.error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Expanded(child: Text(next.error!)),
-              ],
-            ),
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: 'Dismiss',
-              onPressed: () {
-                ref.read(teamProvider(_key).notifier).clearError();
-              },
-            ),
-          ),
-        );
-      }
-    });
 
     if (state.isLoading && state.players.isEmpty) {
       return Scaffold(

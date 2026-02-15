@@ -39,6 +39,30 @@ class LeagueDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen> {
+  final List<ProviderSubscription> _subscriptions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _subscriptions.add(ref.listenManual(
+        leagueDetailProvider(widget.leagueId),
+        (prev, next) {
+          if (next.isForbidden && prev?.isForbidden != true) {
+            handleForbiddenNavigation(context, ref);
+          }
+        },
+      ));
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final sub in _subscriptions) sub.close();
+    _subscriptions.clear();
+    super.dispose();
+  }
+
   int _calculateRosterSlots(League league) {
     final rosterConfig = league.settings['roster_config'];
     if (rosterConfig is Map) {
@@ -194,12 +218,6 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(leagueDetailProvider(widget.leagueId), (prev, next) {
-      if (next.isForbidden && prev?.isForbidden != true) {
-        handleForbiddenNavigation(context, ref);
-      }
-    });
-
     final state = ref.watch(leagueDetailProvider(widget.leagueId));
 
     if (state.isLoading) {
