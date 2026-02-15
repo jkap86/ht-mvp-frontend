@@ -1,9 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/hype_train_colors.dart';
+import '../mixins/countdown_mixin.dart';
 
 /// Widget shown when waiting for nomination in fast auction mode.
 /// Displays countdown timer until auto-nomination and nominate button.
@@ -26,63 +26,55 @@ class FastAuctionWaitingState extends StatefulWidget {
   State<FastAuctionWaitingState> createState() => _FastAuctionWaitingStateState();
 }
 
-class _FastAuctionWaitingStateState extends State<FastAuctionWaitingState> {
-  Timer? _timer;
-  Duration _remaining = Duration.zero;
+class _FastAuctionWaitingStateState extends State<FastAuctionWaitingState>
+    with CountdownMixin {
+  bool _hasTriggeredNominationHaptic = false;
 
   @override
   void initState() {
     super.initState();
-    _updateRemaining();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      _updateRemaining();
-    });
+    if (widget.nominationDeadline != null) {
+      startCountdown(
+        widget.nominationDeadline!,
+        serverClockOffsetMs: widget.serverClockOffsetMs,
+      );
+    }
   }
 
   @override
   void didUpdateWidget(FastAuctionWaitingState oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    // Update server clock offset if changed
+    if (oldWidget.serverClockOffsetMs != widget.serverClockOffsetMs) {
+      updateServerClockOffset(widget.serverClockOffsetMs);
+    }
+
+    // Handle deadline changes
     if (oldWidget.nominationDeadline != widget.nominationDeadline) {
-      _updateRemaining();
-    }
-  }
-
-  /// Get the current time adjusted for server clock offset.
-  DateTime _getServerNow() {
-    if (widget.serverClockOffsetMs == null) return DateTime.now();
-    return DateTime.now().add(Duration(milliseconds: widget.serverClockOffsetMs!));
-  }
-
-  void _updateRemaining() {
-    if (widget.nominationDeadline == null) {
-      setState(() {
-        _remaining = Duration.zero;
-      });
-      return;
-    }
-    // Use UTC for both to ensure correct countdown regardless of user's timezone
-    // Apply server clock offset for accurate countdown on devices with clock drift
-    final now = _getServerNow().toUtc();
-    final deadline = widget.nominationDeadline!.toUtc();
-    setState(() {
-      _remaining = deadline.difference(now);
-      if (_remaining.isNegative) {
-        _remaining = Duration.zero;
+      if (widget.nominationDeadline != null) {
+        // Start or update countdown
+        stopCountdown();
+        startCountdown(
+          widget.nominationDeadline!,
+          serverClockOffsetMs: widget.serverClockOffsetMs,
+        );
+      } else {
+        // No deadline - stop countdown
+        stopCountdown();
+        setState(() {
+          timeRemaining = Duration.zero;
+        });
       }
-    });
-  }
+    }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  String _formatDuration(Duration d) {
-    if (d.inMinutes > 0) {
-      return '${d.inMinutes}:${(d.inSeconds.remainder(60)).toString().padLeft(2, '0')}';
-    } else {
-      return '0:${d.inSeconds.toString().padLeft(2, '0')}';
+    // Haptic when it becomes my nomination turn
+    if (!oldWidget.isMyNomination && widget.isMyNomination && !_hasTriggeredNominationHaptic) {
+      _hasTriggeredNominationHaptic = true;
+      HapticFeedback.lightImpact();
+    }
+    if (oldWidget.isMyNomination && !widget.isMyNomination) {
+      _hasTriggeredNominationHaptic = false;
     }
   }
 
@@ -90,8 +82,8 @@ class _FastAuctionWaitingStateState extends State<FastAuctionWaitingState> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasDeadline = widget.nominationDeadline != null;
-    final isExpired = _remaining == Duration.zero && hasDeadline;
-    final isUrgent = _remaining.inSeconds < 10 && !isExpired && hasDeadline;
+    final isExpired = timeRemaining == Duration.zero && hasDeadline;
+    final isUrgent = timeRemaining.inSeconds < 10 && !isExpired && hasDeadline;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -150,7 +142,7 @@ class _FastAuctionWaitingStateState extends State<FastAuctionWaitingState> {
     } else if (isUrgent) {
       timerColor = AppTheme.draftUrgent;
       backgroundColor = AppTheme.draftUrgent.withAlpha(30);
-    } else if (_remaining.inSeconds <= 30) {
+    } else if (timeRemaining.inSeconds <= 30) {
       timerColor = AppTheme.draftWarning;
       backgroundColor = AppTheme.draftWarning.withAlpha(30);
     } else {
@@ -175,7 +167,7 @@ class _FastAuctionWaitingStateState extends State<FastAuctionWaitingState> {
           ),
           const SizedBox(width: 8),
           Text(
-            isExpired ? 'AUTO-NOMINATING...' : _formatDuration(_remaining),
+            isExpired ? 'AUTO-NOMINATING...' : formatFastCountdown(),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,

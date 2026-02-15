@@ -13,12 +13,15 @@ class AuctionLotsPanel extends StatefulWidget {
   final DraftRoomState state;
   final void Function(AuctionLot lot) onBidTap;
   final VoidCallback onNominateTap;
+  /// Server clock offset in milliseconds for accurate countdown
+  final int? serverClockOffsetMs;
 
   const AuctionLotsPanel({
     super.key,
     required this.state,
     required this.onBidTap,
     required this.onNominateTap,
+    this.serverClockOffsetMs,
   });
 
   @override
@@ -150,6 +153,7 @@ class _AuctionLotsPanelState extends State<AuctionLotsPanel> {
                   player: player,
                   leadingBidderName: leadingBidder,
                   onBidTap: () => widget.onBidTap(lot),
+                  serverClockOffsetMs: widget.serverClockOffsetMs,
                 );
               },
             ),
@@ -165,6 +169,7 @@ class _AuctionLotCard extends StatefulWidget {
   final Player? player;
   final String? leadingBidderName;
   final VoidCallback onBidTap;
+  final int? serverClockOffsetMs;
 
   const _AuctionLotCard({
     super.key,
@@ -172,6 +177,7 @@ class _AuctionLotCard extends StatefulWidget {
     required this.player,
     required this.leadingBidderName,
     required this.onBidTap,
+    this.serverClockOffsetMs,
   });
 
   @override
@@ -201,7 +207,11 @@ class _AuctionLotCardState extends State<_AuctionLotCard> {
 
   void _updateRemaining() {
     // Use UTC for both to ensure correct countdown regardless of user's timezone
-    final now = DateTime.now().toUtc();
+    // Apply server clock offset for accurate countdown on devices with clock drift
+    final offset = widget.serverClockOffsetMs;
+    final now = offset != null
+        ? DateTime.now().add(Duration(milliseconds: offset)).toUtc()
+        : DateTime.now().toUtc();
     final deadline = widget.lot.bidDeadline.toUtc();
     final diff = deadline.difference(now);
     _remaining.value = diff.isNegative ? Duration.zero : diff;

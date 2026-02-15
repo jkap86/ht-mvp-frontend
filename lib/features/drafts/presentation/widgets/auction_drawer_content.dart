@@ -57,6 +57,7 @@ class AuctionDrawerContent extends ConsumerWidget {
         SliverToBoxAdapter(
           child: AuctionLotsPanel(
             state: state,
+            serverClockOffsetMs: state.serverClockOffsetMs,
             onBidTap: (lot) {
               final player =
                   players.where((p) => p.id == lot.playerId).firstOrNull;

@@ -135,6 +135,7 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
       settings: draftState.auctionSettings ?? AuctionSettings.defaults,
       onSubmit: (maxBid) async => await widget.onSetMaxBid!(lot.id, maxBid),
       serverClockOffsetMs: draftState.serverClockOffsetMs,
+      totalRosterSpots: draftState.draft?.rounds,
     );
   }
 
@@ -167,6 +168,7 @@ class _DraftBottomDrawerState extends ConsumerState<DraftBottomDrawer> {
           onDismissResult: () {
             ref.read(draftRoomProvider(widget.providerKey).notifier).dismissLotResult();
           },
+          onQuickBid: widget.onSetMaxBid,
         ),
         const Divider(height: 1),
         // Scrollable player list for nomination / browsing

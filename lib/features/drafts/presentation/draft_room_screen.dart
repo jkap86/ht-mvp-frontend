@@ -81,6 +81,7 @@ class _DraftRoomScreenState extends ConsumerState<DraftRoomScreen> {
         draftRoomProvider(_providerKey).select((s) => s.outbidNotification),
         (previous, next) {
           if (next != null) {
+            HapticFeedback.mediumImpact();
             final state = ref.read(draftRoomProvider(_providerKey));
             final players = state.players;
             final player = players.where((p) => p.id == next.playerId).firstOrNull;

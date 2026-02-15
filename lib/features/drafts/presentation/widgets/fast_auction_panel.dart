@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../players/domain/player.dart';
+import '../../domain/auction_bid_calculator.dart';
 import '../../domain/auction_lot.dart';
+import '../../domain/auction_settings.dart';
 import '../../domain/draft_status.dart';
 import '../providers/draft_room_provider.dart';
 import 'fast_auction_header.dart';
@@ -19,6 +21,8 @@ class FastAuctionPanel extends StatelessWidget {
   final void Function(AuctionLot lot) onBidTap;
   final VoidCallback onNominateTap;
   final VoidCallback? onDismissResult;
+  /// Callback for quick-bid buttons. Returns error string or null on success.
+  final Future<String?> Function(int lotId, int maxBid)? onQuickBid;
 
   const FastAuctionPanel({
     super.key,
@@ -26,6 +30,7 @@ class FastAuctionPanel extends StatelessWidget {
     required this.onBidTap,
     required this.onNominateTap,
     this.onDismissResult,
+    this.onQuickBid,
   });
 
   @override
@@ -41,6 +46,14 @@ class FastAuctionPanel extends StatelessWidget {
     final playersMap = {for (var p in state.players) p.id: p};
     final budgetsMap = {for (var b in state.budgets) b.rosterId: b};
     final lastResult = state.lastLotResult;
+
+    // Create calculator for bid math
+    final settings = state.auctionSettings ?? AuctionSettings.defaults;
+    final totalRosterSpots = state.draft?.rounds ?? 15;
+    final calculator = AuctionBidCalculator(
+      settings: settings,
+      totalRosterSpots: totalRosterSpots,
+    );
 
     final theme = Theme.of(context);
     return Container(
@@ -59,6 +72,8 @@ class FastAuctionPanel extends StatelessWidget {
               nominationNumber: nominationNumber,
               myBudgetAvailable: state.myBudget?.available,
               completedCount: state.completedLotResults.length,
+              totalRosterSpots: totalRosterSpots,
+              filledSpots: state.myBudget?.wonCount ?? 0,
               onHistoryTap: state.completedLotResults.isNotEmpty
                   ? () => FastAuctionHistorySheet.show(
                         context,
@@ -126,10 +141,12 @@ class FastAuctionPanel extends StatelessWidget {
                   : null,
               myBudget: state.myBudget,
               onBidTap: () => onBidTap(activeLot),
+              calculator: calculator,
               serverClockOffsetMs: state.serverClockOffsetMs,
-              auctionSettings: state.auctionSettings,
               myRosterId: state.myRosterId,
-              totalRosterSpots: state.draft?.rounds,
+              onQuickBid: onQuickBid != null
+                  ? (maxBid) => onQuickBid!(activeLot.id, maxBid)
+                  : null,
             )
           else
             FastAuctionWaitingState(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../config/app_theme.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -7,7 +8,6 @@ import '../../../players/domain/player.dart';
 import '../../domain/auction_bid_calculator.dart';
 import '../../domain/auction_budget.dart';
 import '../../domain/auction_lot.dart';
-import '../../domain/auction_settings.dart';
 import '../mixins/countdown_mixin.dart';
 import 'shared/bid_amount_display.dart';
 import '../../../../core/widgets/position_badge.dart';
@@ -22,11 +22,10 @@ class FastAuctionLotCard extends StatefulWidget {
   final VoidCallback onBidTap;
   /// Server clock offset in milliseconds for accurate countdown
   final int? serverClockOffsetMs;
-  final AuctionSettings? auctionSettings;
   final int? myRosterId;
-  /// Total roster spots for max bid calculation
-  final int? totalRosterSpots;
-  final AuctionBidCalculator? calculator;
+  final AuctionBidCalculator calculator;
+  /// Callback for quick-bid buttons. Returns error string or null on success.
+  final Future<String?> Function(int maxBid)? onQuickBid;
 
   const FastAuctionLotCard({
     super.key,
@@ -35,11 +34,10 @@ class FastAuctionLotCard extends StatefulWidget {
     required this.leadingBidderName,
     required this.myBudget,
     required this.onBidTap,
+    required this.calculator,
     this.serverClockOffsetMs,
-    this.auctionSettings,
     this.myRosterId,
-    this.totalRosterSpots,
-    this.calculator,
+    this.onQuickBid,
   });
 
   @override
@@ -48,19 +46,15 @@ class FastAuctionLotCard extends StatefulWidget {
 
 class _FastAuctionLotCardState extends State<FastAuctionLotCard>
     with SingleTickerProviderStateMixin, CountdownMixin {
-  AuctionBidCalculator? get _calc => widget.calculator;
+  AuctionBidCalculator get _calc => widget.calculator;
 
-  bool get _isWinning =>
-      widget.myRosterId != null &&
-      widget.lot.currentBidderRosterId == widget.myRosterId;
+  bool get _isWinning => _calc.isLeading(widget.lot, widget.myRosterId);
 
-  int get _minBid {
-    if (_calc != null) return _calc!.minBid(widget.lot, widget.myRosterId);
-    final settings = widget.auctionSettings;
-    if (settings == null) return widget.lot.currentBid + 1;
-    if (_isWinning) return widget.lot.currentBid;
-    return widget.lot.currentBid + settings.minIncrement;
-  }
+  int get _minBid => _calc.minBid(widget.lot, widget.myRosterId);
+
+  int? _loadingQuickBidAmount;
+  bool _hasTriggeredUrgentHaptic = false;
+  bool _hasTriggeredCriticalHaptic = false;
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -87,18 +81,31 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
     }
     if (oldWidget.lot.bidDeadline != widget.lot.bidDeadline) {
       updateTimeRemaining(widget.lot.bidDeadline, serverClockOffsetMs: widget.serverClockOffsetMs);
+      _hasTriggeredUrgentHaptic = false;
+      _hasTriggeredCriticalHaptic = false;
     }
     _updatePulseAnimation();
   }
 
   void _updatePulseAnimation() {
+    final seconds = timeRemaining.inSeconds;
     // Start pulse animation when under 5 seconds
-    final isCritical = timeRemaining.inSeconds > 0 && timeRemaining.inSeconds <= 5;
+    final isCritical = seconds > 0 && seconds <= 5;
     if (isCritical && !_pulseController.isAnimating) {
       _pulseController.repeat(reverse: true);
     } else if (!isCritical && _pulseController.isAnimating) {
       _pulseController.stop();
       _pulseController.reset();
+    }
+
+    // Haptic feedback at thresholds (fire once per deadline)
+    if (seconds > 0 && seconds <= 10 && !_hasTriggeredUrgentHaptic) {
+      _hasTriggeredUrgentHaptic = true;
+      HapticFeedback.mediumImpact();
+    }
+    if (seconds > 0 && seconds <= 5 && !_hasTriggeredCriticalHaptic) {
+      _hasTriggeredCriticalHaptic = true;
+      HapticFeedback.heavyImpact();
     }
   }
 
@@ -145,8 +152,8 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
               _buildBidInfoRow(theme),
               const SizedBox(height: 12),
 
-              // Bid button
-              _buildBidButton(theme, isExpired),
+              // Bid controls
+              _buildBidControls(theme, isExpired),
             ],
           ),
         ),
@@ -253,31 +260,49 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
           ),
         ),
 
-        // Current bid
-        LargeBidAmountDisplay(
-          amount: widget.lot.currentBid,
-          leadingBidderName: widget.leadingBidderName,
-          isWinning: _isWinning,
+        // Bid count + Current bid
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            LargeBidAmountDisplay(
+              amount: widget.lot.currentBid,
+              leadingBidderName: widget.leadingBidderName,
+              isWinning: _isWinning,
+            ),
+            if (widget.lot.bidCount > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.local_offer, size: 12, color: theme.colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${widget.lot.bidCount}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );
   }
 
-  int? get _maxPossibleBid {
-    if (_calc != null) return _calc!.maxPossibleBid(widget.lot, widget.myBudget, widget.myRosterId);
-    final budget = widget.myBudget;
-    if (budget == null) return null;
-    final totalSpots = widget.totalRosterSpots ?? 15;
-    final remainingSpots = totalSpots - budget.wonCount;
-    if (remainingSpots <= 1) return budget.available;
-    final minBidVal = widget.auctionSettings?.minBid ?? 1;
-    final reserved = (remainingSpots - 1) * minBidVal;
-    final maxBid = budget.available - reserved;
-    if (_isWinning) {
-      return (maxBid + widget.lot.currentBid).clamp(0, budget.totalBudget);
-    }
-    return maxBid > 0 ? maxBid : 0;
-  }
+  int? get _maxPossibleBid =>
+      _calc.maxPossibleBid(widget.lot, widget.myBudget, widget.myRosterId);
 
   Widget _buildBidInfoRow(ThemeData theme) {
     final budget = widget.myBudget;
@@ -389,28 +414,122 @@ class _FastAuctionLotCardState extends State<FastAuctionLotCard>
     );
   }
 
-  Widget _buildBidButton(ThemeData theme, bool isExpired) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: isExpired ? null : widget.onBidTap,
-        icon: const Icon(Icons.gavel),
-        label: const Text(
-          'Place Bid',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: theme.colorScheme.primary,
-          foregroundColor: theme.colorScheme.onPrimary,
-          disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest,
-          disabledForegroundColor: theme.colorScheme.onSurfaceVariant,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+  Future<void> _handleQuickBid(int amount) async {
+    if (widget.onQuickBid == null) return;
+    setState(() => _loadingQuickBidAmount = amount);
+    try {
+      final error = await widget.onQuickBid!(amount);
+      if (!mounted) return;
+      if (error != null) {
+        HapticFeedback.vibrate();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
-          elevation: 0,
+        );
+      } else {
+        HapticFeedback.lightImpact();
+      }
+    } finally {
+      if (mounted) setState(() => _loadingQuickBidAmount = null);
+    }
+  }
+
+  Widget _buildBidControls(ThemeData theme, bool isExpired) {
+    if (isExpired || widget.onQuickBid == null) {
+      // Fallback to simple bid button when expired or no quick-bid callback
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: isExpired ? null : widget.onBidTap,
+          icon: const Icon(Icons.gavel),
+          label: const Text(
+            'Place Bid',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: theme.colorScheme.primary,
+            foregroundColor: theme.colorScheme.onPrimary,
+            disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest,
+            disabledForegroundColor: theme.colorScheme.onSurfaceVariant,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            elevation: 0,
+          ),
         ),
-      ),
+      );
+    }
+
+    final min = _minBid;
+    final max = _maxPossibleBid;
+    final isLoading = _loadingQuickBidAmount != null;
+
+    // Build quick-bid amounts: Min, +$5, +$10, Max
+    final amounts = <({String label, int value})>[];
+    amounts.add((label: 'Min \$$min', value: min));
+
+    if (max != null && max > min) {
+      final plus5 = widget.lot.currentBid + 5;
+      final plus10 = widget.lot.currentBid + 10;
+      // Only add +$5/+$10 if they're distinct from min and max
+      if (plus5 > min && plus5 < max) {
+        amounts.add((label: '+\$5', value: plus5));
+      }
+      if (plus10 > min && plus10 < max && plus10 != plus5) {
+        amounts.add((label: '+\$10', value: plus10));
+      }
+      amounts.add((label: 'Max \$$max', value: max));
+    }
+
+    return Column(
+      children: [
+        // Quick-bid action chips
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          alignment: WrapAlignment.center,
+          children: amounts.map((a) {
+            final isThisLoading = _loadingQuickBidAmount == a.value;
+            return ActionChip(
+              label: isThisLoading
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(a.label, style: const TextStyle(fontSize: 12)),
+              onPressed: isLoading ? null : () => _handleQuickBid(a.value),
+              backgroundColor: theme.colorScheme.primaryContainer,
+              side: BorderSide(color: theme.colorScheme.primary.withAlpha(80)),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 8),
+        // Custom Bid button (opens dialog)
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: isLoading ? null : widget.onBidTap,
+            icon: const Icon(Icons.edit, size: 16),
+            label: const Text(
+              'Custom Bid',
+              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

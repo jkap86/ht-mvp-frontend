@@ -12,6 +12,10 @@ class FastAuctionHeader extends StatelessWidget {
   final int? myBudgetAvailable;
   final int completedCount;
   final VoidCallback? onHistoryTap;
+  /// Total roster spots in the draft
+  final int? totalRosterSpots;
+  /// Number of roster spots already filled (won count)
+  final int filledSpots;
 
   const FastAuctionHeader({
     super.key,
@@ -21,6 +25,8 @@ class FastAuctionHeader extends StatelessWidget {
     this.myBudgetAvailable,
     this.completedCount = 0,
     this.onHistoryTap,
+    this.totalRosterSpots,
+    this.filledSpots = 0,
   });
 
   @override
@@ -78,6 +84,32 @@ class FastAuctionHeader extends StatelessWidget {
               onPressed: onHistoryTap,
               constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               padding: EdgeInsets.zero,
+            ),
+          if (totalRosterSpots != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: AppSpacing.cardRadius,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.people, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$filledSpots/$totalRosterSpots',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           if (myBudgetAvailable != null)
             Container(
