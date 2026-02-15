@@ -1,3 +1,5 @@
+import '../../../core/utils/date_sentinel.dart';
+
 /// Waiver priority model
 class WaiverPriority {
   final int id;
@@ -30,7 +32,7 @@ class WaiverPriority {
       teamName: json['team_name'] as String? ?? '',
       username: json['username'] as String? ?? '',
       updatedAt:
-          DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
+          DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? epochUtc(),
     );
   }
 }

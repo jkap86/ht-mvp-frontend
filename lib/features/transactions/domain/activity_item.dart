@@ -2,6 +2,8 @@ export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show ActivityT
 
 import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
+import '../../../core/utils/date_sentinel.dart';
+
 extension ActivityTypeUI on ActivityType {
   String get label => switch (this) {
     ActivityType.trade => 'Trade',
@@ -36,7 +38,7 @@ class ActivityItem {
     return ActivityItem(
       id: json['id'] as String? ?? '',
       type: ActivityType.fromString(json['type'] as String?),
-      timestamp: DateTime.tryParse(json['timestamp']?.toString() ?? '') ?? DateTime.utc(1970),
+      timestamp: DateTime.tryParse(json['timestamp']?.toString() ?? '') ?? epochUtc(),
       leagueId: json['leagueId'] as int? ?? json['league_id'] as int? ?? 0,
       week: json['week'] as int?,
       season: json['season']?.toString(),

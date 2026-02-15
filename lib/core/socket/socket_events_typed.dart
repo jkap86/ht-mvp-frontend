@@ -7,6 +7,7 @@ library;
 import '../../features/drafts/domain/draft_pick.dart';
 import '../../features/drafts/domain/auction_lot.dart';
 import '../../features/trades/domain/trade.dart';
+import '../utils/json_read.dart';
 
 /// Base sealed class for all socket events.
 /// Using sealed classes allows exhaustive pattern matching.
@@ -34,8 +35,8 @@ final class DraftCreatedEvent extends SocketEvent {
 
   factory DraftCreatedEvent.fromJson(Map<String, dynamic> json) {
     return DraftCreatedEvent(
-      draftId: json['draftId'] as int,
-      leagueId: json['leagueId'] as int,
+      draftId: readIntEither(json, 'draft_id', 'draftId')!,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
       draftType: json['draftType'] as String,
       status: json['status'] as String,
     );
@@ -60,10 +61,10 @@ final class DraftStartedEvent extends SocketEvent {
 
   factory DraftStartedEvent.fromJson(Map<String, dynamic> json) {
     return DraftStartedEvent(
-      draftId: json['draftId'] as int,
-      currentPick: json['currentPick'] as int? ?? 1,
-      currentRound: json['currentRound'] as int? ?? 1,
-      currentRosterId: json['currentRosterId'] as int?,
+      draftId: readIntEither(json, 'draft_id', 'draftId')!,
+      currentPick: readIntEither(json, 'current_pick', 'currentPick') ?? 1,
+      currentRound: readIntEither(json, 'current_round', 'currentRound') ?? 1,
+      currentRosterId: readIntEither(json, 'current_roster_id', 'currentRosterId'),
       turnExpiresAt: json['turnExpiresAt'] != null
           ? DateTime.parse(json['turnExpiresAt'] as String)
           : null,
@@ -84,7 +85,7 @@ final class DraftPickEvent extends SocketEvent {
   factory DraftPickEvent.fromJson(Map<String, dynamic> json) {
     return DraftPickEvent(
       pick: DraftPick.fromJson(json),
-      serverTime: json['serverTime'] as int?,
+      serverTime: readIntEither(json, 'server_time', 'serverTime'),
     );
   }
 }
@@ -109,10 +110,10 @@ final class NextPickEvent extends SocketEvent {
 
   factory NextPickEvent.fromJson(Map<String, dynamic> json) {
     return NextPickEvent(
-      draftId: json['draftId'] as int,
-      pickNumber: json['pickNumber'] as int,
+      draftId: readIntEither(json, 'draft_id', 'draftId')!,
+      pickNumber: readIntEither(json, 'pick_number', 'pickNumber')!,
       round: json['round'] as int,
-      rosterId: json['rosterId'] as int,
+      rosterId: readIntEither(json, 'roster_id', 'rosterId')!,
       turnExpiresAt: json['turnExpiresAt'] != null
           ? DateTime.parse(json['turnExpiresAt'] as String)
           : null,
@@ -128,7 +129,7 @@ final class DraftPausedEvent extends SocketEvent {
   const DraftPausedEvent({required this.draftId});
 
   factory DraftPausedEvent.fromJson(Map<String, dynamic> json) {
-    return DraftPausedEvent(draftId: json['draftId'] as int);
+    return DraftPausedEvent(draftId: readIntEither(json, 'draft_id', 'draftId')!);
   }
 }
 
@@ -144,7 +145,7 @@ final class DraftResumedEvent extends SocketEvent {
 
   factory DraftResumedEvent.fromJson(Map<String, dynamic> json) {
     return DraftResumedEvent(
-      draftId: json['draftId'] as int,
+      draftId: readIntEither(json, 'draft_id', 'draftId')!,
       turnExpiresAt: json['turnExpiresAt'] != null
           ? DateTime.parse(json['turnExpiresAt'] as String)
           : null,
@@ -159,7 +160,7 @@ final class DraftCompletedEvent extends SocketEvent {
   const DraftCompletedEvent({required this.draftId});
 
   factory DraftCompletedEvent.fromJson(Map<String, dynamic> json) {
-    return DraftCompletedEvent(draftId: json['draftId'] as int);
+    return DraftCompletedEvent(draftId: readIntEither(json, 'draft_id', 'draftId')!);
   }
 }
 
@@ -181,10 +182,10 @@ final class PickUndoneEvent extends SocketEvent {
 
   factory PickUndoneEvent.fromJson(Map<String, dynamic> json) {
     return PickUndoneEvent(
-      draftId: json['draftId'] as int,
-      pickNumber: json['currentPick'] as int,
-      round: json['currentRound'] as int,
-      rosterId: json['currentRosterId'] as int,
+      draftId: readIntEither(json, 'draft_id', 'draftId')!,
+      pickNumber: readIntEither(json, 'current_pick', 'currentPick')!,
+      round: readIntEither(json, 'current_round', 'currentRound')!,
+      rosterId: readIntEither(json, 'current_roster_id', 'currentRosterId')!,
       turnExpiresAt: json['turnExpiresAt'] != null
           ? DateTime.parse(json['turnExpiresAt'] as String)
           : null,
@@ -206,8 +207,8 @@ final class AutodraftToggledEvent extends SocketEvent {
 
   factory AutodraftToggledEvent.fromJson(Map<String, dynamic> json) {
     return AutodraftToggledEvent(
-      draftId: json['draftId'] as int,
-      rosterId: json['rosterId'] as int,
+      draftId: readIntEither(json, 'draft_id', 'draftId')!,
+      rosterId: readIntEither(json, 'roster_id', 'rosterId')!,
       isEnabled: json['autodraftEnabled'] as bool,
     );
   }
@@ -227,8 +228,8 @@ final class QueueUpdatedEvent extends SocketEvent {
 
   factory QueueUpdatedEvent.fromJson(Map<String, dynamic> json) {
     return QueueUpdatedEvent(
-      draftId: json['draftId'] as int,
-      rosterId: json['rosterId'] as int,
+      draftId: readIntEither(json, 'draft_id', 'draftId')!,
+      rosterId: readIntEither(json, 'roster_id', 'rosterId')!,
       queuePlayerIds: (json['queue'] as List<dynamic>?)
               ?.map((e) => e as int)
               .toList() ??
@@ -254,7 +255,7 @@ final class AuctionLotCreatedEvent extends SocketEvent {
   factory AuctionLotCreatedEvent.fromJson(Map<String, dynamic> json) {
     return AuctionLotCreatedEvent(
       lot: AuctionLot.fromJson(json),
-      serverTime: json['serverTime'] as int?,
+      serverTime: readIntEither(json, 'server_time', 'serverTime'),
     );
   }
 }
@@ -272,7 +273,7 @@ final class AuctionLotUpdatedEvent extends SocketEvent {
   factory AuctionLotUpdatedEvent.fromJson(Map<String, dynamic> json) {
     return AuctionLotUpdatedEvent(
       lot: AuctionLot.fromJson(json),
-      serverTime: json['serverTime'] as int?,
+      serverTime: readIntEither(json, 'server_time', 'serverTime'),
     );
   }
 }
@@ -293,10 +294,10 @@ final class AuctionLotWonEvent extends SocketEvent {
 
   factory AuctionLotWonEvent.fromJson(Map<String, dynamic> json) {
     return AuctionLotWonEvent(
-      lotId: json['lotId'] as int,
-      playerId: json['playerId'] as int,
-      winningRosterId: json['winningRosterId'] as int,
-      winningBid: json['winningBid'] as int,
+      lotId: readIntEither(json, 'lot_id', 'lotId')!,
+      playerId: readIntEither(json, 'player_id', 'playerId')!,
+      winningRosterId: readIntEither(json, 'winning_roster_id', 'winningRosterId')!,
+      winningBid: readIntEither(json, 'winning_bid', 'winningBid')!,
     );
   }
 }
@@ -313,8 +314,8 @@ final class AuctionLotPassedEvent extends SocketEvent {
 
   factory AuctionLotPassedEvent.fromJson(Map<String, dynamic> json) {
     return AuctionLotPassedEvent(
-      lotId: json['lotId'] as int,
-      playerId: json['playerId'] as int,
+      lotId: readIntEither(json, 'lot_id', 'lotId')!,
+      playerId: readIntEither(json, 'player_id', 'playerId')!,
     );
   }
 }
@@ -335,10 +336,10 @@ final class AuctionOutbidEvent extends SocketEvent {
 
   factory AuctionOutbidEvent.fromJson(Map<String, dynamic> json) {
     return AuctionOutbidEvent(
-      lotId: json['lotId'] as int,
-      playerId: json['playerId'] as int,
-      currentBid: json['currentBid'] as int,
-      highBidderRosterId: json['highBidderRosterId'] as int,
+      lotId: readIntEither(json, 'lot_id', 'lotId')!,
+      playerId: readIntEither(json, 'player_id', 'playerId')!,
+      currentBid: readIntEither(json, 'current_bid', 'currentBid')!,
+      highBidderRosterId: readIntEither(json, 'high_bidder_roster_id', 'highBidderRosterId')!,
     );
   }
 }
@@ -357,8 +358,8 @@ final class AuctionNominatorChangedEvent extends SocketEvent {
 
   factory AuctionNominatorChangedEvent.fromJson(Map<String, dynamic> json) {
     return AuctionNominatorChangedEvent(
-      draftId: json['draftId'] as int,
-      nominatorRosterId: json['nominatorRosterId'] as int,
+      draftId: readIntEither(json, 'draft_id', 'draftId')!,
+      nominatorRosterId: readIntEither(json, 'nominator_roster_id', 'nominatorRosterId')!,
       nominationExpiresAt: json['nominationExpiresAt'] != null
           ? DateTime.parse(json['nominationExpiresAt'] as String)
           : null,
@@ -411,8 +412,8 @@ final class TradeAcceptedEvent extends SocketEvent {
 
   factory TradeAcceptedEvent.fromJson(Map<String, dynamic> json) {
     return TradeAcceptedEvent(
-      tradeId: json['tradeId'] as int,
-      leagueId: json['leagueId'] as int,
+      tradeId: readIntEither(json, 'trade_id', 'tradeId')!,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
     );
   }
 }
@@ -429,8 +430,8 @@ final class TradeRejectedEvent extends SocketEvent {
 
   factory TradeRejectedEvent.fromJson(Map<String, dynamic> json) {
     return TradeRejectedEvent(
-      tradeId: json['tradeId'] as int,
-      leagueId: json['leagueId'] as int,
+      tradeId: readIntEither(json, 'trade_id', 'tradeId')!,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
     );
   }
 }
@@ -458,8 +459,8 @@ final class TradeCancelledEvent extends SocketEvent {
 
   factory TradeCancelledEvent.fromJson(Map<String, dynamic> json) {
     return TradeCancelledEvent(
-      tradeId: json['tradeId'] as int,
-      leagueId: json['leagueId'] as int,
+      tradeId: readIntEither(json, 'trade_id', 'tradeId')!,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
     );
   }
 }
@@ -476,8 +477,8 @@ final class TradeExpiredEvent extends SocketEvent {
 
   factory TradeExpiredEvent.fromJson(Map<String, dynamic> json) {
     return TradeExpiredEvent(
-      tradeId: json['tradeId'] as int,
-      leagueId: json['leagueId'] as int,
+      tradeId: readIntEither(json, 'trade_id', 'tradeId')!,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
     );
   }
 }
@@ -494,8 +495,8 @@ final class TradeCompletedEvent extends SocketEvent {
 
   factory TradeCompletedEvent.fromJson(Map<String, dynamic> json) {
     return TradeCompletedEvent(
-      tradeId: json['tradeId'] as int,
-      leagueId: json['leagueId'] as int,
+      tradeId: readIntEither(json, 'trade_id', 'tradeId')!,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
     );
   }
 }
@@ -512,8 +513,8 @@ final class TradeVetoedEvent extends SocketEvent {
 
   factory TradeVetoedEvent.fromJson(Map<String, dynamic> json) {
     return TradeVetoedEvent(
-      tradeId: json['tradeId'] as int,
-      leagueId: json['leagueId'] as int,
+      tradeId: readIntEither(json, 'trade_id', 'tradeId')!,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
     );
   }
 }
@@ -534,10 +535,10 @@ final class TradeVoteCastEvent extends SocketEvent {
 
   factory TradeVoteCastEvent.fromJson(Map<String, dynamic> json) {
     return TradeVoteCastEvent(
-      tradeId: json['tradeId'] as int,
-      leagueId: json['leagueId'] as int,
-      vetoCount: json['vetoCount'] as int? ?? 0,
-      approveCount: json['approveCount'] as int? ?? 0,
+      tradeId: readIntEither(json, 'trade_id', 'tradeId')!,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
+      vetoCount: readIntEither(json, 'veto_count', 'vetoCount') ?? 0,
+      approveCount: readIntEither(json, 'approve_count', 'approveCount') ?? 0,
     );
   }
 }
@@ -564,11 +565,11 @@ final class WaiverClaimSubmittedEvent extends SocketEvent {
 
   factory WaiverClaimSubmittedEvent.fromJson(Map<String, dynamic> json) {
     return WaiverClaimSubmittedEvent(
-      claimId: json['claimId'] as int,
-      leagueId: json['leagueId'] as int,
-      rosterId: json['rosterId'] as int,
-      playerId: json['playerId'] as int,
-      dropPlayerId: json['dropPlayerId'] as int?,
+      claimId: readIntEither(json, 'claim_id', 'claimId')!,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
+      rosterId: readIntEither(json, 'roster_id', 'rosterId')!,
+      playerId: readIntEither(json, 'player_id', 'playerId')!,
+      dropPlayerId: readIntEither(json, 'drop_player_id', 'dropPlayerId'),
     );
   }
 }
@@ -585,8 +586,8 @@ final class WaiverClaimCancelledEvent extends SocketEvent {
 
   factory WaiverClaimCancelledEvent.fromJson(Map<String, dynamic> json) {
     return WaiverClaimCancelledEvent(
-      claimId: json['claimId'] as int,
-      leagueId: json['leagueId'] as int,
+      claimId: readIntEither(json, 'claim_id', 'claimId')!,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
     );
   }
 }
@@ -607,10 +608,10 @@ final class WaiverProcessedEvent extends SocketEvent {
 
   factory WaiverProcessedEvent.fromJson(Map<String, dynamic> json) {
     return WaiverProcessedEvent(
-      leagueId: json['leagueId'] as int,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
       week: json['week'] as int,
-      claimsProcessed: json['claimsProcessed'] as int? ?? 0,
-      claimsSuccessful: json['claimsSuccessful'] as int? ?? 0,
+      claimsProcessed: readIntEither(json, 'claims_processed', 'claimsProcessed') ?? 0,
+      claimsSuccessful: readIntEither(json, 'claims_successful', 'claimsSuccessful') ?? 0,
     );
   }
 }
@@ -631,10 +632,10 @@ final class WaiverClaimSuccessfulEvent extends SocketEvent {
 
   factory WaiverClaimSuccessfulEvent.fromJson(Map<String, dynamic> json) {
     return WaiverClaimSuccessfulEvent(
-      claimId: json['claimId'] as int,
-      leagueId: json['leagueId'] as int,
-      rosterId: json['rosterId'] as int,
-      playerId: json['playerId'] as int,
+      claimId: readIntEither(json, 'claim_id', 'claimId')!,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
+      rosterId: readIntEither(json, 'roster_id', 'rosterId')!,
+      playerId: readIntEither(json, 'player_id', 'playerId')!,
     );
   }
 }
@@ -653,8 +654,8 @@ final class WaiverClaimFailedEvent extends SocketEvent {
 
   factory WaiverClaimFailedEvent.fromJson(Map<String, dynamic> json) {
     return WaiverClaimFailedEvent(
-      claimId: json['claimId'] as int,
-      leagueId: json['leagueId'] as int,
+      claimId: readIntEither(json, 'claim_id', 'claimId')!,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
       reason: json['reason'] as String? ?? 'Unknown',
     );
   }
@@ -685,7 +686,7 @@ final class ChatMessageEvent extends SocketEvent {
   factory ChatMessageEvent.fromJson(Map<String, dynamic> json) {
     return ChatMessageEvent(
       messageId: json['id'] as int,
-      leagueId: json['leagueId'] as int,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
       senderId: json['senderId'] as String,
       senderName: json['senderName'] as String? ?? 'Unknown',
       content: json['content'] as String,
@@ -742,14 +743,15 @@ final class ScoresUpdatedEvent extends SocketEvent {
     final scores = json['scores'] as Map<String, dynamic>?;
     if (scores != null) {
       for (final entry in scores.entries) {
-        final key = int.tryParse(entry.key);
-        if (key != null) {
-          scoresMap[key] = (entry.value as num).toDouble();
+        final key = int.tryParse(entry.key.toString());
+        final val = entry.value;
+        if (key != null && val is num) {
+          scoresMap[key] = val.toDouble();
         }
       }
     }
     return ScoresUpdatedEvent(
-      leagueId: json['leagueId'] as int,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
       week: json['week'] as int,
       rosterScores: scoresMap,
     );
@@ -768,7 +770,7 @@ final class WeekFinalizedEvent extends SocketEvent {
 
   factory WeekFinalizedEvent.fromJson(Map<String, dynamic> json) {
     return WeekFinalizedEvent(
-      leagueId: json['leagueId'] as int,
+      leagueId: readIntEither(json, 'league_id', 'leagueId')!,
       week: json['week'] as int,
     );
   }

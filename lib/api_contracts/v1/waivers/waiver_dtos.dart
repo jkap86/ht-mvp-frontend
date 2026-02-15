@@ -1,4 +1,5 @@
 import '../common/enums.dart';
+import '../../../core/utils/date_sentinel.dart';
 
 class WaiverClaimDto {
   final int id;
@@ -71,8 +72,8 @@ class WaiverClaimDto {
       username: json['username'] as String? ?? '',
       processedAt: json['processed_at'] != null ? DateTime.tryParse(json['processed_at'].toString()) : null,
       failureReason: json['failure_reason'] as String?,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? epochUtc(),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? epochUtc(),
     );
   }
 
@@ -134,7 +135,7 @@ class WaiverPriorityDto {
       priority: json['priority'] as int? ?? 0,
       teamName: json['team_name'] as String? ?? '',
       username: json['username'] as String? ?? '',
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? epochUtc(),
     );
   }
 
@@ -185,7 +186,7 @@ class FaabBudgetDto {
       remainingBudget: json['remaining_budget'] as int? ?? 100,
       teamName: json['team_name'] as String? ?? '',
       username: json['username'] as String? ?? '',
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? epochUtc(),
     );
   }
 

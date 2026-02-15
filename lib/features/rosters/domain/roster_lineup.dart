@@ -2,6 +2,8 @@ export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show LineupSlo
 
 import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
+import '../../../core/utils/date_sentinel.dart';
+
 extension LineupSlotUI on LineupSlot {
   String get displayName => switch (this) {
     LineupSlot.qb => 'Quarterback',
@@ -352,8 +354,8 @@ class RosterLineup {
       lineup: LineupSlots.fromJson((json['lineup'] as Map<String, dynamic>?) ?? {}),
       totalPoints: (json['total_points'] as num?)?.toDouble(),
       isLocked: json['is_locked'] as bool? ?? false,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? epochUtc(),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? epochUtc(),
     );
   }
 

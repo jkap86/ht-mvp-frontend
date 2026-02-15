@@ -293,9 +293,8 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
           final newMinIncrement = int.tryParse(_minIncrementController.text) ?? (settings?.minIncrement ?? 1);
           final newMaxPerTeam = int.tryParse(_maxActivePerTeamController.text) ?? (settings?.maxActiveNominationsPerTeam ?? 2);
           final newMaxGlobal = int.tryParse(_maxActiveGlobalController.text) ?? 25;
-          final newDailyLimit = _dailyNominationLimitController.text.isEmpty
-              ? null
-              : int.tryParse(_dailyNominationLimitController.text) ?? 0;
+          final dailyLimitTxt = _dailyNominationLimitController.text.trim();
+          final newDailyLimit = dailyLimitTxt.isEmpty ? null : int.tryParse(dailyLimitTxt);
 
           // Check for changes
           final hasTimingChanges =

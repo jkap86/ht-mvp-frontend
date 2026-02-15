@@ -1,4 +1,5 @@
 import '../common/enums.dart';
+import '../../../core/utils/date_sentinel.dart';
 
 class RosterPlayerDto {
   final int id;
@@ -37,7 +38,7 @@ class RosterPlayerDto {
       rosterId: json['roster_id'] as int? ?? 0,
       playerId: json['player_id'] as int? ?? 0,
       acquiredType: AcquiredType.fromString(json['acquired_type'] as String?),
-      acquiredAt: DateTime.tryParse(json['acquired_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      acquiredAt: DateTime.tryParse(json['acquired_at']?.toString() ?? '') ?? epochUtc(),
       fullName: json['full_name'] as String?,
       position: json['position'] as String?,
       team: json['team'] as String?,
@@ -119,8 +120,8 @@ class RosterLineupDto {
       lineup: lineup,
       totalPoints: (json['total_points'] as num?)?.toDouble(),
       isLocked: json['is_locked'] as bool? ?? false,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? epochUtc(),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? epochUtc(),
     );
   }
 

@@ -1,3 +1,5 @@
+import '../../../core/utils/date_sentinel.dart';
+
 class AuctionLotDto {
   final int id;
   final int draftId;
@@ -240,7 +242,7 @@ class BidHistoryEntryDto {
       username: json['username'] as String?,
       bidAmount: json['bid_amount'] as int? ?? json['bidAmount'] as int? ?? 0,
       isProxy: json['is_proxy'] as bool? ?? json['isProxy'] as bool? ?? false,
-      createdAt: DateTime.tryParse(json['created_at'] as String? ?? json['createdAt'] as String? ?? '') ?? DateTime.utc(1970),
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? json['createdAt'] as String? ?? '') ?? epochUtc(),
     );
   }
 

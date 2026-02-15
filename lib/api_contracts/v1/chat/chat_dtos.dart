@@ -1,4 +1,5 @@
 import '../common/enums.dart';
+import '../../../core/utils/date_sentinel.dart';
 
 class ChatMessageDto {
   final int id;
@@ -33,7 +34,7 @@ class ChatMessageDto {
       messageType: MessageType.fromString(json['message_type'] as String? ?? json['messageType'] as String?),
       metadata: json['metadata'] as Map<String, dynamic>?,
       reactions: (json['reactions'] as List<dynamic>?)?.map((r) => ReactionDto.fromJson(r as Map<String, dynamic>)).toList() ?? [],
-      createdAt: DateTime.tryParse(json['created_at'] as String? ?? json['createdAt'] as String? ?? '') ?? DateTime.utc(1970),
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? json['createdAt'] as String? ?? '') ?? epochUtc(),
     );
   }
 
@@ -76,7 +77,7 @@ class ConversationDto {
       otherUsername: json['other_username'] as String? ?? json['otherUsername'] as String? ?? 'Unknown',
       lastMessage: json['last_message'] != null ? DirectMessageDto.fromJson(json['last_message'] as Map<String, dynamic>) : null,
       unreadCount: json['unread_count'] as int? ?? json['unreadCount'] as int? ?? 0,
-      updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? json['updatedAt'] as String? ?? '') ?? DateTime.utc(1970),
+      updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? json['updatedAt'] as String? ?? '') ?? epochUtc(),
     );
   }
 
@@ -119,7 +120,7 @@ class DirectMessageDto {
       senderUsername: json['sender_username'] as String? ?? json['senderUsername'] as String? ?? '',
       message: json['message'] as String? ?? '',
       reactions: (json['reactions'] as List<dynamic>?)?.map((r) => ReactionDto.fromJson(r as Map<String, dynamic>)).toList() ?? [],
-      createdAt: DateTime.tryParse(json['created_at'] as String? ?? json['createdAt'] as String? ?? '') ?? DateTime.utc(1970),
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? json['createdAt'] as String? ?? '') ?? epochUtc(),
     );
   }
 

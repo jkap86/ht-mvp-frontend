@@ -1,3 +1,5 @@
+import '../../../core/utils/date_sentinel.dart';
+
 class PlayerDto {
   final int id;
   final String? sleeperId;
@@ -109,7 +111,7 @@ class PlayerNewsDto {
       playerId: json['player_id'] as int? ?? 0,
       title: json['title'] as String? ?? '',
       body: json['body'] as String?,
-      publishedAt: DateTime.tryParse(json['published_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      publishedAt: DateTime.tryParse(json['published_at']?.toString() ?? '') ?? epochUtc(),
     );
   }
 }

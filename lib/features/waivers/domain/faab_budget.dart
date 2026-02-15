@@ -1,3 +1,5 @@
+import '../../../core/utils/date_sentinel.dart';
+
 /// FAAB budget model
 class FaabBudget {
   final int id;
@@ -33,7 +35,7 @@ class FaabBudget {
       teamName: json['team_name'] as String? ?? '',
       username: json['username'] as String? ?? '',
       updatedAt:
-          DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
+          DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? epochUtc(),
     );
   }
 

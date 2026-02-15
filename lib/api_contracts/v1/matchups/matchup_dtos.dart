@@ -1,3 +1,5 @@
+import '../../../core/utils/date_sentinel.dart';
+
 class MatchupDto {
   final int id;
   final int leagueId;
@@ -49,7 +51,7 @@ class MatchupDto {
       roster2Points: (json['roster2_points'] as num?)?.toDouble(),
       isPlayoff: json['is_playoff'] as bool? ?? false,
       isFinal: json['is_final'] as bool? ?? false,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? epochUtc(),
       roster1TeamName: json['roster1_team_name'] as String?,
       roster2TeamName: json['roster2_team_name'] as String?,
       roster1PointsActual: (json['roster1_points_actual'] as num?)?.toDouble(),

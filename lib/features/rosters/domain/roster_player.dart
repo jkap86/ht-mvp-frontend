@@ -2,6 +2,8 @@ export 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart' show AcquiredT
 
 import 'package:hypetrain_mvp/api_contracts/v1/common/enums.dart';
 
+import '../../../core/utils/date_sentinel.dart';
+
 extension AcquiredTypeUI on AcquiredType {
   String get displayName => switch (this) {
     AcquiredType.draft => 'Drafted',
@@ -51,7 +53,7 @@ class RosterPlayer {
       rosterId: json['roster_id'] as int? ?? 0,
       playerId: json['player_id'] as int? ?? 0,
       acquiredType: AcquiredType.fromString(json['acquired_type'] as String?),
-      acquiredAt: DateTime.tryParse(json['acquired_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      acquiredAt: DateTime.tryParse(json['acquired_at']?.toString() ?? '') ?? epochUtc(),
       fullName: json['full_name'] as String?,
       position: json['position'] as String?,
       team: json['team'] as String?,
@@ -103,7 +105,7 @@ class RosterTransaction {
       relatedTransactionId: json['related_transaction_id'] as int?,
       season: json['season'] as int? ?? 0,
       week: json['week'] as int? ?? 1,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? epochUtc(),
       playerName: json['player_name'] as String?,
       teamName: json['team_name'] as String?,
     );

@@ -1,3 +1,5 @@
+import '../../../core/utils/date_sentinel.dart';
+
 /// Weekly matchup between two teams
 class Matchup {
   final int id;
@@ -99,7 +101,7 @@ class Matchup {
       roster2Points: (json['roster2_points'] as num?)?.toDouble(),
       isPlayoff: json['is_playoff'] as bool? ?? false,
       isFinal: json['is_final'] as bool? ?? false,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? epochUtc(),
       roster1TeamName: json['roster1_team_name'] as String?,
       roster2TeamName: json['roster2_team_name'] as String?,
       // Live scores

@@ -1,3 +1,4 @@
+import '../../../core/utils/date_sentinel.dart';
 import 'waiver_claim_status.dart';
 
 /// Waiver claim model
@@ -76,9 +77,9 @@ class WaiverClaim {
           : null,
       failureReason: json['failure_reason'] as String?,
       createdAt:
-          DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
+          DateTime.tryParse(json['created_at']?.toString() ?? '') ?? epochUtc(),
       updatedAt:
-          DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
+          DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? epochUtc(),
     );
   }
 

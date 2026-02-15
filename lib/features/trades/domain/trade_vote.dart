@@ -1,3 +1,5 @@
+import '../../../core/utils/date_sentinel.dart';
+
 /// Trade vote model representing a league member's vote on a trade
 class TradeVote {
   final int id;
@@ -26,7 +28,7 @@ class TradeVote {
       vote: json['vote'] as String? ?? 'approve',
       username: json['username'] as String? ?? '',
       teamName: json['team_name'] as String? ?? '',
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? epochUtc(),
     );
   }
 

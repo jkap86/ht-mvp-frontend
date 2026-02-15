@@ -1,3 +1,5 @@
+import '../../../core/utils/date_sentinel.dart';
+
 /// Represents a pending league invitation
 class LeagueInvitation {
   final int id;
@@ -38,11 +40,11 @@ class LeagueInvitation {
       totalRosters: json['total_rosters'] as int? ?? 12,
       message: json['message'] as String?,
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.utc(1970)
-          : DateTime.utc(1970),
+          ? DateTime.tryParse(json['created_at'].toString()) ?? epochUtc()
+          : epochUtc(),
       expiresAt: json['expires_at'] != null
-          ? DateTime.tryParse(json['expires_at'].toString()) ?? DateTime.utc(1970)
-          : DateTime.utc(1970),
+          ? DateTime.tryParse(json['expires_at'].toString()) ?? epochUtc()
+          : epochUtc(),
     );
   }
 
