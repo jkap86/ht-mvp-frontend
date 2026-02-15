@@ -91,7 +91,7 @@ class Matchup {
     return Matchup(
       id: json['id'] as int? ?? 0,
       leagueId: json['league_id'] as int? ?? 0,
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       week: json['week'] as int? ?? 1,
       roster1Id: json['roster1_id'] as int? ?? 0,
       roster2Id: json['roster2_id'] as int? ?? 0,
@@ -99,7 +99,7 @@ class Matchup {
       roster2Points: (json['roster2_points'] as num?)?.toDouble(),
       isPlayoff: json['is_playoff'] as bool? ?? false,
       isFinal: json['is_final'] as bool? ?? false,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
       roster1TeamName: json['roster1_team_name'] as String?,
       roster2TeamName: json['roster2_team_name'] as String?,
       // Live scores

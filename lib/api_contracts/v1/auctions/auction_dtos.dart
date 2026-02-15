@@ -240,7 +240,7 @@ class BidHistoryEntryDto {
       username: json['username'] as String?,
       bidAmount: json['bid_amount'] as int? ?? json['bidAmount'] as int? ?? 0,
       isProxy: json['is_proxy'] as bool? ?? json['isProxy'] as bool? ?? false,
-      createdAt: DateTime.tryParse(json['created_at'] as String? ?? json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? json['createdAt'] as String? ?? '') ?? DateTime.utc(1970),
     );
   }
 

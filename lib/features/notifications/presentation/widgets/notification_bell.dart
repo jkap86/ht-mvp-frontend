@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/notification_model.dart';
 import '../providers/notifications_provider.dart';
 
 /// AppBar icon button with badge showing unread notification count
@@ -133,14 +134,14 @@ class NotificationBellPopup extends ConsumerWidget {
 }
 
 class _NotificationPopupItem extends StatelessWidget {
-  final dynamic notification;
+  final AppNotification notification;
 
   const _NotificationPopupItem({required this.notification});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isUnread = !(notification.isRead as bool);
+    final isUnread = !notification.isRead;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,7 +164,7 @@ class _NotificationPopupItem extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                notification.title as String,
+                notification.title,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
                     ),
@@ -171,7 +172,7 @@ class _NotificationPopupItem extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                notification.body as String,
+                notification.body,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),

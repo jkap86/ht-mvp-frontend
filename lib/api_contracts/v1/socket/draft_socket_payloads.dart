@@ -39,7 +39,7 @@ class DraftPickPayload {
       rosterId: json['roster_id'] as int? ?? json['rosterId'] as int? ?? 0,
       playerId: json['player_id'] as int? ?? json['playerId'] as int? ?? 0,
       isAutoPick: json['is_auto_pick'] as bool? ?? json['isAutoPick'] as bool? ?? false,
-      pickedAt: DateTime.tryParse(json['picked_at']?.toString() ?? json['pickedAt']?.toString() ?? '') ?? DateTime.now(),
+      pickedAt: DateTime.tryParse(json['picked_at']?.toString() ?? json['pickedAt']?.toString() ?? '') ?? DateTime.utc(1970),
       playerName: json['player_name'] as String? ?? json['playerName'] as String?,
       playerPosition: json['player_position'] as String? ?? json['playerPosition'] as String?,
       playerTeam: json['player_team'] as String? ?? json['playerTeam'] as String?,
@@ -179,8 +179,8 @@ class OvernightPauseStartedPayload {
 
   factory OvernightPauseStartedPayload.fromJson(Map<String, dynamic> json) {
     return OvernightPauseStartedPayload(
-      startTime: DateTime.tryParse(json['startTime']?.toString() ?? '') ?? DateTime.now(),
-      resumeTime: DateTime.tryParse(json['resumeTime']?.toString() ?? '') ?? DateTime.now(),
+      startTime: DateTime.tryParse(json['startTime']?.toString() ?? '') ?? DateTime.utc(1970),
+      resumeTime: DateTime.tryParse(json['resumeTime']?.toString() ?? '') ?? DateTime.utc(1970),
       reason: json['reason'] as String? ?? '',
     );
   }
@@ -193,7 +193,7 @@ class OvernightPauseEndedPayload {
 
   factory OvernightPauseEndedPayload.fromJson(Map<String, dynamic> json) {
     return OvernightPauseEndedPayload(
-      resumedAt: DateTime.tryParse(json['resumedAt']?.toString() ?? '') ?? DateTime.now(),
+      resumedAt: DateTime.tryParse(json['resumedAt']?.toString() ?? '') ?? DateTime.utc(1970),
     );
   }
 }
@@ -269,7 +269,7 @@ class DerbyTurnChangedPayload {
   factory DerbyTurnChangedPayload.fromJson(Map<String, dynamic> json) {
     return DerbyTurnChangedPayload(
       currentPickerRosterId: json['currentPickerRosterId'] as int? ?? 0,
-      deadline: DateTime.tryParse(json['deadline']?.toString() ?? '') ?? DateTime.now(),
+      deadline: DateTime.tryParse(json['deadline']?.toString() ?? '') ?? DateTime.utc(1970),
       reason: json['reason'] as String? ?? '',
     );
   }

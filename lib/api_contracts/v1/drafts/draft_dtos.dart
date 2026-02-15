@@ -224,7 +224,7 @@ class DraftPickAssetDto {
       id: json['id'] as int? ?? 0,
       leagueId: json['league_id'] as int? ?? json['leagueId'] as int? ?? 0,
       draftId: json['draft_id'] as int? ?? json['draftId'] as int? ?? 0,
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       round: json['round'] as int? ?? 1,
       originalRosterId: json['original_roster_id'] as int? ?? json['originalRosterId'] as int? ?? 0,
       currentOwnerRosterId: json['current_owner_roster_id'] as int? ?? json['currentOwnerRosterId'] as int? ?? 0,

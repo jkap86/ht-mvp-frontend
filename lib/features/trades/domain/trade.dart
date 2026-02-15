@@ -119,7 +119,7 @@ class Trade {
           ? DateTime.tryParse(json['review_ends_at'].toString())
           : null,
       message: json['message'] as String?,
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       week: json['week'] as int? ?? 1,
       createdAt: createdAt,
       updatedAt: updatedAt,

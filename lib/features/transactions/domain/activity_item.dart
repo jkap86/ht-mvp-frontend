@@ -36,7 +36,7 @@ class ActivityItem {
     return ActivityItem(
       id: json['id'] as String? ?? '',
       type: ActivityType.fromString(json['type'] as String?),
-      timestamp: DateTime.tryParse(json['timestamp']?.toString() ?? '') ?? DateTime.now(),
+      timestamp: DateTime.tryParse(json['timestamp']?.toString() ?? '') ?? DateTime.utc(1970),
       leagueId: json['leagueId'] as int? ?? json['league_id'] as int? ?? 0,
       week: json['week'] as int?,
       season: json['season']?.toString(),

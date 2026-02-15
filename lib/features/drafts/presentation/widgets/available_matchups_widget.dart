@@ -245,7 +245,7 @@ class _AvailableMatchupsWidgetState extends State<AvailableMatchupsWidget> {
                     label: Text(
                       _selectedOpponent == null
                           ? 'Opponent: All'
-                          : 'Opponent: ${_availableOpponents.firstWhere((o) => o.rosterId == _selectedOpponent).teamName}',
+                          : 'Opponent: ${_availableOpponents.where((o) => o.rosterId == _selectedOpponent).firstOrNull?.teamName ?? 'Unknown'}',
                     ),
                     deleteIcon: _selectedOpponent != null ? const Icon(Icons.close, size: 16) : null,
                     onDeleted: _selectedOpponent != null

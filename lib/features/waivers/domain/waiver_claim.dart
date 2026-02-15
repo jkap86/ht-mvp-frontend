@@ -67,7 +67,7 @@ class WaiverClaim {
       priorityAtClaim: json['priority_at_claim'] as int?,
       claimOrder: json['claim_order'] as int? ?? 1,
       status: WaiverClaimStatus.fromString(json['status'] as String?),
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       week: json['week'] as int? ?? 1,
       teamName: json['team_name'] as String? ?? '',
       username: json['username'] as String? ?? '',
@@ -76,9 +76,9 @@ class WaiverClaim {
           : null,
       failureReason: json['failure_reason'] as String?,
       createdAt:
-          DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+          DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
       updatedAt:
-          DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
+          DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
     );
   }
 

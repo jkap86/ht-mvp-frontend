@@ -100,7 +100,7 @@ class League {
       id: json['id'] as int? ?? 0,
       name: json['name'] as String? ?? '',
       status: json['status'] as String? ?? 'draft',
-      season: int.tryParse(json['season']?.toString() ?? '') ?? DateTime.now().year,
+      season: int.tryParse(json['season']?.toString() ?? '') ?? 0,
       totalRosters: json['total_rosters'] as int? ?? 12,
       commissionerRosterId: json['commissioner_roster_id'] as int?,
       userRosterId: json['user_roster_id'] as int?,

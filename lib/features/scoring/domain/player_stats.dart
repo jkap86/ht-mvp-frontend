@@ -62,7 +62,7 @@ class PlayerStats {
     return PlayerStats(
       id: json['id'] as int? ?? 0,
       playerId: json['player_id'] as int? ?? 0,
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       week: json['week'] as int? ?? 1,
       passYards: json['pass_yards'] as int? ?? 0,
       passTd: json['pass_td'] as int? ?? 0,

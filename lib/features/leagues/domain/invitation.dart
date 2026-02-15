@@ -38,11 +38,11 @@ class LeagueInvitation {
       totalRosters: json['total_rosters'] as int? ?? 12,
       message: json['message'] as String?,
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
-          : DateTime.now(),
+          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.utc(1970)
+          : DateTime.utc(1970),
       expiresAt: json['expires_at'] != null
-          ? DateTime.tryParse(json['expires_at'].toString()) ?? DateTime.now().add(const Duration(days: 7))
-          : DateTime.now().add(const Duration(days: 7)),
+          ? DateTime.tryParse(json['expires_at'].toString()) ?? DateTime.utc(1970)
+          : DateTime.utc(1970),
     );
   }
 

@@ -64,14 +64,14 @@ class TradeDto {
       recipientRosterId: json['recipient_roster_id'] as int? ?? 0,
       status: TradeStatus.fromString(json['status'] as String?),
       parentTradeId: json['parent_trade_id'] as int?,
-      expiresAt: DateTime.tryParse(json['expires_at']?.toString() ?? '') ?? DateTime.now(),
+      expiresAt: DateTime.tryParse(json['expires_at']?.toString() ?? '') ?? DateTime.utc(1970),
       reviewStartsAt: json['review_starts_at'] != null ? DateTime.tryParse(json['review_starts_at'].toString()) : null,
       reviewEndsAt: json['review_ends_at'] != null ? DateTime.tryParse(json['review_ends_at'].toString()) : null,
       message: json['message'] as String?,
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       week: json['week'] as int? ?? 1,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
       completedAt: json['completed_at'] != null ? DateTime.tryParse(json['completed_at'].toString()) : null,
       items: itemsList.map((e) => TradeItemDto.fromJson(e)).toList(),
       proposerTeamName: json['proposer_team_name'] as String? ?? '',
@@ -230,7 +230,7 @@ class TradeVoteDto {
       vote: json['vote'] as String? ?? 'approve',
       username: json['username'] as String? ?? '',
       teamName: json['team_name'] as String? ?? '',
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
     );
   }
 

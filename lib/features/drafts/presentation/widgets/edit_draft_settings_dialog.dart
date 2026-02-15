@@ -271,14 +271,14 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
         if (_draftType != widget.draft.draftType.name) {
           draftType = _draftType;
         }
-        final newRounds = int.parse(_roundsController.text);
+        final newRounds = int.tryParse(_roundsController.text) ?? widget.draft.rounds;
         if (newRounds != widget.draft.rounds) {
           rounds = newRounds;
         }
       }
 
       if (_canEditTimers) {
-        final newPickTime = int.parse(_pickTimeController.text);
+        final newPickTime = int.tryParse(_pickTimeController.text) ?? widget.draft.pickTimeSeconds;
         if (newPickTime != widget.draft.pickTimeSeconds) {
           pickTimeSeconds = newPickTime;
         }
@@ -286,16 +286,16 @@ class _EditDraftSettingsDialogState extends State<EditDraftSettingsDialog> {
         if (_isAuction) {
           final settings = widget.draft.settings;
 
-          final newBidWindow = int.parse(_bidWindowController.text);
+          final newBidWindow = int.tryParse(_bidWindowController.text) ?? (settings?.bidWindowSeconds ?? 43200);
           final newNominationSeconds =
-              int.parse(_nominationSecondsController.text);
-          final newResetOnBid = int.parse(_resetOnBidSecondsController.text);
-          final newMinIncrement = int.parse(_minIncrementController.text);
-          final newMaxPerTeam = int.parse(_maxActivePerTeamController.text);
-          final newMaxGlobal = int.parse(_maxActiveGlobalController.text);
+              int.tryParse(_nominationSecondsController.text) ?? (settings?.nominationSeconds ?? 45);
+          final newResetOnBid = int.tryParse(_resetOnBidSecondsController.text) ?? (settings?.resetOnBidSeconds ?? 10);
+          final newMinIncrement = int.tryParse(_minIncrementController.text) ?? (settings?.minIncrement ?? 1);
+          final newMaxPerTeam = int.tryParse(_maxActivePerTeamController.text) ?? (settings?.maxActiveNominationsPerTeam ?? 2);
+          final newMaxGlobal = int.tryParse(_maxActiveGlobalController.text) ?? 25;
           final newDailyLimit = _dailyNominationLimitController.text.isEmpty
               ? null
-              : int.parse(_dailyNominationLimitController.text);
+              : int.tryParse(_dailyNominationLimitController.text) ?? 0;
 
           // Check for changes
           final hasTimingChanges =

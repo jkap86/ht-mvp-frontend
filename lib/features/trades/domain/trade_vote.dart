@@ -26,7 +26,7 @@ class TradeVote {
       vote: json['vote'] as String? ?? 'approve',
       username: json['username'] as String? ?? '',
       teamName: json['team_name'] as String? ?? '',
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
     );
   }
 

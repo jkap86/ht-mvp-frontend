@@ -347,13 +347,13 @@ class RosterLineup {
     return RosterLineup(
       id: json['id'] as int? ?? 0,
       rosterId: json['roster_id'] as int? ?? 0,
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       week: json['week'] as int? ?? 1,
       lineup: LineupSlots.fromJson((json['lineup'] as Map<String, dynamic>?) ?? {}),
       totalPoints: (json['total_points'] as num?)?.toDouble(),
       isLocked: json['is_locked'] as bool? ?? false,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
     );
   }
 

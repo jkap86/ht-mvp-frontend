@@ -27,13 +27,13 @@ class FaabBudget {
       id: json['id'] as int? ?? 0,
       leagueId: json['league_id'] as int? ?? 0,
       rosterId: json['roster_id'] as int? ?? 0,
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       initialBudget: json['initial_budget'] as int? ?? 100,
       remainingBudget: json['remaining_budget'] as int? ?? 100,
       teamName: json['team_name'] as String? ?? '',
       username: json['username'] as String? ?? '',
       updatedAt:
-          DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
+          DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
     );
   }
 

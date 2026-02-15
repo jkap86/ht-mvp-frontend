@@ -56,7 +56,7 @@ class AppNotification {
       leagueId: json['league_id'] as int?,
       leagueName: json['league_name'] as String?,
       data: json['data'] as Map<String, dynamic>?,
-      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.utc(1970),
       isRead: json['is_read'] as bool? ?? false,
     );
   }

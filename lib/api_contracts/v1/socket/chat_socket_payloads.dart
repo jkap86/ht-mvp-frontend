@@ -28,7 +28,7 @@ class ChatMessagePayload {
       message: json['message'] as String? ?? '',
       messageType: json['message_type'] as String? ?? json['messageType'] as String? ?? 'chat',
       metadata: json['metadata'] as Map<String, dynamic>?,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? json['createdAt']?.toString() ?? '') ?? DateTime.utc(1970),
     );
   }
 }

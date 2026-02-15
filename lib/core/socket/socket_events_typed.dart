@@ -742,7 +742,10 @@ final class ScoresUpdatedEvent extends SocketEvent {
     final scores = json['scores'] as Map<String, dynamic>?;
     if (scores != null) {
       for (final entry in scores.entries) {
-        scoresMap[int.parse(entry.key)] = (entry.value as num).toDouble();
+        final key = int.tryParse(entry.key);
+        if (key != null) {
+          scoresMap[key] = (entry.value as num).toDouble();
+        }
       }
     }
     return ScoresUpdatedEvent(

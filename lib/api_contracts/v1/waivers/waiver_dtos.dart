@@ -65,14 +65,14 @@ class WaiverClaimDto {
       priorityAtClaim: json['priority_at_claim'] as int?,
       claimOrder: json['claim_order'] as int? ?? 1,
       status: WaiverClaimStatus.fromString(json['status'] as String?),
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       week: json['week'] as int? ?? 1,
       teamName: json['team_name'] as String? ?? '',
       username: json['username'] as String? ?? '',
       processedAt: json['processed_at'] != null ? DateTime.tryParse(json['processed_at'].toString()) : null,
       failureReason: json['failure_reason'] as String?,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
     );
   }
 
@@ -130,11 +130,11 @@ class WaiverPriorityDto {
       id: json['id'] as int? ?? 0,
       leagueId: json['league_id'] as int? ?? 0,
       rosterId: json['roster_id'] as int? ?? 0,
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       priority: json['priority'] as int? ?? 0,
       teamName: json['team_name'] as String? ?? '',
       username: json['username'] as String? ?? '',
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
     );
   }
 
@@ -180,12 +180,12 @@ class FaabBudgetDto {
       id: json['id'] as int? ?? 0,
       leagueId: json['league_id'] as int? ?? 0,
       rosterId: json['roster_id'] as int? ?? 0,
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       initialBudget: json['initial_budget'] as int? ?? 100,
       remainingBudget: json['remaining_budget'] as int? ?? 100,
       teamName: json['team_name'] as String? ?? '',
       username: json['username'] as String? ?? '',
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
     );
   }
 

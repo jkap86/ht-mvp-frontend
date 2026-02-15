@@ -37,7 +37,7 @@ class RosterPlayerDto {
       rosterId: json['roster_id'] as int? ?? 0,
       playerId: json['player_id'] as int? ?? 0,
       acquiredType: AcquiredType.fromString(json['acquired_type'] as String?),
-      acquiredAt: DateTime.tryParse(json['acquired_at']?.toString() ?? '') ?? DateTime.now(),
+      acquiredAt: DateTime.tryParse(json['acquired_at']?.toString() ?? '') ?? DateTime.utc(1970),
       fullName: json['full_name'] as String?,
       position: json['position'] as String?,
       team: json['team'] as String?,
@@ -114,13 +114,13 @@ class RosterLineupDto {
     return RosterLineupDto(
       id: json['id'] as int? ?? 0,
       rosterId: json['roster_id'] as int? ?? 0,
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       week: json['week'] as int? ?? 1,
       lineup: lineup,
       totalPoints: (json['total_points'] as num?)?.toDouble(),
       isLocked: json['is_locked'] as bool? ?? false,
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.utc(1970),
+      updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.utc(1970),
     );
   }
 

@@ -109,7 +109,7 @@ class PlayerNewsDto {
       playerId: json['player_id'] as int? ?? 0,
       title: json['title'] as String? ?? '',
       body: json['body'] as String?,
-      publishedAt: DateTime.tryParse(json['published_at']?.toString() ?? '') ?? DateTime.now(),
+      publishedAt: DateTime.tryParse(json['published_at']?.toString() ?? '') ?? DateTime.utc(1970),
     );
   }
 }
@@ -162,7 +162,7 @@ class NflStateDto {
 
   factory NflStateDto.fromJson(Map<String, dynamic> json) {
     return NflStateDto(
-      season: json['season'] as int? ?? DateTime.now().year,
+      season: json['season'] as int? ?? 0,
       week: json['week'] as int? ?? 1,
       seasonType: json['season_type'] as String? ?? 'regular',
       isOffseason: json['is_offseason'] as bool? ?? false,

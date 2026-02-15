@@ -26,7 +26,7 @@ class Conversation {
           ? DirectMessage.fromJson(json['last_message'] as Map<String, dynamic>)
           : null,
       unreadCount: json['unread_count'] as int? ?? json['unreadCount'] as int? ?? 0,
-      updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? json['updatedAt'] as String? ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? json['updatedAt'] as String? ?? '') ?? DateTime.utc(1970),
     );
   }
 
