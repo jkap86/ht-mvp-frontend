@@ -184,7 +184,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
             icon: const Icon(Icons.arrow_back),
             onPressed: () => navigateBack(context),
           ),
-          title: const Text('My Team'),
+          title: const Text('Team'),
         ),
         body: const SkeletonLineup(),
       );
@@ -197,7 +197,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
             icon: const Icon(Icons.arrow_back),
             onPressed: () => navigateBack(context),
           ),
-          title: const Text('My Team'),
+          title: const Text('Team'),
         ),
         body: AppErrorView(
           message: state.error!,
@@ -482,12 +482,14 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
                   Semantics(
                     button: true,
                     label: 'Cancel swap selection',
-                    child: GestureDetector(
-                      onTap: () => setState(() {
+                    child: IconButton(
+                      icon: Icon(Icons.close, size: 18, color: colorScheme.onPrimaryContainer),
+                      onPressed: () => setState(() {
                         _selectedPlayerId = null;
                         _selectedSlot = null;
                       }),
-                      child: Icon(Icons.close, size: 18, color: colorScheme.onPrimaryContainer),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                     ),
                   ),
                 ],

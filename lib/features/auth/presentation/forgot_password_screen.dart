@@ -40,7 +40,7 @@ class ForgotPasswordScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Password reset is not yet available. Please contact support if you need help accessing your account.',
+                    'Password reset is coming soon. In the meantime, try signing in again or creating a new account.',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),

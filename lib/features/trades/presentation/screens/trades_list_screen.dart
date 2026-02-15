@@ -36,6 +36,16 @@ class _TradesListScreenState extends ConsumerState<TradesListScreen> {
           }
         },
       ));
+      // Sync userRosterId into trades provider when league data changes
+      _subscriptions.add(ref.listenManual(
+        leagueDetailProvider(widget.leagueId).select((s) => s.league?.userRosterId),
+        (prev, next) {
+          if (next != null && next != prev) {
+            ref.read(tradesProvider(widget.leagueId).notifier).setUserRosterId(next);
+          }
+        },
+        fireImmediately: true,
+      ));
     });
   }
 
@@ -49,13 +59,6 @@ class _TradesListScreenState extends ConsumerState<TradesListScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(tradesProvider(widget.leagueId));
-
-    // Pass user roster ID to enable "My Trades" filter
-    final leagueState = ref.watch(leagueDetailProvider(widget.leagueId));
-    final userRosterId = leagueState.league?.userRosterId;
-    if (userRosterId != null) {
-      ref.read(tradesProvider(widget.leagueId).notifier).setUserRosterId(userRosterId);
-    }
 
     return Scaffold(
       appBar: AppBar(

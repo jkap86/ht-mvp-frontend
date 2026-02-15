@@ -82,6 +82,18 @@ class _CommissionerScreenState extends ConsumerState<CommissionerScreen> {
           }
         },
       ));
+      // Sync trading_locked state from league settings into tools provider
+      _subscriptions.add(ref.listenManual(
+        commissionerProvider(widget.leagueId),
+        (prev, next) {
+          final tradingLocked = next.league?.leagueSettings['trading_locked'] == true;
+          final toolsState = ref.read(commissionerToolsProvider(widget.leagueId));
+          if (toolsState.tradingLocked != tradingLocked && !toolsState.isProcessing) {
+            ref.read(commissionerToolsProvider(widget.leagueId).notifier).setTradingLocked(tradingLocked);
+          }
+        },
+        fireImmediately: true,
+      ));
     });
   }
 
@@ -130,14 +142,6 @@ class _CommissionerScreenState extends ConsumerState<CommissionerScreen> {
   Widget _buildCommissionerContent() {
     final state = ref.watch(commissionerProvider(widget.leagueId));
     final toolsState = ref.watch(commissionerToolsProvider(widget.leagueId));
-
-    // Initialize trading locked state from league settings
-    final tradingLocked = state.league?.leagueSettings['trading_locked'] == true;
-    if (toolsState.tradingLocked != tradingLocked && !toolsState.isProcessing) {
-      Future.microtask(() {
-        ref.read(commissionerToolsProvider(widget.leagueId).notifier).setTradingLocked(tradingLocked);
-      });
-    }
 
     return Scaffold(
       appBar: AppBar(

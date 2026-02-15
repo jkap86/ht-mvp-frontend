@@ -33,6 +33,13 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
   Set<int> _requestingPickAssetIds = {};
   bool _isSubmitting = false;
   bool _notifyDm = true;
+
+  bool get _hasUnsavedChanges =>
+      _selectedRecipientRosterId != null ||
+      _offeringPlayerIds.isNotEmpty ||
+      _requestingPlayerIds.isNotEmpty ||
+      _offeringPickAssetIds.isNotEmpty ||
+      _requestingPickAssetIds.isNotEmpty;
   String _leagueChatMode = 'summary';
   bool _leagueChatModeInitialized = false;
 
@@ -60,7 +67,32 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
     final otherMembers =
         leagueState.members.where((m) => m.rosterId != myRosterId).toList();
 
-    return Scaffold(
+    return PopScope(
+      canPop: !_hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Discard Trade?'),
+            content: const Text('Your selections will be lost.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Keep Editing'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Discard'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Propose Trade'),
         actions: [
@@ -294,6 +326,7 @@ class _ProposeTradeScreenState extends ConsumerState<ProposeTradeScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 

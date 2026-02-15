@@ -90,6 +90,17 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
     return _getWaiverType(settings) != 'none';
   }
 
+  double _appBarBottomHeight(bool showTabs) {
+    double h = 0;
+    if (showTabs) h += 48; // SegmentedButton
+    if (_selectedTab == _PlayerTab.freeAgents) {
+      h += 56; // Search bar (TextField + padding)
+      h += 40; // PositionFilterChips
+      h += 8;  // SizedBox
+    }
+    return h;
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(freeAgentsProvider(_key));
@@ -110,7 +121,7 @@ class _FreeAgentsScreenState extends ConsumerState<FreeAgentsScreen> {
         ),
         title: Text(_selectedTab == _PlayerTab.freeAgents ? 'Free Agents' : 'My Claims'),
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(showTabs ? 150 : 110),
+          preferredSize: Size.fromHeight(_appBarBottomHeight(showTabs)),
           child: Column(
             children: [
               if (showTabs)

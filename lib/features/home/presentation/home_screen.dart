@@ -337,9 +337,28 @@ class _SettingsSheet extends ConsumerWidget {
                 'Logout',
                 style: TextStyle(color: colorScheme.error),
               ),
-              onTap: () {
-                Navigator.of(context).pop();
-                onLogout();
+              onTap: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Log Out?'),
+                    content: const Text('Are you sure you want to log out?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Log Out'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  Navigator.of(context).pop();
+                  onLogout();
+                }
               },
             ),
           ],

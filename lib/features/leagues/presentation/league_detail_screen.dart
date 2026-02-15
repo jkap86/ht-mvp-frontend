@@ -500,14 +500,19 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen> {
 
   DateTime? _getLineupLockTime(LeagueDetailState state) {
     // Default to Sunday 1pm ET for NFL games
-    // This would ideally come from league settings or game schedule
-    final now = DateTime.now();
-    // Find next Sunday at 1pm ET (approximate - would need proper timezone handling)
-    var lockTime = DateTime(now.year, now.month, now.day, 13, 0);
-    while (lockTime.weekday != DateTime.sunday || lockTime.isBefore(now)) {
-      lockTime = lockTime.add(const Duration(days: 1));
+    // Ideally lock times would come from the backend API
+    final now = DateTime.now().toUtc();
+    // Approximate ET offset: EDT (UTC-4) March–November, EST (UTC-5) otherwise
+    final month = now.month;
+    final isEDT = month >= 3 && month <= 11;
+    final etOffset = isEDT ? -4 : -5;
+
+    // 1 PM ET expressed in UTC
+    var lockTimeUtc = DateTime.utc(now.year, now.month, now.day, 13 - etOffset, 0);
+    while (lockTimeUtc.weekday != DateTime.sunday || lockTimeUtc.isBefore(now)) {
+      lockTimeUtc = lockTimeUtc.add(const Duration(days: 1));
     }
-    return lockTime;
+    return lockTimeUtc.toLocal();
   }
 
   bool _isLineupLockingSoon(LeagueDetailState state) {
