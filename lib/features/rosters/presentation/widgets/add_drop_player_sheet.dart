@@ -50,8 +50,6 @@ class _AddDropPlayerSheet extends StatefulWidget {
 }
 
 class _AddDropPlayerSheetState extends State<_AddDropPlayerSheet> {
-  bool _isProcessing = false;
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -129,13 +127,7 @@ class _AddDropPlayerSheetState extends State<_AddDropPlayerSheet> {
               ),
             ),
             const Divider(height: 1),
-            if (_isProcessing)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else
-              Expanded(
+            Expanded(
                 child: ListView.builder(
                   controller: scrollController,
                   itemCount: widget.rosterPlayers.length,
@@ -173,7 +165,6 @@ class _AddDropPlayerSheetState extends State<_AddDropPlayerSheet> {
                         color: colorScheme.error,
                       ),
                       onTap: () async {
-                        setState(() => _isProcessing = true);
                         Navigator.of(context).pop();
                         final success = await widget.onDropSelected(dropPlayer.playerId);
                         if (success) {

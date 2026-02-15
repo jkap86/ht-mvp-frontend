@@ -54,7 +54,9 @@ class _MatchupScreenState extends ConsumerState<MatchupScreen> {
 
   @override
   void dispose() {
-    for (final sub in _subscriptions) sub.close();
+    for (final sub in _subscriptions) {
+      sub.close();
+    }
     _subscriptions.clear();
     _refreshTimer?.cancel();
     super.dispose();

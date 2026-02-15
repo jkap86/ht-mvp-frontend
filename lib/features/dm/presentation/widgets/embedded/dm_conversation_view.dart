@@ -288,12 +288,12 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
           isLastInGroup: isLastInGroup,
         );
 
-        final toggleReaction = (String emoji) {
+        void toggleReaction(String emoji) {
           if (currentUserId != null) {
             ref.read(dmConversationProvider(widget.conversationId).notifier)
                 .toggleReaction(message.id, emoji, currentUserId);
           }
-        };
+        }
 
         final bubbleContent = GestureDetector(
           onLongPressStart: (details) async {

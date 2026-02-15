@@ -98,7 +98,7 @@ class ActivityItem {
   String get playerName {
     switch (type) {
       case ActivityType.trade:
-        return '${tradePlayerCount} player(s)';
+        return '$tradePlayerCount player(s)';
       case ActivityType.waiver:
         return waiverPlayerAdded?['name'] as String? ?? 'Unknown';
       case ActivityType.add:

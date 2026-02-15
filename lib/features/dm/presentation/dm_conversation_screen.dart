@@ -67,7 +67,9 @@ class _DmConversationScreenState extends ConsumerState<DmConversationScreen> {
 
   @override
   void dispose() {
-    for (final sub in _subscriptions) sub.close();
+    for (final sub in _subscriptions) {
+      sub.close();
+    }
     _subscriptions.clear();
     _scrollController.removeListener(_onScroll);
     _messageController.dispose();

@@ -184,10 +184,10 @@ class _ChatWidgetState extends ConsumerState<ChatWidget> {
         final isFirstInGroup = !_isSameGroup(prevMessage, message);
         final isLastInGroup = !_isSameGroup(message, nextMessage);
 
-        final onToggleReaction = (String emoji) {
+        void onToggleReaction(String emoji) {
           ref.read(chatProvider(widget.leagueId).notifier)
               .toggleReaction(message.id, emoji);
-        };
+        }
 
         final bubble = GestureDetector(
           onLongPressStart: (details) async {

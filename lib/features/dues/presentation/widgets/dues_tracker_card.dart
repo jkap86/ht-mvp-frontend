@@ -38,7 +38,9 @@ class _DuesTrackerCardState extends ConsumerState<DuesTrackerCard> {
 
   @override
   void dispose() {
-    for (final sub in _subscriptions) sub.close();
+    for (final sub in _subscriptions) {
+      sub.close();
+    }
     _subscriptions.clear();
     super.dispose();
   }
@@ -340,7 +342,7 @@ class _DuesTrackerCardState extends ConsumerState<DuesTrackerCard> {
         .read(duesProvider(widget.leagueId).notifier)
         .markPayment(rosterId, isPaid, idempotencyKey: key);
 
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     if (success) {
       final action = isPaid ? 'paid' : 'unpaid';

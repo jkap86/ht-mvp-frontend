@@ -99,7 +99,9 @@ class _CommissionerScreenState extends ConsumerState<CommissionerScreen> {
 
   @override
   void dispose() {
-    for (final sub in _subscriptions) sub.close();
+    for (final sub in _subscriptions) {
+      sub.close();
+    }
     _subscriptions.clear();
     super.dispose();
   }
@@ -221,7 +223,7 @@ class _CommissionerScreenState extends ConsumerState<CommissionerScreen> {
             pickTimeSeconds: pickTimeSeconds,
             randomizeDraftOrder: randomizeDraftOrder,
           );
-          if (draftId != null && context.mounted) {
+          if (draftId != null && mounted) {
             context.push('/leagues/${widget.leagueId}/drafts/$draftId');
           }
           return draftId;

@@ -196,7 +196,11 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
       state = state.copyWith(members: members);
     } on ForbiddenException {
       state = state.copyWith(isForbidden: true, isLoading: false, members: [], drafts: [], standings: []);
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        debugPrint('LeagueDetail($leagueId): Failed to refresh members: $e');
+      }
+    }
   }
 
   Future<void> _refreshDrafts() async {
@@ -205,7 +209,11 @@ class LeagueDetailNotifier extends StateNotifier<LeagueDetailState> {
       state = state.copyWith(drafts: drafts);
     } on ForbiddenException {
       state = state.copyWith(isForbidden: true, isLoading: false, members: [], drafts: [], standings: []);
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        debugPrint('LeagueDetail($leagueId): Failed to refresh drafts: $e');
+      }
+    }
   }
 
   @override

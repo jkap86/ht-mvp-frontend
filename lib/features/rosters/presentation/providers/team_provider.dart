@@ -339,8 +339,10 @@ class TeamNotifier extends StateNotifier<TeamState> {
       RosterLineup? lineup;
       try {
         lineup = await _rosterRepo.getLineup(leagueId, rosterId, currentWeek);
-      } catch (_) {
+      } on NotFoundException {
         // Lineup doesn't exist yet - that's OK
+      } catch (e) {
+        debugPrint('TeamProvider($leagueId/$rosterId): Failed to load lineup: $e');
       }
       if (!mounted) return;
 

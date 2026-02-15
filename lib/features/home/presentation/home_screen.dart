@@ -355,7 +355,7 @@ class _SettingsSheet extends ConsumerWidget {
                     ],
                   ),
                 );
-                if (confirmed == true) {
+                if (confirmed == true && context.mounted) {
                   Navigator.of(context).pop();
                   onLogout();
                 }

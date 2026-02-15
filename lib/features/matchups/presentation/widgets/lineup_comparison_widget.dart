@@ -376,7 +376,7 @@ class _PointsDisplay extends StatelessWidget {
 class _PositionBadge extends StatelessWidget {
   final String slot;
 
-  const _PositionBadge({super.key, required this.slot});
+  const _PositionBadge({required this.slot});
 
   @override
   Widget build(BuildContext context) {

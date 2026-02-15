@@ -558,8 +558,9 @@ class WaiversNotifier extends StateNotifier<WaiversState>
   Future<bool> moveClaimDown(int claimId) async {
     final pending = state.sortedPendingClaims;
     final index = pending.indexWhere((c) => c.id == claimId);
-    if (index < 0 || index >= pending.length - 1)
+    if (index < 0 || index >= pending.length - 1) {
       return false; // At bottom or not found
+    }
 
     final ids = pending.map((c) => c.id).toList();
     // Swap with next

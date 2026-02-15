@@ -300,8 +300,9 @@ class DraftSocketHandler {
         _callbacks
             .onDerbyPhaseTransitionReceived(Map<String, dynamic>.from(data));
       } catch (e) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('Failed to parse derby phase transition: $e');
+        }
       }
     }));
 

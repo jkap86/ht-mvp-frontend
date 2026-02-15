@@ -145,7 +145,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen>
 
   @override
   void dispose() {
-    for (final sub in _subscriptions) sub.close();
+    for (final sub in _subscriptions) {
+      sub.close();
+    }
     _subscriptions.clear();
     _onboardingDismissTimer?.cancel();
     _tabController?.removeListener(_onTabChanged);

@@ -493,14 +493,16 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
 
     if (needsFullRefresh) {
       // Long disconnect (>30s) - do a full reload to ensure consistency
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint(
             'DraftRoom: Socket reconnected after long disconnect, refreshing all data');
+      }
       _loadDataAndCheckAutopick(pickCountBefore, myRosterId);
     } else {
       // Short disconnect - just resync draft state and picks
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('DraftRoom: Socket reconnected, doing lightweight resync');
+      }
       _refreshDraftStateAndCheckAutopick(pickCountBefore, myRosterId);
       if (state.isAuction) {
         loadAuctionData();
@@ -606,9 +608,10 @@ class DraftRoomNotifier extends StateNotifier<DraftRoomState>
         .where((p) => p.pickNumber == pick.pickNumber && p.id != pick.id)
         .firstOrNull;
     if (existingAtNumber != null) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint(
             'DraftRoom: Pick conflict detected at pickNumber ${pick.pickNumber}, triggering full resync');
+      }
       loadData(); // Full resync to recover from any desync (stale picks, traded picks, queue cleanup, etc.)
       return;
     }
