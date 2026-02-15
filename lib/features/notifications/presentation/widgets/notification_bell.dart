@@ -120,7 +120,8 @@ class NotificationBellPopup extends ConsumerWidget {
           context.go('/notifications');
         } else {
           // Mark as read and navigate
-          final notification = state.notifications.firstWhere((n) => n.id == value);
+          final notification = state.notifications.where((n) => n.id == value).firstOrNull;
+          if (notification == null) return;
           ref.read(notificationsProvider.notifier).markAsRead(value);
           if (notification.navigationRoute != null) {
             context.push(notification.navigationRoute!);
