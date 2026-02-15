@@ -240,7 +240,10 @@ class _FloatingChatWidgetState extends ConsumerState<FloatingChatWidget>
                 borderRadius: AppSpacing.cardRadius,
               ),
               child: Navigator(
-                onGenerateRoute: (_) => PageRouteBuilder(
+                onGenerateRoute: (settings) => PageRouteBuilder(
+                  settings: settings,
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
                   pageBuilder: (_, __, ___) => Column(
                     children: [
                       _buildHeader(colorScheme, availableSize),
