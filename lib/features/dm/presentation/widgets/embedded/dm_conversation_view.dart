@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../config/app_router.dart';
 import '../../../../../core/utils/error_display.dart';
 import '../../../../../core/widgets/states/states.dart';
 import '../../../../../core/widgets/user_avatar.dart';
@@ -194,10 +195,13 @@ class _DmConversationViewState extends ConsumerState<DmConversationView> {
           IconButton(
             icon: const Icon(Icons.date_range, size: 20),
             onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => DmDatePicker(conversationId: widget.conversationId),
-              );
+              final navContext = rootNavigatorKey.currentState?.overlay?.context;
+              if (navContext != null) {
+                showDialog(
+                  context: navContext,
+                  builder: (_) => DmDatePicker(conversationId: widget.conversationId),
+                );
+              }
             },
             padding: const EdgeInsets.all(8),
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),

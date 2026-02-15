@@ -223,10 +223,15 @@ final currentLeagueIdProvider = StateProvider<int?>((ref) => null);
 /// Used for back navigation from screens like notifications.
 final lastLeagueRouteProvider = StateProvider<String?>((ref) => null);
 
+/// Global key for the root navigator, used by floating chat widgets to show
+/// dialogs on the app's navigator (which they sit outside of in the tree).
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authChangeNotifier = ref.watch(_authChangeNotifierProvider);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/login',
     refreshListenable: authChangeNotifier,
     redirect: (context, state) {
